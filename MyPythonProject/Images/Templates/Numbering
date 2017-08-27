@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <script type="text/javascript" src="static/jquery.js"></script>
+        <script type="text/javascript" src="static/third.js"></script>
+    </head>
+    <body>
+        <form id="that-form">
+            <select name="year">
+            {% for year, selected in years %}
+                {% set option = "<option" %}
+                {% if selected %}
+                    {% set option = option ~ " selected" %}
+                {% endif %}
+                {% set option = option ~ ">" ~ year ~ "</option>" %}
+                {{ option }}
+            {% endfor %}
+            </select>
+            <br>
+            <br>
+            <input type="checkbox" name="test" value="Y" checked>Test mode
+            <br>
+            <br>
+            <input type="submit" value="Rename">
+            <input type="reset" value="Reset">
+        </form>
+        <div id="results"></div>
+    </body>
+</html>

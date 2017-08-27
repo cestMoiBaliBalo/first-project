@@ -1,0 +1,8 @@
+{% for row in content %}
+
+    Artistsort: {{ row[0][2:-13] }}
+    Albumsort : {{ row[0][-12:] }}
+    Albums    : {{ row[1] }}
+    Discs     : {{ row[2] }}
+    Tracks    : {{ row[3] }}
+{% endfor %}

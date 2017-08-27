@@ -1,0 +1,59 @@
+#digitalalbums-form table {
+    width: 100%;
+    margin: 50px 0;
+}
+
+#digitalalbums-form th {
+    text-transform: uppercase;
+}
+
+#digitalalbums-form th.uid {
+    width: 5%;
+    text-align: left;
+}
+
+#digitalalbums-form th.artist {
+    width: 20%;
+    text-align: left;
+}
+
+#digitalalbums-form th.year {
+    width: 9%;
+}
+
+#digitalalbums-form th.album {
+    width: 66%;
+    text-align: left;
+}
+
+#digitalalbums-form tbody td:nth-child(3) {
+    text-align: center;
+}
+
+#digitalalbums-form a {
+    text-decoration: none;
+    color: inherit;
+}
+
+#digitalalbums-form a:hover {
+    text-decoration: underline;
+}
+
+#container > #cover {
+    position: fixed;
+    bottom: 20px;
+    right: 15px;
+    width: 160px;
+    padding-bottom: 160px;
+    background-color: var(--cover-bg-color);
+    border-radius: 4px;
+}
+
+#container > #cover > #innercover {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    bottom: 5px;
+    left: 5px;
+    overflow: hidden;
+}

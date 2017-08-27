@@ -1,0 +1,1200 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=no-member
+import collections
+import datetime
+from functools import partial
+from itertools import accumulate, chain, repeat, groupby, zip_longest
+import json
+import logging
+from operator import itemgetter
+import os
+import re
+from string import Template
+
+import cherrypy
+import jinja2
+from pytz import timezone
+
+from .Database.AudioCD.shared import deletefromuid as deleterippedcd, getmonths, insertfromargs, select, selectfromuid, update, validyear
+from .Database.DigitalAudioFiles.shared import getartist, getlastplayed, selecttracks, selectalbums, updatelastplayed
+from .shared import DATABASE, DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX, LOCAL, MUSIC, TEMPLATE4, UPCREGEX, UTC, UTF8, WRITE, TemplatingEnvironment, dateformat, filesinfolder, localize_date, normalize, \
+    normalize2, now
+
+__author__ = 'Xavier ROSSET'
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xav.python.computing@gmail.com'
+__status__ = "Production"
+
+
+# ==========
+# Functions.
+# ==========
+def getalbumid(albumsort, artist, artistsort=None):
+    art, firstletter = artist, artist[0]
+    if artistsort:
+        art, firstletter = artistsort, artistsort[0]
+    return Template(r"$a.$b.$c").substitute(a=firstletter.upper(), b=art, c=albumsort)
+
+
+def getcover(albumsort, artist, artistsort=None):
+    art, firstletter = artist, artist[0]
+    if artistsort:
+        art, firstletter = artistsort, artistsort[0]
+    return Template(r"albumart/$a/$b/$c/iPod-Front.jpg").substitute(a=firstletter.upper(), b=art, c=albumsort)
+
+
+def timestamp(dt):
+    return int(dt.timestamp())
+
+
+# ========
+# Classes.
+# ========
+class DigitalAudioCollection(object):
+    # Constants.
+    TEMP = os.path.join(os.path.expandvars("%TEMP%"))
+    JSONOUTFILE = os.path.join(TEMP, "rippedcd.json")
+    XMLOUTFILE = os.path.join(TEMP, "rippedcd.xml")
+    PERIODS = {"0": "Today",
+               "1": "Yesterday",
+               "2": "That week",
+               "3": "Two weeks ago",
+               "4": "Three weeks ago",
+               "5": "Four weeks ago and older"}
+    LINESPERPAGE = ["200",
+                    "400",
+                    "500",
+                    "800",
+                    "1000"]
+
+    # Templating configuration.
+    TEMPLATES = {"menu": "Menu",
+                 "digitalalbums_playedview": "T01",
+                 "rippedcdview": "T01",
+                 "rippedcdviewbyartist": "T01",
+                 "rippedcdviewbygenre": "T01",
+                 "rippedcdviewbymonth": "T01",
+                 "rippedcdviewbyyear": "T01",
+                 "digitalaudiotracksbyalbum": "T02",
+                 "digitalaudiotracksbyartist": "T02",
+                 "rippedartistsview": "T03",
+                 "digitalalbums_view": "T04",
+                 "index": "T05",
+                 "dialogbox1": "T06a",
+                 "dialogbox2": "T06b",
+                 "dropdownlist": "T06c",
+                 "getdigitalalbums": "T06d",
+                 "rippedcdlog": "T06e",
+                 "rippedcdstatistics": "T07",
+                 "digitalalbums_playedstatistics": "T09",
+                 "digitalaudiofiles": "T10",
+                 "rippedcdlogs": "T11"}
+    TEMPLATE = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "AudioCollection")))
+    TEMPLATE.set_environment(globalvars={"local": LOCAL,
+                                         "utc": UTC,
+                                         "utcnow": datetime.datetime.utcnow()},
+                             filters={"normalize": normalize,
+                                      "normalize2": normalize2,
+                                      "getalbumid": getalbumid,
+                                      "getcover": getcover,
+                                      "localize": localize_date,
+                                      "readable": partial(dateformat, template=TEMPLATE4),
+                                      "readmonth": partial(dateformat, template="$Y$m"),
+                                      "timestamp": timestamp})
+    TEMPLATE.set_template(**TEMPLATES)
+
+    def __init__(self, db=DATABASE):
+
+        # Initializations.
+        self._database = None
+        self._artistsort_mapping = None
+        self._artists_mapping = None
+        self._genres_mapping = None
+        self._months = None
+        self._rippedcd = None
+        self._rippedcdlog = None
+        self._audiofiles = None
+        self._digitalartists = None
+        self._digitalalbums = None
+        self._digitalalbums_mapping = None
+        self._lastplayedalbums = None
+
+        # Setters.
+        self.database = db
+        self.artistsort_mapping = db
+        self.artists_mapping = db
+        self.genres_mapping = db
+        self.months = db
+        self.rippedcd = db
+        self.audiofiles = [["APE", "FLAC", "MP3", "M4A", "OGG"], MUSIC, ["recycle", "\$recycle"]]
+        self.digitalartists = db
+        self.digitalalbums = db
+        self.digitalalbums_mapping = db
+        self.lastplayedalbums = db
+
+    # -------------------------------------------
+    # Getter and setter for "database" attribute.
+    # -------------------------------------------
+    @property
+    def database(self):
+        return self._database
+
+    @database.setter
+    def database(self, arg):
+        self._database = arg
+
+    # --------------------------------------------------
+    # Getter and setter for "artistsort_mapping" attribute.
+    # --------------------------------------------------
+    @property
+    def artistsort_mapping(self):
+        return self._artistsort_mapping
+
+    @artistsort_mapping.setter
+    def artistsort_mapping(self, arg):
+        self._artistsort_mapping = dict([(item.artistsort, item.artist) for item in select(arg) if item.artistsort])
+
+    # --------------------------------------------------
+    # Getter and setter for "artists_mapping" attribute.
+    # --------------------------------------------------
+    @property
+    def artists_mapping(self):
+        return self._artists_mapping
+
+    @artists_mapping.setter
+    def artists_mapping(self, arg):
+        self._artists_mapping = dict([(item.artist, item.artistsort) for item in select(arg) if item.artistsort])
+
+    # -------------------------------------------------
+    # Getter and setter for "genres_mapping" attribute.
+    # -------------------------------------------------
+    @property
+    def genres_mapping(self):
+        return self._genres_mapping
+
+    @genres_mapping.setter
+    def genres_mapping(self, arg):
+        self._genres_mapping = dict([(normalize(item.genre), item.genre) for item in select(arg) if item.genre])
+
+    # -------------------------------------------
+    # Getter and setter for "rippedcd" attribute.
+    # -------------------------------------------
+    @property
+    def rippedcd(self):
+        return self._rippedcd
+
+    @rippedcd.setter
+    def rippedcd(self, arg):
+        self._rippedcd = sorted(sorted([(dateformat(LOCAL.localize(item.ripped), "$Y$m"),
+                                         dateformat(LOCAL.localize(item.ripped), "$month $Y"),
+                                         LOCAL.localize(item.ripped),
+                                         item) for item in select(arg)],
+                                       key=itemgetter(2), reverse=True),
+                                key=itemgetter(0), reverse=True)
+
+    # -------------------------------------------------
+    # Getter and setter for "digitalartists" attribute.
+    # -------------------------------------------------
+    @property
+    def digitalartists(self):
+        return self._digitalartists
+
+    @digitalartists.setter
+    def digitalartists(self, arg):
+        self._digitalartists = dict(set((item.artistid, item.artist) for item in getartist(arg)))
+
+    # ------------------------------------------------
+    # Getter and setter for "digitalalbums" attribute.
+    # ------------------------------------------------
+    @property
+    def digitalalbums(self):
+        return self._digitalalbums
+
+    @digitalalbums.setter
+    def digitalalbums(self, arg):
+        self._digitalalbums = sorted(sorted([(row, row.albumid) for row in selectalbums(db=arg)], key=lambda i: i[1]), key=lambda i: i[1][2:-13])
+
+    # --------------------------------------------------------
+    # Getter and setter for "digitalalbums_mapping" attribute.
+    # --------------------------------------------------------
+    @property
+    def digitalalbums_mapping(self):
+        return self._digitalalbums_mapping
+
+    @digitalalbums_mapping.setter
+    def digitalalbums_mapping(self, arg):
+        reflist = [(row.albumid, row.album, row.artist, row.year) for row in selectalbums(db=arg)]
+        self._digitalalbums_mapping = {albumid: (album, artist, year) for albumid, album, artist, year in reflist}
+
+    # ---------------------------------------------------
+    # Getter and setter for "lastplayedalbums" attribute.
+    # ---------------------------------------------------
+    @property
+    def lastplayedalbums(self):
+        return self._lastplayedalbums
+
+    @lastplayedalbums.setter
+    def lastplayedalbums(self, arg):
+        self._lastplayedalbums = list(filter(lambda i: i.count > 0, getlastplayed(db=arg)))
+
+    # ---------------------------------------------
+    # Getter and setter for "audiofiles" attribute.
+    # ---------------------------------------------
+    @property
+    def audiofiles(self):
+        return self._audiofiles
+
+    @audiofiles.setter
+    def audiofiles(self, arg):
+        extensions, folder, excluded = arg
+        audiofiles = ((os.path.normpath(fil), dateformat(LOCAL.localize(datetime.datetime.fromtimestamp(os.path.getctime(fil))), TEMPLATE4), os.path.splitext(fil)[1][1:])
+                      for fil in filesinfolder(*extensions,
+                                               folder=folder,
+                                               excluded=excluded)
+                      if all([i[0] for i in map(self.checkfile, repeat(os.path.normpath(fil)), [self.grab_artistfirstletter, self.grab_artist, self.grab_year, self.grab_month])]))
+
+        #  1. Décorer "checkfile" à l'aide de "checkfile_fromtuple" pour pouvoir traiter le premier élément d'un tuple ("checkfile" doit reçevoir en effet une chaîne de caractères en qualité
+        #     de premier paramètre).
+        #     "checkfile_fromtuple" retourne la chaîne de caractères extraite par l'expression régulière enveloppée dans la fonction reçue en qualité de deuxième paramètre.
+        checkfile = self.checkfile_fromtuple(self.checkfile)
+
+        #  2. Définir des fonctions ne pouvant reçevoir qu'un tuple. Elles pourront ainsi être utilisées comme clé pour le tri des fichiers audio.
+        grab_month = partial(checkfile, rex_func=self.grab_month)
+        grab_year = partial(checkfile, rex_func=self.grab_year)
+        grab_artist = partial(checkfile, rex_func=self.grab_artist)
+        grab_artistfirstletter = partial(checkfile, rex_func=self.grab_artistfirstletter)
+
+        #  3. Trier les fichiers audio par lettre, artiste, année, mois et extension.
+        self._audiofiles = sorted(sorted(sorted(sorted(sorted(audiofiles, key=itemgetter(2)),
+                                                       key=grab_month),
+                                                key=grab_year),
+                                         key=grab_artist),
+                                  key=grab_artistfirstletter)
+
+    # -----------------------------------------
+    # Getter and setter for "months" attribute.
+    # -----------------------------------------
+    @property
+    def months(self):
+        return self._months
+
+    @months.setter
+    def months(self, arg):
+        self._months = list(getmonths(db=arg))
+
+    # ------------------
+    # Refresh functions.
+    # ------------------
+    @cherrypy.expose
+    def refreshrippedcd(self):
+        self.artistsort_mapping = self.database
+        self.artists_mapping = self.database
+        self.genres_mapping = self.database
+        self.rippedcd = self.database
+        self.months = self.database
+
+    @cherrypy.expose
+    def refreshdigitalalbums(self):
+        self.digitalalbums = self.database
+        self.digitalalbums_mapping = self.database
+        self.digitalartists = self.database
+        self.lastplayedalbums = self.database
+
+    @cherrypy.expose
+    def refreshaudiofiles(self):
+        self.audiofiles = [["APE", "FLAC", "MP3", "M4A", "OGG"], MUSIC, ["recycle", "\$recycle"]]
+
+    # ----------
+    # Home page.
+    # ----------
+    @cherrypy.expose
+    def index(self, view="default", coversperpage="32", start="0"):
+        """
+        Render digital audio albums covers into a tiles view.
+
+        :param view: Requested covers view (default, grouped by artist or grouped by month).
+        :param coversperpage: Number of displayed covers per page.
+        :param start: Number of the first displayed cover.
+        :return: HTML template rendered with CherryPy.
+        """
+        detail = None
+
+        # 1. Covers view.
+        if view == "default":
+            beg = int(start)
+            end = int(start) + int(coversperpage)
+            detail = self.digitalalbums[beg:end]
+
+        # 2. Covers grouped by artist.
+        elif view == "artists":
+            detail = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=lambda i: i[1][2:-13])]
+
+        # 3. Covers grouped by month.
+        elif view == "months":
+            detail = [(key[1], list(group)) for key, group in groupby(sorted(sorted([(tup[0],
+                                                                                      tup[0].albumid,
+                                                                                      tup[0].created,
+                                                                                      dateformat(LOCAL.localize(tup[0].created), "$Y$m"),
+                                                                                      dateformat(LOCAL.localize(tup[0].created), "$month $Y")) for tup in self.digitalalbums],
+                                                                                    key=lambda i: i[1]),
+                                                                             key=lambda i: i[3], reverse=True),
+                                                                      key=lambda i: (i[3], i[4]))]
+
+        # 4. Return HTML page.
+        return self.TEMPLATE.index.render(body="index",
+                                          menu=self.TEMPLATE.menu.render(months=self.months),
+                                          stylesheets=["stylesheets/common.css", "stylesheets/index.css"],
+                                          content={"detail": detail, "view": view, "scripts": ["frameworks/jquery.js", "scripts/functions.js", "scripts/index.js", "scripts/common.js"]})
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getdigitalalbums(self, coversperpage="32", start="0"):
+        """
+        Get more digital audio albums covers from AJAX request.
+
+        :param coversperpage: Number of displayed covers per page.
+        :param start: Number of the first displayed cover.
+        :return: JSON object enumerating retrieved covers into an HTML structure.
+        """
+        beg = int(start)
+        end = int(start) + int(coversperpage)
+        return {"covers": self.TEMPLATE.getdigitalalbums.render(content=self.digitalalbums[beg:end])}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def gettotalcovers(self):
+        """
+        Get total digital audio albums from AJAX request.
+
+        :return: JSON object storing retrieved total.
+        """
+        return {"covers": len(self.digitalalbums)}
+
+    # --------------------
+    # Ripped artists view.
+    # --------------------
+    @cherrypy.expose
+    def rippedartistsview(self):
+        """
+        Render ripped artists into a cloud view.
+
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedartistsview.render(menu=self.TEMPLATE.menu.render(months=self.months),
+                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                      content=[(key, self.getclass(len(list(group)))) for key, group in groupby(sorted(tup[3].artist for tup in rippedcd))])
+
+    # -----------------------
+    # Ripped CDs global view.
+    # -----------------------
+    @cherrypy.expose
+    def rippedcdview(self):
+        """
+        Render ripped audio CDs grouped by descending month.
+        Both cover and tags.
+
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedcdview.render(body="rippedcdview",
+                                                 menu=self.TEMPLATE.menu.render(months=self.months),
+                                                 stylesheets=["stylesheets/common.css",
+                                                              "stylesheets/rippedcdview.css"],
+                                                 content={"content": [(key, list(group)) for key, group in groupby(rippedcd, key=lambda i: (i[0], i[1]))],
+                                                          "scripts": ["frameworks/jquery.js",
+                                                                      "scripts/functions.js",
+                                                                      "scripts/rippedcdview.js",
+                                                                      "scripts/common.js"]},
+                                                 maintitle="Ripped Audio CDs")
+
+    # ----------------------------
+    # Ripped CDs grouped by month.
+    # ----------------------------
+    @cherrypy.expose
+    def rippedcdviewbymonth(self, month):
+        """
+        Render ripped audio CDs grouped by ripping month.
+
+        :param month: Requested ripping month.
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedcdviewbymonth.render(body="rippedcdview",
+                                                        menu=self.TEMPLATE.menu.render(months=self.months),
+                                                        stylesheets=["stylesheets/common.css",
+                                                                     "stylesheets/rippedcdview.css"],
+                                                        content={"content": [(key, list(group)) for key, group in groupby(filter(lambda i: i[0] == month, rippedcd), key=lambda i: (i[0], i[1]))],
+                                                                 "scripts": ["frameworks/jquery.js",
+                                                                             "scripts/functions.js",
+                                                                             "scripts/rippedcdview.js",
+                                                                             "scripts/common.js"]},
+                                                        maintitle="Ripped Audio CDs")
+
+    # ---------------------------
+    # Ripped CDs grouped by year.
+    # ---------------------------
+    @cherrypy.expose
+    def rippedcdviewbyyear(self, year):
+        """
+        Render ripped audio CDs grouped by ripping year.
+
+        :param year: Requested ripping year.
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedcdviewbyyear.render(body="rippedcdview",
+                                                       menu=self.TEMPLATE.menu.render(months=self.months),
+                                                       stylesheets=["stylesheets/common.css",
+                                                                    "stylesheets/rippedcdview.css"],
+                                                       content={"content": [(key, list(group)) for key, group in
+                                                                            groupby(filter(lambda i: dateformat(LOCAL.localize(i[3].ripped), "$Y") == year, rippedcd), key=lambda i: (i[0], i[1]))],
+                                                                "scripts": ["frameworks/jquery.js",
+                                                                            "scripts/functions.js",
+                                                                            "scripts/rippedcdview.js",
+                                                                            "scripts/common.js"]},
+                                                       maintitle="Ripped Audio CDs")
+
+    # -----------------------------
+    # Ripped CDs grouped by artist.
+    # -----------------------------
+    @cherrypy.expose
+    def rippedcdviewbyartist(self, artist):
+        """
+        Render ripped audio CDs grouped by artist.
+
+        :param artist: Requested artist.
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedcdviewbyartist.render(body="rippedcdview",
+                                                         menu=self.TEMPLATE.menu.render(months=self.months),
+                                                         stylesheets=["stylesheets/common.css",
+                                                                      "stylesheets/rippedcdview.css"],
+                                                         content={"content": [(key, list(group)) for key, group in groupby(filter(lambda i: i[3].artist == artist, rippedcd), key=lambda i: (i[0], i[1]))],
+                                                                  "scripts": ["frameworks/jquery.js",
+                                                                              "scripts/functions.js",
+                                                                              "scripts/rippedcdview.js",
+                                                                              "scripts/common.js"]},
+                                                         maintitle="Ripped Audio CDs")
+
+    # ----------------------------
+    # Ripped CDs grouped by genre.
+    # ----------------------------
+    @cherrypy.expose
+    def rippedcdviewbygenre(self, genre):
+        """
+        Render ripped audio CDs grouped by genre.
+
+        :param genre: Requested genre.
+        :return: HTML template rendered with CherryPy.
+        """
+        rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
+        return self.TEMPLATE.rippedcdviewbygenre.render(body="rippedcdview",
+                                                        menu=self.TEMPLATE.menu.render(months=self.months),
+                                                        stylesheets=["stylesheets/common.css",
+                                                                     "stylesheets/rippedcdview.css"],
+                                                        content={"content": [(key, list(group)) for key, group in groupby(filter(lambda i: i[3].genre == genre, rippedcd), key=lambda i: (i[0], i[1]))],
+                                                                 "scripts": ["frameworks/jquery.js",
+                                                                             "scripts/functions.js",
+                                                                             "scripts/rippedcdview.js",
+                                                                             "scripts/common.js"]},
+                                                        maintitle="Ripped Audio CDs")
+
+    # ----------------------
+    # Ripped CDs statistics.
+    # ----------------------
+    @cherrypy.expose
+    def rippedcdstatistics(self, view="year"):
+        """
+        Render statistics about ripped audio CDs.
+
+        :param view: Requested view (artist, genre, month or year).
+        :return: HTML template rendered with CherryPy.
+        """
+        content, detail, firstnt, secondnt = None, None, collections.namedtuple("firstnt", "href id keys count"), collections.namedtuple("secondnt", "view tableid header detail")
+
+        # 1. Total by year in descending order.
+        if view == "year":
+            detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
+                                     k[0],
+                                     k,
+                                     len(list(g)))) for k, g in groupby(sorted([(dateformat(item[2], "$Y"),
+                                                                                 dateformat(item[2], "$Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
+            content = secondnt._make((view, "table1", (view, "count"), detail))
+
+        # 2. Total by month in descending order.
+        elif view == "month":
+            detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
+                                     k[0],
+                                     k,
+                                     len(list(g)))) for k, g in groupby(sorted([(dateformat(item[2], "$Y$m"),
+                                                                                 dateformat(item[2], "$month $Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
+            content = secondnt._make((view, "table2", (view, "count"), detail))
+
+        # 3. Total by artist in ascending order.
+        elif view == "artist":
+            detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), self.artistsort_mapping.get(k[0], k[0])),
+                                     k[0],
+                                     k,
+                                     len(list(g)))) for k, g in groupby(sorted([(item[3].artistsort,
+                                                                                 item[3].artistsort) for item in self.rippedcd if item[3].artistsort], key=itemgetter(0)))]
+            content = secondnt._make((view, "table3", (view, "count"), detail))
+
+        # 4. Total by genre in ascending order.
+        elif view == "genre":
+            detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
+                                     k[0],
+                                     k,
+                                     len(list(g)))) for k, g in groupby(sorted([(item[3].genre, item[3].genre) for item in self.rippedcd], key=itemgetter(0)))]
+            content = secondnt._make((view, "table3", (view, "count"), detail))
+
+        # 5. Return HTML page.
+        return self.TEMPLATE.rippedcdstatistics.render(body="rippedcdstatistics",
+                                                       menu=self.TEMPLATE.menu.render(months=self.months),
+                                                       stylesheets=["stylesheets/common.css"],
+                                                       content={"content": content,
+                                                                "scripts": ["frameworks/jquery.js",
+                                                                            "frameworks/tablesorter.js",
+                                                                            "scripts/rippedcdstatistics.js",
+                                                                            "scripts/common.js"]})
+
+    # -----------------------
+    # Ripped CDs maintenance.
+    # -----------------------
+
+    # 1. Display ripped CDs logs.
+    @cherrypy.expose
+    def rippedcdlogs(self, page="1"):
+        """
+        Render ripped audio CDs sorted by ascending row ID.
+
+        :param page: Requested page.
+        :return: HTML template rendered by CherryPy.
+        """
+        firstnt = collections.namedtuple("firstnt", "logs scripts")
+        rippedcd = sorted(self.rippedcd, key=lambda i: i[3].rowid)
+        pages = list(enumerate(zip_longest(*[iter([(item[3], item[2]) for item in rippedcd])] * 8), start=1))
+        return self.TEMPLATE.rippedcdlogs.render(body="rippedcdlogs",
+                                                 menu=self.TEMPLATE.menu.render(months=self.months),
+                                                 stylesheets=["stylesheets/common.css",
+                                                              "stylesheets/rippedcdlogs.css"],
+                                                 maintitle="Ripped Audio CDs",
+                                                 content=firstnt._make((list(filter(lambda i: i[0] == int(page), pages)), ["frameworks/jquery.js", "scripts/rippedcdlogs.js", "scripts/common.js"])),
+                                                 pages_cfg=self.pages_configuration_1(seq=pages, pag=page))
+
+    # 2. Create/Update ripped CD log.
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def rippedcdlog(self, mode="create", rowid=None):
+        """
+        Render ripped audio CD tags for maintenance (delete or update).
+
+        :param mode: Maintenance mode.
+        :param rowid: Ripped audio CD row ID.
+        :return: Dialog box to run requested maintenance mode or to fix an incorrect tag.
+        """
+
+        # Create log.
+        if mode == "create":
+            return {"dialog": self.TEMPLATE.rippedcdlog.render(mode="create", genres=[(k, v, v.lower() == "rock") for k, v in self.genres_mapping.items()])}
+
+        # Update log.
+        elif mode == "update" and rowid:
+            if int(rowid) > 0:
+                rippedcdlog = list(selectfromuid(int(rowid), db=self.database))[0]
+                return {"dialog": self.TEMPLATE.rippedcdlog.render(mode=mode, content=rippedcdlog, genres=[(k, v, v.lower() == rippedcdlog.genre.lower()) for k, v in self.genres_mapping.items()])}
+
+    # 3. Check ripped CD log.
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def checkrippedcdlog(self, action, **tags):
+
+        template = {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Delete log", "body": "Would you like to delete the selected log?"})}
+        if action.lower() in ["create", "update"]:
+            template = {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update log", "body": "Would you like to update the selected log?"})}
+            albumsort_rex1 = re.compile(r"^[12]\.({0})({1})({2})\.\d$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
+            albumsort_rex2 = re.compile(r"^[12]\.({0})0000\.\d$".format(DFTYEARREGEX))
+            albumsort_rex3 = re.compile(r"^[12]\.({0})[\d.]+$".format(DFTYEARREGEX))
+            year_rex = re.compile(r"^(?:{0})$".format(DFTYEARREGEX))
+            upc_rex = re.compile(UPCREGEX)
+            while True:
+
+                #  A.1. Check albumsort.
+                if not any([albumsort_rex1.match(tags["albumsort"]), albumsort_rex2.match(tags["albumsort"])]):
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Albumsort tag.".format(tags["albumsort"])})}
+                    break
+
+                # A.2. Check year.
+                if not year_rex.match(tags["year"]):
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Year tag.".format(tags["year"])})}
+                    break
+
+                # A.3. Check coherence between albumsort and year.
+                match = albumsort_rex3.match(tags["albumsort"])
+                if match.group(1) != tags["year"]:
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "Albumsort and Year are not coherent."})}
+                    break
+
+                # A.4. Check UPC.
+                if not upc_rex.match(tags["upc"]):
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct UPC tag.".format(tags["upc"])})}
+                    break
+
+                # A.5. Check ripping Unix epoch time.
+                if not re.match(r"^\d{10}$", tags["ripped"]):
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Unix epoch time.".format(tags["ripped"])})}
+                    break
+                try:
+                    validyear(dateformat(LOCAL.localize(datetime.datetime.fromtimestamp(int(tags["ripped"]))), "$Y"))
+                except ValueError:
+                    template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Unix epoch time.".format(tags["ripped"])})}
+                    break
+
+                # A.6. Create log.
+                if action.lower() == "create":
+                    template = {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Create log", "body": "Would you like to create the log?"})}
+                    break
+
+                break
+
+        return template
+
+    # 4. Store ripped CD log.
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def storerippedcdlog(self, action, rowid=None, **tags):
+
+        #  A. Update log.
+        if action.lower() == "update":
+            new_tags = dict(tags)
+            new_tags["genre"] = self.genres_mapping[tags["genre"]]
+            new_tags["year"] = int(tags["year"])
+            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(update(int(rowid), db=self.database, **new_tags))})}
+
+        # B. Delete log.
+        if action.lower() == "delete":
+            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Delete log", "body": "{0:>2d} record(s) successfully deleted.".format(deleterippedcd(int(rowid), db=self.database))})}
+
+        # C. Create log.
+        if action.lower() == "create":
+            new_tags = dict(tags)
+            new_tags["genre"] = self.genres_mapping[tags["genre"]]
+            new_tags["year"] = int(tags["year"])
+            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Create log", "body": "{0:>2d} record(s) successfully created.".format(insertfromargs(db=self.database, **new_tags))})}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getdialogbox(self, head, body, template="TEMPLATE.dialogbox2"):
+        templates = {"TEMPLATE.dialogbox1": self.TEMPLATE.dialogbox1, "TEMPLATE.dialogbox2": self.TEMPLATE.dialogbox2}
+        return {"dialog": templates[template].render(box={"head": head, "body": body})}
+
+    @cherrypy.expose
+    def rippedcdlogsreport(self, output, outfile=None):
+        outputs = list(output)
+        if isinstance(output, str):
+            outputs = list((output,))
+        for out in outputs:
+            if out.lower() == "json":
+                if not outfile:
+                    outfile = self.JSONOUTFILE
+                self.jsonreport(self.rippedcd, outfile)
+                # elif o.lower() == "xml":
+                #     toto1(self.XMLOUTFILE)
+                # elif o.lower() == "log":
+                #     toto2()
+
+    # ------------------------------------------------------
+    # Display digital audio tracks by both artist and album.
+    # ------------------------------------------------------
+    @cherrypy.expose
+    def digitalaudiotracksbyartist(self, artistid=None, prevpage=None):
+
+        #  1. Get digital albums list.
+        reflist = self.digitalalbums
+        if artistid:
+            reflist = list(filter(lambda i: i[1][2:-13].lower() == artistid.lower(), self.digitalalbums))
+        reflist = sorted([item[1] for item in reflist])
+
+        #  2. Return HTML page.
+        return self.TEMPLATE.digitalaudiotracksbyartist.render(menu=self.TEMPLATE.menu.render(months=self.months),
+                                                               current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                               content=self.gettracks(*reflist, artists=self.digitalartists, db=self.database, **self.digitalalbums_mapping),
+                                                               previous_page=prevpage)
+
+    # --------------------------------------
+    # Display digital audio tracks by album.
+    # --------------------------------------
+    @cherrypy.expose
+    def digitalaudiotracksbyalbum(self, albumid, prevpage=None):
+        return self.TEMPLATE.digitalaudiotracksbyalbum.render(menu=self.TEMPLATE.menu.render(months=self.months),
+                                                              current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                              content=self.gettracks(albumid, artists=self.digitalartists, db=self.database, **self.digitalalbums_mapping),
+                                                              previous_page=prevpage)
+
+    # -----------------------------
+    # Display digital audio albums.
+    # -----------------------------
+    @cherrypy.expose
+    def digitalalbums_view(self, page="1"):
+        """
+        Render digital audio albums collection.
+
+        :param page: Requested page.
+        :return: HTML template rendered by CherryPy.
+        """
+
+        # Available albums in digital audio base.
+        digitalalbums = sorted([(tup[0].rowid, tup[0].albumid, tup[0].artist, tup[0].year, tup[0].album) for tup in self.digitalalbums], key=itemgetter(1))
+
+        # Pages configuration.
+        pages = list(enumerate(zip_longest(*[iter(digitalalbums)] * 30), start=1))
+
+        # Return HTML page.
+        return self.TEMPLATE.digitalalbums_view.render(body="digitalalbums",
+                                                       menu=self.TEMPLATE.menu.render(months=self.months),
+                                                       stylesheets=["stylesheets/common.css",
+                                                                    "stylesheets/digitalalbums.css"],
+                                                       content={"albums": list(filter(lambda i: i[0] == int(page), pages)),
+                                                                "page_cfg": self.pages_configuration_1(seq=pages, pag=page),
+                                                                "page_cur": page,
+                                                                "scripts": ["frameworks/jquery.js",
+                                                                            "scripts/digitalalbums.js",
+                                                                            "scripts/common.js"]})
+
+    # ------------------------------------
+    # Display played digital audio albums.
+    # ------------------------------------
+    @cherrypy.expose
+    def digitalalbums_playedview(self):
+        """
+        Render recently played digital audio albums ordered by descending timestamp.
+
+        :return: HTML template rendered by CherryPy.
+        """
+
+        album = collections.namedtuple("album", "period lastplayed ripped artistsort albumsort artist year album genre")
+
+        # Last played audio CDs list.
+        lastplayedalbums = list(filter(lambda i: self.getplayedperiod(UTC.localize(i.played).astimezone(LOCAL))[0], self.lastplayedalbums))
+        lastplayedalbums = [(self.getplayedperiod(UTC.localize(i.played).astimezone(LOCAL))[1],
+                             dateformat(UTC.localize(i.played).astimezone(LOCAL), "$day $d $month $Y"),
+                             UTC.localize(i.played).astimezone(LOCAL),
+                             i.albumid[2:-13],
+                             i.albumid[-12:],
+                             i.artist,
+                             i.year,
+                             i.album,
+                             i.genre) for i in lastplayedalbums]
+        lastplayedalbums = [album._make(i) for i in lastplayedalbums]
+        lastplayedalbums = sorted(sorted([(i[0], i[1], i[2], i) for i in lastplayedalbums], key=itemgetter(2), reverse=True), key=itemgetter(0))
+
+        # Return HTML page.
+        return self.TEMPLATE.digitalalbums_playedview.render(menu=self.TEMPLATE.menu.render(months=getmonths(db=self._database)),
+                                                             current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                             maintitle="Played Audio CDs",
+                                                             id="refresh-2",
+                                                             content=[(key, list(group)) for key, group in groupby(lastplayedalbums, key=lambda i: (i[0], self.PERIODS[i[0]]))])
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def get_digitalalbums_playedcount(self, albumid):
+        return {"count": list(selectalbums(self.database, albumid))[0].count}
+
+    # -----------------------------------------------
+    # Display played digital audio albums statistics.
+    # -----------------------------------------------
+    @cherrypy.expose
+    def digitalalbums_playedstatistics(self):
+        """
+        Render statistics about recently played digital audio albums.
+
+        :return: HTML template rendered with CherryPy.
+        """
+        return self.TEMPLATE.digitalalbums_playedstatistics.render(body="digitalalbumsstatistics",
+                                                                   menu=self.TEMPLATE.menu.render(months=self.months),
+                                                                   stylesheets=["stylesheets/common.css",
+                                                                                "stylesheets/digitalalbumsstatistics.css"],
+                                                                   content={"content": self.lastplayedalbums,
+                                                                            "scripts": ["frameworks/jquery.js",
+                                                                                        "frameworks/tablesorter.js",
+                                                                                        "scripts/digitalalbumsstatistics.js",
+                                                                                        "scripts/common.js"]})
+
+    # ----------------------------------------
+    # Update digital audio albums played date.
+    # ----------------------------------------
+    @cherrypy.expose
+    @cherrypy.tools.json_in(content_type="application/x-www-form-urlencoded")
+    def update_digitalalbums_playeddate(self):
+        """
+        Update played date from AJAX request.
+
+        :return: None.
+        """
+
+        #  1. Get input data.
+        data = cherrypy.request.json
+
+        #  2. Log selected record(s) unique ID.
+        logger = logging.getLogger("{0}.updatelastplayeddate".format(__name__))
+        for row in data["rows"]:
+            logger.debug(row)
+
+        # 3. Update matching record(s).
+        results = updatelastplayed(*list(map(int, data["rows"])), db=data.get("database", self.database))
+
+        #  4. Log results.
+        logger.debug(results)
+
+    # ----------------------------
+    # Display digital audio files.
+    # ----------------------------
+    @cherrypy.expose
+    def digitalaudiofiles(self, start="1", linesperpage="1000", **filters):
+
+        #  1. Get files list.
+        data = self.getaudiofiles("digitalaudiofiles", self.audiofiles, **filters)
+        files = [(index, fil, created) for index, (fil, created) in enumerate([(item[0], item[1]) for item in data["files"]], 1)]
+
+        #  2. Set dropdown lists.
+
+        #  2.a. Letters.
+        letters = data["letters"]
+        letters.insert(0, ("all", "All"))
+        letters = [(a, b, a == filters.get("letter", "all")) for a, b in letters]
+        letters = self.TEMPLATE.dropdownlist.render(name="letter", values=letters, select=True)
+
+        #  2.b. Artists.
+        artists = data["artists"]
+        artists.insert(0, ("all", "All"))
+        artists = [(a, b, a == filters.get("artist", "all")) for a, b in artists]
+        artists = self.TEMPLATE.dropdownlist.render(name="artist", values=artists, select=True)
+
+        #  2.c. Extensions.
+        extensions = data["extensions"]
+        extensions.insert(0, ("all", "All"))
+        extensions = [(a, b, a == filters.get("extension", "all")) for a, b in extensions]
+        extensions = self.TEMPLATE.dropdownlist.render(name="extension", values=extensions, select=True)
+
+        #  3. Return HTML page.
+        return self.TEMPLATE.digitalaudiofiles.render(menu=self.TEMPLATE.menu.render(months=self.months),
+                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                      content={"letters": letters,
+                                                               "artists": artists,
+                                                               "extensions": extensions,
+                                                               "files": self.subset(int(start), int(linesperpage), files),
+                                                               "pages": list(enumerate(accumulate(self.pages_configuration_2(len(files), int(linesperpage))), 1)),
+                                                               "linesperpage": [(a, int(a) == int(linesperpage)) for a in self.LINESPERPAGE]})
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def get_digitalaudiofiles(self, **idata):
+
+        #  1. Get input data.
+        start = int(idata.get("start", "1"))
+        linesperpage = int(idata.get("linesperpage", "1000"))
+
+        #  2. Get files list.
+        odata = self.getaudiofiles("getmoredigitalaudiofiles",
+                                   self.audiofiles,
+                                   letter=idata.get("letter", "all"),
+                                   artist=idata.get("artist", "all"),
+                                   extension=idata.get("extension", "all"))
+        files = [(index, fil, created) for index, (fil, created) in enumerate([(item[0], item[1]) for item in odata["files"]], 1)]
+
+        #  3. Return files
+        return {"files": self.subset(start, linesperpage, files)}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getartists(self, letter="all"):
+
+        odata = self.getaudiofiles("getartists", self.audiofiles, letter=letter)
+        artists = odata["artists"]
+        artists.insert(0, ("all", "All"))
+        extensions = odata["extensions"]
+        extensions.insert(0, ("all", "All"))
+        return {"artists": self.TEMPLATE.dropdownlist.render(name="artist", values=[(a, b, a == "all") for a, b in artists], select=False),
+                "extensions": self.TEMPLATE.dropdownlist.render(name="extension", values=[(a, b, a == "all") for a, b in extensions], select=False)}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getextensions(self, artist="all"):
+
+        odata = self.getaudiofiles("getextensions", self.audiofiles, artist=artist)
+        extensions = odata["extensions"]
+        extensions.insert(0, ("all", "All"))
+        return {"extensions": self.TEMPLATE.dropdownlist.render(name="extension", values=[(a, b, a == "all") for a, b in extensions], select=False)}
+
+    # --------------
+    # Class methods.
+    # --------------
+    @classmethod
+    def getaudiofiles(cls, origin, collection, **filters):
+
+        mapping = {"all": None}
+
+        #  0.a. Décorer "checkfile" à l'aide de "checkfile_fromtuple" pour pouvoir traiter le premier élément d'un tuple ("checkfile" doit reçevoir en effet une chaîne de caractères
+        #       en qualité de premier paramètre).
+        #       "checkfile_fromtuple" retourne la chaîne de caractères extraite par l'expression régulière enveloppée dans la fonction reçue en qualité de deuxième paramètre.
+        checkfile = cls.checkfile_fromtuple(cls.checkfile)
+
+        #  0.b. Définir des fonctions ne pouvant reçevoir qu'un tuple. Elles pourront ainsi être utilisées comme clé pour les tris et les regroupements.
+        grab_artistfirstletter = partial(checkfile, rex_func=cls.grab_artistfirstletter)
+        grab_artist = partial(checkfile, rex_func=cls.grab_artist)
+
+        #  1. Set global files list sorted by letter, artist, extension and file.
+        olist = collection
+
+        #  2. Set available letters list, available artists list and available extensions list.
+        letters = sorted([(letter.lower(), letter.upper()) for letter in set([letter for letter, group in groupby(olist, key=grab_artistfirstletter)])], key=itemgetter(1))
+        artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby(olist, key=grab_artist)])], key=itemgetter(1))
+        extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+
+        #  3. Get input filters.
+
+        #  3.a. Letter.
+        let = filters.get("letter", "all")
+        let = mapping.get(let, let)
+
+        #  3.b. Artist.
+        art = filters.get("artist", "all")
+        art = mapping.get(art, art)
+
+        #  3.c. Extension.
+        ext = filters.get("extension", "all")
+        ext = mapping.get(ext, ext)
+
+        #  4. Apply input filters.
+        if let:
+            olist = list(chain.from_iterable([list(group) for letter, group in groupby(olist, key=grab_artistfirstletter) if letter.lower() == let.lower()]))
+            artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby(olist, key=grab_artist)])], key=itemgetter(1))
+            extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+        if art:
+            olist = list(chain.from_iterable([list(group) for artist, group in groupby(olist, key=grab_artist) if artist.replace(" ", "_").lower() == art.lower()]))
+            extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+        if ext:
+            olist = list(chain.from_iterable([list(group) for extension, group in groupby(olist, key=itemgetter(2)) if extension.lower() == ext.lower()]))
+
+        # 5. Return files list.
+        if origin == "digitalaudiofiles":
+            return {"files": olist, "letters": letters, "artists": artists, "extensions": extensions}
+        if origin == "getmoredigitalaudiofiles":
+            return {"files": olist}
+        if origin == "getartists":
+            return {"artists": artists, "extensions": extensions}
+        if origin == "getextensions":
+            return {"extensions": extensions}
+
+    # ---------------
+    # Static methods.
+    # ---------------
+    @staticmethod
+    def grab_artistfirstletter(stg):
+        match = re.search(r"^[^\\]+\\([a-z])\\", stg, re.IGNORECASE)
+        if match:
+            return True, match.group(1)
+        return False, None
+
+    @staticmethod
+    def grab_artist(stg):
+        match = re.search(r"^(?:[^\\]+\\){2}([^\\]+)\\", stg)
+        if match:
+            return True, match.group(1)
+        return False, None
+
+    @staticmethod
+    def grab_year(stg):
+        match = re.search(r"^(?:[^\\]+\\){{3}}(?:[12]\\)?({0})\b".format(DFTYEARREGEX), stg)
+        if match:
+            return True, match.group(1)
+        return False, None
+
+    @staticmethod
+    def grab_month(stg):
+        match = re.search(r"\b({0})\b.\b({1})\b(?:[^\\]+\\)".format(DFTMONTHREGEX, DFTDAYREGEX), stg)
+        if match:
+            return True, "{0}{1}".format(match.group(1), match.group(2))
+        return True, "0000"
+
+    @staticmethod
+    def checkfile(stg, rex_func):
+        return rex_func(stg)
+
+    @staticmethod
+    def checkfile_fromtuple(func):
+
+        def wrapper(tup, rex_func):
+            return func(tup[0], rex_func)[1]
+
+        return wrapper
+
+    @staticmethod
+    def gettracks(*albumid, db, artists, **kwargs):
+
+        #  1. Get digital albums list.
+        reflist = chain.from_iterable([[(row.albumid,
+                                         row.discid,
+                                         row.trackid,
+                                         row.title) for row in genobj if row] for genobj in map(selecttracks, repeat(db), albumid)])
+
+        #  2. Sort digital albums by "artistsort", "albumid", "discid", "trackid".
+        reflist = sorted(sorted(sorted(sorted(reflist, key=itemgetter(2)), key=itemgetter(1)), key=lambda i: i[0]), key=lambda i: i[0][2:-13])
+
+        #  3. Group digital albums by "artistsort", "albumid", "discid", "trackid".
+        return [(
+            (artistsort, artists.get(artistsort, artistsort)),
+            [(
+                (albumid, kwargs[albumid]),
+                [(
+                    discid,
+                    [(
+                        trackid,
+                        list(sssubgroup)
+                    ) for trackid, sssubgroup in groupby(list(ssubgroup), key=lambda i: i[2])]
+                ) for discid, ssubgroup in groupby(list(subgroup), key=lambda i: i[1])]
+            ) for albumid, subgroup in groupby(list(group), key=lambda i: i[0])]
+        ) for artistsort, group in groupby(reflist, key=lambda i: i[0][2:-13])]
+
+    @staticmethod
+    def getclass(count):
+        htmlclass = None
+        if count > 0:
+            htmlclass = "c0"
+        if count > 1:
+            htmlclass = "c1"
+        if count > 2:
+            htmlclass = "c2"
+        if count > 4:
+            htmlclass = "c3"
+        if count > 6:
+            htmlclass = "c4"
+        if count > 9:
+            htmlclass = "c5"
+        if count > 14:
+            htmlclass = "c6"
+        if count > 19:
+            htmlclass = "c7"
+        return htmlclass
+
+    @staticmethod
+    def getplayedperiod(dtobj):
+
+        oneday = datetime.date.today() - datetime.timedelta(days=1)
+        sevendays = datetime.date.today() - datetime.timedelta(days=7)
+        fourteendays = datetime.date.today() - datetime.timedelta(days=14)
+        twentyonedays = datetime.date.today() - datetime.timedelta(days=21)
+        ninetydays = datetime.date.today() - datetime.timedelta(days=90)
+        status = False, None
+
+        # CD played on day D.
+        if dtobj.date() == datetime.date.today():
+            status = True, "0"
+
+        # CD played on day D-1.
+        if dtobj.date() == oneday:
+            status = True, "1"
+
+        # CD played between day D-7 and day D-2.
+        if dtobj.date() < oneday:
+            status = True, "2"
+
+        # CD played between day D-14 and day D-8.
+        if dtobj.date() < sevendays:
+            status = True, "3"
+
+        # CD played between day D-21 and day D-15.
+        if dtobj.date() < fourteendays:
+            status = True, "4"
+
+        # CD played between day D-90 and day D-22.
+        if dtobj.date() < twentyonedays:
+            status = True, "5"
+
+        # Last played period older than day D-90.
+        if dtobj.date() < ninetydays:
+            status = False, None
+
+        # Return played period.
+        return status
+
+    @staticmethod
+    def pages_configuration_1(seq, pag):
+        previouspage, nextpage = False, False
+        if len(seq) > 1:
+            if int(pag) > 1:
+                previouspage = True
+            if int(pag) < len(seq):
+                nextpage = True
+        return {"pages": list(range(1, len(seq) + 1)),
+                "currentpage": int(pag),
+                "previous": previouspage,
+                "next": nextpage}
+
+    @staticmethod
+    def pages_configuration_2(lines, linesperpage):
+        pages = int(lines / linesperpage)
+        if lines % linesperpage > 0:
+            pages += 1
+        pages = [linesperpage] * (pages - 1)
+        pages.insert(0, 1)
+        if len(pages) > 1:
+            return pages
+        return []
+
+    @staticmethod
+    def subset(start, linesperpage, items):
+        beg = start - 1
+        if beg >= len(items):
+            return []
+        end = start + linesperpage - 1
+        if end > len(items):
+            return items[beg:]
+        return items[beg:end]
+
+    @staticmethod
+    def jsonreport(collection, outfile):
+        keys = ["RIPPED", "ARTISTSORT", "ALBUMSORT", "ARTIST", "YEAR", "ALBUM", "GENRE", "BARCODE", "APPLICATION"]
+        reflist = sorted([item[3] for item in collection], key=lambda i: i.rowid)
+        reflist = [(item.rowid,
+                    dict(zip(keys, (dateformat(LOCAL.localize(item.ripped), TEMPLATE4),
+                                    item.artistsort,
+                                    item.albumsort,
+                                    item.artist,
+                                    item.year,
+                                    item.album,
+                                    item.upc,
+                                    item.genre,
+                                    item.application)))) for item in reflist]
+        if reflist:
+            with open(outfile, mode=WRITE, encoding=UTF8) as fp:
+                json.dump([now(),
+                           dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Eastern")), TEMPLATE4),
+                           dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Pacific")), TEMPLATE4),
+                           dict(reflist)], fp, indent=4, sort_keys=True, ensure_ascii=False)
+
+# A.6. Update log.
+# if action.lower() == "update":
+#
+#     #  A.6.a. New tags.
+#     new_tags = dict(tags)
+#     new_tags["genre"] = self.genres_mapping[tags["genre"]]
+#     new_tags["ripped"] = int(new_tags["ripped"])
+#     new_tags = sorted(new_tags.items(), key=itemgetter(0))
+#
+#     #  A.6.b. Current tags.
+#     cur_tags = sorted(self.rippedcdlog.items(), key=itemgetter(0))
+#
+#     #  A.6.c. Differences between new tags and current tags.
+#     differences = set(new_tags) - set(cur_tags)
+#     logger.debug("new tags    : {0}".format(new_tags))
+#     logger.debug("current tags: {0}".format(cur_tags))
+#     logger.debug("differences : {0}".format(list(differences)))
+#
+#     #  A.6.d. Update log if some differences have been found.
+#     if not differences:
+#         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update record", "body": "Any tag hasn't been changed. Can\'t update log."})}
+#     return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update record", "body": "Would you like to update the selected log?"})}
+
+# return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update log", "body": "Would you like to update the selected log?"})}

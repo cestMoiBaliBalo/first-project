@@ -1,0 +1,421 @@
+/*     ------------- */
+/*  0. Common layout */
+/*     ------------- */
+:root {
+    --main-bg-color: #FDF3F2;
+    --container-bg-color: #F8D8D3;
+    --h2-color: #9A2C18;
+    --h3-color: #9A2C18;
+    --browser-color: #6E1F11;
+    --cover-bg-color: #44676F;
+    --dropdown-bg-color: #F9F9F9;
+}
+
+body {
+    font-family: "Trebuchet MS", verdana, geneva, arial, helvetica, sans-serif;
+    font-size: 1em;
+    width: 75%;
+    height: 100%;
+    margin: 10px auto 20px;
+    background-color: var(--main-bg-color);
+}
+
+h2 {
+   margin: 0 0 0 5px;
+   color: var(--h2-color);
+}
+
+h3 {
+    margin: 50px 0 15px 5px;
+    color: var(--h3-color);
+}
+
+thead th {
+    font-size: 1.25em;
+    color: var(--browser-color);
+}
+
+.default {
+    color: var(--cover-bg-color);
+}
+
+.colored {
+    color: var(--browser-color);
+}
+
+.hover {
+    background-color: #AFA;
+}
+
+.button {
+    color: var(--browser-color);
+    background-color: var(--main-bg-color);
+    border: 2px solid var(--browser-color);
+    border-radius: 12px;
+    margin: 50px 0 10px 5px;
+    padding: 6px;
+    cursor: pointer;
+    -webkit-transition-duration: 0.4s;
+    -moz-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+
+.button:hover {
+    color: var(--main-bg-color);
+    background-color: var(--browser-color);
+    box-sizing: content-box;
+    box-shadow: 2px 2px 8px var(--cover-bg-color);
+}
+
+.no-cursor {
+    cursor: not-allowed;
+}
+
+.no-scroll {
+    overflow: hidden;
+}
+
+#h2-title {
+    position: relative;
+    z-index: 1;
+    padding: 25px 0 0;
+    margin-bottom: 80px;
+}
+
+#h2-title > div {
+    position: absolute;
+    z-index: 1;
+}
+
+#div1 {
+    left: 0;
+    width: 60%;
+}
+
+#div2 {
+    right: 0;
+    width: 30%;
+    text-align: right;
+}
+
+#div2 > div:nth-child(1) {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 0;
+    width: 80%;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+
+#div2 > div:nth-child(2) {
+    position: absolute;
+    z-index: 1;
+    right: 0;
+    width: 20%;
+    text-align: left;
+}
+
+#container {
+    background-color: var(--container-bg-color);
+}
+
+#container #div2 {
+    height: 21px;
+}
+
+#loading {
+    display: none;
+}
+
+#pages > a, #pages > b {
+    color: var(--cover-bg-color);
+    padding: 0 4px 0 0;
+}
+
+#pages > a.disabled {
+    text-decoration: none;
+    cursor: none;
+}
+
+#refresh, #create, #output, #view {
+    margin: 0 5px 0 0;
+}
+
+
+/*     ---- */
+/*  1. Logo */
+/*     ---- */
+#logo {
+    position: relative;
+    width: 100%;
+    padding-bottom: 143px;
+    margin: 0 auto;
+}
+
+#logo div.right {
+    background-color: #F0F0F0;
+    position: absolute;
+    border-radius: 15px;
+    top: 10px;
+    bottom: 10px;
+    right: 0;
+    width: 453px;
+}
+
+#logo div.right div {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    bottom: 5px;
+    left: 5px;
+}
+
+#logo div.left {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100px;
+}
+
+
+/*     ------- */
+/*  2. Browser */
+/*     ------- */
+ul.browser {
+    margin: 10px 0 0;
+    padding: 0;
+    background-color: var(--browser-color);
+    list-style-type: none;
+}
+
+ul.browser li {
+    display: inline-block;
+    padding: 14px 16px;
+}
+
+ul.browser li a {
+    color: white;
+    text-align: center;
+    text-decoration: none;
+}
+
+ul.browser li:hover {
+    background-color: red;
+}
+
+
+/*     -------------------------------- */
+/*  3. Hide dropdown content by default */
+/*     -------------------------------- */
+/*     Dropdown contents are defined as stacking contexts to be positioned in front of pages main content. */
+/*     Descendant elements are confined into the dropdown element and can't be positioned out. */
+.dropdown, .sub-dropdown {
+    position: relative;
+}
+
+.dropdown .dropdown-content {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    top: 100%;
+    left: 0;
+    background-color: var(--dropdown-bg-color);
+    min-width: 120px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+.sub-dropdown .sub-dropdown-content {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 100%;
+    background-color: var(--dropdown-bg-color);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+
+/*     --------------------------------- */
+/*  4. Display dropdown content on hover */
+/*     --------------------------------- */
+.dropdown:hover .dropdown-content, .sub-dropdown:hover .sub-dropdown-content {
+    display: block;
+}
+
+.dropdown .dropdown-content a, .sub-dropdown .sub-dropdown-content a {
+    color: black;
+    display: block;
+    padding: 15px 0;
+}
+
+
+/*     ----------------------------------------- */
+/*  5. Change color of dropdown content on hover */
+/*     ----------------------------------------- */
+.dropdown .dropdown-content a:hover, .sub-dropdown .sub-dropdown-content a:hover {
+    background-color: #F1F1F1
+}
+
+
+/*     ------------------ */
+/*  6. "Back to Top" link */
+/*     ------------------ */
+/*.back-to-top {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    visibility: hidden;
+    opacity: 0;
+    text-indent: 100%;
+    background: #C1D592 url("/audiocollection/images/backtotop.svg") no-repeat center;
+    -webkit-transition: opacity 3s 0s;
+    -moz-transition: opacity 3s 0s;
+    transition: opacity 3s 0s;
+}
+
+.back-to-top.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.back-to-top.fade-out {
+    visibility: visible;
+    opacity: 0.4;
+}*/
+
+
+/*     ------------ */
+/*  7. Dialog boxes */
+/*     ------------ */
+/*     Stacking contexts are created thanks to z-index attribute. */
+/*     Dialog box must be in front of dialog overlay. */
+/*     Dialog box descendants are confined into the box and can't be positioned out. */
+#div3 {
+    position: relative;
+    z-index: 30;
+}
+
+#dialogoverlay-1, #dialogoverlay-2 {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: #FFF;
+    opacity: 0.8;
+}
+
+#dialogoverlay-1 {
+    z-index: 1;
+}
+
+#container5 {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow-y: scroll;
+}
+
+#dialogoverlay-2 {
+    z-index: 3;
+}
+
+#dialogbox {
+    position: fixed;
+    z-index: 4;
+    top: 0;
+    left: 0;
+    background: #000;
+    border-radius:7px;
+    width: 550px;
+}
+
+#dialogbox > div {
+    background: #FFF;
+    margin: 8px;
+}
+
+#dialogbox > div > #dialogboxhead {
+    background: #666;
+    font-size: 19px;
+    padding: 10px;
+    color: #CCC;
+}
+
+#dialogbox > div > #dialogboxbody {
+    background: #333;
+    padding: 20px;
+    color: #FFF;
+}
+
+#dialogbox > div > #dialogboxfoot {
+    background: #666;
+    padding: 10px;
+    text-align: right;
+}
+
+
+/*     ------------ */
+/*  8. Table sorter */
+/*     ------------ */
+table.tablesorter {
+    margin:10px auto 15px;
+    width: 40%;
+    text-align: center;
+    border-collapse: collapse;
+    border: 2px solid white;
+}
+
+table.tablesorter tr {
+    border-collapse: collapse;
+    border: 2px solid white;
+}
+
+table.tablesorter th {
+    background-color: var(--browser-color);
+    border-collapse: collapse;
+    border: 2px solid white;
+    color: white;
+    padding: 8px;
+    width: 20%;
+    font-size: 1em;
+}
+
+table.tablesorter td {
+    color: var(--browser-color);
+    border: 2px solid #FFF;
+    border-collapse: collapse;
+}
+
+table.tablesorter a {
+    text-decoration: none;
+    color: var(--browser-color);
+}
+
+table.tablesorter thead tr .header {
+    background-image: url("/audiocollection/images/bg.gif");
+    background-repeat: no-repeat;
+    background-position: center right;
+    cursor: pointer;
+}
+
+table.tablesorter thead tr .headerSortUp {
+    background-image: url("/audiocollection/images/asc.gif");
+}
+
+table.tablesorter thead tr .headerSortDown {
+    background-image: url("/audiocollection/images/desc.gif");
+}
+
+table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
+background-color: #8DBDD8;
+}

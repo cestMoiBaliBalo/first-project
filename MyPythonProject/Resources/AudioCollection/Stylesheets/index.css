@@ -1,0 +1,38 @@
+#container .cover {
+  width: 160px;
+  padding-bottom: 160px;
+  background-color: var(--cover-bg-color);
+  position: relative;
+  display: inline-block;
+  margin: 10px 10px 0 0;
+  border-radius: 4px;
+}
+
+#container .cover .innercover {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: 5px;
+  bottom: 5px;
+  overflow: hidden;
+}
+
+#container .cover .innercover .album {
+  position: absolute;
+  margin-bottom: -50px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  background: rgba(0, 0, 0, 0.5);
+  color: #FFFFFF;
+  padding: 10px;
+  text-align: center;
+  -webkit-transition: margin-bottom 0.3s ease-out;
+  -moz-transition: margin-bottom 0.3s ease-out;
+  transition: margin-bottom 0.3s ease-out;
+}
+
+#container .cover .innercover:hover .album {
+  margin-bottom: 0;
+}

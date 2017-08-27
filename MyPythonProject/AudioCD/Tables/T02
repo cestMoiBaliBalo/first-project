@@ -1,0 +1,15 @@
+{% for row in content %}
+
+    Record    : {{ row.rowid }}
+    Artistsort: {{ row.albumid[2:-13] }}
+    Albumsort : {{ row.albumid[-12:] }}
+    Artist    : {{ row.artist }}
+    Year      : {{ row.year }}
+    Album     : {{ row.album }}
+    Genre     : {{ row.genre }}
+    UPC       : {{ row.upc }}
+    {% if row.played %}
+    Played    : {{ row.played|readable(tz=utc) }}
+    {% endif %}
+    Counter   : {{ row.count }}
+{% endfor %}

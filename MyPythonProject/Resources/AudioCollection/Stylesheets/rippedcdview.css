@@ -1,0 +1,42 @@
+.rippedcd {
+    position: relative;
+    z-index: 10;
+}
+
+.cover {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 130px;
+    padding-bottom: 130px;
+    border-radius: 4px;
+    background-color: #44676F;
+}
+
+.innercover {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    bottom: 5px;
+    left: 5px;
+}
+
+.tags {
+    position: static;
+    margin-left: 140px;
+}
+
+.tags > p {
+    margin: 0 0 2px 5px;
+    font-size: 0.95em;
+    color: #44676F;
+}
+
+.tags > p > a.artist, .tags > p > a.album, .tags > p > a.genre {
+    color: inherit;
+    text-decoration: none;
+}
+
+.tags > p > a.artist:hover, .tags > p > a.album:hover, .tags > p > a.genre:hover {
+    text-decoration: underline;
+}
