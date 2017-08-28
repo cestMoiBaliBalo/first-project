@@ -14,7 +14,7 @@ __status__ = "Development"
 class Test01(unittest.TestCase):
     def setUp(self):
         self.stringformatter = StringFormatter()
-        with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "StringFormatter.json")) as fp:
+        with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "StringFormatter.json")) as fp:
             self.thatlist = json.load(fp)
 
     def test_01first(self):
