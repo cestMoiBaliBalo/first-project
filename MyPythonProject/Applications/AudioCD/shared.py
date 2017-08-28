@@ -171,8 +171,8 @@ class AudioCDTags(MutableMapping):
         return cls(**SortedDict(d))
 
     @staticmethod
-    def checktags(item, dictionnary):
-        return dictionnary.get(item, "False")
+    def checktags(member, container):
+        return container.get(member, "False")
 
     @staticmethod
     def deserialize(fil, enc=shared.UTF8):
