@@ -41,6 +41,8 @@ class AudioCDTags(MutableMapping):
 
     def __init__(self):
         self._encoder = None
+        self._totaltracks_key = None
+        self._totaldiscs_key = None
         self._otags = dict()
 
     def __getitem__(self, item):
@@ -132,11 +134,11 @@ class AudioCDTags(MutableMapping):
 
     @property
     def totaldiscs(self):
-        return self._otags[MAPPING.get(self.encoder, MAPPING["default"])["totaldiscs"]]
+        return self._otags[self._totaldiscs_key]
 
     @property
     def totaltracks(self):
-        return self._otags[MAPPING.get(self.encoder, MAPPING["default"])["totaltracks"]]
+        return self._otags[self._totaltracks_key]
 
     @property
     def tracknumber(self):
@@ -205,12 +207,19 @@ class CommonAudioCDTags(AudioCDTags):
               "style": False,
               "title": False,
               "titlelanguage": False,
+              "totaltracks": False,
               "track": True,
               "_albumart_1_front album cover": False}
 
     def __init__(self, **kwargs):
         super(CommonAudioCDTags, self).__init__()
         nt = namedtuple("nt", "name code folder extension")
+        self._totaltracks_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaltracks"]
+        self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
+        totaltracks = 0
+        if "totaltracks" in kwargs:
+            totaltracks = kwargs["totaltracks"]
+            del kwargs["totaltracks"]
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -252,11 +261,13 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
-        self._otags["track"], self._otags[MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaltracks"]] = self.splitfield(kwargs["track"], self.track_pattern)
+        self._otags["track"], self._otags[self._totaltracks_key] = self.splitfield(kwargs["track"], self.track_pattern)
+        if totaltracks:
+            self._otags[self._totaltracks_key] = totaltracks
 
         # ----- Both update disc and set total discs.
         self.logger.debug("Set disc.")
-        self._otags["disc"], self._otags[MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]] = self.splitfield(kwargs["disc"], self.track_pattern)
+        self._otags["disc"], self._otags[self._totaldiscs_key] = self.splitfield(kwargs["disc"], self.track_pattern)
 
         # ----- Update genre.
         self.logger.debug("Update genre.")
@@ -274,12 +285,6 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Update title.
         self.logger.debug("Update title.")
-        for track in self.deserialize(TITLES):  # "track" est un dictionnaire.
-            if sorted(track) == sorted(TIT_KEYS):
-                if self._otags["track"] == track["number"]:
-                    if track["overwrite"]:
-                        self._otags["title"] = track["title"]
-                        break
         self._otags["title"] = shared.StringFormatter(self._otags["title"]).convert()
 
     def __validatetags(self, **kwargs):
@@ -974,9 +979,7 @@ DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(.+)$"
 GENRES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Genres.json")
 LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Languages.json")
 ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Encoders.json")
-TITLES = os.path.join(os.path.expandvars("%_COMPUTING%"), "Titles.json")
 ENC_KEYS = ["name", "code", "folder", "extension"]
-TIT_KEYS = ["number", "title", "overwrite"]
 PROFILES = {"default": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live", "offset"], DefaultAudioCDTags.fromfile),
             "sbootlegs": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "dottedbootlegtrackyear", "live", "groupby", "offset"], BootlegAudioCDTags.fromfile)}
 with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Mapping.json")), encoding="UTF_8") as fp:

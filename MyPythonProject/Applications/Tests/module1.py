@@ -1271,6 +1271,7 @@ class Test14DefaultCDTrack(unittest.TestCase):
             "Profile": "SBootlegs",
             "Source": "CD (Lossless)",
             "Track": "10/13",
+            "TotalTracks": "37",
             "Year": "1987"
         }
         self.reftags = {
@@ -1296,7 +1297,7 @@ class Test14DefaultCDTrack(unittest.TestCase):
             "titlelanguage": "English",
             "titlesort": "D2.T10.NYY",
             "track": "23",
-            "tracktotal": "13",
+            "tracktotal": "37",
             "year": "2016"
         }
         ofile, ifile, track, offset = None, None, None, None
@@ -1333,6 +1334,15 @@ class Test14DefaultCDTrack(unittest.TestCase):
         for k, v in self.otags.items():
             logger.debug("{0}: {1}".format(k, v))
         self.assertDictEqual(self.otags, self.reftags)
+
+    def test_02second(self):
+        self.assertEqual(self.otags["tracktotal"], "37")
+
+    def test_03third(self):
+        self.assertIn("tracktotal", self.otags)
+
+    def test_04third(self):
+        self.assertNotIn("totaltracks", self.otags)
 
 
 @unittest.skip
