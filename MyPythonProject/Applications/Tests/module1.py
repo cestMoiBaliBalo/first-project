@@ -1299,8 +1299,8 @@ class Test14DefaultCDTrack(unittest.TestCase):
             "tracktotal": "13",
             "year": "2016"
         }
-
         ofile, ifile, track, offset = None, None, None, None
+
         with tempfile.TemporaryDirectory() as directory:
             ifile = os.path.join(directory, "tags.txt")
 

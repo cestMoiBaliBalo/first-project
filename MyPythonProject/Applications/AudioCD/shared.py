@@ -159,55 +159,6 @@ class AudioCDTags(MutableMapping):
         return self._otags["upc"]
 
     @classmethod
-    def case(cls, s):
-        regex = {"1": r"(for|and|nor|but|or|yet|so)",
-                 "2": r"((?:al)?though|as|because|if|since|so that|such as|to|unless|until|when|where(?:as)?|while)",
-                 "3": r"(above|after|against|along(?:side)?|around|at|before|behind|below|between|beside|close to|down|(?:far )?from|in(?: front of)?(?:side)?(to)?|near|off?|on(?:to)?|out(?:side)?|over|toward|"
-                      r"under(?:neath)?|up(?: to)?)",
-                 "4": r"(a(?:n(?:d)?)?|as|by|than|the|till|upon)",
-                 "5": r"[\.\-]+"}
-
-        #  1. Chaque mot est formaté en lettres minuscules.
-        s = re.compile(r"(?i)^(.+)$").sub(cls.low, s)
-
-        #  2. Chaque mot est capitalisé.
-        s = re.compile(r"(?i)\b([a-z]+)\b").sub(cls.cap1, s)
-
-        #  3. Les conjonctions demeurent entièrement en lettres minsucules.
-        s = re.compile(r"(?i)\b{0}\b".format(regex["1"])).sub(cls.low, s)
-        s = re.compile(r"(?i)\b{0}\b".format(regex["2"])).sub(cls.low, s)
-        s = re.compile(r"(?i)\b{0}\b".format(regex["3"])).sub(cls.low, s)
-        s = re.compile(r"(?i)\b{0}\b".format(regex["4"])).sub(cls.low, s)
-
-        #  4. Le début du titre demeure capitalisé.
-        s = re.compile(r"(?i)^{0}\b".format(regex["1"])).sub(cls.cap1, s)
-        s = re.compile(r"(?i)^{0}\b".format(regex["2"])).sub(cls.cap1, s)
-        s = re.compile(r"(?i)^{0}\b".format(regex["3"])).sub(cls.cap1, s)
-        s = re.compile(r"(?i)^{0}\b".format(regex["4"])).sub(cls.cap1, s)
-        s = re.compile(r"(?i)^({0})({1})\b".format(regex["5"], regex["1"])).sub(cls.cap2, s)
-        s = re.compile(r"(?i)^({0})({1})\b".format(regex["5"], regex["2"])).sub(cls.cap2, s)
-        s = re.compile(r"(?i)^({0})({1})\b".format(regex["5"], regex["3"])).sub(cls.cap2, s)
-        s = re.compile(r"(?i)^({0})({1})\b".format(regex["5"], regex["4"])).sub(cls.cap2, s)
-
-        #  5. Les acronymes demeurent capitalisés.
-        s = re.compile(r"(?i)\b(u\.?s\.?a\.?)").sub(cls.upp, s)
-        s = re.compile(r"(?i)\b(u\.?k\.?)").sub(cls.upp, s)
-        s = re.compile(r"(?i)\b(dj)\b").sub(cls.upp, s)
-
-        #  6. Autres mots demeurant capitalisés.
-        s = re.compile(r"(?i)\b({0})({1})\b".format(regex["5"], regex["3"])).sub(cls.cap2, s)
-
-        #  7. Les mots précédés d'une apostrophe demeurent en lettre minuscule.
-        s = re.compile(r"(?i)\b('[a-z])\b").sub(cls.low, s)
-
-        #  8. Autres formatages.
-        s = re.compile(r"(?i)\bfeaturing\b").sub("feat.", s)
-        s = re.compile(r"(?i)^([^\[]+)\[([^\]]+)\]$").sub(cls.parenth, s)
-
-        #  9. Retourner la chaîne de caractères convertie.
-        return s
-
-    @classmethod
     def fromfile(cls, fil, enc=shared.UTF8):
         regex, d = re.compile(DFTPATTERN, re.IGNORECASE), {}
         with open(fil, encoding=enc) as f:
@@ -216,24 +167,6 @@ class AudioCDTags(MutableMapping):
                 if match:
                     d[match.group(1).rstrip().lower()] = match.group(2)
         return cls(**SortedDict(d))
-
-    @staticmethod
-    def cap1(s):
-        """
-        Get a regular expression match object and capitalize the first capturing group.
-        :param s: match object.
-        :return: formatted capturing group(s).
-        """
-        return s.groups()[0].capitalize()
-
-    @staticmethod
-    def cap2(s):
-        """
-        Get a regular expression match object and concatenate its first two capturing groups. Second group is capitalized.
-        :param s: match object.
-        :return: formatted capturing group(s).
-        """
-        return "{0}{1}".format(s.groups()[0], s.groups()[1].capitalize())
 
     @staticmethod
     def checktags(item, dictionnary):
@@ -246,38 +179,11 @@ class AudioCDTags(MutableMapping):
                 yield structure
 
     @staticmethod
-    def low(s):
-        """
-        Get a regular expression match object and set the first capturing group to lowercase.
-        :param s: match object.
-        :return: formatted capturing group(s).
-        """
-        return s.groups()[0].lower()
-
-    @staticmethod
-    def parenth(s):
-        """
-        Get a regular expression match object and concatenate its first two capturing groups. Second group is parenthesised.
-        :param s: match object.
-        :return: formatted capturing group(s).
-        """
-        return "{d[0]}({d[1]})".format(d=s.groups())
-
-    @staticmethod
     def splitfield(fld, rex):
         m = rex.match(fld)
         if m:
             return m.group(1, 2)
         return ()
-
-    @staticmethod
-    def upp(s):
-        """
-        Get a regular expression match object and set the first capturing group to uppercase.
-        :param s: match object.
-        :return: formatted capturing group(s).
-        """
-        return s.groups()[0].upper()
 
 
 class CommonAudioCDTags(AudioCDTags):
@@ -374,7 +280,7 @@ class CommonAudioCDTags(AudioCDTags):
                     if track["overwrite"]:
                         self._otags["title"] = track["title"]
                         break
-        self._otags["title"] = self.case(self._otags["title"])
+        self._otags["title"] = shared.StringFormatter(self._otags["title"]).convert()
 
     def __validatetags(self, **kwargs):
         checktags = partial(self.checktags, dictionnary=self.__tags)
@@ -431,7 +337,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
 
         # ----- Update album.
         self.logger.debug("Update album.")
-        self._otags["album"] = self.case(self._otags["album"])
+        self._otags["album"] = shared.StringFormatter(self._otags["album"]).convert()
 
         # ----- Log new tags.
         self.logger.debug("Build tags.")
@@ -634,7 +540,8 @@ class RippedCD(ContextDecorator):
                 elif decor == "updtrack":
                     self._rippedcd = changetrack(self._rippedcd, offset)
                 elif decor == "sbootlegs":
-                    self._rippedcd = changealbum(changealbumartist(self._rippedcd, "Bruce Springsteen And The E Street Band"), "$bootlegtracktour - $dottedbootlegtrackyear - [$bootlegtrackcity]")
+                    self._rippedcd = changetrack(changealbum(changealbumartist(self._rippedcd, "Bruce Springsteen And The E Street Band"), "$bootlegtracktour - $dottedbootlegtrackyear - [$bootlegtrackcity]"),
+                                                 offset)
 
         # --> 4. Store input tags.
         shutil.copy(src=self._tags, dst=os.path.join(os.path.expandvars("%TEMP%"), "iT{0}.txt".format(self._rippedcd.tracknumber.zfill(2))))
@@ -668,13 +575,13 @@ class RippedCD(ContextDecorator):
                 obj = json.load(fr)
         obj.append(outtags)
         with open(tags, mode=shared.WRITE, encoding="UTF_8") as fw:
-            json.dump(obj, fw, indent=4, sort_keys=True)
+            json.dump(obj, fw, indent=4, sort_keys=True, ensure_ascii=False)
 
         # --> 4. Store tags in JSON.
         self.logger.debug("Store tags in per track JSON file.")
         tags = os.path.join(os.path.expandvars("%TEMP%"), "T{0}.json".format(self.new.tracknumber.zfill(2)))
         with open(tags, mode=shared.WRITE, encoding="UTF_8") as fw:
-            json.dump(outtags, fw, indent=4, sort_keys=True)
+            json.dump(outtags, fw, indent=4, sort_keys=True, ensure_ascii=False)
 
         # --> 5. Stop logging.
         self.logger.debug('END "%s".' % (os.path.basename(__file__),))
@@ -859,7 +766,7 @@ def rippinglog(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog
         else:
             break
     with open(fil, mode=shared.WRITE, encoding="UTF_8") as fw:
-        json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True)
+        json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
 def digitalaudiobase(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "digitalaudiodatabase.json")):
@@ -896,7 +803,7 @@ def digitalaudiobase(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "digi
         else:
             break
     with open(fil, mode=shared.WRITE, encoding="UTF_8") as fw:
-        json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True)
+        json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
 def getmetadata(audiofil):

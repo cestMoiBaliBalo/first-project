@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 import argparse
+import io
+import locale
+import os
+import re
+import subprocess
+import zipfile
 from collections import MutableMapping
 from contextlib import ContextDecorator
 from datetime import datetime
-import io
 from itertools import chain, repeat
-import locale
 from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
-import os
-import re
 from string import Template
-import subprocess
-import zipfile
 
-from dateutil.tz import gettz
-from dateutil.parser import parse
 import jinja2
 from PIL import Image, TiffImagePlugin
+from dateutil.parser import parse
+from dateutil.tz import gettz
 from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
@@ -25,12 +25,10 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xav.python.computing@gmail.com'
 __status__ = "Production"
 
-
 # ==========================
 # Define French environment.
 # ==========================
 locale.setlocale(locale.LC_ALL, "")
-
 
 # ==========
 # Constants.
@@ -402,6 +400,131 @@ class GlobalInterface(object):
     @answer.setter
     def answer(self, value):
         self._answer = value
+
+
+class StringFormatter(object):
+
+    # ----------
+    # Constants.
+    # ----------
+    _REGEXES = {"1": r"(and|but|for|nor|or|so|yet)",
+                "2": r"((?:al)?though|as|because|if|since|so that|such as|to|unless|until|when|where(?:as)?|while)",
+                "3": r"(above|after|against|along(?:side)?|around|at|before|behind|below|between|beside|close to|down|(?:far )?from|in(?: front of)?(?:side)?(?:to)?|near|off?|on(?:to)?|out("
+                     r"?:side)?|over|toward|"
+                     r"under(?:neath)?|up(?: to)?)",
+                "4": r"(a(?:n(?:d)?)?|as|by|than|the|till|upon)"}
+
+    # --------------------
+    # Regular expressions.
+    # --------------------
+    _REX1 = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
+    _REX2 = re.compile(r"^([a-z]+)\b", re.IGNORECASE)
+    _REX3 = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?)|mtv)\b", re.IGNORECASE)
+    _REX4 = re.compile(r"\b(')(d|ll|m|re|s|t|ve)\b", re.IGNORECASE)
+    _REX5 = re.compile(r"^([^\[]+)\[([^\]]+)\]$", re.IGNORECASE)
+    _REX6 = re.compile(r"\b({0}|{1}|{2}|{3})\b".format(_REGEXES["1"][1:-1], _REGEXES["2"][1:-1], _REGEXES["3"][1:-1], _REGEXES["4"][1:-1]), re.IGNORECASE)
+    _REX7 = re.compile(r"(\b-|\B\()([a-z]+)\b", re.IGNORECASE)
+
+    # -------
+    # Logger.
+    # -------
+    _logger = getLogger("{0}.StringFormatter".format(__name__))
+
+    # -----
+    def __init__(self, somestring=None):
+        self._inp_string = None
+        self._out_string = None
+        if somestring:
+            self.inp_string = somestring
+
+    # -----
+    def convert(self, somestring=None):
+        if somestring:
+            self.inp_string = somestring
+        self._out_string = self._inp_string
+        self._logger.debug(self._out_string)
+
+        # ----------------
+        # General process.
+        # ----------------
+        # 1. Title is formatted in lowercase letters.
+        # 2. Words are capitalized --> _REX1.
+        # 3. Exceptions remains formatted in lowercase letters --> _REX6.
+        # 4. Capital letter is mandatory for the first word of the title --> _REX2.
+        # 5. Words with a leading parenthesis or a leading dash remain capitalized --> _REX7.
+        self._out_string = self._REX7.sub(self.cap, self._REX2.sub(self.cap, self._REX6.sub(self.low, self._REX1.sub(self.cap, self._out_string.lower()))))
+
+        # -----------------
+        # Specific process.
+        # -----------------
+        # 1. Acronyms are formatted in lowercase letters --> _REX3.
+        # 2. Auxiliary contractions are formatted in lowercase letters --> _REX4.
+        # 3. Square brackets are replaced by parenthesis --> _REX5.
+        self._out_string = self._REX5.sub(self.parenth, self._REX4.sub(self.low, self._REX3.sub(self.upp, self._out_string)))
+
+        # ------------------
+        # Log output string.
+        # ------------------
+        self._logger.debug(self._out_string)
+
+        # ---------------------
+        # Return output string.
+        # ---------------------
+        return self._out_string
+
+    # -----
+    @property
+    def inp_string(self):
+        return self._inp_string
+
+    # -----
+    @inp_string.setter
+    def inp_string(self, arg):
+        self._inp_string = arg
+
+    # -----
+    @staticmethod
+    def cap(match):
+        """
+        Get a regular expression match object and capitalize the first capturing group.
+        :param match: match object.
+        :return: formatted capturing group(s).
+        """
+        items = list(match.groups())
+        items[-1] = items[-1].capitalize()
+        return "".join(items)
+
+    # -----
+    @staticmethod
+    def upp(match):
+        """
+        Get a regular expression match object and set the first capturing group with uppercases.
+        :param match: match object.
+        :return: formatted capturing group(s).
+        """
+        return match.groups()[0].upper()
+
+    # -----
+    @staticmethod
+    def low(match):
+        """
+        Get a regular expression match object and set the first capturing group with lowercases.
+        :param match: match object.
+        :return: formatted capturing group(s).
+        """
+        items = list(match.groups())
+        items[-1] = items[-1].lower()
+        return "".join(items)
+
+    # -----
+    @staticmethod
+    def parenth(match):
+        """
+        Get a regular expression match object and concatenate its first two capturing groups. Second group is parenthesised.
+        :param match: match object.
+        :return: formatted capturing group(s).
+        """
+        return "{d[0]}({d[1]})".format(d=match.groups())
 
 
 # ===========================
