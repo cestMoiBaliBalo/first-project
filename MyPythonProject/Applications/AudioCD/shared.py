@@ -288,7 +288,7 @@ class CommonAudioCDTags(AudioCDTags):
         self._otags["title"] = shared.StringFormatter(self._otags["title"]).convert()
 
     def __validatetags(self, **kwargs):
-        checktags = partial(self.checktags, dictionnary=self.__tags)
+        checktags = partial(self.checktags, container=self.__tags)
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("CommonAudioCDTags: %s.", item)
             if item not in kwargs:
@@ -352,7 +352,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
         self.logger.debug("\torigyear : %s".expandtabs(4) % (self._otags["origyear"],))
 
     def __validatetags(self, **kwargs):
-        checktags = partial(self.checktags, dictionnary=self.__tags)
+        checktags = partial(self.checktags, container=self.__tags)
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("DefaultAudioCDTags: %s.", item)
             if item not in kwargs:
@@ -417,7 +417,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
                                                                                     bootleg=self._otags["bootleg"])
 
     def __validatetags(self, **kwargs):
-        checktags = partial(self.checktags, dictionnary=self.__tags)
+        checktags = partial(self.checktags, container=self.__tags)
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("BootlegAudioCDTags: %s.", item)
             if item not in kwargs:
