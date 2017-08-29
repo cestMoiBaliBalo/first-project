@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
-import yaml
-import logging
-import sqlite3
 import datetime
+import logging
+import os
+import sqlite3
 from logging.config import dictConfig
-from Applications.shared import dateformat, TEMPLATE1, TEMPLATE2, TEMPLATE3, UTC, LOCAL, DATABASE
+
+import yaml
+
+from Applications.shared import DATABASE, LOCAL, TEMPLATE1, TEMPLATE2, TEMPLATE3, UTC, dateformat
 
 __author__ = 'Xavier ROSSET'
-
 
 # ========
 # Logging.
@@ -16,7 +17,6 @@ __author__ = 'Xavier ROSSET'
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Default.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
-
 
 # ===============
 # Main algorithm.

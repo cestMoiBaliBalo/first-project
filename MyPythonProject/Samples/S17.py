@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
 import csv
 import json
+import os
+
 from Applications.Database.DigitalAudioFiles.shared import insertfromfile
 
 __author__ = 'Xavier ROSSET'
-
 
 FIELDNAMES = ["index",
               "albumsort",
@@ -29,7 +29,6 @@ FIELDNAMES = ["index",
               "titlelanguage",
               "origyear"]
 TAGS = os.path.join(os.path.expandvars("%TEMP%"), "audiotags.json")
-
 
 with open(os.path.join(os.path.expandvars("%TEMP%"), "audiotags.txt"), encoding="UTF-8") as txtfile:
     reader = csv.DictReader(txtfile, fieldnames=FIELDNAMES, delimiter=";")

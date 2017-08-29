@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging.config
 import os
+
 import yaml
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
-__email__ = 'xav.python.computing@gmail.com'
+__email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Development"
 
 
 class Toto(object):
-
     def __init__(self, arg1, arg2, arg3, arg4):
         self._attr1 = None
         self._attr2 = None
@@ -66,7 +66,7 @@ class Toto(object):
             raise ValueError("{0} n\'est pas un argument admissible.".format(arg))
         logger.debug(self._attr1)
         logger.debug(arg)
-        self._attr4 = self._attr1/arg
+        self._attr4 = self._attr1 / arg
 
 
 if __name__ == "__main__":

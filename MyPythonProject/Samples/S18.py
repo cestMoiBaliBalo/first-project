@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 
-
 __author__ = 'Xavier ROSSET'
-
 
 # read = sqlite3.connect(r"G:\Computing\database_sav (103 - 104).db", detect_types=sqlite3.PARSE_DECLTYPES)
 write = sqlite3.connect(r"G:\Computing\database.db", detect_types=sqlite3.PARSE_DECLTYPES)

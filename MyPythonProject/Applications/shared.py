@@ -22,7 +22,7 @@ from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
-__email__ = 'xav.python.computing@gmail.com'
+__email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 # ==========================

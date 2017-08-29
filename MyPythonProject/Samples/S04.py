@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-from itertools import groupby
 import logging
+import os
+from itertools import groupby
 from logging.config import dictConfig
 from operator import itemgetter
-import os
+
 import yaml
 
 __author__ = 'Xavier ROSSET'
-
 
 # ========
 # Logging.
@@ -16,7 +16,6 @@ __author__ = 'Xavier ROSSET'
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Default.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
-
 
 # ===============
 # Main algorithm.

@@ -2,11 +2,11 @@
 import os
 import tempfile
 from contextlib import ExitStack
-from Applications.shared import WRITE, UTF16
+
 from Applications.AudioCD.shared import RippedCD
+from Applications.shared import UTF16, WRITE
 
 __author__ = 'Xavier ROSSET'
-
 
 tags = {
     "Album": "Abigail",
@@ -33,7 +33,6 @@ tags = {
     "Title": "A Mansion in Darkness"
 }
 
-
 with tempfile.TemporaryDirectory() as dir:
     itags = os.path.join(dir, "tags.txt")
     with open(itags, mode=WRITE, encoding=UTF16) as fo:
@@ -45,7 +44,6 @@ with tempfile.TemporaryDirectory() as dir:
             raise ValueError("Error!")
     except ValueError as err:
         print(err)
-
 
 with tempfile.TemporaryDirectory() as dir:
     itags = os.path.join(dir, "tags.txt")
@@ -61,4 +59,3 @@ with tempfile.TemporaryDirectory() as dir:
         with stack:
             print("toto")
             raise ValueError("Error!")
-

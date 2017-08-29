@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
+import xml.etree.ElementTree as ET
 from fnmatch import fnmatch
 from itertools import groupby
 from operator import itemgetter
-import xml.etree.ElementTree as ET
 
 __author__ = 'Xavier ROSSET'
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from contextlib import contextmanager, ContextDecorator, ExitStack
 import os
+from contextlib import ContextDecorator, ExitStack, contextmanager
 
 __author__ = 'Xavier ROSSET'
 
@@ -41,7 +41,6 @@ def thirdfunction(p):
 # A utiliser également avec le mot clé "with".
 # Voir l'exemple 6.
 class FirstClass(object):
-
     def __enter__(self):
         print("Before")
         return self
@@ -51,7 +50,6 @@ class FirstClass(object):
 
 
 class FourthClass(object):
-
     def __enter__(self):
         print("Before")
         raise ValueError("Value error!")
@@ -64,7 +62,6 @@ class FourthClass(object):
 # A utiliser également avec le mot clé "with".
 # Mais peut être aussi utilisé comme décorateur de fonction.
 class SecondClass(ContextDecorator):
-
     def __enter__(self):
         print("Before")
         return self

@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-from Applications.shared import now, getdatefromseconds, WRITE, UTF8
-from Applications.parsers import  epochconverterparser
-from logging.config import dictConfig
-import logging
 import json
-import yaml
+import logging
 import os
+from logging.config import dictConfig
+
+import yaml
+
+from Applications.parsers import epochconverterparser
+from Applications.shared import UTF8, WRITE, getdatefromseconds, now
 
 __author__ = 'Xavier ROSSET'
-
 
 # ========
 # Logging.
@@ -17,12 +18,10 @@ with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encod
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Default.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
-
 # ================
 # Initializations.
 # ================
 arguments = epochconverterparser.parse_args()
-
 
 # ===============
 # Main algorithm.

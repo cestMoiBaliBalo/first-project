@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from Applications.shared import DATABASE
 import sqlite3
+
+from Applications.shared import DATABASE
 
 __author__ = 'Xavier ROSSET'
 
 
 class Encoder(object):
-
     def __init__(self, name, code, folder, information):
         self._name = name
         self._code = code
