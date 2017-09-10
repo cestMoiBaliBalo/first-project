@@ -2,20 +2,17 @@
 import json
 import logging.config
 import os
-import sqlite3
 import tempfile
 import unittest
 from collections import MutableSequence
 from datetime import datetime
 from functools import partial
 from operator import eq, gt, lt
-from shutil import copy
 
 import yaml
 
-from Applications import shared
-from Applications.AudioCD.shared import DefaultAudioCDTags, RippedCD, canfilebeprocessed, changealbum, changetrack, digitalaudiobase, rippinglog
-from Applications.Database.DigitalAudioFiles.shared import parser, updatealbum
+from .. import shared
+from ..AudioCD.shared import DefaultAudioCDTags, RippedCD, canfilebeprocessed, changealbum, changetrack, digitalaudiobase, rippinglog
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -1343,44 +1340,3 @@ class Test14DefaultCDTrack(unittest.TestCase):
 
     def test_04third(self):
         self.assertNotIn("totaltracks", self.otags)
-
-
-@unittest.skip
-class TestUpdateTables(unittest.TestCase):
-    def setUp(self):
-        self.database = shared.DATABASE
-        self.newalbum = "the album"
-        self.newgenre = "the genre"
-        self.row = "47"
-
-    def test_01first(self):
-        with tempfile.TemporaryDirectory() as directory:
-            dst = os.path.join(directory, os.path.basename(self.database))
-            copy(src=self.database, dst=dst)
-            arguments = parser.parse_args(["albums", self.row, "--album", self.newalbum])
-            self.assertTrue(updatealbum(*arguments.uid, db=dst, **arguments.args))
-            conn = sqlite3.connect(dst)
-            conn.row_factory = sqlite3.Row
-            try:
-                for row in conn.execute("SELECT album from albums WHERE rowid=?", (self.row,)):
-                    self.assertEqual(row["album"], self.newalbum)
-            except AssertionError:
-                raise
-            finally:
-                conn.close()
-
-    def test_02second(self):
-        with tempfile.TemporaryDirectory() as directory:
-            dst = os.path.join(directory, os.path.basename(self.database))
-            copy(src=self.database, dst=dst)
-            arguments = parser.parse_args(["albums", self.row, "--genre", self.newgenre])
-            self.assertTrue(updatealbum(*arguments.uid, db=dst, **arguments.args))
-            conn = sqlite3.connect(dst)
-            conn.row_factory = sqlite3.Row
-            try:
-                for row in conn.execute("SELECT genre from albums WHERE rowid=?", (self.row,)):
-                    self.assertEqual(row["genre"], self.newgenre)
-            except AssertionError:
-                raise
-            finally:
-                conn.close()

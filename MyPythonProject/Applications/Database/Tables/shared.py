@@ -32,7 +32,7 @@ def select(table, db=DATABASE):
 def selectfromuid(uid, table, db=DATABASE):
 
     # Log arguments.
-    logger = logging.getLogger("{0}.selectfromuid".format(__name__))
+    logger = logging.getLogger("{0}.getalbumid".format(__name__))
     logger.debug("Database: {0}.".format(db))
     logger.debug("Table   : {0}.".format(table))
     logger.debug("ID      : {0:>3d}.".format(uid))
@@ -96,7 +96,7 @@ def deletefromuid(*uid, table, db=DATABASE):
     with conn:
         conn.executemany("DELETE FROM {0} WHERE id=?".format(table), [(i,) for i in uid])
         status = conn.total_changes
-        logger = logging.getLogger("{0}.deletefromuid".format(__name__))
+        logger = logging.getLogger("{0}.deletelog".format(__name__))
         logger.debug("Database: {0}.".format(db))
         logger.debug("Table   : {0}.".format(table))
         logger.debug("{0:>3d} records removed.".format(status))

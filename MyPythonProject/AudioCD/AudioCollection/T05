@@ -1,0 +1,95 @@
+{% extends "Main" %}
+
+
+{% block content1 %}
+    {{- menu -}}
+{% endblock %}
+
+
+{% block content2 %}
+
+    {%- if content %}
+
+        {%- set option1 = '<option value="artists"' %}
+        {% if content["view"] == "artists" %}
+            {% set option1 = option1 ~ ' selected' %}
+        {% endif %}
+        {% set option1 = option1 ~ '>Artists</option>' %}
+
+        {%- set option2 = '<option value="months"' %}
+        {% if content["view"] == "months" %}
+            {% set option2 = option2 ~ ' selected' %}
+        {% endif %}
+        {% set option2 = option2 ~ '>Months</option>' %}
+
+        {%- set option3 = '<option value="default"' %}
+        {% if content["view"] == "default" %}
+            {% set option3 = option3 ~ ' selected' %}
+        {% endif %}
+        {% set option3 = option3 ~ '>Default</option>' %}
+
+        <!-- Digital audio collection -->
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>DIGITAL AUDIO COLLECTION</h2>
+                </div>
+                <div id="div2">
+                    <div>
+                        <form id="form" method="get" action="index">
+                             <select id="view" name="view">
+                                {{ option3 }}
+                                {{ option1 }}
+                                {{ option2 }}
+                            </select>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% if content["view"] == "default" %}
+
+            {%- for row, albumid in content["detail"] %}
+            <div class="cover">
+                <div class="innercover">
+                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ albumid[-12:]|getcover(albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                    <div class="album">{{ row.album|e }}</div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {%- else -%}
+
+            {% for key, group in content["detail"] %}
+            <h3>{{ key|e }}</h3>
+                {% for row, albumid in group %}
+                    <div class="cover">
+                        <div class="innercover">
+                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ albumid[-12:]|getcover(albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                            <div class="album">{{ row.album|e }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {%- endif %}
+
+        </div>
+        {% for script in content["scripts"] %}
+        <script type="text/javascript" src="{{ script }}"></script>
+        {% endfor %}
+
+    {% endif -%}
+
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
+{% endblock %}

@@ -1,12 +1,12 @@
 # -*- coding: ISO-8859-1 -*-
-from collections import MutableSequence, namedtuple
-from datetime import datetime
-from itertools import groupby, chain
 import json
 import logging
-from operator import itemgetter
 import re
 import sqlite3
+from collections import MutableSequence, namedtuple
+from datetime import datetime
+from itertools import chain, groupby
+from operator import itemgetter
 
 from ...shared import DATABASE, LOCAL, TEMPLATE4, UPCREGEX, UTC, dateformat
 
@@ -155,12 +155,12 @@ def insertfromargs(db=DATABASE, **kwargs):
     return status
 
 
-def deletefromuid(*uid, db=DATABASE):
+def deletelog(*uid, db=DATABASE):
     status, conn = 0, sqlite3.connect(db)
     with conn:
         conn.executemany("DELETE FROM rippinglog WHERE id=?", [(item,) for item in uid])
         status = conn.total_changes
-        logger = logging.getLogger("{0}.deletefromuid".format(__name__))
+        logger = logging.getLogger("{0}.deletelog".format(__name__))
         logger.debug("{0} records removed.".format(status))
         if status:
             for item in uid:
@@ -168,7 +168,7 @@ def deletefromuid(*uid, db=DATABASE):
     return status
 
 
-def select(db=DATABASE):
+def selectlogs(db=DATABASE):
     record = namedtuple("record", "rowid ripped artist year album upc genre application albumsort artistsort")
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute("SELECT * FROM rippinglog ORDER BY ripped, artistsort, albumsort"):
@@ -176,7 +176,7 @@ def select(db=DATABASE):
         yield record._make(row)
 
 
-def selectfromuid(*uid, db=DATABASE):
+def selectlog(*uid, db=DATABASE):
     record = namedtuple("record", "rowid ripped artist year album upc genre application albumsort artistsort")
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     curs = conn.cursor()
@@ -185,16 +185,16 @@ def selectfromuid(*uid, db=DATABASE):
         yield record._make(curs.fetchall()[0])
 
 
-def selectfrommonth(*month, db=DATABASE):
+def selectlogsfrommonth(*month, db=DATABASE):
     record = namedtuple("record", "rowid ripped artist year album upc genre application albumsort artistsort")
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute("SELECT * FROM rippinglog ORDER BY ripped DESC"):
-        logrecord(tuple(row), "selectfrommonth")
+        logrecord(tuple(row), "selectlogsfrommonth")
         if int(LOCAL.localize(tuple(row)[1]).strftime("%Y%m")) in month:
             yield record._make(row)
 
 
-def update(*uid, db=DATABASE, **kwargs):
+def updatelog(*uid, db=DATABASE, **kwargs):
     logger = logging.getLogger("{0}.update".format(__name__))
     status, query, args = 0, "", []
 

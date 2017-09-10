@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from ..parsers import zipfile, epochconverter, deleterippinglog, foldercontent, improvedfoldercontent
-from itertools import repeat
 import argparse
-import unittest
 import os
 import re
+import unittest
+from itertools import repeat
+
+from ..parsers import deleterippinglog, epochconverter, foldercontent, improvedfoldercontent, zipfile
 
 __author__ = 'Xavier ROSSET'
 
 
 class TestParser(unittest.TestCase):
-
     def setUp(self):
 
         # --> Constants.
@@ -60,7 +60,6 @@ class TestParser(unittest.TestCase):
 
 
 class TestSecondParser(unittest.TestCase):
-
     def setUp(self):
         self.documents = os.path.expandvars("%_MYDOCUMENTS%")
 
@@ -110,7 +109,6 @@ class TestSecondParser(unittest.TestCase):
 
 
 class TestThirdParser(unittest.TestCase):
-
     def test_01first(self):
         arguments = epochconverter.parse_args(["1480717470", "1480717479"])
         self.assertEqual(arguments.start, 1480717470)
@@ -137,7 +135,6 @@ class TestThirdParser(unittest.TestCase):
 
 
 class TestFourthParser(unittest.TestCase):
-
     def test_01first(self):
         arguments = deleterippinglog.parse_args(["singled", "1", "100"])
         self.assertListEqual(arguments.uid, [1, 100])
@@ -161,7 +158,6 @@ class TestFourthParser(unittest.TestCase):
 
 @unittest.skip
 class TestFifthParser(unittest.TestCase):
-
     def test_01first(self):
         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
@@ -184,7 +180,6 @@ class TestFifthParser(unittest.TestCase):
 
 
 class TestSixthParser(unittest.TestCase):
-
     def test_01first(self):
         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
         self.assertListEqual(arguments.extensions, ["jpg"])

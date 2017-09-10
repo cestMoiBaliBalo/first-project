@@ -63,7 +63,7 @@ REM Use the right argument depending on the source drive.
 IF "%~1" EQU "17" (
     SET repository1=G:\Music\FLAC\
     SET repository2=
-    SET exceptions=
+    SET exceptions=%_COMPUTING%\Exceptions.xav
     SET filters=
     SET drive=%~2
     SHIFT
@@ -75,7 +75,7 @@ REM Use the right argument depending on the source drive.
 IF "%~1" EQU "18" (
     SET repository1=G:\Music\MP3\
     SET repository2=
-    SET exceptions=
+    SET exceptions=%_COMPUTING%\Exceptions.xav
     SET filters=*\*.mp3
     SET drive=%~2
     SHIFT

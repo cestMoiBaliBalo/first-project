@@ -1,0 +1,64 @@
+{% extends "Main" %}
+
+
+{% block content1 %}
+    {{- menu -}}
+{% endblock %}
+
+
+{% block content2 %}
+
+    {%- if content["content"] %}
+
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>PLAYED AUDIO CDs</h2>
+                </div>
+            </div>
+            <div id="wrapper">
+                <table id="table5" class="tablesorter">
+                    <thead>
+                        <tr>
+                            <th>ALBUMID</th>
+                            <th>ARTIST</th>
+                            <th>ALBUM</th>
+                            <th>GENRE</th>
+                            <th>COUNT</th>
+                            <th>PLAYED</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in content["content"] %}
+                        <tr>
+                            <td>{{ item.albumid[-12:] }}</td>
+                            <td id="{{ item.albumid[2:-13]|lower()|normalize2()|e }}">{{ item.artist }}</td>
+                            <td>{{ item.album }}</td>
+                            <td>{{ item.genre }}</td>
+                            <td>{{ item.count }}</td>
+                            <td id="T-{{ item.played|localize(utc)|timestamp() }}">{{ item.played|localize(utc)|readable() }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% for script in content["scripts"] %}
+        <script type="text/javascript" src="{{ script }}"></script>
+        {% endfor %}
+
+    {% endif -%}
+
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
+{% endblock %}

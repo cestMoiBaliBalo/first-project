@@ -1,0 +1,10 @@
+        <div id="dialogoverlay-2"></div>
+        <div id="dialogbox">
+            <div>
+                <div id="dialogboxhead">{{ box["head"] }}</div>
+                <div id="dialogboxbody">{{ box["body"] }}</div>
+                <div id="dialogboxfoot">
+                    <button id="button_ok">OK</button>
+                </div>
+            </div>
+        </div>

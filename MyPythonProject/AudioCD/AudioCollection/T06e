@@ -1,0 +1,100 @@
+{# ========== #}
+
+{%- set input1 = '<input required type="text" name="artistsort" id="artistsort" placeholder="Artistsort *" autofocus' %}
+{% if mode == "update" %}
+    {% set input1 = input1 ~ ' value="' ~ content.artistsort ~ '"' %}
+{% endif %}
+{% set input1 = input1 ~ '>' %}
+
+{%- set input2 = '<input required type="text" name="albumsort" id="albumsort" placeholder="Albumsort *"' %}
+{% if mode == "update" %}
+    {% set input2 = input2 ~ ' value="' ~ content.albumsort ~ '"' %}
+{% endif %}
+{% set input2 = input2 ~ '>' %}
+
+{%- set input3 = '<input required type="text" name="artist" id="artist" placeholder="Artist *"' %}
+{% if mode == "update" %}
+    {% set input3 = input3 ~ ' value="' ~ content.artist ~ '"' %}
+{% endif %}
+{% set input3 = input3 ~ '>' %}
+
+{%- set input4 = '<input required type="number" name="year" id="year" placeholder="Year *" min="1961"' %}
+{% if mode == "update" %}
+    {% set input4 = input4 ~ ' value="' ~ content.year ~ '"' %}
+{% endif %}
+{% set input4 = input4 ~ '>' %}
+
+{%- set input5 = '<input required type="text" name="album" id="album" placeholder="Album *"' %}
+{% if mode == "update" %}
+    {% set input5 = input5 ~ ' value="' ~ content.album ~ '"' %}
+{% endif %}
+{% set input5 = input5 ~ '>' %}
+
+{%- set input6 = '<input required type="text" name="upc" id="upc" placeholder="UPC *"' %}
+{% if mode == "update" %}
+    {% set input6 = input6 ~ ' value="' ~ content.upc ~ '"' %}
+{% endif %}
+{% set input6 = input6 ~ '>' %}
+
+{%- set input7 = '<input required type="number" name="ripped" id="ripped" placeholder="Ripping Unix epoch time*"' %}
+{% if mode == "update" %}
+    {% set input7 = input7 ~ ' value="' ~ content.ripped|localize(local)|timestamp|int ~ '"' %}
+{% endif %}
+{% if mode == "create" %}
+    {% set input7 = input7 ~ ' value="' ~ utcnow|localize(utc)|timestamp|int ~ '"' %}
+{% endif %}
+{% set input7 = input7 ~ '>' %}
+
+{%- set input8 = '<input required type="text" name="application" id="application" placeholder="Ripping application *"' %}
+{% if mode == "update" %}
+    {% set input8 = input8 ~ ' value="' ~ content.application ~ '"' %}
+{% endif %}
+{% if mode == "create" %}
+    {% set input8 = input8 ~ ' value="dBpoweramp 15.1"' %}
+{% endif %}
+{% set input8 = input8 ~ '>' %}
+
+{#- ========== #}
+
+        <div id="dialogoverlay-1"></div>
+        <div id="container5">
+            <div id="audiotags">
+                <form id="audiotags-form">
+                    {% if mode == "update" %}
+                    <fieldset id="set1">
+                        <select id="action">
+                            <option value="delete">Delete</option>
+                            <option value="update" selected>Update</option>
+                        </select>
+                    </fieldset>
+                    {% endif %}
+                    <fieldset id="set2">
+                        {{ input1 }}
+                        {{ input2 }}
+                        {{ input3 }}
+                        {{ input4 }}
+                        {{ input5 }}
+                        {{ input6 }}
+                        <select name="genre" id="genre">
+                        {% for normalized_genre, genre, isselected in genres %}
+                            {% set option = '<option value="' ~ normalized_genre ~ '"' %}
+                            {% if isselected %}
+                                {% set option = option ~ ' selected' %}
+                            {% endif %}
+                            {% set option = option ~ '>' ~ genre ~ '</option>' %}
+                            {{ option }}
+                        {% endfor %}
+                        </select>
+                        {{ input7 }}
+                        {{ input8 }}
+                    </fieldset>
+                    <div style="text-align: center;">
+                        <input type="submit" value="Update" class="button no-cursor" disabled>
+                        <input type="reset" value="Reset" class="button no-cursor" disabled>
+                        <input type="button" value="Cancel" id="cancel" class="button">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+{# ========== #}

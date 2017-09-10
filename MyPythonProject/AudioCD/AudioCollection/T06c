@@ -1,0 +1,14 @@
+{% if select %}
+<select name="{{ name }}">
+{%- endif %}
+    {% for value, text, isselected in values -%}
+        {% set option = '<option value="' ~ value ~ '"' %}
+        {% if isselected %}
+            {% set option = option ~ ' selected' %}
+        {% endif %}
+        {% set option = option ~ '>' ~ text ~ '</option>' %}
+        {{ option }}
+    {%- endfor %}
+{% if select %}
+</select>
+{% endif %}

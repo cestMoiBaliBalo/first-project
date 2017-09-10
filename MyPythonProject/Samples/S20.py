@@ -4,7 +4,7 @@ import os
 
 import yaml
 
-from Applications.Database.AudioCD.shared import select
+from Applications.Database.AudioCD.shared import selectlogs
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -15,5 +15,5 @@ with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encod
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("Applications.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
-for record in select():
+for record in selectlogs():
     logger.debug(record.rowid)

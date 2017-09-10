@@ -3,7 +3,7 @@
 Display ripped audio CDs list in XML file ("%TEMP%\rippedcd.xml").
 """
 from Applications.shared import dateformat, validdb, LOCAL, TEMPLATE4, UTF8
-from Applications.Database.AudioCD.shared import select
+from Applications.Database.AudioCD.shared import selectlogs
 from Applications.xml import rippinglog
 from logging.config import dictConfig
 import xml.etree.ElementTree as ET
@@ -49,7 +49,7 @@ reflist = sorted(sorted([(item[0],
                           item[7],
                           item[8],
                           item[9])
-                         for item in select(arguments.database)], key=itemgetter(3), reverse=True), key=itemgetter(2), reverse=True)
+                         for item in selectlogs(arguments.database)], key=itemgetter(3), reverse=True), key=itemgetter(2), reverse=True)
 
 #  2 --> Build XML file.
 ET.ElementTree(rippinglog(reflist)).write(os.path.join(os.path.expandvars("%TEMP%"), "rippedcd.xml"), encoding="UTF-8", xml_declaration=True)

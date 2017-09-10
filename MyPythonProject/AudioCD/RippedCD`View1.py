@@ -2,7 +2,7 @@
 """
 Log ripped audio CDs list.
 """
-from Applications.Database.AudioCD.shared import select
+from Applications.Database.AudioCD.shared import selectlogs
 from Applications.shared import validdb, UTF8
 from logging.config import dictConfig
 import argparse
@@ -37,5 +37,5 @@ arguments = parser.parse_args()
 # ===============
 # Main algorithm.
 # ===============
-for row in select(db=arguments.database):
+for row in selectlogs(db=arguments.database):
     logger.info(row)
