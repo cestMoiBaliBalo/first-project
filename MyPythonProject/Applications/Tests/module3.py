@@ -485,7 +485,6 @@ class Test08c(unittest.TestCase):
         self.assertTrue(self.arguments.donotpropagate)
         self.assertListEqual(self.arguments.rowid, [139])
         self.assertTrue(self.arguments.icount)
-        self.assertFalse(self.arguments.dcount)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
 
     def test_02second(self):
@@ -504,7 +503,7 @@ class Test08c(unittest.TestCase):
         3. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
 
-        # Extraire le nombre de lectures stocké la base de production.
+        # Extraire le nombre de lectures stocké dans la base de production.
         conn = sqlite3.connect(self.arguments.db, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         count = 0
@@ -547,7 +546,6 @@ class Test08d(unittest.TestCase):
         self.assertEqual(self.arguments.statement, "update")
         self.assertTrue(self.arguments.donotpropagate)
         self.assertListEqual(self.arguments.rowid, [139])
-        self.assertFalse(self.arguments.icount)
         self.assertTrue(self.arguments.dcount)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
 
@@ -567,7 +565,7 @@ class Test08d(unittest.TestCase):
         3. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
 
-        # Extraire le nombre de lectures stocké la base de production.
+        # Extraire le nombre de lectures stocké dans la base de production.
         conn = sqlite3.connect(self.arguments.db, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         count = 0
@@ -827,3 +825,129 @@ class Test12(unittest.TestCase):
 
             except AssertionError:
                 raise
+
+
+class Test13a(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "insert", "Kiss", "1.19890000.1", "Kiss", "1989", "The Album", "Hard Rock", "5017615832822", "--application", "dBpoweramp 15.1"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "insert")
+        self.assertEqual(self.arguments.artistsort, "Kiss")
+        self.assertEqual(self.arguments.albumsort, "1.19890000.1")
+        self.assertEqual(self.arguments.artist, "Kiss")
+        self.assertEqual(self.arguments.year, 1989)
+        self.assertEqual(self.arguments.album, "The Album")
+        self.assertEqual(self.arguments.genre, "Hard Rock")
+        self.assertEqual(self.arguments.upc, "5017615832822")
+        self.assertEqual(self.arguments.application, "dBpoweramp 15.1")
+
+    def test_02second(self):
+        """
+        2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            self.assertEqual(self.arguments.function(**kwargs), 1)
+
+    def test_03third(self):
+        """
+        3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            if self.arguments.function(**kwargs):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                conn.row_factory = sqlite3.Row
+                try:
+                    for row in conn.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application FROM rippinglog ORDER BY rowid DESC"):
+                        self.assertEqual(row["artistsort"], "Kiss")
+                        self.assertEqual(row["albumsort"], "1.19890000.1")
+                        self.assertEqual(row["artist"], "Kiss")
+                        self.assertEqual(row["year"], 1989)
+                        self.assertEqual(row["album"], "The Album")
+                        self.assertEqual(row["genre"], "Hard Rock")
+                        self.assertEqual(row["upc"], "5017615832822")
+                        self.assertEqual(row["application"], "dBpoweramp 15.1")
+                        break
+                except AssertionError:
+                    raise
+                finally:
+                    conn.close()
+
+
+class Test13b(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "insert", "Kiss", "1.19890000.1", "Kiss", "1989", "The Album", "Hard Rock", "5017615832822"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "insert")
+        self.assertEqual(self.arguments.artistsort, "Kiss")
+        self.assertEqual(self.arguments.albumsort, "1.19890000.1")
+        self.assertEqual(self.arguments.artist, "Kiss")
+        self.assertEqual(self.arguments.year, 1989)
+        self.assertEqual(self.arguments.album, "The Album")
+        self.assertEqual(self.arguments.genre, "Hard Rock")
+        self.assertEqual(self.arguments.upc, "5017615832822")
+        self.assertEqual(self.arguments.application, "dBpoweramp 15.1")
+
+    def test_02second(self):
+        """
+        2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            self.assertEqual(self.arguments.function(**kwargs), 1)
+
+    def test_03third(self):
+        """
+        3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            if self.arguments.function(**kwargs):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                conn.row_factory = sqlite3.Row
+                try:
+                    for row in conn.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application FROM rippinglog ORDER BY rowid DESC"):
+                        self.assertEqual(row["artistsort"], "Kiss")
+                        self.assertEqual(row["albumsort"], "1.19890000.1")
+                        self.assertEqual(row["artist"], "Kiss")
+                        self.assertEqual(row["year"], 1989)
+                        self.assertEqual(row["album"], "The Album")
+                        self.assertEqual(row["genre"], "Hard Rock")
+                        self.assertEqual(row["upc"], "5017615832822")
+                        self.assertEqual(row["application"], "dBpoweramp 15.1")
+                        break
+                except AssertionError:
+                    raise
+                finally:
+                    conn.close()

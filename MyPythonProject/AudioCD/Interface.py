@@ -32,7 +32,7 @@ from itertools import chain, groupby, repeat
 import jinja2
 import yaml
 
-from Applications.Database.AudioCD.shared import deletelog, selectlog, selectlogs, updatelog, validproductcode, validyear
+from Applications.Database.AudioCD.shared import deletelog, insertfromargs, selectlog, selectlogs, updatelog, validproductcode, validyear
 from Applications.Database.DigitalAudioFiles.shared import deletealbum, \
     deletealbumheader, \
     getalbumdetail, \
@@ -168,6 +168,33 @@ def albumsort(stg):
     raise argparse.ArgumentTypeError('"{0}" isn\'t a correct albumsort tag.'.format(stg))
 
 
+def insert_func(ns=None, **kwargs):
+    """
+    Run the appropriate `insert` function respective to the parsed table.
+
+    :param ns: Namespace object holding parsed arguments as attributes.
+    :param kwargs: Dictionary holding parsed arguments.
+    :return: Inserted records count.
+    """
+    pairs = dict(kwargs)
+    if ns:
+        pairs = {k: v for k, v in vars(ns).items()}
+    db = pairs.get("db")
+    table = pairs.get("table")
+    statement = pairs.get("statement")
+    if all([db, table, statement]):
+        del pairs["db"]
+        del pairs["table"]
+        del pairs["statement"]
+        if "function" in pairs:
+            del pairs["function"]
+        if "template" in pairs:
+            del pairs["template"]
+        if pairs:
+            return CONFIGURATION[table][statement](db=db, **pairs)
+    return DEFAULT.get(table, DEFAULT["default"])
+
+
 def select_func(ns=None, **kwargs):
     """
     Run the appropriate `select` function respective to the parsed table.
@@ -288,6 +315,7 @@ CONFIGURATION = {
                             True: deletelog
                         }
                 },
+            "insert": insertfromargs
         },
     "albums":
         {
@@ -333,8 +361,9 @@ DEFAULT = {
     "albums": [("", 0, 0, 0)]
 }
 MAPPING = {
+    "insert": "inserted",
     "delete": "deleted",
-    "update": "updated"
+    "update": "updated",
 }
 
 # ===============
@@ -356,6 +385,7 @@ delete_parent.add_argument("rowid", nargs="+", type=int, help="List of rows IDs 
 # -----
 update_parent = argparse.ArgumentParser(description="Shared parser for `update` subparsers.", add_help=False, argument_default=argparse.SUPPRESS)
 update_parent.set_defaults(function=update_func)
+update_parent.set_defaults(template=gettemplate)
 update_parent.set_defaults(donotpropagate=True)
 update_parent.add_argument("rowid", nargs="+", type=int, help="List of rows IDs to be updated. Mandatory.")
 update_parent.add_argument("--artist", help="Album artist. Optional.", metavar="The Artist")
@@ -401,7 +431,20 @@ parser_log_update.add_argument("--albumsort", type=albumsort, help="Album albums
 parser_log_update.add_argument("--upc", type=validproductcode, help="Album product code. Optional.")
 parser_log_update.add_argument("--application", help="Ripping application. Optional.")
 parser_log_update.add_argument("--ripped", type=validunixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
-parser_log_update.set_defaults(template=gettemplate)
+
+#  1.d. INSERT statement.
+parser_log_insert = subparser_log.add_parser("insert", parents=[database], description="Subparser for inserting record(s) into `rippinglog` table.", argument_default=argparse.SUPPRESS)
+parser_log_insert.set_defaults(function=insert_func)
+parser_log_insert.set_defaults(template=gettemplate)
+parser_log_insert.add_argument("artistsort", help="Album artistsort. Mandatory.", metavar="Artist, The")
+parser_log_insert.add_argument("albumsort", type=albumsort, help="Album albumsort. Mandatory.", metavar="1.20170000.1")
+parser_log_insert.add_argument("artist", help="Album artist. Mandatory.", metavar="The Artist")
+parser_log_insert.add_argument("year", type=validyear, help="Album year. Mandatory. Only integers are allowed.")
+parser_log_insert.add_argument("album", help="Album. Mandatory.", metavar="The Album")
+parser_log_insert.add_argument("genre", choices=["Rock", "Hard Rock", "Progressive Rock", "Alternative Rock", "Heavy Metal", "Black Metal", "French Pop"], help="Album genre. Mandatory.")
+parser_log_insert.add_argument("upc", type=validproductcode, help="Album product code. Mandatory.")
+parser_log_insert.add_argument("--application", nargs="?", default="dBpoweramp 15.1", help="Ripping application. Optional.")
+parser_log_insert.add_argument("--ripped", type=validunixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
 
 #     ----------------------------
 #  2. Parser for `albums` command.
@@ -427,9 +470,8 @@ parser_alb_update.add_argument("--incollection", type=boolean, help="Album in pe
 parser_alb_update.add_argument("--upc", type=validproductcode, help="Album product code. Optional.")
 parser_alb_update.add_argument("--played", type=validunixepochtime, help="Album last played UTC Unix epoch time. Optional.", metavar="1500296048")
 alb_update_group.add_argument("--count", type=int, help="Album played counter. Optional.")
-alb_update_group.add_argument("--icount", nargs="?", default=False, const=True, help="Increment played counter by 1. Optional.")
-alb_update_group.add_argument("--dcount", nargs="?", default=False, const=True, help="Decrement played counter by 1. Optional.")
-parser_alb_update.set_defaults(template=gettemplate)
+alb_update_group.add_argument("--icount", action="store_true", help="Increment played counter by 1. Optional.")
+alb_update_group.add_argument("--dcount", action="store_true", help="Decrement played counter by 1. Optional.")
 
 # ===============
 # Main algorithm.

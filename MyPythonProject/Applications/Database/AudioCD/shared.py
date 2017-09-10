@@ -139,7 +139,7 @@ def insertfromfile(fil, db=DATABASE):
 
 def insertfromargs(db=DATABASE, **kwargs):
     temp_dict = {key: value for key, value in kwargs.items() if key in ["artist", "year", "album", "upc", "genre", "application", "albumsort", "artistsort"]}
-    temp_dict.update(ripped=datetime.fromtimestamp(int(kwargs.get("ripped", UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp()))))
+    temp_dict.update(**{"ripped": datetime.fromtimestamp(int(kwargs.get("ripped", UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())))})
     fields = ", ".join(sorted(temp_dict.keys()))
     placeholders = ", ".join(["?"] * len(temp_dict))
     values = ([item[1] for item in sorted(temp_dict.items(), key=itemgetter(0))],)

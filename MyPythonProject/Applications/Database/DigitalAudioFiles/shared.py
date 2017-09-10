@@ -538,12 +538,14 @@ def updatealbum(uid, db=DATABASE, **kwargs):
         else:
             del kwargs["played"]
 
+    # 7. Update played count if increment by 1.
     icount, count = kwargs.get("icount", False), 0
     if icount:
         for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (uid,)):
             count = row["count"] + 1
         kwargs["count"] = count
 
+    # 8. Update played count if decrement by 1.
     dcount, count = kwargs.get("dcount", False), 0
     if dcount:
         for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (uid,)):
@@ -552,7 +554,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
             count = 0
         kwargs["count"] = count
 
-    # 7. Set query.
+    # 9. Set query.
     if "icount" in kwargs:
         del kwargs["icount"]
     if "dcount" in kwargs:
@@ -565,8 +567,8 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     logger.debug(query)
     logger.debug(args)
 
-    # 8. Update `albums` table.
-    #    Update may be propagated to both `discs` and `tracks` tables.
+    # 10. Update `albums` table.
+    #     Update may be propagated to both `discs` and `tracks` tables.
     try:
         with conn:
 
@@ -587,7 +589,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
         logger.exception(err)
         return "", 0, 0, 0
 
-    # 9. Return total changes.
+    # 11. Return total changes.
     logger.info("ALBUMS table: {0:>3d} record(s) updated.".format(acount))
     logger.info("DISCS table: {0:>3d} record(s) updated.".format(dsccount))
     logger.info("TRACKS table: {0:>3d} record(s) updated.".format(tcount))
