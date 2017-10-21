@@ -1,0 +1,23 @@
+{% for artistsort, artist, albums in content %}
+
+
+
+    # ========== {{ artistsort }} #
+    {% for albumsort, discs in albums %}
+
+
+
+    {{ albumsort }} - {{ discs|getalbum }}
+    {% for discid, tracks in discs %}
+
+    {% if loop.length > 1 %}
+    -----
+    CD {{ discid }}.
+    -----
+    {% endif %}
+    {% for trackid, detail in tracks %}
+    {{ trackid }}. {{ detail[0][5] }}
+    {% endfor %}
+    {% endfor %}
+    {% endfor %}
+{% endfor %}

@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
+import datetime
 import logging.config
 import os
 import sqlite3
 import tempfile
 import unittest
+from itertools import accumulate
 from shutil import copy
 
 import yaml
 
 import AudioCD.Interface as CD
+import AudioCD.RippedTracks as RT
 from .. import shared
-from ..Database.DigitalAudioFiles.shared import deletealbum, updatealbum
-from ..shared import DATABASE, LOCAL, UTC, dateformat
+from ..Database.AudioCD.shared import insertfromfile as insertlogfromfile
+from ..Database.DigitalAudioFiles.shared import deletealbum, insertfromfile as insertalbumfromfile, updatealbum
+from ..shared import DATABASE, LOCAL, TESTDATABASE, UTC, dateformat, getrippingapplication
+from ..xml import digitalalbums_in, rippinglog_in
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -34,7 +39,7 @@ class Test01(unittest.TestCase):
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args("rippinglog select 30".split())
+        self.arguments = CD.parser.parse_args("rippinglog select 28".split())
 
     def test_01first(self):
         """
@@ -42,16 +47,18 @@ class Test01(unittest.TestCase):
         """
         self.assertEqual(self.arguments.table, "rippinglog")
         self.assertEqual(self.arguments.statement, "select")
-        self.assertListEqual(self.arguments.rowid, [30])
+        self.assertListEqual(self.arguments.rowid, [28])
         self.assertTrue(self.arguments.donotpropagate)
         self.assertEqual(self.arguments.template(self.arguments), "T01")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
         2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
         for row in self.arguments.function(ns=self.arguments):
-            self.assertEqual(row.rowid, 30)
+            self.assertEqual(row.rowid, 28)
             self.assertEqual(row.artistsort, "Black Sabbath")
             self.assertEqual(row.albumsort, "1.19760000.1")
             self.assertEqual(row.artist, "Black Sabbath")
@@ -61,13 +68,13 @@ class Test01(unittest.TestCase):
             self.assertEqual(row.upc, "5017615832822")
 
 
-class Test02(unittest.TestCase):
+class Test02a(unittest.TestCase):
     """
     Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args("rippinglog select 30 31 32 33".split())
+        self.arguments = CD.parser.parse_args("rippinglog select 28 31 32 33".split())
 
     def test_01first(self):
         """
@@ -75,9 +82,106 @@ class Test02(unittest.TestCase):
         """
         self.assertEqual(self.arguments.table, "rippinglog")
         self.assertEqual(self.arguments.statement, "select")
-        self.assertListEqual(self.arguments.rowid, [30, 31, 32, 33])
+        self.assertListEqual(self.arguments.rowid, [28, 31, 32, 33])
         self.assertTrue(self.arguments.donotpropagate)
         self.assertEqual(self.arguments.template(self.arguments), "T01")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        1. Tester la restitution des enregistrements.
+        """
+        row = list(self.arguments.function(**{key: val for key, val in vars(self.arguments).items() if val}))[0]
+        self.assertEqual(row.artistsort, "Black Sabbath")
+        self.assertEqual(row.albumsort, "1.19760000.1")
+
+
+class Test02b(unittest.TestCase):
+    """
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args("rippinglog select 28 31 32 33 --orderby artistsort albumsort".split())
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "select")
+        self.assertListEqual(self.arguments.rowid, [28, 31, 32, 33])
+        self.assertTrue(self.arguments.donotpropagate)
+        self.assertEqual(self.arguments.template(self.arguments), "T01")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        1. Tester la restitution des enregistrements.
+        """
+        row = list(self.arguments.function(**{key: val for key, val in vars(self.arguments).items() if val}))[0]
+        self.assertEqual(row.artistsort, "Black Sabbath")
+        self.assertEqual(row.albumsort, "1.19710000.1")
+
+
+class Test02c(unittest.TestCase):
+    """
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "select", "28", "31", "32", "33", "--orderby", "artistsort DESC", "albumsort"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "select")
+        self.assertListEqual(self.arguments.rowid, [28, 31, 32, 33])
+        self.assertTrue(self.arguments.donotpropagate)
+        self.assertEqual(self.arguments.template(self.arguments), "T01")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        1. Tester la restitution des enregistrements.
+        """
+        row = list(self.arguments.function(**{key: val for key, val in vars(self.arguments).items() if val}))[0]
+        self.assertEqual(row.artistsort, "Kiss")
+        self.assertEqual(row.albumsort, "1.19760000.2")
+
+
+class Test02d(unittest.TestCase):
+    """
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "select", "28", "31", "32", "33", "--orderby", "artistsort DESC", "albumsort DESC"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "select")
+        self.assertListEqual(self.arguments.rowid, [28, 31, 32, 33])
+        self.assertTrue(self.arguments.donotpropagate)
+        self.assertEqual(self.arguments.template(self.arguments), "T01")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        1. Tester la restitution des enregistrements.
+        """
+        row = list(self.arguments.function(**{key: val for key, val in vars(self.arguments).items() if val}))[0]
+        self.assertEqual(row.artistsort, "Kiss")
+        self.assertEqual(row.albumsort, "1.19760000.2")
 
 
 class Test03(unittest.TestCase):
@@ -86,7 +190,7 @@ class Test03(unittest.TestCase):
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args("rippinglog update 30 --genre Rock --upc 9999999999999 --ripped 1504122358".split())
+        self.arguments = CD.parser.parse_args("rippinglog update 28 --genre Rock --upc 9999999999999 --ripped 1504122358".split())
 
     def test_01first(self):
         """
@@ -95,11 +199,13 @@ class Test03(unittest.TestCase):
         self.assertEqual(self.arguments.table, "rippinglog")
         self.assertEqual(self.arguments.statement, "update")
         self.assertTrue(self.arguments.donotpropagate)
-        self.assertListEqual(self.arguments.rowid, [30])
+        self.assertListEqual(self.arguments.rowid, [28])
         self.assertEqual(self.arguments.genre, "Rock")
         self.assertEqual(self.arguments.upc, "9999999999999")
         self.assertEqual(self.arguments.ripped, 1504122358)
         self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -123,14 +229,14 @@ class Test03(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT genre, upc, ripped FROM rippinglog WHERE rowid=30"):
-                        self.assertEqual(row["genre"], self.arguments.genre)
-                        self.assertEqual(row["upc"], self.arguments.upc)
-                        self.assertEqual(shared.dateformat(shared.LOCAL.localize(row["ripped"]), shared.TEMPLATE4), "Mercredi 30 Août 2017 21:45:58 (CEST+0200)")
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT genre, upc, ripped FROM rippinglog WHERE rowid=?", (28,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], self.arguments.genre)
+                        self.assertEqual(row[1], self.arguments.upc)
+                        self.assertEqual(shared.dateformat(shared.LOCAL.localize(row[2]), shared.TEMPLATE4), "Mercredi 30 Août 2017 21:45:58 (CEST+0200)")
                 finally:
                     conn.close()
 
@@ -141,7 +247,7 @@ class Test04(unittest.TestCase):
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args("rippinglog delete 30".split())
+        self.arguments = CD.parser.parse_args("rippinglog delete 28".split())
 
     def test_01first(self):
         """
@@ -149,9 +255,11 @@ class Test04(unittest.TestCase):
         """
         self.assertEqual(self.arguments.table, "rippinglog")
         self.assertEqual(self.arguments.statement, "delete")
-        self.assertListEqual(self.arguments.rowid, [30])
+        self.assertListEqual(self.arguments.rowid, [28])
         self.assertTrue(self.arguments.donotpropagate)
         self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -178,7 +286,7 @@ class Test04(unittest.TestCase):
                 conn = sqlite3.connect(dst)
                 conn.row_factory = sqlite3.Row
                 with conn:
-                    for row in conn.execute("SELECT count(*) AS count FROM rippinglog WHERE rowid=30"):
+                    for row in conn.execute("SELECT count(*) AS count FROM rippinglog WHERE rowid=?", (28,)):
                         log = row["count"]
                 conn.close()
                 self.assertEqual(log, 0)
@@ -202,6 +310,8 @@ class Test05a(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [30])
         self.assertTrue(self.arguments.donotpropagate)
         self.assertEqual(self.arguments.template(self.arguments), "T02")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -239,6 +349,8 @@ class Test05b(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [30])
         self.assertFalse(self.arguments.donotpropagate)
         self.assertEqual(self.arguments.template(self.arguments), "T04")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     @unittest.skip
     def test_02second(self):
@@ -277,6 +389,8 @@ class Test06(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [30])
         self.assertTrue(self.arguments.donotpropagate)
         self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -313,6 +427,8 @@ class Test07(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [30])
         self.assertFalse(self.arguments.donotpropagate)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -375,6 +491,8 @@ class Test08a(unittest.TestCase):
         self.assertFalse(self.arguments.incollection.bool)
         self.assertEqual(self.arguments.upc, "9999999999999")
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -398,17 +516,17 @@ class Test08a(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT album, genre, live, bootleg, incollection, upc FROM albums WHERE rowid=?", (30,)):
-                        self.assertEqual(row["album"], self.arguments.album)
-                        self.assertEqual(row["genre"], self.arguments.genre)
-                        self.assertTrue(row["live"])
-                        self.assertTrue(row["bootleg"])
-                        self.assertFalse(row["incollection"])
-                        self.assertEqual(row["upc"], self.arguments.upc)
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT album, genre, live, bootleg, incollection, upc FROM albums WHERE rowid=?", (30,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], self.arguments.album)
+                        self.assertEqual(row[1], self.arguments.genre)
+                        self.assertTrue(row[2])
+                        self.assertTrue(row[3])
+                        self.assertFalse(row[4])
+                        self.assertEqual(row[5], self.arguments.upc)
                 finally:
                     conn.close()
 
@@ -433,6 +551,8 @@ class Test08b(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [30])
         self.assertEqual(self.arguments.count, 100)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -456,14 +576,14 @@ class Test08b(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT count, played FROM albums WHERE rowid=?", (30,)):
-                        self.assertEqual(row["count"], self.arguments.count)
-                        self.assertEqual(int(UTC.localize(row["played"]).timestamp()), self.arguments.played)
-                        self.assertEqual(dateformat(UTC.localize(row["played"]).astimezone(LOCAL), "$d/$m/$Y $H:$M:$S"), "10/09/2017 12:48:06")
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT count, played FROM albums WHERE rowid=?", (30,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], self.arguments.count)
+                        self.assertEqual(int(UTC.localize(row[1]).timestamp()), self.arguments.played)
+                        self.assertEqual(dateformat(UTC.localize(row[1]).astimezone(LOCAL), "$d/$m/$Y $H:$M:$S"), "10/09/2017 12:48:06")
                 finally:
                     conn.close()
 
@@ -486,6 +606,8 @@ class Test08c(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [139])
         self.assertTrue(self.arguments.icount)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -520,12 +642,12 @@ class Test08c(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (139,)):
-                        self.assertEqual(row["count"], count)
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT count FROM albums WHERE rowid=?", (139,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], count)
                 finally:
                     conn.close()
 
@@ -548,6 +670,8 @@ class Test08d(unittest.TestCase):
         self.assertListEqual(self.arguments.rowid, [139])
         self.assertTrue(self.arguments.dcount)
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -584,19 +708,19 @@ class Test08d(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (139,)):
-                        self.assertEqual(row["count"], count)
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT count FROM albums WHERE rowid=?", (139,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], count)
                 finally:
                     conn.close()
 
 
 class Test09(unittest.TestCase):
     """
-    Tester la fonction `Database.DigitalAudioFiles.shared.updatealbum.py`
+    Tester la fonction `Database.DigitalAudioFiles.shared.updatealbum`
     """
 
     def test_01first(self):
@@ -664,7 +788,7 @@ class Test09(unittest.TestCase):
 
 class Test10(unittest.TestCase):
     """
-    Tester la fonction `Database.DigitalAudioFiles.shared.delete.py`
+    Tester la fonction `Database.DigitalAudioFiles.shared.delete`
     Row unique ID is used as primary key.
     """
 
@@ -707,7 +831,7 @@ class Test10(unittest.TestCase):
 
 class Test11(unittest.TestCase):
     """
-    Tester la fonction `Database.DigitalAudioFiles.shared.delete.py`
+    Tester la fonction `Database.DigitalAudioFiles.shared.delete`
     Album unique ID is used as primary key.
     """
 
@@ -775,6 +899,8 @@ class Test12(unittest.TestCase):
         self.assertFalse(self.arguments.incollection.bool)
         self.assertEqual(self.arguments.upc, "9999999999999")
         self.assertEqual(self.arguments.template(self.arguments), "T03")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -798,42 +924,59 @@ class Test12(unittest.TestCase):
             kwargs["db"] = database
             self.arguments.function(**kwargs)
             conn = sqlite3.connect(database, detect_types=sqlite3.PARSE_DECLTYPES)
-            conn.row_factory = sqlite3.Row
+            curs = conn.cursor()
             try:
-                with conn:
 
-                    # ALBUMS table.
-                    for row in conn.execute("SELECT albumid, album, genre, live, bootleg, incollection, upc FROM albums WHERE rowid=?", (30,)):
-                        self.assertEqual(row["albumid"], self.arguments.albumid)
-                        self.assertEqual(row["album"], self.arguments.album)
-                        self.assertEqual(row["genre"], self.arguments.genre)
-                        self.assertTrue(row["live"])
-                        self.assertTrue(row["bootleg"])
-                        self.assertFalse(row["incollection"])
-                        self.assertEqual(row["upc"], self.arguments.upc)
+                # ALBUMS table.
+                curs.execute("SELECT albumid, album, genre, live, bootleg, incollection, upc FROM albums WHERE rowid=?", (30,))
+                row = curs.fetchone()
+                if row:
+                    self.assertEqual(row[0], self.arguments.albumid)
+                    self.assertEqual(row[1], self.arguments.album)
+                    self.assertEqual(row[2], self.arguments.genre)
+                    self.assertTrue(row[3])
+                    self.assertTrue(row[4])
+                    self.assertFalse(row[5])
+                    self.assertEqual(row[6], self.arguments.upc)
 
-                    # DISCS table.
-                    for row in conn.execute("SELECT albumid FROM discs WHERE rowid=?", (34,)):
-                        self.assertEqual(row["albumid"], "I.Iron Maiden.1.19900000.9")
+                # DISCS table.
+                curs.execute("SELECT albumid FROM discs WHERE rowid=?", (34,))
+                row = curs.fetchone()
+                if row:
+                    self.assertEqual(row[0], "I.Iron Maiden.1.19900000.9")
 
-                    # TRACKS table.
-                    for i in [384, 385, 386, 387]:
-                        for row in conn.execute("SELECT albumid FROM tracks WHERE rowid=?", (i,)):
-                            self.assertEqual(row["albumid"], "I.Iron Maiden.1.19900000.9")
+                # TRACKS table.
+                for i in [384, 385, 386, 387]:
+                    curs.execute("SELECT albumid FROM tracks WHERE rowid=?", (i,))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "I.Iron Maiden.1.19900000.9")
 
+            finally:
                 conn.close()
-
-            except AssertionError:
-                raise
 
 
 class Test13a(unittest.TestCase):
     """
     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Les données proviennent de la ligne de commande.
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args(["rippinglog", "insert", "Kiss", "1.19890000.1", "Kiss", "1989", "The Album", "Hard Rock", "5017615832822", "--application", "dBpoweramp 15.1"])
+        self.arguments = CD.parser.parse_args(["rippinglog",
+                                               "insert",
+                                               "Kiss",
+                                               "1.19890000.1",
+                                               "Kiss",
+                                               "1989",
+                                               "1989",
+                                               "The Album",
+                                               "1",
+                                               "8",
+                                               "Hard Rock",
+                                               "5017615832822",
+                                               "Mercury Records",
+                                               "--application", "dBpoweramp 15.1"])
 
     def test_01first(self):
         """
@@ -844,11 +987,16 @@ class Test13a(unittest.TestCase):
         self.assertEqual(self.arguments.artistsort, "Kiss")
         self.assertEqual(self.arguments.albumsort, "1.19890000.1")
         self.assertEqual(self.arguments.artist, "Kiss")
-        self.assertEqual(self.arguments.year, 1989)
+        self.assertEqual(self.arguments.origyear, "1989")
+        self.assertEqual(self.arguments.year, "1989")
         self.assertEqual(self.arguments.album, "The Album")
+        self.assertEqual(self.arguments.disc, 1)
+        self.assertEqual(self.arguments.tracks, 8)
         self.assertEqual(self.arguments.genre, "Hard Rock")
         self.assertEqual(self.arguments.upc, "5017615832822")
         self.assertEqual(self.arguments.application, "dBpoweramp 15.1")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -872,20 +1020,21 @@ class Test13a(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application FROM rippinglog ORDER BY rowid DESC"):
-                        self.assertEqual(row["artistsort"], "Kiss")
-                        self.assertEqual(row["albumsort"], "1.19890000.1")
-                        self.assertEqual(row["artist"], "Kiss")
-                        self.assertEqual(row["year"], 1989)
-                        self.assertEqual(row["album"], "The Album")
-                        self.assertEqual(row["genre"], "Hard Rock")
-                        self.assertEqual(row["upc"], "5017615832822")
-                        self.assertEqual(row["application"], "dBpoweramp 15.1")
-                        break
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application, origyear, label FROM rippinglog ORDER BY rowid DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Kiss")
+                        self.assertEqual(row[1], "1.19890000.1")
+                        self.assertEqual(row[2], "Kiss")
+                        self.assertEqual(row[3], 1989)
+                        self.assertEqual(row[4], "The Album")
+                        self.assertEqual(row[5], "Hard Rock")
+                        self.assertEqual(row[6], "5017615832822")
+                        self.assertEqual(row[7], "dBpoweramp 15.1")
+                        self.assertEqual(row[8], 1989)
+                        self.assertEqual(row[9], "Mercury Records")
                 finally:
                     conn.close()
 
@@ -893,10 +1042,23 @@ class Test13a(unittest.TestCase):
 class Test13b(unittest.TestCase):
     """
     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Les données proviennent de la ligne de commande.
     """
 
     def setUp(self):
-        self.arguments = CD.parser.parse_args(["rippinglog", "insert", "Kiss", "1.19890000.1", "Kiss", "1989", "The Album", "Hard Rock", "5017615832822"])
+        self.arguments = CD.parser.parse_args(["rippinglog",
+                                               "insert",
+                                               "Kiss",
+                                               "1.19890000.1",
+                                               "Kiss",
+                                               "1989",
+                                               "1989",
+                                               "The Album",
+                                               "1",
+                                               "8",
+                                               "Hard Rock",
+                                               "5017615832822",
+                                               "Mercury Records"])
 
     def test_01first(self):
         """
@@ -907,11 +1069,16 @@ class Test13b(unittest.TestCase):
         self.assertEqual(self.arguments.artistsort, "Kiss")
         self.assertEqual(self.arguments.albumsort, "1.19890000.1")
         self.assertEqual(self.arguments.artist, "Kiss")
-        self.assertEqual(self.arguments.year, 1989)
+        self.assertEqual(self.arguments.origyear, "1989")
+        self.assertEqual(self.arguments.year, "1989")
         self.assertEqual(self.arguments.album, "The Album")
+        self.assertEqual(self.arguments.disc, 1)
+        self.assertEqual(self.arguments.tracks, 8)
         self.assertEqual(self.arguments.genre, "Hard Rock")
         self.assertEqual(self.arguments.upc, "5017615832822")
         self.assertEqual(self.arguments.application, "dBpoweramp 15.1")
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
 
     def test_02second(self):
         """
@@ -935,19 +1102,431 @@ class Test13b(unittest.TestCase):
             kwargs["db"] = dst
             if self.arguments.function(**kwargs):
                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-                conn.row_factory = sqlite3.Row
+                curs = conn.cursor()
                 try:
-                    for row in conn.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application FROM rippinglog ORDER BY rowid DESC"):
-                        self.assertEqual(row["artistsort"], "Kiss")
-                        self.assertEqual(row["albumsort"], "1.19890000.1")
-                        self.assertEqual(row["artist"], "Kiss")
-                        self.assertEqual(row["year"], 1989)
-                        self.assertEqual(row["album"], "The Album")
-                        self.assertEqual(row["genre"], "Hard Rock")
-                        self.assertEqual(row["upc"], "5017615832822")
-                        self.assertEqual(row["application"], "dBpoweramp 15.1")
-                        break
-                except AssertionError:
-                    raise
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, genre, upc, application, origyear, label FROM rippinglog ORDER BY rowid DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Kiss")
+                        self.assertEqual(row[1], "1.19890000.1")
+                        self.assertEqual(row[2], "Kiss")
+                        self.assertEqual(row[3], 1989)
+                        self.assertEqual(row[4], "The Album")
+                        self.assertEqual(row[5], "Hard Rock")
+                        self.assertEqual(row[6], "5017615832822")
+                        self.assertEqual(row[7], "dBpoweramp 15.1")
+                        self.assertEqual(row[8], 1989)
+                        self.assertEqual(row[9], "Mercury Records")
                 finally:
                     conn.close()
+
+
+class Test13c(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Les données proviennent d'un fichier XML encodé en UTF-8.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "insertfromfile", r"G:\Computing\MyPythonProject\Applications\Tests\test_rippinglog.xml"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "insertfromfile")
+        self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            self.assertEqual(self.arguments.function(**kwargs), 3)
+
+    def test_03third(self):
+        """
+        3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            if self.arguments.function(**kwargs):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, application FROM rippinglog ORDER BY rowid DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Artist 3, The")
+                        self.assertEqual(row[1], "1.20150000.1")
+                        self.assertEqual(row[2], "The Artist 3")
+                        self.assertEqual(row[3], 2015)
+                        self.assertEqual(row[4], "Album 3")
+                        self.assertEqual(row[5], "dBpoweramp 15.1")
+                finally:
+                    conn.close()
+
+
+class Test13d(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Les données proviennent d'un fichier JSON encodé en UTF-8.
+    """
+
+    def setUp(self):
+        self.arguments = CD.parser.parse_args(["rippinglog", "insertfromfile", r"G:\Computing\MyPythonProject\Applications\Tests\test_rippinglog.json"])
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "insertfromfile")
+        self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, DATABASE)
+
+    def test_02second(self):
+        """
+        2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            self.assertEqual(self.arguments.function(**kwargs), 3)
+
+    def test_03third(self):
+        """
+        3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(self.arguments.db))
+            copy(src=self.arguments.db, dst=dst)
+            kwargs = {key: val for key, val in vars(self.arguments).items() if val}
+            kwargs["db"] = dst
+            if self.arguments.function(**kwargs):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, application FROM rippinglog ORDER BY rowid DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Artist 3, The")
+                        self.assertEqual(row[1], "1.20150000.1")
+                        self.assertEqual(row[2], "The Artist 3")
+                        self.assertEqual(row[3], 2015)
+                        self.assertEqual(row[4], "Album 3")
+                        self.assertEqual(row[5], "dBpoweramp 15.1")
+                finally:
+                    conn.close()
+
+
+class Test14a(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` depuis les données exposées par un fichier XML encodé en UTF-8.
+    Tester individuellement les fonctions `Applications.xml.rippinglog_in` et `Applications.Database.AudioCD.shared.insertfromfile`.
+    """
+
+    def setUp(self):
+        self.file = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "test_rippinglog.xml")
+
+    def test_01first(self):
+        self.artist, self.origyear, self.year, self.album, self.disc, self.tracks, self.genre, self.upc, self.label, self.ripped, self.application, self.artistsort, self.albumsort = \
+            list(rippinglog_in(self.file))[0]
+        self.assertEqual(self.artistsort, "Artist 1, The")
+        self.assertEqual(self.albumsort, "1.20170000.1")
+        self.assertEqual(self.artist, "The Artist 1")
+        self.assertEqual(self.origyear, "2017")
+        self.assertEqual(self.year, "2017")
+        self.assertEqual(self.album, "Album 1")
+        self.assertEqual(self.disc, 1)
+        self.assertEqual(self.tracks, 10)
+        self.assertEqual(self.genre, "Hard Rock")
+        self.assertEqual(self.upc, "1234567890123")
+        self.assertIsNone(self.label)
+        self.assertEqual(self.application, "dBpoweramp 15.1")
+
+    def test_02second(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            self.assertEqual(insertlogfromfile(filobj, db=dst), 3)
+        if not filobj.closed:
+            filobj.close()
+
+    def test_03third(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            if insertlogfromfile(filobj, db=dst):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, application FROM rippinglog ORDER BY ripped DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Artist 2, The")
+                        self.assertEqual(row[1], "1.20160000.1")
+                        self.assertEqual(row[2], "The Artist 2")
+                        self.assertEqual(row[3], 2016)
+                        self.assertEqual(row[4], "Album 2")
+                        self.assertEqual(row[5], "dBpoweramp 15.1")
+                finally:
+                    conn.close()
+        if not filobj.closed:
+            filobj.close()
+
+
+class Test14b(unittest.TestCase):
+    """
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` depuis les données exposées par un fichier JSON encodé en UTF-8.
+    Tester individuellement les fonctions `Applications.xml.rippinglog_in` et `Applications.Database.AudioCD.shared.insertfromfile`.
+    """
+
+    def setUp(self):
+        self.file = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "test_rippinglog.json")
+
+    def test_01first(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            self.assertEqual(insertlogfromfile(filobj, db=dst), 3)
+        if not filobj.closed:
+            filobj.close()
+
+    def test_02second(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            if insertlogfromfile(filobj, db=dst):
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT artistsort, albumsort, artist, year, album, application FROM rippinglog ORDER BY rowid DESC")
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(row[0], "Artist 3, The")
+                        self.assertEqual(row[1], "1.20150000.1")
+                        self.assertEqual(row[2], "The Artist 3")
+                        self.assertEqual(row[3], 2015)
+                        self.assertEqual(row[4], "Album 3")
+                        self.assertEqual(row[5], "dBpoweramp 15.1")
+                finally:
+                    conn.close()
+        if not filobj.closed:
+            filobj.close()
+
+
+class Test15(unittest.TestCase):
+    def test_01first(self):
+        self.assertEqual(getrippingapplication(), "dBpoweramp 15.1")
+        self.assertEqual(getrippingapplication(timestamp=1505586912), "dBpoweramp 15.1")
+        self.assertEqual(getrippingapplication(timestamp=1474050912), "dBpoweramp 15.1")
+        self.assertEqual(getrippingapplication(timestamp=1512082800), "dBpoweramp 16.1")
+        self.assertEqual(getrippingapplication(timestamp=1514818800), "dBpoweramp 16.1")
+
+
+class Test16a(unittest.TestCase):
+    """
+    Tester la création d'un album digital depuis les données exposées par un fichier XML encodé en UTF-8.
+    Tester individuellement les fonctions `Applications.xml.digitalalbums_in` et `Applications.Database.DigitalAudioFiles.shared.insertfromfile`.
+    """
+
+    def setUp(self):
+        self.file = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "test_digitalalbums.xml")
+
+    def test_01firstA(self):
+        filobj = open(self.file)
+        self.track = list(digitalalbums_in(filobj))[0]
+        self.assertEqual(self.track.albumid, "A.Artist 1, The.1.20170000.9")
+        self.assertEqual(self.track.artist, "The Artist 1")
+        self.assertEqual(self.track.year, "2017")
+        self.assertEqual(self.track.album, "Album 1")
+        self.assertEqual(self.track.genre, "Hard Rock")
+        self.assertEqual(self.track.discnumber, "1")
+        self.assertEqual(self.track.totaldiscs, "2")
+        self.assertEqual(self.track.label, "")
+        self.assertEqual(self.track.tracknumber, "1")
+        self.assertEqual(self.track.totaltracks, "12")
+        self.assertEqual(self.track.title, "Track #1")
+        self.assertEqual(self.track.live, "N")
+        self.assertEqual(self.track.bootleg, "N")
+        self.assertEqual(self.track.incollection, "N")
+        self.assertEqual(self.track.upc, "1234567890123")
+        self.assertEqual(self.track.encodingyear, dateformat(UTC.localize(datetime.datetime.utcnow()), "$Y"))
+        self.assertEqual(self.track.language, "English")
+        self.assertEqual(self.track.origyear, "2017")
+        if not filobj.closed:
+            filobj.close()
+
+    def test_01firstB(self):
+        filobj = open(self.file)
+        self.track = list(digitalalbums_in(filobj))[-1]
+        self.assertEqual(self.track.albumid, "A.Artist 2, The.1.20160000.9")
+        self.assertEqual(self.track.artist, "The Artist 2")
+        self.assertEqual(self.track.year, "2016")
+        self.assertEqual(self.track.album, "Album 2")
+        self.assertEqual(self.track.genre, "Hard Rock")
+        self.assertEqual(self.track.discnumber, "1")
+        self.assertEqual(self.track.totaldiscs, "1")
+        self.assertEqual(self.track.label, "")
+        self.assertEqual(self.track.tracknumber, "5")
+        self.assertEqual(self.track.totaltracks, "5")
+        self.assertEqual(self.track.title, "Track #5")
+        self.assertEqual(self.track.live, "Y")
+        self.assertEqual(self.track.bootleg, "N")
+        self.assertEqual(self.track.incollection, "N")
+        self.assertEqual(self.track.upc, "1234567890124")
+        self.assertEqual(self.track.encodingyear, dateformat(UTC.localize(datetime.datetime.utcnow()), "$Y"))
+        self.assertEqual(self.track.language, "English")
+        self.assertEqual(self.track.origyear, "2016")
+        self.assertEqual(self.track.disc_created, 1503469361)
+        if not filobj.closed:
+            filobj.close()
+
+    def test_02second(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            self.assertListEqual(insertalbumfromfile(filobj, db=dst), [25, 3, 2])
+        if not filobj.closed:
+            filobj.close()
+
+    def test_03third(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            if list(accumulate(insertalbumfromfile(filobj, db=dst)))[-1]:
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT played, count FROM albums WHERE albumid=?", ("A.Artist 1, The.1.20170000.9",))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertEqual(dateformat(UTC.localize(row[0]).astimezone(LOCAL), "$d/$m/$Y $H:$M:$S"), "22/09/2017 23:24:33")
+                        self.assertEqual(dateformat(UTC.localize(row[0]), "$d/$m/$Y $H:$M:$S"), "22/09/2017 21:24:33")
+                        self.assertEqual(row[1], 15)
+                finally:
+                    conn.close()
+        if not filobj.closed:
+            filobj.close()
+
+    def test_04fourth(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            if list(accumulate(insertalbumfromfile(filobj, db=dst)))[-1]:
+                conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
+                curs = conn.cursor()
+                try:
+                    curs.execute("SELECT played, count FROM albums WHERE albumid=?", ("A.Artist 2, The.1.20160000.9",))
+                    row = curs.fetchone()
+                    if row:
+                        self.assertIsNone(row[0])
+                        self.assertEqual(row[1], 0)
+                finally:
+                    conn.close()
+        if not filobj.closed:
+            filobj.close()
+
+    def test_05fifth(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            arguments = CD.parser.parse_args(["albums", "insertfromfile", self.file, "--database", dst])
+            self.assertEqual(arguments.function(**{key: val for key, val in vars(arguments).items() if val}), 30)
+            for file in arguments.file:
+                if not file.closed:
+                    file.close()
+
+
+class Test16b(unittest.TestCase):
+    """
+    Tester la création d'un album digital depuis les données exposées par un fichier JSON encodé en UTF-8.
+    Tester directement la fonction `Applications.Database.DigitalAudioFiles.shared.insertfromfile`.
+    """
+
+    def setUp(self):
+        self.file = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "test_digitalalbums.json")
+
+    def test_01first(self):
+        filobj = open(self.file)
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            self.assertListEqual(insertalbumfromfile(filobj, db=dst), [5, 2, 2])
+        if not filobj.closed:
+            filobj.close()
+
+    def test_02second(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dst = os.path.join(directory, os.path.basename(DATABASE))
+            copy(src=DATABASE, dst=dst)
+            arguments = RT.parser.parse_args([self.file, "--database", dst])
+            self.assertListEqual(insertalbumfromfile(arguments.tracks, db=arguments.db), [5, 2, 2])
+            if not arguments.tracks.closed:
+                arguments.tracks.close()
+
+
+class Test17(unittest.TestCase):
+    """
+    Tester le comportement des attributs optionnels `database` et `test` reçus par le parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+
+    def test_01first(self):
+        """
+        L'attribut `test` est reçu : la database utilisée doit être la database de test.
+        """
+        arguments = CD.parser.parse_args("rippinglog select 30 --test".split())
+        self.assertEqual(arguments.table, "rippinglog")
+        self.assertEqual(arguments.statement, "select")
+        self.assertListEqual(arguments.rowid, [30])
+        self.assertTrue(arguments.donotpropagate)
+        self.assertEqual(arguments.template(arguments), "T01")
+        self.assertTrue(arguments.test)
+        self.assertEqual(arguments.db, TESTDATABASE)
+
+    def test_02second(self):
+        """
+        L'attribut `database` est reçu : la database utilisée doit être celle respective à la valeur reçue par le parser.
+        """
+        arguments = CD.parser.parse_args("rippinglog select 30 --database G:\Computing\MyPythonProject\Applications\Tests\database.db".split())
+        self.assertEqual(arguments.table, "rippinglog")
+        self.assertEqual(arguments.statement, "select")
+        self.assertListEqual(arguments.rowid, [30])
+        self.assertTrue(arguments.donotpropagate)
+        self.assertEqual(arguments.template(arguments), "T01")
+        self.assertFalse(arguments.test)
+        self.assertEqual(arguments.db, r"G:\Computing\MyPythonProject\Applications\Tests\database.db")
+
+    def test_03third(self):
+        """
+        Aucun attribut n'est reçu : la database utilisée doit être la database de production.
+        """
+        arguments = CD.parser.parse_args("rippinglog select 30".split())
+        self.assertEqual(arguments.table, "rippinglog")
+        self.assertEqual(arguments.statement, "select")
+        self.assertListEqual(arguments.rowid, [30])
+        self.assertTrue(arguments.donotpropagate)
+        self.assertEqual(arguments.template(arguments), "T01")
+        self.assertFalse(arguments.test)
+        self.assertEqual(arguments.db, DATABASE)

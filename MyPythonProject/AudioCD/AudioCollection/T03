@@ -18,7 +18,7 @@
         <!-- Artists cloud -->
         <div id="artistscloud">
         {%- for artist, class in content -%}
-            <a class="{{ class }}" href="/audiocollection/rippedcdviewbyartist?artist={{ artist|e|normalize2() }}">{{ artist|e }}</a>
+            <a class="{{ class }}" href="/audiocollection/rippedcdviewbyartist?artist={{ artist|e|normalize2 }}">{{ artist|e }}</a>
         {%- endfor -%}
         </div>
     {% endif -%}

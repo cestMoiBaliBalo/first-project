@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-import sqlite3
 import logging
+import sqlite3
+from datetime import datetime, timedelta
 from itertools import repeat
-from datetime import datetime,timedelta
-from Applications.shared import DATABASE
+
+from Applications.shared import DATABASE, UTC
 
 __author__ = 'Xavier ROSSET'
-
 
 # =========
 # Mappings.
@@ -30,7 +30,6 @@ def select(table, db=DATABASE):
 
 
 def selectfromuid(uid, table, db=DATABASE):
-
     # Log arguments.
     logger = logging.getLogger("{0}.getalbumid".format(__name__))
     logger.debug("Database: {0}.".format(db))
@@ -70,7 +69,6 @@ def insert(*uid, db=DATABASE, table=None, date=None):
 
 
 def update(uid, table, db=DATABASE, date=None):
-
     if table not in MAPPING:
         return 0
     if date is None:
@@ -125,7 +123,7 @@ def isdeltareached(uid, table, db=DATABASE, days=10):
     deltareached = True
     record = selectfromuid(uid, table, db)
     if record:
-        if datetime.utcnow() - record[1] < timedelta(days=days):
+        if UTC.localize(datetime.utcnow()) - UTC.localize(record[1]) < timedelta(days=days):
             deltareached = False
     logger.debug(deltareached)
     return deltareached

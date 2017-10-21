@@ -1,28 +1,25 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
 import argparse
-from Applications.shared import validdb
+import sys
+from itertools import accumulate
+
 from Applications.Database.DigitalAudioFiles.shared import insertfromfile
+from Applications.parsers import database_parser
 
 __author__ = 'Xavier ROSSET'
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 # =================
 # Arguments parser.
 # =================
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(parents=[database_parser])
 parser.add_argument("tracks", type=argparse.FileType(mode="r", encoding="UTF_8"))
-parser.add_argument("-d", "--db", dest="database", default=os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db"), type=validdb)
-
-
-# ================
-# Initializations.
-# ================
-arguments = parser.parse_args()
-
 
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insertfromfile(arguments.tracks, db=arguments.database))
+if __name__ == "__main__":
+    arguments = parser.parse_args()
+    sys.exit(list(accumulate(insertfromfile(arguments.tracks, db=arguments.db)))[-1])

@@ -5,7 +5,8 @@ import re
 import unittest
 from itertools import repeat
 
-from ..parsers import deleterippinglog, epochconverter, foldercontent, improvedfoldercontent, zipfile
+from ..parsers import epochconverter, foldercontent, improvedfoldercontent, zipfile
+from ..shared import validalbumsort, validgenre, validyear
 
 __author__ = 'Xavier ROSSET'
 
@@ -134,28 +135,6 @@ class TestThirdParser(unittest.TestCase):
         self.assertEqual(arguments.zone, "US/Eastern")
 
 
-class TestFourthParser(unittest.TestCase):
-    def test_01first(self):
-        arguments = deleterippinglog.parse_args(["singled", "1", "100"])
-        self.assertListEqual(arguments.uid, [1, 100])
-
-    def test_02second(self):
-        arguments = deleterippinglog.parse_args(["singled", "1", "2", "3", "4", "100"])
-        self.assertListEqual(arguments.uid, [1, 2, 3, 4, 100])
-
-    def test_03third(self):
-        arguments = deleterippinglog.parse_args(["ranged", "1", "100"])
-        self.assertListEqual(arguments.uid, list(range(1, 101)))
-
-    def test_04fourth(self):
-        arguments = deleterippinglog.parse_args(["ranged", "100"])
-        self.assertListEqual(arguments.uid, list(range(100, 10000)))
-
-    def test_05fifth(self):
-        arguments = deleterippinglog.parse_args(["ranged", "245", "368"])
-        self.assertListEqual(arguments.uid, list(range(245, 369)))
-
-
 @unittest.skip
 class TestFifthParser(unittest.TestCase):
     def test_01first(self):
@@ -277,3 +256,66 @@ class TestSixthParser(unittest.TestCase):
         rex = "{0}{1}".format(rex1, rex2)
         regex = re.compile(rex, re.IGNORECASE)
         self.assertNotRegex(thatfile, regex)
+
+
+class Test01(unittest.TestCase):
+    """
+    Test `validyear` function.
+    """
+
+    def test_01first(self):
+        for argument in ["2017", 2017]:
+            with self.subTest(year=argument):
+                self.assertEqual(validyear(argument), 2017)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, 10.5]:
+            with self.subTest(year=argument):
+                self.assertRaises(ValueError, validyear, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validyear("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid year.')
+
+
+class Test02(unittest.TestCase):
+    """
+    Test `validalbumsort` function.
+    """
+
+    def test_01first(self):
+        for argument in ["1.20170000.1", "1.20170000.2", "2.20171019.1"]:
+            with self.subTest(albumsort=argument):
+                self.assertEqual(validalbumsort(argument), argument)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", 10.5]:
+            with self.subTest(year=argument):
+                self.assertRaises(ValueError, validalbumsort, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validalbumsort("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid albumsort.')
+
+
+class Test03(unittest.TestCase):
+    """
+    Test `validgenre` function.
+    """
+
+    def test_01first(self):
+        for argument in ["Rock", "Hard Rock", "black metal"]:
+            with self.subTest(genre=argument):
+                self.assertEqual(validgenre(argument), argument)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", "some genre", 10.5]:
+            with self.subTest(genre=argument):
+                self.assertRaises(ValueError, validgenre, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validgenre("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid genre.')

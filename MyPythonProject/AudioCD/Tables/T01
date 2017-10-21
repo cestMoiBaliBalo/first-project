@@ -4,10 +4,22 @@
     Artistsort : {{ row.artistsort }}
     Albumsort  : {{ row.albumsort }}
     Artist     : {{ row.artist }}
+    {% if row.origyear != row.year %}
+    Origyear   : {{ row.origyear }}
+    {% endif %}
     Year       : {{ row.year }}
     Album      : {{ row.album }}
+    Disc       : {{ row.disc }}
+    Tracks     : {{ row.tracks }}
     Genre      : {{ row.genre }}
     UPC        : {{ row.upc }}
-    Ripped     : {{ row.ripped|readable(tz=local) }}
+    {% if row.label %}
+    Label      : {{ row.label }}
+    {% endif %}
     Application: {{ row.application }}
+    Ripped     : {{ row.ripped|readable(tz=local) }}
+    Created    : {{ row.utc_created|readable(tz=utc) }}
+    {% if row.utc_modified %}
+    Modified   : {{ row.utc_modified|readable(tz=utc) }}
+    {% endif %}
 {% endfor %}

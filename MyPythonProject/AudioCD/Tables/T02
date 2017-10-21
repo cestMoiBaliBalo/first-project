@@ -9,7 +9,7 @@
     Genre     : {{ row.genre }}
     UPC       : {{ row.upc }}
     {% if row.created %}
-    Created   : {{ row.created|readable(tz=utc) }}
+    Created   : {{ row.created|readable(tz=local) }}
     {% endif %}
     {% if row.played %}
     Played    : {{ row.played|readable(tz=utc) }}

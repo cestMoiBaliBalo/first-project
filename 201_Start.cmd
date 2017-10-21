@@ -1,4 +1,4 @@
-@ECHO off
+@ECHO on
 REM  1. Exécuté depuis le scheduler windows : "G:\Computing\start.cmd" 1 3 4 6 7 9 10 11 13.
 REM  2. Exécuté manuellement : "G:\Computing\start.cmd" 16 I 17 J
 REM  3. Exécuté manuellement : "G:\Computing\start.cmd" 21 "2007"
@@ -21,6 +21,8 @@ REM Initializations 2.
 REM ==================
 SET _videos=%USERPROFILE%\videos
 SET _log=%_COMPUTING%\XXCOPYFilesLog.log
+SET _lossy1="G:\Music\Lossy (default pattern)"
+SET _lossy2="G:\Music\Lossy (readable pattern)"
 
 
 REM ===============
@@ -49,7 +51,7 @@ IF "%~1" EQU "15" GOTO STEP15
 REM Sync mobile media (mobile phone, car SD Card, car USB drive, etc). Both audio and videos.
 REM Use the right argument depending on the source drive.
 IF "%~1" EQU "16" (
-    SET repository1=G:\Music\MP3\
+    SET repository1=%_lossy1%\
     SET repository2=%_COMPUTING%\Arguments.xav
     SET exceptions=%_COMPUTING%\Exceptions.xav
     SET filters=*\*.mp3
@@ -61,9 +63,9 @@ IF "%~1" EQU "16" (
 REM Sync FIIO X5 lossless music player. Audio only!
 REM Use the right argument depending on the source drive.
 IF "%~1" EQU "17" (
-    SET repository1=G:\Music\FLAC\
+    SET repository1=G:\Music\Lossless\
     SET repository2=
-    SET exceptions=%_COMPUTING%\Exceptions.xav
+    SET exceptions=
     SET filters=
     SET drive=%~2
     SHIFT
@@ -73,10 +75,10 @@ IF "%~1" EQU "17" (
 REM Sync mobile media (mobile phone, car SD Card, car USB drive, etc). Audio only!
 REM Use the right argument depending on the source drive.
 IF "%~1" EQU "18" (
-    SET repository1=G:\Music\MP3\
+    SET repository1=%_lossy2%\
     SET repository2=
-    SET exceptions=%_COMPUTING%\Exceptions.xav
-    SET filters=*\*.mp3
+    SET exceptions=
+    SET filters=*\*.m4a
     SET drive=%~2
     SHIFT
     GOTO STEP16

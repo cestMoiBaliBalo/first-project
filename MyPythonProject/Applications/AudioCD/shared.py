@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import argparse
 import json
 import logging
 import os
@@ -721,14 +720,14 @@ def canfilebeprocessed(fe, *tu):
     return False
 
 
-def validdelay(d):
-    try:
-        delay = int(d)
-    except ValueError:
-        raise argparse.ArgumentTypeError('"{0}" isn\'t a valid delay.'.format(d))
-    if delay > 120:
-        return 120
-    return delay
+# def validdelay(d):
+#     try:
+#         delay = int(d)
+#     except ValueError:
+#         raise argparse.ArgumentTypeError('"{0}" isn\'t a valid delay.'.format(d))
+#     if delay > 120:
+#         return 120
+#     return delay
 
 
 def filcontents(fil):
@@ -750,7 +749,7 @@ def album(track):
     return track.album
 
 
-def rippinglog(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog.json")):
+def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog.json")):
     obj = []
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
@@ -758,10 +757,15 @@ def rippinglog(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog
         obj = [tuple(item) for item in obj]
     while True:
         obj.append(tuple([track.artist,
+                          track.origyear,
                           track.year,
                           album(track),
+                          track.discnumber,
+                          track.totaltracks,
                           track.genre,
                           track.upc,
+                          track.label,
+                          shared.getrippingapplication(),
                           track.albumsort[:-3],
                           track.artistsort]))
         try:
@@ -774,7 +778,7 @@ def rippinglog(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog
         json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def digitalaudiobase(track, fil=os.path.join(os.path.expandvars("%TEMP%"), "digitalaudiodatabase.json")):
+def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "digitalaudiodatabase.json")):
     obj = []
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
@@ -981,6 +985,7 @@ LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Lan
 ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Encoders.json")
 ENC_KEYS = ["name", "code", "folder", "extension"]
 PROFILES = {"default": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live", "offset"], DefaultAudioCDTags.fromfile),
+            "alternative": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live", "offset"], DefaultAudioCDTags.fromfile),
             "sbootlegs": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "dottedbootlegtrackyear", "live", "groupby", "offset"], BootlegAudioCDTags.fromfile)}
 with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Mapping.json")), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

@@ -17,6 +17,7 @@ from string import Template
 import jinja2
 from PIL import Image, TiffImagePlugin
 from dateutil.parser import parse
+from dateutil.parser import parserinfo
 from dateutil.tz import gettz
 from pytz import timezone
 
@@ -36,6 +37,7 @@ locale.setlocale(locale.LC_ALL, "")
 APPEND = "a"
 WRITE = "w"
 DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db")
+TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
 ARECA = os.path.join(os.path.expandvars("%PROGRAMFILES%"), "Areca", "areca_cl.exe")
 DFTENCODING = "ISO-8859-1"
 DFTTIMEZONE = "Europe/Paris"
@@ -54,12 +56,40 @@ COPYRIGHT = "\u00a9"
 DFTYEARREGEX = r"20[0-2]\d|19[6-9]\d"
 DFTMONTHREGEX = "0[1-9]|1[0-2]"
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
-UPCREGEX = r"^\d{12,13}$"
+UPCREGEX = r"\d{12,13}"
 ACCEPTEDANSWERS = ["N", "Y"]
 MUSIC = "F:\\"
 IMAGES = "H:\\"
-EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"], "documents": ["doc", "txt", "pdf", "xav"], "music": ["ape", "mp3", "m4a", "flac", "ogg"]}
-ZONES = ["US/Pacific", "US/Eastern", "Indian/Mayotte", "Asia/Tokyo", "Australia/Sydney"]
+LOCALMONTHS = ["Janvier",
+               "Février",
+               "Mars",
+               "Avril",
+               "Mai",
+               "Juin",
+               "Juillet",
+               "Août",
+               "Septembre",
+               "Octobre",
+               "Novembre",
+               "Decembre"]
+GENRES = ["Rock",
+          "Hard Rock",
+          "Heavy Metal",
+          "Trash Metal",
+          "Black Metal",
+          "Doom Metal",
+          "Progressive Rock",
+          "Alternative Rock",
+          "Pop",
+          "French Pop"]
+EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
+              "documents": ["doc", "txt", "pdf", "xav"],
+              "music": ["ape", "mp3", "m4a", "flac", "ogg"]}
+ZONES = ["US/Pacific",
+         "US/Eastern",
+         "Indian/Mayotte",
+         "Asia/Tokyo",
+         "Australia/Sydney"]
 PASSWORD = r"F*HJDa$_+t"
 NAS = r"192.168.1.20"
 
@@ -403,7 +433,6 @@ class GlobalInterface(object):
 
 
 class StringFormatter(object):
-
     # ----------
     # Constants.
     # ----------
@@ -527,9 +556,41 @@ class StringFormatter(object):
         return "{d[0]}({d[1]})".format(d=match.groups())
 
 
+class LocalParser(parserinfo):
+    MONTHS = [('Janvier', 'January'),
+              ('Février', 'February'),
+              ('Mars', 'March'),
+              ('Avril', 'April'),
+              ('Mai', 'May'),
+              ('Juin', 'June'),
+              ('Juillet', 'July'),
+              ('Août', 'August'),
+              ('Septembre', 'September'),
+              ('Octobre', 'October'),
+              ('Novembre', 'November'),
+              ('Decembre', 'December')]
+
+    def __init__(self, dayfirst=False, yearfirst=False):
+        super(LocalParser, self).__init__(dayfirst, yearfirst)
+
+
 # ===========================
 # Customized parsing actions.
 # ===========================
+class SetDatabase(argparse.Action):
+    """
+
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if values:
+            setattr(namespace, "db", TESTDATABASE)
+
+
 class GetPath(argparse.Action):
     """
     Set "destination" attribute with the full path corresponding to the "values".
@@ -628,18 +689,18 @@ class SetEndSeconds(argparse.Action):
             setattr(namespace, self.dest, getattr(namespace, "start"))
 
 
-class SetUID(argparse.Action):
-    """
-    Set "end" attribute.
-    Set "uid" attribute.
-    """
-
-    def __init__(self, option_strings, dest, **kwargs):
-        super(SetUID, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parsobj, namespace, values, option_string=None):
-        setattr(namespace, self.dest, values)
-        setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
+# class SetUID(argparse.Action):
+#     """
+#     Set "end" attribute.
+#     Set "uid" attribute.
+#     """
+#
+#     def __init__(self, option_strings, dest, **kwargs):
+#         super(SetUID, self).__init__(option_strings, dest, **kwargs)
+#
+#     def __call__(self, parsobj, namespace, values, option_string=None):
+#         setattr(namespace, self.dest, values)
+#         setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
 
 
 # ===================
@@ -669,9 +730,233 @@ class TemplatingEnvironment(object):
         self._environment = arg
 
 
-# ==========
-# Functions.
-# ==========
+# ==========================
+# Data validation functions.
+# ==========================
+def validpath(path):
+    """
+
+    :param path:
+    :return:
+    """
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(path))
+    if not os.path.isdir(path):
+        raise argparse.ArgumentTypeError('"{0}" is not a directory.'.format(path))
+    if not os.access(path, os.R_OK):
+        raise argparse.ArgumentTypeError('"{0}" is not a readable directory.'.format(path))
+    return path
+
+
+def validdb(db):
+    """
+
+    :param db:
+    :return:
+    """
+    try:
+        if not os.path.exists(db):
+            raise ValueError('"{0}" doesn\'t exist.'.format(db))
+    except TypeError:
+        raise ValueError('"{0}" doesn\'t exist.'.format(db))
+    return db
+
+
+def validdiscnumber(discnumber):
+    """
+
+    :param discnumber:
+    :return:
+    """
+    msg = r"is not a valid disc number."
+    try:
+        _discnumber = int(discnumber)
+    except (ValueError, TypeError):
+        raise ValueError('"{0}" {1}'.format(discnumber, msg))
+    if not _discnumber:
+        raise ValueError('"{0}" {1}'.format(discnumber, msg))
+    return _discnumber
+
+
+def validtracks(tracks):
+    """
+
+    :param tracks:
+    :return:
+    """
+    msg = r"is not a valid total tracks number."
+    try:
+        _tracks = int(tracks)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(tracks, msg))
+
+    if not _tracks:
+        raise ValueError('"{0}" {1}'.format(tracks, msg))
+
+    return _tracks
+
+
+def validalbumid(albumid):
+    """
+
+    :param albumid:
+    :return:
+    """
+    rex = re.compile(r"^([A-Z])\.\1[^.]+\.$")
+    selectors = [True, True]
+    try:
+        _artistsort = albumid[:-12]
+        _albumsort = albumid[-12:]
+    except TypeError:
+        raise ValueError('"{0}" is not a valid album ID.'.format(albumid))
+
+    match = rex.match(_artistsort)
+    if not match:
+        selectors[0] = False
+
+    try:
+        _albumsort = validalbumsort(_albumsort)
+    except TypeError:
+        selectors[1] = False
+
+    if not all(selectors):
+        if not any(selectors):
+            raise ValueError("Both `artistsort` and `albumsort` don\'t match the expected pattern.")
+        raise ValueError("`artistsort` or `albumsort` doesn\'t match the expected pattern.")
+
+    return "{0}{1}".format(_artistsort, _albumsort)
+
+
+def validalbumsort(albumsort):
+    """
+
+    :param albumsort:
+    :return:
+    """
+    rex1 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
+    rex2 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
+    msg = r"is not a valid albumsort."
+
+    try:
+        match1 = rex1.match(albumsort)
+        match2 = rex2.match(albumsort)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(albumsort, msg))
+
+    if all([not match1, not match2]):
+        raise ValueError('"{0}" {1}'.format(albumsort, msg))
+
+    return albumsort
+
+
+def validyear(year):
+    """
+
+    :param year:
+    :return:
+    """
+    regex, msg = re.compile("^({0})$".format(DFTYEARREGEX)), r"is not a valid year."
+
+    # Argument is converted to a string.
+    try:
+        year = str(year)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(year, msg))
+
+    # Does the string match the year pattern?.
+    try:
+        if not regex.match(year):
+            raise ValueError('"{0}" {1}'.format(year, msg))
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(year, msg))
+
+    # Year is returned as an integer.
+    return int(year)
+
+
+def validproductcode(productcode):
+    """
+
+    :param productcode:
+    :return:
+    """
+    regex, msg = re.compile(r"^{0}$".format(UPCREGEX)), r"is not a valid product code."
+
+    try:
+        productcode = str(productcode)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(productcode, msg))
+
+    if not regex.match(productcode):
+        raise ValueError('"{0}" {1}'.format(productcode, msg))
+
+    return productcode
+
+
+def validgenre(genre):
+    """
+
+    :param genre:
+    :return:
+    """
+    msg = r"is not a valid genre."
+    try:
+        if genre.lower() not in (item.lower() for item in GENRES):
+            raise ValueError('"{0}" {1}'.format(genre, msg))
+    except AttributeError:
+        raise ValueError('"{0}" {1}'.format(genre, msg))
+    return genre
+
+
+def validtimestamp(ts):
+    """
+    Check if string `time` is a valid Unix Epoch time.
+
+    :param time: string representing a coherent number of seconds since the Epoch.
+    :return: string converted to integer characters. Raise an exception if `time` doesn't represent a coherent number of seconds.
+    """
+    msg = r"is not a valid Unix epoch time."
+    try:
+        ts = str(ts)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+
+    if not re.match(r"^\d{10}$", ts):
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    return int(ts)
+
+
+def validdatetime(ts):
+    """
+
+    :param ts:
+    :return:
+    """
+    error, msg = False, r"is not a valid timestamp."
+    try:
+        ts = int(ts)
+    except (ValueError, TypeError):
+        error = True
+
+    if error:
+        try:
+            struct = ts.timetuple()
+        except (TypeError, AttributeError):
+            raise ValueError('"{0}" {1}'.format(ts, msg))
+        return ts
+
+    try:
+        ts = datetime.fromtimestamp(ts)
+    except OSError:
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    return ts
+
+
+# ========================
+# Miscellaneous functions.
+# ========================
 def customformatterfactory(pattern=LOGPATTERN):
     return CustomFormatter(pattern)
 
@@ -681,7 +966,13 @@ def customfilehandler(maxbytes, backupcount, encoding=UTF8):
 
 
 def readable(dt, template, tz=None):
-    """B"""
+    """
+
+    :param dt:
+    :param template:
+    :param tz:
+    :return:
+    """
     datobj = dt
     if tz:
         datobj = tz.localize(dt).astimezone(LOCAL)
@@ -689,50 +980,11 @@ def readable(dt, template, tz=None):
 
 
 def now():
+    """
+
+    :return:
+    """
     return dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), TEMPLATE4)
-
-
-def validpath(path):
-    if not os.path.exists(path):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist'.format(path))
-    if not os.path.isdir(path):
-        raise argparse.ArgumentTypeError('"{0}" is not a directory'.format(path))
-    if not os.access(path, os.R_OK):
-        raise ValueError('"{0}" is not a readable directory'.format(path))
-    return path
-
-
-def validdb(db):
-    if not os.path.exists(db):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(db))
-    return db
-
-
-def validseconds(seconds):
-    if not re.match(r"^\d{10}$", seconds):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid seconds number'.format(seconds))
-    return int(seconds)
-
-
-def validunixepochtime(s):
-    """
-    Check if string `s` is a valid Unix Epoch time.
-
-    :param s: string representing a coherent number of seconds since the Epoch.
-    :return: string converted to integer characters. Raise an exception if `s` doesn't represent a coherent number of seconds.
-    """
-
-    # ----
-    logger = getLogger("{0}.validunixepochtime".format(__name__))
-    logger.debug(s)
-    logger.debug(dateformat(LOCAL.localize(datetime.fromtimestamp(int(s))), "$Y"))
-
-    # ----
-    if not re.match(r"^\d{10}$", s):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid Unix epoch time'.format(s))
-    if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(s))), "$Y")):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid Unix epoch time'.format(s))
-    return int(s)
 
 
 def dateformat(dt, template):
@@ -756,6 +1008,21 @@ def dateformat(dt, template):
                                          W=dt.strftime("%W"),
                                          Y=dt.strftime("%Y"),
                                          Z=dt.strftime("%Z"))
+
+
+def getrippingapplication(*, timestamp=None):
+    """
+    Get ripping application respective to the facultative input local timestamp.
+
+    :param timestamp: facultative input local timestamp.
+    :return: ripping application.
+    """
+    application = {"1512082800": "dBpoweramp 16.1", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    if not timestamp:
+        timestamp = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
+    for k, v in sorted(application.items(), key=lambda i: int(i[0]), reverse=True):
+        if LOCAL.localize(datetime.fromtimestamp(timestamp)) >= LOCAL.localize(datetime.fromtimestamp(int(k))):
+            return v
 
 
 def filesinfolder(*extensions, folder, excluded=None):

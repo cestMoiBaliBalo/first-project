@@ -11,6 +11,7 @@ from operator import eq, gt, lt
 
 import yaml
 
+from AudioCD.Interface import validmonth
 from .. import shared
 from ..AudioCD.shared import DefaultAudioCDTags, RippedCD, canfilebeprocessed, changealbum, changetrack, digitalaudiobase, rippinglog
 
@@ -149,8 +150,8 @@ class Test03(unittest.TestCase):
         self.assertListEqual(sorted(sorted(self.x, key=myfunc1), key=myfunc2), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
+@unittest.skip
 class Test04(unittest.TestCase):
-    @unittest.skip
     def test_01first(self):
         myimg = shared.Images(r"H:\201601\201601_00001.JPG")
         self.assertEqual(myimg.originaldatetime, "22/01/2016 10:03:26 CET+0100")
@@ -160,6 +161,23 @@ class Test04(unittest.TestCase):
 
     def test_03third(self):
         self.assertRaises(OSError, shared.Images, r"C:\Users\Xavier\Documents\Music - Regex test files.xav")
+
+
+class Test05(unittest.TestCase):
+    def test_01first(self):
+        self.assertEqual(validmonth("Janvier 2017"), 201701)
+
+    def test_02second(self):
+        self.assertEqual(validmonth("2017 01"), 201701)
+
+    def test_03third(self):
+        self.assertEqual(validmonth("Février 2017"), 201702)
+
+    def test_04fourth(self):
+        self.assertEqual(validmonth("2017 02"), 201702)
+
+    def test_05fifth(self):
+        self.assertEqual(validmonth("2017-02"), 201702)
 
 
 class TestRegex(unittest.TestCase):
@@ -190,6 +208,12 @@ class TestRegex(unittest.TestCase):
 
     def test_08eighth(self):
         self.assertNotRegex("1994 - Dissident", r"^(?:{0})\.\d -\B".format(shared.DFTYEARREGEX))
+
+    def test_09ninth(self):
+        self.assertRegex("Janvier 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
+
+    def test_10Tenth(self):
+        self.assertRegex("Février 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
 
 
 class TestCanFileBeProcessed(unittest.TestCase):
@@ -485,7 +509,7 @@ class Test03DefaultCDTrack(unittest.TestCase):
             "Title": "A Mansion in Darkness",
             "Offset": "0"
         }
-        self.first, self.second = ["King Diamond", "1987", "Abigail", "Hard Rock", "016861878825", "1.19870000.1", "King Diamond"], None
+        self.first, self.second = ["King Diamond", "1987", "Abigail", "Hard Rock", "016861878825", "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
         with tempfile.TemporaryDirectory() as directory:
             outfile = os.path.join(directory, "rippinglog.json")
 
@@ -496,6 +520,8 @@ class Test03DefaultCDTrack(unittest.TestCase):
             if os.path.exists(outfile):
                 with open(outfile, encoding=shared.UTF8) as fr:
                     self.second = json.load(fr)[0]
+            if self.second:
+                self.second = self.second[0:5] + self.second[6:]
 
     def test_01first(self):
         self.assertTrue(self.second)
@@ -596,7 +622,7 @@ class Test05DefaultCDTrack(unittest.TestCase):
             "OrigYear": "1987",
             "Offset": "0"
         }
-        self.first, self.second = ["King Diamond", "2016", "Abigail (1/2)", "Hard Rock", "016861878825", "1.19870000.1", "King Diamond"], None
+        self.first, self.second = ["King Diamond", "2016", "Abigail (1/2)", "Hard Rock", "016861878825",  "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
         with tempfile.TemporaryDirectory() as directory:
             outfile = os.path.join(directory, "rippinglog.json")
 
@@ -607,6 +633,8 @@ class Test05DefaultCDTrack(unittest.TestCase):
             if os.path.exists(outfile):
                 with open(outfile, encoding=shared.UTF8) as fr:
                     self.second = json.load(fr)[0]
+            if self.second:
+                self.second = self.second[0:5] + self.second[6:]
 
     def test_01first(self):
         self.assertTrue(self.second)

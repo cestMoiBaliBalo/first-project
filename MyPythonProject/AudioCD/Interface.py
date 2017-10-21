@@ -26,79 +26,84 @@ import logging.config
 import os
 import re
 import sys
+from datetime import datetime
 from functools import partial
-from itertools import chain, groupby, repeat
+from itertools import accumulate, chain, groupby, repeat
 
 import jinja2
 import yaml
+from dateutil.parser import parse
 
-from Applications.Database.AudioCD.shared import deletelog, insertfromargs, selectlog, selectlogs, updatelog, validproductcode, validyear
-from Applications.Database.DigitalAudioFiles.shared import deletealbum, \
-    deletealbumheader, \
-    getalbumdetail, \
-    getalbumheader, \
-    getalbumid, \
-    updatealbum
+from Applications.Database.AudioCD.shared import deletelog, insertfromargs, insertfromfile as insertlogsfromfile, selectlog, selectlogs, updatelog
+from Applications.Database.DigitalAudioFiles.shared import deletealbum, deletealbumheader, getalbumdetail, getalbumheader, getalbumid, insertfromfile as insertalbumsfromfile, updatealbum
 from Applications.Database.shared import Boolean
-from Applications.shared import DATABASE, \
-    DFTDAYREGEX, \
-    DFTMONTHREGEX, \
-    DFTYEARREGEX, \
-    LOCAL, \
-    TEMPLATE4, \
-    TemplatingEnvironment, \
-    UTC, \
-    readable, \
-    validunixepochtime
+from Applications.parsers import database_parser
+from Applications.shared import DFTMONTHREGEX, DFTYEARREGEX, LOCAL, LOCALMONTHS, LocalParser, TEMPLATE4, TemplatingEnvironment, UTC, dateformat, readable, validalbumid, validalbumsort, validdiscnumber, \
+    validproductcode, validtracks, validtimestamp, validyear
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+# ==========
+# Constants.
+# ==========
+GENRES = ["Rock", "Hard Rock", "Progressive Rock", "Alternative Rock", "Black Metal", "Doom Metal", "Heavy Metal", "Pop", "French Pop"]
+
 
 # ===========
 # Decorators.
 # ===========
 def deco1(func):
-    def wrapper(*args, db):
-        albums = chain.from_iterable([[album.albumid for album in genobj] for genobj in map(func, args, repeat(db))])
-        return list(chain.from_iterable([[row for row in genobj] for genobj in [getalbumheader(db=db, albumid=album) for album in albums]]))
+    def wrapper(*rows, **kwargs):
+        albums = chain.from_iterable([[album.albumid for album in genobj] for genobj in map(func, rows, repeat(kwargs["db"]))])
+        return list(getalbumheader(albumid=list(albums), uid=rows, **kwargs))
 
     return wrapper
 
 
 def deco2(func):
-    def wrapper(*args, db):
-        return list(map(func, repeat(db), args))
+    def wrapper(*rows, db):
+        return list(map(func, repeat(db), rows))
 
     return wrapper
 
 
 def deco3(func):
-    def wrapper(*rowid, db):
-        def myfilter(item):
-            return item.rowid in rowid
-
-        mylist = filter(myfilter, func(db))
-        return [(k, [(k, list(g)) for k, g in groupby(list(g), key=lambda i: i.discid)]) for k, g in groupby(mylist, key=lambda i: i.albumid)]
+    def wrapper(*rows, **kwargs):
+        return [(k, [(k, list(g)) for k, g in groupby(list(g), key=lambda i: i.discid)]) for k, g in groupby(func(uid=rows, **kwargs), key=lambda i: i.albumid)]
 
     return wrapper
 
 
 def deco4(func):
-    def wrapper(db):
-        return [(k, [(k, list(g)) for k, g in groupby(list(g), key=lambda i: i.discid)]) for k, g in groupby(func(db), key=lambda i: i.albumid)]
+    def wrapper(**kwargs):
+        return [(k, [(k, list(g)) for k, g in groupby(list(g), key=lambda i: i.discid)]) for k, g in groupby(func(**kwargs), key=lambda i: i.albumid)]
 
     return wrapper
 
 
 def deco5(func):
-    def wrapper(*args, db, **kwargs):
+    def wrapper(*rows, db, **kwargs):
         mylist = list()
-        for arg in args:
-            mylist.append(func(arg, db, **kwargs))
+        for row in rows:
+            mylist.append(func(row, db, **kwargs))
         return mylist
+
+    return wrapper
+
+
+def deco6(func):
+    def wrapper(db, **kwargs):
+        return func(*kwargs["file"], db=db)
+
+    return wrapper
+
+
+def deco7(func):
+    def wrapper(db, **kwargs):
+        return list(accumulate(func(*kwargs["file"], db=db)))[-1]
 
     return wrapper
 
@@ -106,6 +111,127 @@ def deco5(func):
 # ==========
 # Functions.
 # ==========
+def albumid(stg):
+    """
+    Check if a string match the albumsort pattern.
+
+    :param stg: String.
+    :return: Input string if match successes. Exception if match fails.
+    """
+    try:
+        _albumid = validalbumid(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _albumid
+
+
+def albumsort(stg):
+    """
+    Check if a string match the albumsort pattern.
+
+    :param stg: String.
+    :return: Input string if match successes. Exception if match fails.
+    """
+    try:
+        _albumsort = validalbumsort(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _albumsort
+
+
+def year(stg):
+    """
+    Check if a string match the year pattern.
+
+    :param stg: String.
+    :return: Input string converted to an integer if match successes. Exception if match fails.
+    """
+    try:
+        _year = validyear(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _year
+
+
+def productcode(stg):
+    """
+    Check if a string match the product code pattern.
+
+    :param stg: String.
+    :return: Input string if match successes. Exception if match fails.
+    """
+    try:
+        _productcode = validproductcode(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _productcode
+
+
+def unixepochtime(stg):
+    """
+
+    :param stg:
+    :return:
+    """
+    try:
+        _unixepochtime = validtimestamp(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _unixepochtime
+
+
+def discnumber(stg):
+    """
+    Check if a string match the albumsort pattern.
+
+    :param stg: String.
+    :return: Input string if match successes. Exception if match fails.
+    """
+    try:
+        _discnumber = validdiscnumber(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _discnumber
+
+
+def tracks(stg):
+    """
+    Check if a string match the albumsort pattern.
+
+    :param stg: String.
+    :return: Input string if match successes. Exception if match fails.
+    """
+    try:
+        _tracks = validtracks(stg)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(err)
+    return _tracks
+
+
+def validmonth(month):
+    """
+
+    :param month:
+    :return:
+    """
+    rex1 = re.compile(r"^{0}\b(?:-|/|\s)\b{1}$".format(DFTYEARREGEX, DFTMONTHREGEX))
+    rex2 = re.compile(r"^\b(\w+)\b\s\b{0}$".format(DFTYEARREGEX), re.IGNORECASE)
+
+    try:
+        month = str(month)
+    except TypeError:
+        raise argparse.ArgumentTypeError('"{0}" is not a valid month format'.format(month))
+
+    match = rex1.match(month)
+    if match:
+        return int(dateformat(LOCAL.localize(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True))), "$Y$m"))
+    match = rex2.match(month)
+    if match:
+        if match.group(1) in LOCALMONTHS:
+            return int(dateformat(LOCAL.localize(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True))), "$Y$m"))
+    raise argparse.ArgumentTypeError('"{0}" is not a valid month format'.format(month))
+
+
 def getfunction(table="default", statement="default", donotpropagate=True, row=True):
     table_dict = CONFIGURATION[table]
     statement_dict = table_dict[statement]
@@ -154,20 +280,6 @@ def gettemplate(args):
     return None
 
 
-def albumsort(stg):
-    """
-    Check if a string match the albumsort pattern.
-
-    :param stg: String.
-    :return: Input string if match successes. Exception if match fails.
-    """
-    match1 = re.match(r"^[12]\.({0})({1})({2})\.\d$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX), stg)
-    match2 = re.match(r"^[12]\.({0})0000\.\d$".format(DFTYEARREGEX), stg)
-    if any([match1, match2]):
-        return stg
-    raise argparse.ArgumentTypeError('"{0}" isn\'t a correct albumsort tag.'.format(stg))
-
-
 def insert_func(ns=None, **kwargs):
     """
     Run the appropriate `insert` function respective to the parsed table.
@@ -183,15 +295,9 @@ def insert_func(ns=None, **kwargs):
     table = pairs.get("table")
     statement = pairs.get("statement")
     if all([db, table, statement]):
-        del pairs["db"]
-        del pairs["table"]
-        del pairs["statement"]
-        if "function" in pairs:
-            del pairs["function"]
-        if "template" in pairs:
-            del pairs["template"]
-        if pairs:
-            return CONFIGURATION[table][statement](db=db, **pairs)
+        kwargs = {key: value for key, value in pairs.items() if key not in ["db", "table", "statement", "function", "template"]}
+        if kwargs:
+            return CONFIGURATION[table][statement](db=db, **kwargs)
     return DEFAULT.get(table, DEFAULT["default"])
 
 
@@ -212,7 +318,7 @@ def select_func(ns=None, **kwargs):
     donotpropagate = pairs.get("donotpropagate", False)
     rowid = pairs.get("rowid", [])
     if all([db, table, statement]):
-        return list(getfunction(table, statement, donotpropagate, bool(rowid))(*rowid, db=db))
+        return list(getfunction(table, statement, donotpropagate, bool(rowid))(*rowid, **pairs))
     return []
 
 
@@ -245,7 +351,6 @@ def update_func(ns=None, **kwargs):
     :param kwargs: Dictionary holding parsed arguments.
     :return: Updated records count.
     """
-    logger = logging.getLogger("Interface.update_func")
     pairs = dict(kwargs)
     if ns:
         pairs = {k: v for k, v in vars(ns).items()}
@@ -255,18 +360,9 @@ def update_func(ns=None, **kwargs):
     donotpropagate = pairs.get("donotpropagate", False)
     rowid = pairs.get("rowid", [])
     if all([db, table, statement, rowid]):
-        del pairs["db"]
-        del pairs["table"]
-        del pairs["statement"]
-        del pairs["donotpropagate"]
-        del pairs["rowid"]
-        if "function" in pairs:
-            del pairs["function"]
-        if "template" in pairs:
-            del pairs["template"]
-        if pairs:
-            logger.debug(pairs)
-            return getfunction(table, statement, donotpropagate, bool(rowid))(*rowid, db=db, **pairs)
+        kwargs = {key: value for key, value in pairs.items() if key not in ["db", "table", "statement", "donotpropagate", "function", "template", "rowid", "test"]}
+        if kwargs:
+            return getfunction(table, statement, donotpropagate, bool(rowid))(*rowid, db=db, **kwargs)
     return DEFAULT.get(table, DEFAULT["default"])
 
 
@@ -315,7 +411,8 @@ CONFIGURATION = {
                             True: deletelog
                         }
                 },
-            "insert": insertfromargs
+            "insert": insertfromargs,
+            "insertfromfile": deco6(insertlogsfromfile)
         },
     "albums":
         {
@@ -328,8 +425,8 @@ CONFIGURATION = {
                         },
                     False:
                         {
-                            True: deco3(getalbumdetail),
-                            False: deco4(getalbumdetail)
+                            False: deco4(getalbumdetail),
+                            True: deco3(getalbumdetail)
                         }
                 },
             "delete":
@@ -353,7 +450,9 @@ CONFIGURATION = {
                         {
                             True: deco5(updatealbum)
                         }
-                }
+                },
+            "insertfromfile": deco7(insertalbumsfromfile)
+
         }
 }
 DEFAULT = {
@@ -362,6 +461,7 @@ DEFAULT = {
 }
 MAPPING = {
     "insert": "inserted",
+    "insertfromfile": "inserted",
     "delete": "deleted",
     "update": "updated",
 }
@@ -389,13 +489,18 @@ update_parent.set_defaults(template=gettemplate)
 update_parent.set_defaults(donotpropagate=True)
 update_parent.add_argument("rowid", nargs="+", type=int, help="List of rows IDs to be updated. Mandatory.")
 update_parent.add_argument("--artist", help="Album artist. Optional.", metavar="The Artist")
-update_parent.add_argument("--year", type=validyear, help="Album year. Optional. Only integers are allowed.")
+update_parent.add_argument("--year", type=year, help="Album year. Optional. Only integers are allowed.")
 update_parent.add_argument("--album", help="Album. Optional.", metavar="The Album")
-update_parent.add_argument("--genre", choices=["Rock", "Hard Rock", "Progressive Rock", "Alternative Rock", "Heavy Metal", "Black Metal", "French Pop"], help="Album genre. Optional.")
+update_parent.add_argument("--genre", choices=GENRES, help="Album genre. Optional.")
 
 # -----
-database = argparse.ArgumentParser(description="Shared parser for database argument.", add_help=False)
-database.add_argument("--database", dest="db", default=DATABASE, help="Path to database storing maintained tables.")
+subset_parser = argparse.ArgumentParser(description="Shared parser for subset results.", add_help=False, argument_default=argparse.SUPPRESS)
+subset_parser.add_argument("--artistsort", nargs="*", help="Subset results by `artistsort`. Optional.")
+subset_parser.add_argument("--albumsort", nargs="*", help="Subset results by `albumsort`. Optional.")
+subset_parser.add_argument("--artist", nargs="*", help="Subset results by `artist`. Optional.")
+subset_parser.add_argument("--year", nargs="*", type=year, help="Subset results by `year`. Optional.")
+subset_parser.add_argument("--album", nargs="*", help="Subset results by `album`. Optional.")
+subset_parser.add_argument("--genre", nargs="*", help="Subset results by `genre`. Optional.")
 
 # =================
 # Arguments parser.
@@ -417,34 +522,54 @@ parser_log = subparser.add_parser("rippinglog", description="Subparser for `ripp
 subparser_log = parser_log.add_subparsers(dest="statement")
 
 #  1.a. SELECT statement.
-parser_log_select = subparser_log.add_parser("select", parents=[select_parent, database], description="Subparser for selecting record(s) from `rippinglog` table.")
+parser_log_select = subparser_log.add_parser("select", parents=[select_parent, database_parser, subset_parser], description="Subparser for selecting record(s) from `rippinglog` table.",
+                                             argument_default=argparse.SUPPRESS)
 parser_log_select.set_defaults(donotpropagate=True)
+parser_log_select.add_argument("--label", nargs="*", type=year, help="Subset results by `label`. Optional.")
+parser_log_select.add_argument("--rippedyear", nargs="*", type=year, help="Subset results by `ripped year`. Optional.")
+parser_log_select.add_argument("--rippedmonth", nargs="*", type=validmonth, help="Subset results by `ripped month`. Optional.")
+parser_log_select.add_argument("--orderby", nargs="*")
 
 #  1.b. DELETE statement.
-parser_log_delete = subparser_log.add_parser("delete", parents=[delete_parent, database], description="Subparser for deleting record(s) from `rippinglog` table.")
+parser_log_delete = subparser_log.add_parser("delete", parents=[delete_parent, database_parser], description="Subparser for deleting record(s) from `rippinglog` table.")
 parser_log_delete.set_defaults(donotpropagate=True)
 
 #  1.c. UPDATE statement.
-parser_log_update = subparser_log.add_parser("update", parents=[update_parent, database], description="Subparser for updating record(s) from `rippinglog` table.", argument_default=argparse.SUPPRESS)
+parser_log_update = subparser_log.add_parser("update", parents=[update_parent, database_parser], description="Subparser for updating record(s) from `rippinglog` table.", argument_default=argparse.SUPPRESS)
 parser_log_update.add_argument("--artistsort", help="Album artistsort key. Optional.", metavar="Artist, The")
 parser_log_update.add_argument("--albumsort", type=albumsort, help="Album albumsort key. Optional.", metavar="1.20170000.1")
-parser_log_update.add_argument("--upc", type=validproductcode, help="Album product code. Optional.")
+parser_log_update.add_argument("--origyear", type=year, help="Album original year. Optional.")
+parser_log_update.add_argument("--disc", type=discnumber, help="Disc number. Optional.")
+parser_log_update.add_argument("--tracks", type=tracks, help="Total tracks number. Optional.")
+parser_log_update.add_argument("--upc", type=productcode, help="Album product code. Optional.")
+parser_log_update.add_argument("--label", help="Album label. Optional.")
 parser_log_update.add_argument("--application", help="Ripping application. Optional.")
-parser_log_update.add_argument("--ripped", type=validunixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
+parser_log_update.add_argument("--ripped", type=unixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
 
 #  1.d. INSERT statement.
-parser_log_insert = subparser_log.add_parser("insert", parents=[database], description="Subparser for inserting record(s) into `rippinglog` table.", argument_default=argparse.SUPPRESS)
+parser_log_insert = subparser_log.add_parser("insert", parents=[database_parser], description="Subparser for inserting record(s) into `rippinglog` table.", argument_default=argparse.SUPPRESS)
 parser_log_insert.set_defaults(function=insert_func)
 parser_log_insert.set_defaults(template=gettemplate)
 parser_log_insert.add_argument("artistsort", help="Album artistsort. Mandatory.", metavar="Artist, The")
 parser_log_insert.add_argument("albumsort", type=albumsort, help="Album albumsort. Mandatory.", metavar="1.20170000.1")
 parser_log_insert.add_argument("artist", help="Album artist. Mandatory.", metavar="The Artist")
-parser_log_insert.add_argument("year", type=validyear, help="Album year. Mandatory. Only integers are allowed.")
+parser_log_insert.add_argument("origyear", help="Album original year. Mandatory. Only integers are allowed.")
+parser_log_insert.add_argument("year", help="Album year. Mandatory. Only integers are allowed.")
 parser_log_insert.add_argument("album", help="Album. Mandatory.", metavar="The Album")
-parser_log_insert.add_argument("genre", choices=["Rock", "Hard Rock", "Progressive Rock", "Alternative Rock", "Heavy Metal", "Black Metal", "French Pop"], help="Album genre. Mandatory.")
-parser_log_insert.add_argument("upc", type=validproductcode, help="Album product code. Mandatory.")
+parser_log_insert.add_argument("disc", type=discnumber, help="Disc number. Mandatory. Only integers are allowed.")
+parser_log_insert.add_argument("tracks", type=tracks, help="Total tracks number. Mandatory. Only integers are allowed.")
+parser_log_insert.add_argument("genre", choices=GENRES, help="Album genre. Mandatory.")
+parser_log_insert.add_argument("upc", type=productcode, help="Album product code. Mandatory.")
+parser_log_insert.add_argument("label", help="Album label. Mandatory.")
 parser_log_insert.add_argument("--application", nargs="?", default="dBpoweramp 15.1", help="Ripping application. Optional.")
-parser_log_insert.add_argument("--ripped", type=validunixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
+parser_log_insert.add_argument("--ripped", type=unixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
+
+#  1.e. INSERTFROMFILE statement.
+parser_log_insertff = subparser_log.add_parser("insertfromfile", parents=[database_parser], description="Subparser for inserting record(s) into `rippinglog` table from file(s).",
+                                               argument_default=argparse.SUPPRESS)
+parser_log_insertff.set_defaults(function=insert_func)
+parser_log_insertff.set_defaults(template=gettemplate)
+parser_log_insertff.add_argument("file", nargs="+", type=argparse.FileType(mode="r", encoding="UTF_8"), help="Input file(s). UTF-8 encoded JSON or XML. Mandatory.")
 
 #     ----------------------------
 #  2. Parser for `albums` command.
@@ -453,25 +578,32 @@ parser_alb = subparser.add_parser("albums", description="Subparser for `albums` 
 subparser_alb = parser_alb.add_subparsers(dest="statement")
 
 #  2.a. SELECT statement.
-parser_alb_select = subparser_alb.add_parser("select", parents=[select_parent, database], description="Subparser for selecting record(s) from `albums` table.")
+parser_alb_select = subparser_alb.add_parser("select", parents=[select_parent, database_parser, subset_parser], description="Subparser for selecting record(s) from `albums` table.")
 parser_alb_select.add_argument("--donotpropagate", nargs="?", default=False, const=True)
 
 #  2.b. DELETE statement.
-parser_alb_delete = subparser_alb.add_parser("delete", parents=[delete_parent, database], description="Subparser for deleting record(s) from `albums` table.")
+parser_alb_delete = subparser_alb.add_parser("delete", parents=[delete_parent, database_parser], description="Subparser for deleting record(s) from `albums` table.")
 parser_alb_delete.add_argument("--donotpropagate", nargs="?", default=False, const=True)
 
 #  2.c. UPDATE statement.
-parser_alb_update = subparser_alb.add_parser("update", parents=[update_parent, database], description="Subparser for updating record(s) from `albums` table.", argument_default=argparse.SUPPRESS)
+parser_alb_update = subparser_alb.add_parser("update", parents=[update_parent, database_parser], description="Subparser for updating record(s) from `albums` table.", argument_default=argparse.SUPPRESS)
 alb_update_group = parser_alb_update.add_mutually_exclusive_group()
-parser_alb_update.add_argument("--albumid", help="Album unique ID. Optional.", metavar="Artist, The.1.20170000.1")
+parser_alb_update.add_argument("--albumid", type=albumid, help="Album unique ID. Optional.", metavar="Artist, The.1.20170000.1")
 parser_alb_update.add_argument("--live", type=boolean, help="Live album. Optional.")
 parser_alb_update.add_argument("--bootleg", type=boolean, help="Bootleg album. Optional.")
 parser_alb_update.add_argument("--incollection", type=boolean, help="Album in personal collection. Optional.")
-parser_alb_update.add_argument("--upc", type=validproductcode, help="Album product code. Optional.")
-parser_alb_update.add_argument("--played", type=validunixepochtime, help="Album last played UTC Unix epoch time. Optional.", metavar="1500296048")
+parser_alb_update.add_argument("--upc", type=productcode, help="Album product code. Optional.")
+parser_alb_update.add_argument("--played", type=unixepochtime, help="Album last played UTC Unix epoch time. Optional.", metavar="1500296048")
 alb_update_group.add_argument("--count", type=int, help="Album played counter. Optional.")
 alb_update_group.add_argument("--icount", action="store_true", help="Increment played counter by 1. Optional.")
 alb_update_group.add_argument("--dcount", action="store_true", help="Decrement played counter by 1. Optional.")
+
+#  2.d. INSERTFROMFILE statement.
+parser_alb_insertff = subparser_alb.add_parser("insertfromfile", parents=[database_parser], description="Subparser for inserting record(s) into `rippinglog` table from file(s).",
+                                               argument_default=argparse.SUPPRESS)
+parser_alb_insertff.set_defaults(function=insert_func)
+parser_alb_insertff.set_defaults(template=gettemplate)
+parser_alb_insertff.add_argument("file", nargs="+", type=argparse.FileType(mode="r", encoding="UTF_8"), help="Input file(s). UTF-8 encoded JSON or XML. Mandatory.")
 
 # ===============
 # Main algorithm.
