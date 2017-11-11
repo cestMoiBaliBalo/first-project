@@ -214,8 +214,8 @@ def validmonth(month):
     :param month:
     :return:
     """
-    rex1 = re.compile(r"^{0}\b(?:-|/|\s)\b{1}$".format(DFTYEARREGEX, DFTMONTHREGEX))
-    rex2 = re.compile(r"^\b(\w+)\b\s\b{0}$".format(DFTYEARREGEX), re.IGNORECASE)
+    rex1 = re.compile(r"^(?:{0})\b(?:-|/|\s)\b(?:{1})$".format(DFTYEARREGEX, DFTMONTHREGEX))
+    rex2 = re.compile(r"^\b(\w+)\b\s\b(?:{0})$".format(DFTYEARREGEX), re.IGNORECASE)
 
     try:
         month = str(month)

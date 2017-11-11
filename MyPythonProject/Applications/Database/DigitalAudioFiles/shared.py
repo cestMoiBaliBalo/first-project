@@ -242,7 +242,7 @@ def insertfromfile(*files, db=DATABASE):
     """
     logger = logging.getLogger("{0}.insertfromfile".format(__name__))
     regex1, regex2, regex3 = re.compile(r"^<([^>]+)>$"), re.compile(r"^</([^>]+)>$"), re.compile(r"^<\?xml[^>]+>$")
-    root, status = "albums", []
+    root, status = "albums", [(0, 0, 0)]
     for file in files:
         structure, tracks, beg_match, end_match, beg = "json", None, None, None, True
 
@@ -312,8 +312,9 @@ def insertfromfile(*files, db=DATABASE):
                     status.append((tcount, dcount, acount))
 
                 conn.close()
-            return [list(accumulate(item))[-1] for item in zip(*status)]
-        return [0, 0, 0]
+    if len(status) > 1:
+        return [list(accumulate(item))[-1] for item in zip(*status)]
+    return list(chain(status))
 
 
 def getalbumdetail(db=DATABASE, **kwargs):

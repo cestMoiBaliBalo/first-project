@@ -918,7 +918,8 @@ def audiofilesinfolder(*extensions, folder):
     :param folder: folder to walk through.
     :return: generator object.
     """
-    return ((result.file, result.object, result.tags) for result in map(getmetadata, shared.filesinfolder(*extensions, folder=folder)) if result.found)
+    for audiofil, audioobj, tags in ((result.file, result.object, result.tags) for result in map(getmetadata, shared.filesinfolder(*extensions, folder=folder)) if result.found):
+        yield audiofil, audioobj, tags
 
 
 def copy_audiofiles_to_remotedirectory(*args, server=shared.NAS, user="admin", password=b85decode(shared.PASSWORD).decode()):

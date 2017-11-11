@@ -3,12 +3,12 @@ import json
 import logging
 import re
 import sqlite3
-from collections import namedtuple
+from collections import Counter, namedtuple
 from datetime import datetime
 from itertools import chain, compress, groupby
 from operator import itemgetter
 
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat, validalbumsort, validdiscnumber, validgenre, validproductcode, validdatetime, validtracks, validyear
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat, getnearestmultiple, gettabs, validalbumsort, validdatetime, validdiscnumber, validgenre, validproductcode, validtracks, validyear
 from ...xml import rippinglog_in
 
 __author__ = 'Xavier ROSSET'
@@ -151,29 +151,42 @@ class InsertRippingLog(object):
 # ==========
 # Functions.
 # ==========
-def logrecord(t, func):
-    tab = 3
+def logrecord(t, *, logginglevel="debug"):
+    """
+
+    :param t:
+    :param logginglevel:
+    :return:
+    """
+    tabsize, headers = 3, ["Record", "Ripped", "Artistsort", "Albumsort", "Artist", "Origyear", "Year", "Album", "Label", "Genre", "UPC", "Application", "Disc", "Tracks", "Created", "Modified"]
+    width = getnearestmultiple(max([len(header) for header in headers]), multiple=tabsize)
+    logger = logging.getLogger(__name__)
+    levels = {"default": logger.debug,
+              "debug": logger.debug,
+              "info": logger.info,
+              "warning": logger.warning}
+
+    # Split tuple structure to single variables.
     rowid, ripped, artistsort, albumsort, artist, origyear, year, album, label, genre, upc, application, disc, tracks, utc_created, utc_modified = t
-    logger = logging.getLogger("{0}.{1}".format(__name__, func))
-    logger.info("----------------")
-    logger.info("Selected record.")
-    logger.info("----------------")
-    logger.info("\tRecord\t\t: {0}".format(rowid).expandtabs(tab))
-    logger.info("\tArtistSort\t: {0}".format(artistsort).expandtabs(tab))
-    logger.info("\tAlbumSort\t: {0}".format(albumsort).expandtabs(tab))
-    logger.info("\tArtist\t\t: {0}".format(artist).expandtabs(tab))
-    logger.info("\tYear\t\t\t: {0}".format(year).expandtabs(tab))
-    logger.info("\tAlbum\t\t\t: {0}".format(album).expandtabs(tab))
-    logger.info("\tDisc\t\t\t: {0}".format(disc).expandtabs(tab))
-    logger.info("\tTracks\t\t: {0}".format(tracks).expandtabs(tab))
-    logger.info("\tGenre\t\t\t: {0}".format(genre).expandtabs(tab))
-    logger.info("\tUPC\t\t\t: {0}".format(upc).expandtabs(tab))
-    logger.info("\tLabel\t\t\t: {0}".format(label).expandtabs(tab))
-    logger.info("\tRipped\t\t: {0}".format(dateformat(LOCAL.localize(ripped), TEMPLATE4)).expandtabs(tab))
-    if utc_created:
-        logger.info("\tCreated\t\t: {0}".format(dateformat(UTC.localize(utc_created), TEMPLATE4)).expandtabs(tab))
+
+    # Convert non-string variables to string.
+    rowid = str(rowid)
+    ripped = dateformat(LOCAL.localize(ripped), TEMPLATE4)
+    origyear = str(origyear)
+    year = str(year)
+    utc_created = dateformat(UTC.localize(utc_created).astimezone(LOCAL), TEMPLATE4)
     if utc_modified:
-        logger.info("\tModified\t\t: {0}".format(dateformat(UTC.localize(utc_modified), TEMPLATE4)).expandtabs(tab))
+        utc_modified = dateformat(UTC.localize(utc_modified).astimezone(LOCAL), TEMPLATE4)
+
+    # Gathered together single variables into a tuple structure.
+    thattuple = rowid, ripped, artistsort, albumsort, artist, origyear, year, album, label, genre, upc, application, disc, tracks, utc_created, utc_modified
+
+    # Log variables tuple content.
+    levels.get(logginglevel, "default")("================")
+    levels.get(logginglevel, "default")("Selected record.")
+    levels.get(logginglevel, "default")("================")
+    for label, data in filter(lambda i: bool(i[1]), zip(headers, thattuple)):
+        levels.get(logginglevel, "default")("{0}{1}: {2}".format(label, gettabs(width - len(label)), data).expandtabs(tabsize))
 
 
 # =======================================
@@ -399,7 +412,7 @@ def selectlogs(db=DATABASE, **kwargs):
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute(sql, args):
         rows.append(row)
-        logrecord(row, "selectlogs")
+        logrecord(row, logginglevel=kwargs.get("logginglevel", "debug"))
     conn.close()
     for row in rows:
         yield record._make(row)
@@ -427,7 +440,7 @@ def selectlogsfrommonth(*month, db=DATABASE):
     record = namedtuple("record", "rowid ripped artistsort albumsort artist origyear year album label genre upc application disc tracks utc_created utc_modified")
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute("SELECT a.rowid, a.* FROM rippinglog a ORDER BY ripped DESC"):
-        logrecord(tuple(row), "selectlogsfrommonth")
+        logrecord(tuple(row))
         if int(LOCAL.localize(tuple(row)[1]).strftime("%Y%m")) in month:
             yield record._make(row)
 
@@ -454,9 +467,9 @@ def updatelog(*uid, db=DATABASE, **kwargs):
                  "year": validyear}
 
     # 2. Validate input pairs.
-    #    Change `selectors` values:
-    #       - "1": input values is validated. Field will be updated.
-    #       - "0": input values is rejected. Field won't be updated.
+    #    Change `selectors` values to accept/reject pairs:
+    #       - "1": input value is accepted. Respective field will be updated.
+    #       - "0": input value is rejected. Respective field won't be updated.
     pairs = dict(kwargs)
     keys = sorted(pairs.keys())
     selectors = [1] * len(pairs)
@@ -494,18 +507,40 @@ def updatelog(*uid, db=DATABASE, **kwargs):
         finally:
             conn.close()
 
-    # 5. Return table total changes.
+    # 5. Return total changes.
     return status
 
 
-def getmonths(db=DATABASE):
+def getartistsort(db=DATABASE):
     """
 
     :param db:
     :return:
     """
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    reflist = sorted(set([(LOCAL.localize(row[0]).strftime("%Y%m"), LOCAL.localize(row[0]).strftime("%B").capitalize()) for row in conn.execute("SELECT ripped FROM rippinglog ORDER BY ripped DESC")]),
-                     key=itemgetter(0))
-    for key, group in groupby(reflist, key=lambda i: i[0][:4]):
-        yield key, list(group)
+    c = Counter([row.artistsort for row in selectlogs(db=db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def getgenre(db=DATABASE):
+    """
+
+    :param db:
+    :return:
+    """
+    c = Counter([row.genre for row in selectlogs(db=db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def rippedmonth(db=DATABASE):
+    c = Counter([dateformat(LOCAL.localize(row.ripped), "$Y$m") for row in selectlogs(db=db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def rippedyear(db=DATABASE):
+    c = {k: v for k, v in rippedmonth(db=db)}
+    c = Counter([month[:4] for month in c.keys()])
+    for k, v in c.items():
+        yield k, v

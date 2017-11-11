@@ -62,5 +62,7 @@ REM        -------------------------
 :STEP3
 python %_PYTHONPROJECT%\AudioCD\RippedCD`View1.py
 python %_PYTHONPROJECT%\AudioCD\RippedCD`View2.py
+python %_PYTHONPROJECT%\AudioCD\RippedCD`View3.py
+python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
 SHIFT
 GOTO MAIN

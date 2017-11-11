@@ -1,4 +1,4 @@
-@ECHO on
+@ECHO off
 REM  1. Exécuté depuis le scheduler windows : "G:\Computing\start.cmd" 1 3 4 6 7 9 10 11 13.
 REM  2. Exécuté manuellement : "G:\Computing\start.cmd" 16 I 17 J
 REM  3. Exécuté manuellement : "G:\Computing\start.cmd" 21 "2007"
@@ -20,9 +20,6 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _videos=%USERPROFILE%\videos
-SET _log=%_COMPUTING%\XXCOPYFilesLog.log
-SET _lossy1="G:\Music\Lossy (default pattern)"
-SET _lossy2="G:\Music\Lossy (readable pattern)"
 
 
 REM ===============
@@ -48,59 +45,20 @@ IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "14" GOTO STEP14
 IF "%~1" EQU "15" GOTO STEP15
 
-REM Sync mobile media (mobile phone, car SD Card, car USB drive, etc). Both audio and videos.
-REM Use the right argument depending on the source drive.
-IF "%~1" EQU "16" (
-    SET repository1=%_lossy1%\
-    SET repository2=%_COMPUTING%\Arguments.xav
-    SET exceptions=%_COMPUTING%\Exceptions.xav
-    SET filters=*\*.mp3
-    SET drive=%~2
-    SHIFT
-    GOTO STEP16
-)
+REM Sync mobile media (both SD card and USB drive). Audio only!
+IF "%~1" EQU "16" GOTO STEP16
 
 REM Sync FIIO X5 lossless music player. Audio only!
-REM Use the right argument depending on the source drive.
-IF "%~1" EQU "17" (
-    SET repository1=G:\Music\Lossless\
-    SET repository2=
-    SET exceptions=
-    SET filters=
-    SET drive=%~2
-    SHIFT
-    GOTO STEP16
-)
-
-REM Sync mobile media (mobile phone, car SD Card, car USB drive, etc). Audio only!
-REM Use the right argument depending on the source drive.
-IF "%~1" EQU "18" (
-    SET repository1=%_lossy2%\
-    SET repository2=
-    SET exceptions=
-    SET filters=*\*.m4a
-    SET drive=%~2
-    SHIFT
-    GOTO STEP16
-)
+IF "%~1" EQU "17" GOTO STEP17
 
 REM Backup Bruce Springsteen lossless audio files.
 REM Require two mandatory arguments: both "21" and a year composed of four digits.
-IF "%~1" EQU "19" (
-    SET drive=F
-    SET src=!drive!:\*\Springsteen*\*\%~2\*\*.flac
-    SHIFT
-    GOTO STEP15
-)
-
-REM Copy media files from logical repository.
-IF "%~1" EQU "20" (
-    SET dst=%~2
-    SET repository=%~3
-    SHIFT
-    SHIFT
-    GOTO STEP17
-)
+REM IF "%~1" EQU "19" (
+REM     SET drive=F
+REM     SET src=!drive!:\*\Springsteen*\*\%~2\*\*.flac
+REM     SHIFT
+REM     GOTO STEP18
+REM )
 
 SHIFT
 GOTO MAIN
@@ -109,9 +67,18 @@ GOTO MAIN
 REM     --------------------------
 REM  3. Clear temporary directory.
 REM     --------------------------
-REM     /DB#1: REMoves files older than or equal to 1 day.
+REM     /DB#1 Removes files older than or equal to 1 day.
+REM     /RS   Removes files in the source (the only) directory.
+REM     /S    Processes directories and subdirectories except empty ones.
+REM     /R    Deletes even a read-only file.
+REM     /H    Deletes even a hidden/system file.
+REM     /PD0  Suppresses the prompt which would appear on a directory.
+REM     /Y    Suppresses the prompt prior to each file-delete.
+REM     /ED   Preserves the directory even if it becomes empty.
+REM     /ED1  Preserves 1 level of empty directories.
 :STEP1
-XXCOPY %TEMP%\ /RS /DB#1 /R /H /Y /PD0 /ED /oA:%_XXCOPYLOG%
+XXCOPY %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /oA:%_XXCOPYLOG%
+XXCOPY C:\Users\Xavier\AppData\Local\*.txt /RS /DB#1 /R /H /Y /PD0 /ED /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -120,7 +87,7 @@ REM     ---------------------------------------------------------
 REM  5. Backup "sandboxie.ini" and others single important files.
 REM     ---------------------------------------------------------
 REM     /Y:  suppresses prompt when overwriting existing files.
-REM     /BI: backs up incREMentally. Different, by time/size, files only.
+REM     /BI: backs up incrementally. Different, by time/size, files only.
 :STEP3
 IF EXIST "y:" (
     XXCOPY "%WINDIR%\sandboxie.ini" "y:\" /KS /Y /BI /FF
@@ -136,9 +103,9 @@ GOTO MAIN
 REM     -----------------------
 REM  6. Remove Areca log files.
 REM     -----------------------
-REM     /DB#8: REMoves files older than or equal to 8 days.
+REM     /DB#8: removes files older than or equal to 8 days.
 :STEP4
-IF EXIST %_BACKUP% XXCOPY %_BACKUP%\*\*.log /RS /DB#8 /R /H /Y /PD0 /ED /Fo:%_log% /FM:DTL
+IF EXIST %_BACKUP% XXCOPY %_BACKUP%\*\*.log /RS /DB#8 /R /H /Y /PD0 /ED
 SHIFT
 GOTO MAIN
 
@@ -146,12 +113,12 @@ GOTO MAIN
 REM     ---------------------------------
 REM  8. Backup "mypythonproject" content.
 REM     ---------------------------------
-REM     /DB#10: REMoves files older than or equal to 10 days.
+REM     /DB#10: removes files older than or equal to 10 days.
 REM     /IA   : copies file(s) only if destination directory doesn't exist.
 :STEP6
 IF EXIST y:\python (
-    XXCOPY y:\python\ /S /RS /FC /DB#10 /R /H /Y /PD0 /Fo:%_log% /FM:DTL
-    XXCOPY %_PYTHONPROJECT%\*\ y:\python\/$ymmdd$\ /X:*.pyc /X:*.xml /IA /KS /BI /FF /Y /R /Fo:%_log% /FM:DTL /oA:%_XXCOPYLOG%
+    XXCOPY y:\python\ /S /RS /FC /DB#10 /R /H /Y /PD0
+    XXCOPY %_PYTHONPROJECT%\*\ y:\python\/$ymmdd$\ /X:*.pyc /X:*.xml /IA /KS /BI /FF /Y /R /oA:%_XXCOPYLOG%
 )
 SHIFT
 GOTO MAIN
@@ -175,7 +142,7 @@ REM     ---------------------
 REM 10. Backup PDF documents.
 REM     ---------------------
 :STEP9
-IF EXIST "z:\Z123456789" XXCOPY "%_MYDOCUMENTS%\Administratif\*\*.pdf" "z:\Z123456789\" /KS /BI /FF /Y /R /Fo:%_log% /FM:DTL /oA:%_XXCOPYLOG%
+IF EXIST "z:\Z123456789" XXCOPY "%_MYDOCUMENTS%\Administratif\*\*.pdf" "z:\Z123456789\" /KS /BI /FF /Y /R /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -184,7 +151,7 @@ REM     -----------------
 REM 11. Clone album arts.
 REM     -----------------
 :STEP10
-IF EXIST "z:\Z123456790" XXCOPY "%_MYDOCUMENTS%\Album Art\*\*.jpg" "z:\Z123456790\" /CLONE /Fo:%_log% /FM:DTL /oA:%_XXCOPYLOG%
+IF EXIST "z:\Z123456790" XXCOPY "%_MYDOCUMENTS%\Album Art\*\*.jpg" "z:\Z123456790\" /CLONE /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -229,9 +196,9 @@ REM         Exclude "IPHONE".
 REM         Exclude "RECOVER".
 XXCOPY "H:\*\*.jpg" "\\Diskstation\pictures\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /CLONE /Z0 /oA:%_XXCOPYLOG%
 
-REM -->  2. Reverse both source and destination. Then REMove brand new files but exclude "#recycle" folder.
-REM         This trick allows to REMove files from "\\Diskstation\pictures" not present in "H:". And preserve "#recycle"!
-XXCOPY "\\Diskstation\pictures\" "H:\" /RS /BB /S /PD0 /RSY /X:#recycle\ /oA:%_XXCOPYLOG% /Fo:%_log% /FM:DTL
+REM -->  2. Reverse both source and destination. Then remove brand new files but exclude "#recycle" folder.
+REM         This trick allows to remove files from "\\Diskstation\pictures" not present in "H:". And preserve "#recycle"!
+XXCOPY "\\Diskstation\pictures\" "H:\" /RS /S /BB /PD0 /Y /X:#recycle\ /oA:%_XXCOPYLOG%
 
 SHIFT
 GOTO MAIN
@@ -242,76 +209,47 @@ REM 16. Clone "F:" to "\\Diskstation\music".
 REM     ------------------------------------
 REM     Only FLAC.
 :STEP15
-ECHO XXCOPY "%src%" "\\Diskstation\music\" /X:*recycle*\ /X:*volume*\ /KS /S /R /Q /Y /BI /FF /oA:%_XXCOPYLOG% /Fo:%_log% /FM:DTL
-ECHO XXCOPY "\\Diskstation\music\" "%drive%:\" /RS /BB /S /PD0 /RSY /X:#recycle\ /oA:%_XXCOPYLOG% /Fo:%_log% /FM:DTL
+REM XXCOPY "%src%" "\\Diskstation\music\" /X:*recycle*\ /X:*volume*\ /KS /S /R /Q /Y /BI /FF /oA:%_XXCOPYLOG%
+REM XXCOPY "\\Diskstation\music\" "%drive%:\" /RS /BB /S /PD0 /RSY /X:#recycle\ /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
 
-REM     ------------------
-REM 17. Sync mobile media.
-REM     ------------------
+REM     -----------------------------------------
+REM 17. Sync mobile media with lossy audio files.
+REM     -----------------------------------------
 :STEP16
 
-REM -->  0. Clear screen.
-CLS
+REM     Sync MP3 files.
+XXCOPY "G:\Music\Lossy\*\*.mp3" "%~2:\" /BI /FF /Y /oA:%_XXCOPYLOG%
 
-REM -->  1. Sauvegarde des répertoires ne devant pas être définitivement supprimés.
-IF DEFINED exceptions (
-    IF EXIST "!exceptions!" (
-        FOR /F "usebackq eol=# tokens=*" %%i IN ("!exceptions!") DO (
-            IF EXIST "%TEMP%\%%~i" (
-                RMDIR /S /Q "%TEMP%\%%~i"
-            )
-            XXCOPY "%drive%:\%%~i\" "%TEMP%\%%~i\" /S /oA:%_XXCOPYLOG%
-        )
-    )
-)
+REM     Sync M4A files.
+XXCOPY "G:\Music\Lossy\*\*.m4a" "%~2:\" /BI /FF /Y /oA:%_XXCOPYLOG%
 
-REM -->  2. Copie des fichiers composant le premier repository.
-REM         Repository physique.
-IF DEFINED repository1 (
-    IF EXIST "!repository1!" (
-        SET repository=!repository1!\
-        IF DEFINED filters (
-            SET repository=!repository1!\!filters!
-        )
-        XXCOPY "!repository!" "%drive%:\" /CLONE /PZ0 /FF /oA:%_XXCOPYLOG%
-    )
-)
+REM     Remove extra files not present into the destination directory. Preserve "DCIM" if present.
+XXCOPY "%~2:\" "G:\Music\Lossy\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
 
-REM -->  3. Copie des fichiers composant le deuxième repository.
-REM         Repository logique.
-IF DEFINED repository2 (
-    IF EXIST !repository2! (
-        FOR /F "usebackq eol=# tokens=*" %%i IN ("!repository2!") DO (
-            XXCOPY "%%~i" "%drive%:\" /oA:%_XXCOPYLOG%
-        )
-    )
-)
-
-REM -->  4. Restauration des répertoires ne devant pas être définitivement supprimés.
-IF DEFINED exceptions (
-    IF EXIST "!exceptions!" (
-        FOR /F "usebackq eol=# tokens=*" %%i IN ("!exceptions!") DO (
-            XXCOPY "%TEMP%\%%~i\" "%drive%:\%%~i\" /S /oA:%_XXCOPYLOG%
-        )
-    )
-)
-
+SHIFT
 SHIFT
 GOTO MAIN
 
 
-REM     -----------------------------------------
-REM 18. Copy media files from logical repository.
-REM     -----------------------------------------
+REM     --------------------------------------------
+REM 18. Sync mobile media with lossless audio files.
+REM     --------------------------------------------
 :STEP17
-CLS
-IF EXIST "%repository%" (
-    FOR /F "usebackq eol=# tokens=*" %%i IN ("%repository%") DO (
-        XXCOPY "%%~i" "%dst%\" /oA:%_XXCOPYLOG%
-    )
-)
+
+REM     Sync FLAC files.
+XXCOPY "G:\Music\Lossless\*\*.flac" "%~2:\" /BI /FF /Y /oA:%_XXCOPYLOG%
+
+REM     Remove extra files not present into the destination directory. Preserve "DCIM" if present.
+XXCOPY "%~2:\" "G:\Music\Lossless\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
+
+SHIFT
+SHIFT
+GOTO MAIN
+
+
+:STEP18
 SHIFT
 GOTO MAIN

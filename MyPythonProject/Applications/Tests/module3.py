@@ -236,7 +236,7 @@ class Test03(unittest.TestCase):
                     if row:
                         self.assertEqual(row[0], self.arguments.genre)
                         self.assertEqual(row[1], self.arguments.upc)
-                        self.assertEqual(shared.dateformat(shared.LOCAL.localize(row[2]), shared.TEMPLATE4), "Mercredi 30 Août 2017 21:45:58 (CEST+0200)")
+                        self.assertEqual(shared.dateformat(shared.LOCAL.localize(row[2]), shared.TEMPLATE4), "Mercredi 30 Août 2017 21:45:58 CEST (UTC+0200)")
                 finally:
                     conn.close()
 

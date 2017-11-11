@@ -62,25 +62,9 @@ parser1_g.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.
 #  2. PARSER 2.
 #     =========
 epochconverter = argparse.ArgumentParser()
-epochconverter.add_argument("start", help="Start epoch", type=unixepochtime)
+epochconverter.add_argument("beg", help="Beginning epoch", type=unixepochtime)
 epochconverter.add_argument("end", help="End epoch", type=unixepochtime, nargs="?", action=shared.SetEndSeconds)
 epochconverter.add_argument("-z", "--zone", help="Time zone", default=shared.DFTTIMEZONE)
-
-#     =========
-#  3. PARSER 3.
-#     =========
-# deleterippinglog = argparse.ArgumentParser()
-# deleterippinglog.add_argument("-d", "--db", dest="database", default=os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db"), type=shared.validdb)
-# subparsers = deleterippinglog.add_subparsers()
-
-# Singled record(s) unique ID.
-# parser3_s = subparsers.add_parser("singled")
-# parser3_s.add_argument("uid", nargs="+", type=int)
-
-# Ranged records unique ID.
-# parser3_g = subparsers.add_parser("ranged")
-# parser3_g.add_argument("start", type=int)
-# parser3_g.add_argument("end", nargs="?", default="9999", type=int, action=shared.SetUID)
 
 #     =========
 #  4. PARSER 4.
