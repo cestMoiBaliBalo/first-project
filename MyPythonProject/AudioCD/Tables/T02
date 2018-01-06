@@ -1,18 +1,11 @@
 {% for row in content %}
 
-    Record    : {{ row.rowid }}
-    Artistsort: {{ row.albumid[2:-13] }}
-    Albumsort : {{ row.albumid[-12:] }}
-    Artist    : {{ row.artist }}
-    Year      : {{ row.year }}
-    Album     : {{ row.album }}
-    Genre     : {{ row.genre }}
-    UPC       : {{ row.upc }}
-    {% if row.created %}
-    Created   : {{ row.created|readable(tz=local) }}
+   {%- if row[0] %}
+
+    Artistsort: {{ row[0][2:-13] }}
+    Albumsort : {{ row[0][-12:] }}
+    Albums    : {{ row[1] }}
+    Discs     : {{ row[2] }}
+    Tracks    : {{ row[3] }}
     {% endif %}
-    {% if row.played %}
-    Played    : {{ row.played|readable(tz=utc) }}
-    {% endif %}
-    Counter   : {{ row.count }}
 {% endfor %}

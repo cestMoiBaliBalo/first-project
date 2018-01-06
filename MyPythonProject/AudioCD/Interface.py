@@ -366,12 +366,12 @@ def gettemplate(args):
                     },
                 "delete":
                     {
-                        False: "T03"
+                        False: "T02"
                     },
                 "update":
                     {
-                        False: "T03",
-                        True: "T03"
+                        False: "T02",
+                        True: "T02"
                     }
             },
         "tracks":

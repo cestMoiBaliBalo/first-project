@@ -32,10 +32,10 @@ update = functools.partial(update, UID, "tasks", db=arguments.db)
 # 4. --> Main algorithm.
 if isdeltareached():
     process = run([r"C:\Program Files\Sandboxie\Start.exe", r"/box:GNUCash", "delete_sandbox_silent"])
-    logger.debug(process.returncode)
+    logger.info(process.returncode)
     if not process.returncode:
         status = update()
 
 # 5. --> Exit algorithm.
-logger.debug(status)
+logger.info(status)
 sys.exit(status)
