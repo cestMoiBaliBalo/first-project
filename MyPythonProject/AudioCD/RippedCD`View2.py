@@ -2,6 +2,7 @@
 """
 Log ripped audio CDs into an XML file (`%TEMP%\rippedaudiocds.xml`).
 """
+import argparse
 import logging.config
 import os
 import xml.etree.ElementTree as ET
@@ -24,12 +25,12 @@ __status__ = "Production"
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding=UTF8) as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("Applications.Database.AudioCD")
 
 # ================
 # Input arguments.
 # ================
-database_parser.add_argument("steps", nargs="*", type=int)
+parser = argparse.ArgumentParser(parents=[database_parser])
+parser.add_argument("steps", nargs="*", type=int)
 
 # ================
 # Initializations.
@@ -39,7 +40,7 @@ output, reflist = os.path.join(os.path.expandvars("%TEMP%"), "rippedaudiocds.xml
 # ===============
 # Main algorithm.
 # ===============
-arguments = database_parser.parse_args()
+arguments = parser.parse_args()
 for step in arguments.steps:
 
     if step == 1:

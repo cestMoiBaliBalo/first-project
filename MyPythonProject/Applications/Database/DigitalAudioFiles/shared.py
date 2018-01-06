@@ -1,23 +1,21 @@
 # -*- coding: ISO-8859-1 -*-
-import argparse
 import json
 import logging
 import os
 import re
 import sqlite3
 import sys
-from collections import MutableSequence, namedtuple
-from contextlib import suppress
+from collections import MutableSequence, OrderedDict, namedtuple
 from datetime import datetime
 from functools import partial
-from itertools import accumulate, chain, groupby
+from itertools import accumulate, chain, groupby, repeat
 from operator import itemgetter
 
 import jinja2
 
 from ..shared import Boolean, adapt_boolean, convert_boolean
-from ...parsers import database_parser
-from ...shared import DATABASE, LOCAL, TemplatingEnvironment, UTC, validgenre, validproductcode, validyear
+from ...parsers import subset_parser
+from ...shared import DATABASE, LOCAL, TemplatingEnvironment, UTC, rjustify, validdatetime, validdb, validgenre, validproductcode, validyear
 from ...xml import digitalalbums_in
 
 __author__ = 'Xavier ROSSET'
@@ -35,21 +33,41 @@ sqlite3.register_adapter(Boolean, adapt_boolean)
 # ==================
 sqlite3.register_converter("boolean", convert_boolean)
 
+# ==========
+# Constants.
+# ==========
+SORT = {
+    "rowid": "a.rowid",
+    "albumid": "a.albumid",
+    "artist": "a.artist",
+    "origyear": "a.origyear",
+    "year": "a.year",
+    "album": "a.album",
+    "discs": "a.discs",
+    "discid": "b.discid",
+    "tracks": "b.tracks",
+    "trackid": "c.trackid",
+    "utc_created": "a.utc_created",
+    "created": "a.utc_created",
+    "utc_modified": "a.utc_modified",
+    "modified": "a.utc_modified",
+    "utc_played": "a.utc_played",
+    "played": "a.utc_played",
+    "count": "a.played",
+    "label": "a.label",
+    "genre": "a.genre",
+    "title": "c.title",
+}
+
+# ====================
+# Regular expressions.
+# ====================
+rex = re.compile(r"^(\w+)(?: (ASC|DESC))?$", re.IGNORECASE)
+
 
 # ========
 # Classes.
 # ========
-class DictArguments(argparse.Action):
-    def __init__(self, option_strings, dest, **kwargs):
-        super(DictArguments, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parsobj, namespace, values, option_string=None):
-        with suppress(AttributeError):
-            d = getattr(namespace, "args")
-        d[self.dest] = values
-        setattr(namespace, "args", d)
-
-
 class InsertDigitalAlbum(MutableSequence):
     """
 
@@ -60,84 +78,95 @@ class InsertDigitalAlbum(MutableSequence):
         self._tracks = []
         for track in tracks:
 
-            #  1. Check if `year` is valid.
+            # 0. Check if `database` is valid.
+            try:
+                database = validdb(track.database)
+            except ValueError as err:
+                self.logger.debug(err)
+                continue
+
+            # 1. Check if `year` is valid.
             try:
                 year = validyear(track.year)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 2. Check if `genre` is valid.
             try:
                 genre = validgenre(track.genre)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 3. Check if `discnumber` is valid.
             try:
                 discnumber = int(track.discnumber)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 4. Check if `totaldiscs` is valid.
             try:
                 totaldiscs = int(track.totaldiscs)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 5. Check if `tracknumber` is valid.
             try:
                 tracknumber = int(track.tracknumber)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 6. Check if `totaltracks` is valid.
             try:
                 totaltracks = int(track.totaltracks)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 continue
 
             # 7. Check if `product code` is valid.
-            try:
-                upc = validproductcode(track.upc)
-            except ValueError:
-                continue
+            upc = ""
+            if track.upc:
+                try:
+                    upc = validproductcode(track.upc)
+                except ValueError as err:
+                    self.logger.debug(err)
+                    continue
 
-            # 8. Check `encodingyear`.
-            try:
-                encodingyear = validyear(track.encodingyear)
-            except ValueError:
-                encodingyear = 0
-
-            # 9. Check `origyear`.
+            # 8. Check `origyear`.
             try:
                 origyear = validyear(track.origyear)
-            except ValueError:
+            except ValueError as err:
+                self.logger.debug(err)
                 origyear = 0
 
-            # 10. Set records creation date. Stored into local time zone.
+            # 9. Set records creation date. Stored into local time zone.
 
-            # 10.a. `albums` records.
+            # 9.a. `albums` records.
             album_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
             try:
                 album_created = UTC.localize(datetime.utcfromtimestamp(track.album_created)).astimezone(LOCAL)
             except AttributeError:
                 pass
 
-            # 10.b. `discs` records.
+            # 9.b. `discs` records.
             disc_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
             try:
                 disc_created = UTC.localize(datetime.utcfromtimestamp(track.disc_created)).astimezone(LOCAL)
             except AttributeError:
                 pass
 
-            # 10.c. `tracks` records.
+            # 9.c. `tracks` records.
             track_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
             try:
                 track_created = UTC.localize(datetime.utcfromtimestamp(track.track_created)).astimezone(LOCAL)
             except AttributeError:
                 pass
 
-            # 11. Set album last played date. Stored into UTC time zone.
+            # 10. Set album last played date. Stored into UTC time zone.
             lastplayeddate = None
             try:
                 lastplayeddate = track.lastplayed
@@ -147,7 +176,7 @@ class InsertDigitalAlbum(MutableSequence):
                 lastplayeddate = datetime.utcfromtimestamp(int(lastplayeddate))
                 self.logger.debug("Last played date: {0}".format(UTC.localize(lastplayeddate).astimezone(LOCAL)))
 
-            # 12. Set album played count.
+            # 11. Set album played count.
             playedcount = "0"
             try:
                 playedcount = track.playedcount
@@ -157,21 +186,23 @@ class InsertDigitalAlbum(MutableSequence):
                 playedcount = int(playedcount)
                 self.logger.debug("Played count: {0}".format(playedcount))
 
-            # 13. Split attributes into three tuples respective to the three focused tables.
+            # 12. Split attributes into three tuples respective to the three focused tables.
 
-            # 13.a. `albums` table.
-            albums_tuple = (
-                track.albumid[:-11], track.artist, year, track.album, totaldiscs, genre, Boolean(track.live), Boolean(track.bootleg), Boolean(track.incollection), track.language, upc, encodingyear,
-                album_created,
-                origyear, lastplayeddate, playedcount)
+            # 12.a. `albums` table.
+            albums_tuple = (track.albumid[:-11], track.artist, year, track.album, totaldiscs, genre, Boolean(track.live), Boolean(track.bootleg), Boolean(track.incollection), track.language, upc,
+                            album_created, origyear, lastplayeddate, playedcount)
 
-            # 13.b. `discs` table.
+            # 12.b. `discs` table.
             discs_tuple = (track.albumid[:-11], discnumber, totaltracks, disc_created)
 
-            # 13.c. `tracks` table.
+            # 12.c. `tracks` table.
             tracks_tuple = (track.albumid[:-11], discnumber, tracknumber, track.title, track_created)
 
-            self._tracks.append((albums_tuple, discs_tuple, tracks_tuple))
+            # 13. Gather tuples together into a single list.
+            self._tracks.append((database, albums_tuple, discs_tuple, tracks_tuple))
+
+        if self._tracks:
+            self._tracks = sorted(sorted(sorted(sorted(self._tracks, key=lambda i: i[3][2]), key=lambda i: i[3][1]), key=lambda i: i[3][0]), key=itemgetter(0))
 
     @classmethod
     def fromxml(cls, fil):
@@ -190,7 +221,7 @@ class InsertDigitalAlbum(MutableSequence):
         :return:
         """
         onetrack = namedtuple("onetrack",
-                              "albumid albumsort titlesort artist year album genre discnumber totaldiscs label tracknumber totaltracks title live bootleg incollection upc encodingyear language origyear")
+                              "database albumid albumsort titlesort artist year album genre discnumber totaldiscs label tracknumber totaltracks title live bootleg incollection upc language origyear")
         return cls(*[onetrack._make(track) for track in json.load(fil)])
 
     def __getitem__(self, item):
@@ -207,6 +238,19 @@ class InsertDigitalAlbum(MutableSequence):
 
     def insert(self, index, value):
         self._tracks.insert(index, value)
+
+
+# ==========
+# Functions.
+# ==========
+def translate_orderfield(match):
+    if match:
+        item = SORT.get(match.group(1))
+        if not item:
+            return item
+        if match.group(2):
+            item = "{0} {1}".format(item, match.group(2).upper())
+        return item
 
 
 # =======================================
@@ -231,18 +275,17 @@ def filterfunc(item, artistsort=None, albumsort=None, artist=None):
     return True
 
 
-def insertfromfile(*files, db=DATABASE):
+def insertfromfile(*files):
     """
     Insert digital album(s) into the digital audio base.
     Albums are taken from JSON file-object(s) or XML file-object(s).
 
     :param files: file-object(s) where the albums are taken from.
-    :param db: database where the digital audio base is stored.
     :return: database total changes.
     """
     logger = logging.getLogger("{0}.insertfromfile".format(__name__))
     regex1, regex2, regex3 = re.compile(r"^<([^>]+)>$"), re.compile(r"^</([^>]+)>$"), re.compile(r"^<\?xml[^>]+>$")
-    root, status = "albums", [(0, 0, 0)]
+    root, changes = "albums", [(0, 0, 0)]
     for file in files:
         structure, tracks, beg_match, end_match, beg = "json", None, None, None, True
 
@@ -270,51 +313,53 @@ def insertfromfile(*files, db=DATABASE):
             tracks = InsertDigitalAlbum.fromxml(file)
 
         if tracks:
-            for album, disc, track in tracks:
+            for key, group in groupby(tracks, key=itemgetter(0)):
+                for album, disc, track in list(group)[1:]:
 
-                for item in album:
-                    logger.debug(item)
-                for item in disc:
-                    logger.debug(item)
-                for item in track:
-                    logger.debug(item)
+                    for item in album:
+                        logger.debug(item)
+                    for item in disc:
+                        logger.debug(item)
+                    for item in track:
+                        logger.debug(item)
 
-                acount, dcount, tcount = 0, 0, 0
-                conn = sqlite3.connect(db)
-                with conn:
+                    acount, dcount, tcount = 0, 0, 0
+                    conn = sqlite3.connect(key)
+                    with conn:
 
-                    # Update TRACKS table.
-                    try:
-                        conn.execute("INSERT INTO tracks (albumid, discid, trackid, title, created) VALUES (?, ?, ?, ?, ?)", track)
-                        tcount = conn.total_changes
-                        logger.debug("Table `tracks`: {0} records inserted.".format(tcount))
-                    except sqlite3.IntegrityError:
-                        pass
+                        # Update TRACKS table.
+                        try:
+                            conn.execute("INSERT INTO tracks (albumid, discid, trackid, title, created) VALUES (?, ?, ?, ?, ?)", track)
+                            tcount = conn.total_changes
+                            logger.debug("Table `tracks`: {0} records inserted.".format(tcount))
+                        except sqlite3.IntegrityError:
+                            pass
 
-                    # Update DISCS table.
-                    try:
-                        conn.execute("INSERT INTO discs (albumid, discid, tracks, created) VALUES (?, ?, ?, ?)", disc)
-                        dcount = conn.total_changes - tcount
-                        logger.debug("Table `discs`: {0} records inserted.".format(dcount))
-                    except sqlite3.IntegrityError:
-                        pass
+                        # Update DISCS table.
+                        try:
+                            conn.execute("INSERT INTO discs (albumid, discid, tracks, created) VALUES (?, ?, ?, ?)", disc)
+                            dcount = conn.total_changes - tcount
+                            logger.debug("Table `discs`: {0} records inserted.".format(dcount))
+                        except sqlite3.IntegrityError:
+                            pass
 
-                    # Update ALBUMS table.
-                    try:
-                        conn.execute("INSERT INTO albums (albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, encodingyear, created, origyear, played, count) "
-                                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", album)
-                        acount = conn.total_changes - dcount - tcount
-                        logger.debug("Table `albums`: {0} records inserted.".format(acount))
-                    except sqlite3.IntegrityError:
-                        pass
+                        # Update ALBUMS table.
+                        try:
+                            conn.execute("INSERT INTO albums (albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, utc_created, origyear, utc_played, played) "
+                                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", album)
+                            acount = conn.total_changes - dcount - tcount
+                            logger.debug("Table `albums`: {0} records inserted.".format(acount))
+                        except sqlite3.IntegrityError:
+                            pass
 
-                    # Store total changes.
-                    status.append((tcount, dcount, acount))
+                        # Store total changes.
+                        changes.append((tcount, dcount, acount))
 
-                conn.close()
-    if len(status) > 1:
-        return [list(accumulate(item))[-1] for item in zip(*status)]
-    return list(chain(status))
+                    conn.close()
+
+    if len(changes) > 1:
+        return [list(accumulate(item))[-1] for item in zip(*changes)]
+    return list(chain.from_iterable(changes))
 
 
 def getalbumdetail(db=DATABASE, **kwargs):
@@ -327,12 +372,13 @@ def getalbumdetail(db=DATABASE, **kwargs):
     logger = logging.getLogger("{0}.getalbumdetail".format(__name__))
 
     #  1. Initializations.
-    record = namedtuple("record", "rowid albumid artist year album discs genre live bootleg incollection language upc encodingyear created origyear played count discid tracks trackid title")
+    record = namedtuple("record",
+                        "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played discid tracks trackid title track_rowid")
     where, rows, args = "", [], ()
 
     #  2. SELECT clause.
-    select = "SELECT a.rowid, a.albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, encodingyear, a.created, origyear, a.played, a.count, b.discid, b.tracks, trackid, " \
-             "title " \
+    select = "SELECT a.rowid, a.albumid, a.artist, a.origyear, a.album, a.discs, a.label, a.genre, a.upc, a.year, a.live, a.bootleg, a.incollection, a.language, a.utc_created, a.utc_modified, a.utc_played, " \
+             "a.played, b.discid, b.tracks, c.trackid, c.title, c.rowid " \
              "FROM albums a " \
              "JOIN discs b ON a.albumid=b.albumid " \
              "JOIN tracks c ON a.albumid=c.albumid AND b.discid=c.discid"
@@ -344,7 +390,7 @@ def getalbumdetail(db=DATABASE, **kwargs):
     if artistsort:
         where = "{0}(".format(where)
         for item in artistsort:
-            where = "{0}lower(substr(a.albumid, 3, length(a.albumid) - 2 - 13)) LIKE ? OR ".format(where)
+            where = "{0}lower(substr(a.albumid, 3, length(a.albumid) - 15)) LIKE ? OR ".format(where)
             args += ("%{0}%".format(item.lower()),)
         where = "{0}) AND ".format(where[:-4])
 
@@ -375,7 +421,7 @@ def getalbumdetail(db=DATABASE, **kwargs):
             args += (item.lower(),)
         where = "{0}) AND ".format(where[:-4])
 
-    # 3.d. Subset by row ID.
+    # 3.d. Subset by ROWID.
     uid = kwargs.get("uid", [])
     if uid:
         where = "{0}(".format(where)
@@ -402,7 +448,7 @@ def getalbumdetail(db=DATABASE, **kwargs):
             args += (item,)
         where = "{0}) AND ".format(where[:-4])
 
-    # 3.g. Subset by `artistsort`.
+    # 3.g. Subset by `albumid`.
     albumid = kwargs.get("albumid", [])
     if albumid:
         where = "{0}(".format(where)
@@ -412,9 +458,13 @@ def getalbumdetail(db=DATABASE, **kwargs):
         where = "{0}) AND ".format(where[:-4])
 
     # 4. ORDER BY clause.
-    orderby = "ORDER BY c.albumid, c.discid, c.trackid"
+    logger.debug(kwargs.get("orderby"))
+    orderby = "ORDER BY a.albumid, b.discid, c.trackid"
+    mylist = list(filter(lambda i: bool(i), map(rex.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
+    if mylist:
+        orderby = "ORDER BY {0}".format(", ".join(mylist))
 
-    #  5. Build SQL statement.
+    # 5. Build SQL statement.
     if where:
         where = "WHERE {0}".format(where[:-5])
     sql = "{0} {1}".format(select, orderby)
@@ -440,6 +490,7 @@ def getgroupedalbums(db=DATABASE, **kwargs):
     :return:
     """
     logger = logging.getLogger("{0}.getgroupedalbums".format(__name__))
+    tabsize = 3
     func = partial(filterfunc, artistsort=kwargs.get("artistsort"), albumsort=kwargs.get("albumsort"), artist=kwargs.get("artist"))
     albumslist = ((item.albumid[2:-13],
                    item.artist,
@@ -451,16 +502,16 @@ def getgroupedalbums(db=DATABASE, **kwargs):
                    item.live,
                    item.bootleg,
                    item.incollection,
-                   int(LOCAL.localize(item.created).timestamp()),
+                   int(LOCAL.localize(item.utc_created).timestamp()),
                    item.album) for item in filter(func, getalbumdetail(db)))
     albumslist = sorted(sorted(sorted(sorted(albumslist, key=itemgetter(4)), key=itemgetter(3)), key=itemgetter(2)), key=lambda i: (i[0], i[1]))
     for album in albumslist:
-        logger.info("----------------")
-        logger.info("Selected record.")
-        logger.info("----------------")
-        logger.debug("\tArtistsort\t: {0}".format(album[0]).expandtabs(3))
-        logger.debug("\tAlbumsort\t: {0}".format(album[2]).expandtabs(3))
-        logger.debug("\tTitle\t\t\t: {0}".format(album[5]).expandtabs(3))
+        logger.debug("----------------")
+        logger.debug("Selected record.")
+        logger.debug("----------------")
+        logger.debug("\tArtistsort\t: {0}".format(album[0]).expandtabs(tabsize))
+        logger.debug("\tAlbumsort\t: {0}".format(album[2]).expandtabs(tabsize))
+        logger.debug("\tTitle\t\t\t: {0}".format(album[5]).expandtabs(tabsize))
     for artistsort, artist, albums in ((artistsort, artist,
                                         [(albumid,
                                           [(discid,
@@ -482,7 +533,7 @@ def getalbumidfromartist(db=DATABASE, artist=None):
     argument, rows = (), []
     statement = "SELECT rowid, albumid FROM albums ORDER BY albumid"
     if artist:
-        statement = "SELECT rowid, albumid FROM albums WHERE lower(substr(albumid, 3, length(albumid) - 2 - 13))=? OR lower(artist)=? ORDER BY albumid"
+        statement = "SELECT rowid, albumid FROM albums WHERE lower(substr(albumid, 3, length(albumid)-15))=? OR lower(artist)=? ORDER BY albumid"
         argument = (artist.lower(), artist.lower())
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute(statement, argument):
@@ -510,73 +561,107 @@ def getalbumidfromgenre(genre, db=DATABASE):
         yield record._make(row)
 
 
+def checkalbumid(albumid, *, db=DATABASE):
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    curs.execute("SELECT count(*) FROM albums WHERE albumid=?", (albumid,))
+    count = curs.fetchone()[0]
+    conn.close()
+    return bool(count)
+
+
 def getalbumid(uid, db=DATABASE):
     """
-    Get album ID matching the input unique row ID.
+    Get album ID matching the input unique ROWID.
 
-    :param uid: Requested row ID.
+    :param uid: Requested ROWID.
     :param db: Database storing `albums` table.
     :return: Album unique ID.
     """
-    record, rows = namedtuple("record", "rowid albumid"), []
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute("SELECT rowid, albumid FROM albums WHERE rowid=?", (uid,)):
-        rows.append(row)
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    curs.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,))
+    try:
+        albumid = curs.fetchone()[0]
+    except TypeError:
+        albumid = None
+    finally:
+        conn.close()
+    return uid, albumid
+
+
+def getrowid(*albumid, db=DATABASE):
+    """
+    Get `albums` ROWID matching the input primary keys.
+
+    :param albumid: List of primary keys.
+    :param db: Database storing `albums` table.
+    :return: List of matching ROWID.
+    """
+    results = []
+    conn = sqlite3.connect(db)
+    conn.row_factory = sqlite3.Row
+    for value1, value2 in [(key.lower(), "%{0}%".format(key.lower())) for key in albumid]:
+        for row in conn.execute("SELECT rowid, albumid FROM albums WHERE lower(albumid)=? OR lower(albumid) LIKE ?", (value1, value2)):
+            results.append((row["rowid"], row["albumid"]))
     conn.close()
-    for row in rows:
-        yield record._make(row)
+    if results:
+        for rowid, albumid in results:
+            yield rowid, albumid
 
 
 def getalbumheader(db=DATABASE, albumid=None, **kwargs):
     """
-    Get album detail matching the input unique row ID.
+    Get album detail matching the input primary key.
 
-    :param albumid: Requested row ID.
+    :param albumid: Requested primary key.
     :param db: Database storing `albums` table.
-    :return: Album unique ID.
+    :return: Album detail gathered into a namedtuple.
     """
     logger = logging.getLogger("{0}.getalbumheader".format(__name__))
-    record = namedtuple("record", "rowid albumid artist year album discs genre live bootleg incollection language upc encodingyear created origyear played count")
-    rows = []
+    tabsize, rows = 3, []
+    record = namedtuple("record", "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played")
     for row in getalbumdetail(db=db, albumid=albumid, **kwargs):
         rows.append((row.rowid,
                      row.albumid,
                      row.artist,
-                     row.year,
+                     row.origyear,
                      row.album,
                      row.discs,
+                     row.label,
                      row.genre,
+                     row.upc,
+                     row.year,
                      row.live,
                      row.bootleg,
                      row.incollection,
                      row.language,
-                     row.upc,
-                     row.encodingyear,
-                     row.created,
-                     row.origyear,
-                     row.played,
-                     row.count))
-    for row in sorted(set(rows), key=itemgetter(1)):
-        logger.info("----------------")
-        logger.info("Selected record.")
-        logger.info("----------------")
-        logger.debug("\tRecord\t: {0}".format(row[0]).expandtabs(3))
-        logger.debug("\tAlbum ID\t: {0}".format(row[1]).expandtabs(3))
-        logger.debug("\tArtist\t: {0}".format(row[2]).expandtabs(3))
-        logger.debug("\tYear\t\t: {0}".format(row[3]).expandtabs(3))
-        logger.debug("\tAlbum\t\t: {0}".format(row[4]).expandtabs(3))
-    for row in sorted(set(rows), key=itemgetter(1)):
-        yield record._make(row)
+                     row.utc_created,
+                     row.utc_modified,
+                     row.utc_played,
+                     row.played))
+    for row in OrderedDict.fromkeys(rows).keys():
+        row = record._make(row)
+        logger.debug("----------------")
+        logger.debug("Selected record.")
+        logger.debug("----------------")
+        logger.debug("\tRow ID\t: {0}".format(row.rowid).expandtabs(tabsize))
+        logger.debug("\tAlbum ID\t: {0}".format(row.albumid).expandtabs(tabsize))
+        logger.debug("\tArtist\t: {0}".format(row.artist).expandtabs(tabsize))
+        logger.debug("\tOrigyear\t: {0}".format(row.origyear).expandtabs(tabsize))
+        logger.debug("\tYear\t\t: {0}".format(row.year).expandtabs(tabsize))
+        logger.debug("\tAlbum\t\t: {0}".format(row.album).expandtabs(tabsize))
+        yield row
 
 
 def getdischeader(db=DATABASE, albumid=None, discid=None):
     """
-    Get disc(s) detail matching both the input unique album ID and the disc unique ID.
+    Get disc detail matching primary keys.
 
     :param db: Database storing `discs` table.
-    :param albumid: Requested album unique ID. Optional.
-    :param discid: Requested disc unique ID. Optional.
-    :return: Yield a tuple composed of row unique ID, album unique ID, disc unique ID and track unique ID.
+    :param albumid: album primary key. Optional.
+    :param discid: disc primary key. Optional.
+    :return: Yield a tuple composed of ROWID, album unique ID, disc unique ID and track unique ID.
     """
     sql, where, orderby, args, rows = "SELECT rowid, albumid, discid, tracks FROM discs ", "", "", (), []
     record = namedtuple("record", "rowid albumid discid tracks")
@@ -606,6 +691,19 @@ def getdischeader(db=DATABASE, albumid=None, discid=None):
         yield record._make(row)
 
 
+def getplayedcount(albumid, *, db=DATABASE):
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    curs.execute("SELECT rowid, played FROM albums WHERE albumid=?", (albumid,))
+    try:
+        rowid, played = curs.fetchone()
+    except TypeError:
+        rowid, played = None, 0
+    finally:
+        conn.close()
+    return rowid, played
+
+
 def gettrack(db=DATABASE, albumid=None, discid=None, trackid=None):
     """
     Get track(s) detail matching both the input unique album ID, the disc unique ID and the track unique ID.
@@ -614,7 +712,7 @@ def gettrack(db=DATABASE, albumid=None, discid=None, trackid=None):
     :param albumid: Requested album unique ID. Optional.
     :param discid: Requested disc unique ID. Optional.
     :param trackid: Requested track unique ID. Optional.
-    :return: Yield a tuple composed of row unique ID, album unique ID, disc unique ID, track unique ID and title.
+    :return: Yield a tuple composed of ROWID, album unique ID, disc unique ID, track unique ID and title.
     """
     record, args, where, orderby, sql, rows = namedtuple("record", "rowid albumid discid trackid title"), (), "", "", "SELECT rowid, albumid, discid, trackid, title FROM tracks ", []
 
@@ -654,10 +752,13 @@ def deletealbum(db=DATABASE, uid=None, albumid=None):
     Delete a digital album.
 
     :param db: Database storing `albums`, `discs` and `tracks` tables.
-    :param uid: `albums` row unique ID. Optional. Used as hieharchy starting point.
+    :param uid: `albums` ROWID. Optional. Used as hieharchy starting point.
     :param albumid: `albums` album unique ID. Optional. Used as hieharchy starting point.
     :return: Tuple composed of deleted album unique ID, `albums` total change(s), `discs` total change(s) and `tracks` total change(s).
     """
+
+    # 1.Define logger.
+    logger = logging.getLogger("{0}.deletealbum".format(__name__))
 
     # 1. Initialize variables.
     acount, dcount, tcount, discs, tracks, inp_uid, inp_albumid = 0, 0, 0, [], [], uid, albumid
@@ -698,8 +799,10 @@ def deletealbum(db=DATABASE, uid=None, albumid=None):
             conn.execute("DELETE FROM albums WHERE rowid=?", (inp_uid,))
             acount = conn.total_changes - tcount - dcount
 
-    except (sqlite3.Error, ValueError):
-        return inp_albumid, 0, 0, 0
+    finally:
+        logger.info("ALBUMS table: {0:>3d} record(s) deleted.".format(acount))
+        logger.info("DISCS table : {0:>3d} record(s) deleted.".format(dcount))
+        logger.info("TRACKS table: {0:>3d} record(s) deleted.".format(tcount))
 
     # 7. Return total changes.
     return inp_albumid, acount, dcount, tcount
@@ -709,53 +812,55 @@ def deletealbumheader(*uid, db=DATABASE):
     """
     Delete album(s) from `albums` table.
 
-    :param uid: Album(s) row(s) ID.
+    :param uid: List of ROWID.
     :param db: Database storing `albums` table.
     :return: Total changes.
     """
-    status, conn = 0, sqlite3.connect(db)
+    changes, conn = 0, sqlite3.connect(db)
     with conn:
         conn.executemany("DELETE FROM albums WHERE rowid=?", [(i,) for i in uid])
-        status = conn.total_changes
-    return status
+        changes = conn.total_changes
+    return changes
 
 
 def deletedischeader(*uid, db=DATABASE):
     """
     Delete disc(s) from `discs` table.
 
-    :param uid: Disc(s) row(s) ID.
+    :param uid: List of ROWID.
     :param db: Database storing `discs` table.
     :return: Total changes.
     """
-    status, conn = 0, sqlite3.connect(db)
+    changes, conn = 0, sqlite3.connect(db)
     with conn:
         conn.executemany("DELETE FROM discs WHERE rowid=?", [(i,) for i in uid])
-        status = conn.total_changes
-    return status
+        changes = conn.total_changes
+    conn.close()
+    return changes
 
 
 def deletetrack(*uid, db=DATABASE):
     """
     Delete track(s) from `tracks` table.
 
-    :param uid: Track(s) row(s) ID.
+    :param uid: List of  ROWID.
     :param db: Database storing `tracks` table.
     :return: Total changes.
     """
-    status, conn = 0, sqlite3.connect(db)
+    changes, conn = 0, sqlite3.connect(db)
     with conn:
         conn.executemany("DELETE FROM tracks WHERE rowid=?", [(i,) for i in uid])
-        status = conn.total_changes
-    return status
+        changes = conn.total_changes
+    conn.close()
+    return changes
 
 
 def updatealbum(uid, db=DATABASE, **kwargs):
     """
-    Update record(s) from `albums` table.
+    Update record from `albums` table.
 
     Can be propagated to both `discs`and `tracks` tables if album unique ID is updated.
-    :param uid: `albums` row unique ID. Used as hieharchy starting point.
+    :param uid: `albums` ROWID. Used as hieharchy starting point.
     :param db: Database storing `albums` table.
     :param kwargs: key-value pairs enumerating field-value to update.
     :return: Tuple composed of `albums` total change(s), `discs` total change(s) and `tracks` total change(s).
@@ -765,64 +870,70 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     logger = logging.getLogger("{0}.updatealbum".format(__name__))
 
     # 2. Initialize variables.
-    acount, dsccount, tcount, query, inp_albumid, albumid, args, discs, tracks = 0, 0, 0, "", "", "", list(), list(), list()
+    albcount, dsccount, trkcount, query, args, discs, tracks = 0, 0, 0, "", [], [], []
 
     # 3. Connect to database.
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
 
     # 4. Get album ID.
-    for row in conn.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,)):
-        inp_albumid = row["albumid"]
+    curs = conn.cursor()
+    curs.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,))
+    try:
+        inp_albumid = curs.fetchone()[0]
+    except TypeError:
+        inp_albumid = None
 
     # 5. Get album, discs and tracks hieharchy if album ID is updated.
     if "albumid" in kwargs:
-        for row in conn.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,)):
-            albumid = row["albumid"]
+        curs = conn.cursor()
+        curs.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,))
+        try:
+            albumid = curs.fetchone()[0]
+        except TypeError:
+            albumid = None
         if albumid:
             for drow in conn.execute("SELECT rowid, discid FROM discs WHERE albumid=?", (albumid,)):
                 discs.append(drow["rowid"])
                 for trow in conn.execute("SELECT rowid FROM tracks WHERE albumid=? AND discid=?", (albumid, drow["discid"])):
                     tracks.append(trow["rowid"])
-        logger.debug(tracks)
-        logger.debug(discs)
+    logger.debug(tracks)
+    logger.debug(discs)
 
     # 6. Convert last played Unix epoch time into python datetime object.
-    if "played" in kwargs:
-        if isinstance(kwargs["played"], int):
-            kwargs["played"] = datetime.utcfromtimestamp(kwargs["played"])
-        elif isinstance(kwargs["played"], str) and kwargs["played"].isdigit():
-            kwargs["played"] = datetime.utcfromtimestamp(int(kwargs["played"]))
-        elif isinstance(kwargs["played"], datetime):
-            pass
-        else:
-            del kwargs["played"]
+    if "utc_played" in kwargs:
+        try:
+            kwargs["utc_played"] = LOCAL.localize(validdatetime(kwargs["utc_played"])).astimezone(UTC).replace(tzinfo=None)
+        except ValueError:
+            del kwargs["utc_played"]
 
     # 7. Update played count if increment by 1.
-    icount, count = kwargs.get("icount", False), 0
+    icount = kwargs.get("icount", False)
     if icount:
-        for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (uid,)):
-            count = row["count"] + 1
-        kwargs["count"] = count
+        curs = conn.cursor()
+        curs.execute("SELECT played FROM albums WHERE rowid=?", (uid,))
+        kwargs["played"] = curs.fetchone()[0] + 1
+        del kwargs["icount"]
 
     # 8. Update played count if decrement by 1.
-    dcount, count = kwargs.get("dcount", False), 0
+    dcount = kwargs.get("dcount", False)
     if dcount:
-        for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (uid,)):
-            count = row["count"] - 1
-        if count < 0:
-            count = 0
-        kwargs["count"] = count
+        curs = conn.cursor()
+        curs.execute("SELECT played FROM albums WHERE rowid=?", (uid,))
+        played = curs.fetchone()[0] - 1
+        if played < 0:
+            played = 0
+        kwargs["played"] = played
+        del kwargs["dcount"]
 
     # 9. Set query.
-    if "icount" in kwargs:
-        del kwargs["icount"]
-    if "dcount" in kwargs:
-        del kwargs["dcount"]
     logger.debug(kwargs)
     for k, v in kwargs.items():
         query = "{0}{1}=?, ".format(query, k)  # album=?, albumid=?, "
         args.append(v)  # ["the album", "T.Toto.1.19840000.1.D1.T01.NNN"]
+    if query:
+        query = "{0}utc_modified=?, ".format(query)  # album=?, albumid=?, utc_modified=?, "
+        args.append(UTC.localize(datetime.utcnow()).replace(tzinfo=None))  # ["the album", "T.Toto.1.19840000.1.D1.T01.NNN", datetime(2017, 10, 21, 16, 30, 45, tzinfo=timezone("utc"))]
     args += (uid,)
     logger.debug(query)
     logger.debug(args)
@@ -834,60 +945,131 @@ def updatealbum(uid, db=DATABASE, **kwargs):
 
             # ALBUMS table.
             conn.execute("UPDATE albums SET {0} WHERE rowid=?".format(query[:-2]), args)  # ["the album", "T.Toto.1.19840000.1.D1.T01.NNN", 1]
-            acount = conn.total_changes
+            albcount = conn.total_changes
 
             if "albumid" in kwargs:
                 # DISCS table.
                 conn.executemany("UPDATE discs SET albumid=? WHERE rowid=?", [(kwargs["albumid"], i) for i in discs])
-                dsccount = conn.total_changes - acount
+                dsccount = conn.total_changes - albcount
 
                 # TRACKS table.
                 conn.executemany("UPDATE tracks SET albumid=? WHERE rowid=?", [(kwargs["albumid"], i) for i in tracks])
-                tcount = conn.total_changes - acount - dsccount
+                trkcount = conn.total_changes - albcount - dsccount
 
-    except (sqlite3.OperationalError, sqlite3.Error) as err:
+    except sqlite3.OperationalError as err:
         logger.exception(err)
-        return "", 0, 0, 0
+        albcount, dsccount, trkcount = 0, 0, 0
+
+    except sqlite3.IntegrityError as err:
+        logger.exception(err)
+
+    finally:
+        logger.info("ALBUMS table: {0:>3d} record(s) updated.".format(albcount))
+        logger.info("DISCS table : {0:>3d} record(s) updated.".format(dsccount))
+        logger.info("TRACKS table: {0:>3d} record(s) updated.".format(trkcount))
+        conn.close()
 
     # 11. Return total changes.
-    logger.info("ALBUMS table: {0:>3d} record(s) updated.".format(acount))
-    logger.info("DISCS table : {0:>3d} record(s) updated.".format(dsccount))
-    logger.info("TRACKS table: {0:>3d} record(s) updated.".format(tcount))
-    return inp_albumid, acount, dsccount, tcount
+    return inp_albumid, albcount, dsccount, trkcount
 
 
-def updatelastplayeddate(*uid, db=DATABASE):
-    status, conn = 0, sqlite3.connect(db)
+def updatetrack(uid, db=DATABASE, **kwargs):
+    """
+    Update record from `tracks` table.
+
+    :param uid: `tracks` ROWID.
+    :param db: Database storing `tracks` table.
+    :param kwargs: key-value pairs enumerating field-value to update.
+    :return: `tracks` total change(s).
+    """
+
+    # 1.Define logger.
+    logger = logging.getLogger("{0}.updatetrack".format(__name__))
+
+    # 2. Initialize variables.
+    changes, query, args = 0, "", []
+
+    # 3. Connect to database.
+    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
-    rows = chain.from_iterable([[(datetime.utcnow(), row["count"] + 1, rowid) for row in conn.execute("SELECT count FROM albums WHERE rowid=?", (rowid,))] for rowid in uid])
+
+    # 4. Set query.
+    logger.debug(kwargs)
+    for k, v in kwargs.items():
+        query = "{0}{1}=?, ".format(query, k)
+        args.append(v)
+    args += (uid,)
+    logger.debug(query)
+    logger.debug(args)
+
+    # 5. Update `tracks` table.
+    try:
+        with conn:
+            conn.execute("UPDATE tracks SET {0} WHERE rowid=?".format(query[:-2]), args)
+            changes = conn.total_changes
+    except sqlite3.OperationalError as err:
+        logger.exception(err)
+        changes = 0
+    finally:
+        logger.info("TRACKS table: {0:>3d} record(s) updated.".format(changes))
+        conn.close()
+
+    # 6. Return total changes.
+    return uid, changes
+
+
+# ============================
+# CherryPy specific functions.
+# ============================
+def updatelastplayeddate(*rowid, db=DATABASE):
+    """
+
+    :param rowid:
+    :param db:
+    :return:
+    """
+    changes, counts = 0, []
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    for row in rowid:
+        curs.execute("SELECT played FROM albums WHERE rowid=?", (row,))
+        try:
+            played = curs.fetchone()[0]
+        except TypeError:
+            played = 0
+        counts.append(played + 1)
+
     with conn:
-        conn.executemany("UPDATE albums SET played=?, count=? WHERE rowid=?", rows)
-        status = conn.total_changes
-    return status
+        conn.executemany("UPDATE albums SET utc_played=?, played=? WHERE rowid=?", list(zip(repeat((datetime.utcnow())), counts, rowid)))
+        changes = conn.total_changes
+    conn.close()
+    return changes
 
 
 def getlastplayeddate(db=DATABASE):
-    record = namedtuple("record", "rowid albumid artist year album discs genre live bootleg incollection language upc encodingyear created origyear played count")
+    """
+
+    :param db:
+    :return:
+    """
+    record = namedtuple("record", "rowid albumid artist year album discs genre live bootleg incollection language upc utc_created origyear utc_played played")
     conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
     for row in conn.execute(
-            "SELECT rowid, albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, encodingyear, created, origyear, played, count FROM albums ORDER BY played DESC"):
+            "SELECT rowid, albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, utc_created, origyear, utc_played, played FROM albums ORDER BY played DESC"):
         yield record._make(row)
 
 
 def getartist(db=DATABASE):
+    """
+
+    :param db:
+    :return:
+    """
     record = namedtuple("record", "artistid artist")
     conn = sqlite3.connect(db)
-    for row in conn.execute("SELECT substr(albumid, 3, length(albumid) - 2 - 13), artist FROM albums ORDER BY albumid"):
+    for row in conn.execute("SELECT substr(albumid, 3, length(albumid) - 15), artist FROM albums ORDER BY albumid"):
         yield record._make(row)
 
-
-# ========
-# Parsers.
-# ========
-subset_parser = argparse.ArgumentParser(parents=[database_parser])
-subset_parser.add_argument("--artistsort", nargs="*", help="Subset digital albums by artistsort.")
-subset_parser.add_argument("--albumsort", nargs="*", help="Subset digital albums by albumsort.")
-subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by artist.")
 
 # ============================================
 # Main algorithm if module run as main script.
@@ -901,7 +1083,8 @@ if __name__ == "__main__":
     TEMPLATE = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Database", "DigitalAudioFiles")))
     TEMPLATE.set_environment(globalvars={"local": LOCAL,
                                          "utc": UTC},
-                             filters={"getalbum": getalbum})
+                             filters={"getalbum": getalbum,
+                                      "rjustify": rjustify})
 
     arguments = subset_parser.parse_args()
     filters = {key: value for key, value in vars(arguments).items() if key in ["artistsort", "albumsort", "artist"]}

@@ -2,6 +2,7 @@
 """
 Log ripped audio CDs into a plain text file (`%TEMP%\rippedaudiocds.txt`).
 """
+import argparse
 import logging.config
 import os
 import sys
@@ -23,13 +24,13 @@ __status__ = "Production"
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding=UTF8) as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("Applications.Database.AudioCD")
 
 # ================
 # Input arguments.
 # ================
-database_parser.add_argument("--orderby", nargs="*")
-database_parser.add_argument("--print", action="store_true")
+parser = argparse.ArgumentParser(parents=[database_parser])
+parser.add_argument("--orderby", nargs="*")
+parser.add_argument("--print", action="store_true")
 
 # ==========
 # Constants.
@@ -53,7 +54,7 @@ template, line_number, first, tags_length, tags_width, headers = "", 0, True, {}
 # ===============
 
 # 1. Parse arguments.
-arguments = database_parser.parse_args()
+arguments = parser.parse_args()
 
 # 2. Grab arguments.
 orderby = arguments.orderby

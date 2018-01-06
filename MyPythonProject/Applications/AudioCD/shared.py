@@ -199,14 +199,12 @@ class CommonAudioCDTags(AudioCDTags):
               "incollection": True,
               "live": True,
               "encoder": True,
-              "offset": True,
               "profile": False,
               "rating": False,
               "source": False,
               "style": False,
               "title": False,
               "titlelanguage": False,
-              "totaltracks": False,
               "track": True,
               "_albumart_1_front album cover": False}
 
@@ -215,10 +213,6 @@ class CommonAudioCDTags(AudioCDTags):
         nt = namedtuple("nt", "name code folder extension")
         self._totaltracks_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaltracks"]
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
-        totaltracks = 0
-        if "totaltracks" in kwargs:
-            totaltracks = kwargs["totaltracks"]
-            del kwargs["totaltracks"]
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -261,8 +255,6 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
         self._otags["track"], self._otags[self._totaltracks_key] = self.splitfield(kwargs["track"], self.track_pattern)
-        if totaltracks:
-            self._otags[self._totaltracks_key] = totaltracks
 
         # ----- Both update disc and set total discs.
         self.logger.debug("Set disc.")
@@ -446,6 +438,12 @@ class ChangeTrack(TagsModifier):
         self._otags["track"] = str(int(self.tracknumber) + offset)
 
 
+class ChangeTotalTracks(TagsModifier):
+    def __init__(self, obj, totaltracks):
+        super(ChangeTotalTracks, self).__init__(obj)
+        self._otags[self._totaltracks_key] = totaltracks
+
+
 class ChangeAlbumArtist(TagsModifier):
     def __init__(self, obj, albumartist):
         super(ChangeAlbumArtist, self).__init__(obj)
@@ -511,7 +509,7 @@ class RippedCD(ContextDecorator):
     def __enter__(self):
 
         # --> 0. Initialize variables.
-        offset = "0"
+        offset, totaltracks = "0", "0"
 
         # --> 1. Start logging.
         self.logger.debug('START "%s".' % (os.path.basename(__file__),))
@@ -530,6 +528,8 @@ class RippedCD(ContextDecorator):
                         self.logger.debug("\t{0}".format("{0}={1}".format(match.group(1), match.group(2))).expandtabs(4))
                         if match.group(1).lower() == "offset":
                             offset = match.group(2)
+                        elif match.group(1).lower() == "totaltracks":
+                            totaltracks = match.group(2)
         offset = int(offset)
 
         # --> 3. Create AudioCDTags instance.
@@ -541,8 +541,10 @@ class RippedCD(ContextDecorator):
                     self._rippedcd = changealbum(self._rippedcd, "$albumsortyear.$albumsortcount - $album")
                 elif decor == "altupdalbum":
                     self._rippedcd = changealbum(self._rippedcd, "$albumsortyear (Self Titled)")
-                elif decor == "updtrack":
+                elif decor == "updtrack" and offset:
                     self._rippedcd = changetrack(self._rippedcd, offset)
+                elif decor == "updtotaltracks" and int(totaltracks):
+                    self._rippedcd = changetotaltracks(self._rippedcd, totaltracks)
                 elif decor == "sbootlegs":
                     self._rippedcd = changetrack(changealbum(changealbumartist(self._rippedcd, "Bruce Springsteen And The E Street Band"), "$bootlegtracktour - $dottedbootlegtrackyear - [$bootlegtrackcity]"),
                                                  offset)
@@ -702,6 +704,10 @@ def changetrack(obj, offset):
     return ChangeTrack(obj, offset)
 
 
+def changetotaltracks(obj, totaltracks):
+    return ChangeTotalTracks(obj, totaltracks)
+
+
 def changealbumartist(obj, albumartist):
     return ChangeAlbumArtist(obj, albumartist)
 
@@ -718,16 +724,6 @@ def canfilebeprocessed(fe, *tu):
     if fe.lower() in (item.lower() for item in tu):
         return True
     return False
-
-
-# def validdelay(d):
-#     try:
-#         delay = int(d)
-#     except ValueError:
-#         raise argparse.ArgumentTypeError('"{0}" isn\'t a valid delay.'.format(d))
-#     if delay > 120:
-#         return 120
-#     return delay
 
 
 def filcontents(fil):
@@ -749,25 +745,26 @@ def album(track):
     return track.album
 
 
-def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog.json")):
+def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog.json"), db=shared.DATABASE):
     obj = []
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
-        obj = [tuple(item) for item in obj]
+            # obj = [tuple(item) for item in obj]
     while True:
-        obj.append(tuple([track.artist,
-                          track.origyear,
-                          track.year,
-                          album(track),
-                          track.discnumber,
-                          track.totaltracks,
-                          track.genre,
-                          track.upc,
-                          track.label,
-                          shared.getrippingapplication(),
-                          track.albumsort[:-3],
-                          track.artistsort]))
+        obj.append([db,
+                    track.artist,
+                    track.origyear,
+                    track.year,
+                    album(track),
+                    track.discnumber,
+                    track.totaltracks,
+                    track.genre,
+                    track.upc,
+                    track.label,
+                    shared.getrippingapplication(),
+                    track.albumsort[:-3],
+                    track.artistsort])
         try:
             obj = list(set(obj))
         except TypeError:
@@ -778,33 +775,33 @@ def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "ripping
         json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "digitalaudiodatabase.json")):
+def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "digitalaudiodatabase.json"), db=shared.DATABASE):
     obj = []
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
-        obj = [tuple(item) for item in obj]
+        # obj = [tuple(item) for item in obj]
     while True:
-        obj.append(tuple([track.index,
-                          track.albumsort[:-3],
-                          track.titlesort,
-                          track.artist,
-                          track.year,
-                          track.album,
-                          track.genre,
-                          track.discnumber,
-                          track.totaldiscs,
-                          track.label,
-                          track.tracknumber,
-                          track.totaltracks,
-                          track.title,
-                          track.live,
-                          track.bootleg,
-                          track.incollection,
-                          track.upc,
-                          track.encodingyear,
-                          track.titlelanguage,
-                          track.origyear]))
+        obj.append([db,
+                    track.index,
+                    track.albumsort[:-3],
+                    track.titlesort,
+                    track.artist,
+                    track.year,
+                    track.album,
+                    track.genre,
+                    track.discnumber,
+                    track.totaldiscs,
+                    track.label,
+                    track.tracknumber,
+                    track.totaltracks,
+                    track.title,
+                    track.live,
+                    track.bootleg,
+                    track.incollection,
+                    track.upc,
+                    track.titlelanguage,
+                    track.origyear])
         try:
             obj = list(set(obj))
         except TypeError:
@@ -985,8 +982,8 @@ GENRES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Genres
 LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Languages.json")
 ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Encoders.json")
 ENC_KEYS = ["name", "code", "folder", "extension"]
-PROFILES = {"default": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live", "offset"], DefaultAudioCDTags.fromfile),
-            "alternative": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live", "offset"], DefaultAudioCDTags.fromfile),
-            "sbootlegs": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "dottedbootlegtrackyear", "live", "groupby", "offset"], BootlegAudioCDTags.fromfile)}
+PROFILES = {"default": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live"], DefaultAudioCDTags.fromfile),
+            "alternative": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live"], DefaultAudioCDTags.fromfile),
+            "sbootlegs": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "dottedbootlegtrackyear", "live", "groupby"], BootlegAudioCDTags.fromfile)}
 with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Mapping.json")), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

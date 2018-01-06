@@ -9,7 +9,7 @@ import zipfile
 from collections import MutableMapping, OrderedDict
 from contextlib import ContextDecorator
 from datetime import datetime
-from itertools import repeat
+from itertools import filterfalse, repeat, tee, zip_longest
 from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 from string import Template
@@ -49,6 +49,7 @@ TEMPLATE2 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE3 = "$d/$m/$Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE4 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE5 = "$Y-$m-$d"
+TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
 UTF8 = "UTF_8"
 UTF16 = "UTF_16LE"
@@ -958,15 +959,40 @@ def validdatetime(ts):
         return ts
 
     try:
-        ts = datetime.fromtimestamp(ts)
+        datobj = datetime.fromtimestamp(ts)
     except OSError:
         raise ValueError('"{0}" {1}'.format(ts, msg))
-    return ts
+    return datobj
 
 
 # ========================
 # Miscellaneous functions.
 # ========================
+def grouper(iterable, n, *, fillvalue=None):
+    """
+
+    :param iterable:
+    :param n:
+    :param fillvalue:
+    :return:
+    """
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+
+def partitioner(iterable, *, predicate=None):
+    """
+
+    :param iterable:
+    :param predicate:
+    :return:
+    """
+    if predicate is None:
+        predicate = bool
+    it1, it2 = tee(iterable)
+    return filter(predicate, it1), filterfalse(predicate, it2)
+
+
 def customformatterfactory(pattern=LOGPATTERN):
     return CustomFormatter(pattern)
 
@@ -1161,6 +1187,65 @@ def xsltransform(xml, xsl, html):
     return process.returncode
 
 
+def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
+    """
+
+    :param tup:
+    :param headers:
+    :param char:
+    :param tabsize:
+    :param gap:
+    :return:
+    """
+
+    # 1. Initializations.
+    max_length, max_width, out_data, out_headers, separators = {}, {}, OrderedDict(), None, None
+
+    # 2. Set input headers.
+    inp_headers = list(headers)
+    if not headers:
+        inp_headers = ["header{0:>2d}".format(i) for i in range(len(tup[0]))]
+
+    # 3. Gather data per header.
+    input_data = OrderedDict(zip(inp_headers, zip(*tup)))
+
+    # 4. Get data maximum length and maximum allowed width.
+    for k, v in input_data.items():
+        x = 0
+        if headers:
+            x = len(k)
+        if any([bool(item) for item in v]):
+            x = max([len(item) for item in v if item])
+        if headers:
+            if len(k) > x:
+                x = len(k)
+        max_length[k] = x
+        max_width[k] = getnearestmultiple(x, multiple=tabsize) + gap
+
+    # 5. Justify data.
+    for k, v in input_data.items():
+        y = []
+        for item in v:
+            x = "{0}".format(gettabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
+            if item:
+                x = "{0}{1}".format(item, gettabs(max_width[k] - len(item), tabsize=tabsize)).expandtabs(tabsize)
+            y.append(x)
+        out_data[k] = y
+
+    # 6. Set output headers.
+    if headers:
+        out_headers = tuple(["{0}{1}".format(header.upper(), gettabs(max_width[header] - len(header), tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+        separators = tuple(["{0}{1}".format(char * max_length[header], gettabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+
+    # 7. Set output data.
+    out_data = zip(*[v for k, v in out_data.items()])
+
+    # 8. Return output data as iterator objects.
+    if headers:
+        return [separators, out_headers, separators], out_data
+    return None, out_data
+
+
 # ==========================
 # Jinja2 Customized filters.
 # ==========================
@@ -1168,12 +1253,12 @@ def integertostring(intg):
     return str(intg)
 
 
-def rjustify(stg, width):
-    return stg.rjust(width)
+def rjustify(stg, width, char=""):
+    return "{0:{2}>{1}}".format(str(stg), width, char)
 
 
-def ljustify(stg, width):
-    return stg.ljust(width)
+def ljustify(stg, width, char=""):
+    return "{0:{2}<{1}}".format(stg, width, char)
 
 
 def repeatelement(elem, n):

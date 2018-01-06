@@ -16,13 +16,14 @@
     {% endif %}
     Counter   : {{ row[1][0][1][0].count }}
     {% for subrow in row[1] %}
-    {% if loop.length > 1%}
+    {% if loop.length > 1 %}
 
-    Disc #{{ subrow[0]}}
+
+    Disc #{{ subrow[0] }}
     {% endif %}
 
         {% for ssubrow in subrow[1] %}
-        {{ ssubrow.trackid}}. {{ ssubrow.title }}
+        {{ ssubrow.trackid|rjustify(2) }}. {{ ssubrow.title }}
         {% endfor %}
     {% endfor %}
 

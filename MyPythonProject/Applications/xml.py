@@ -176,11 +176,12 @@ def rippinglog_in(source):
     :param source: XML ripping log(s) tree.
     :return: ripping log(s) record(s) gathered together into a namedtuple `record`.
     """
-    record = namedtuple("record", "artist origyear year album disc tracks genre upc label ripped application artistsort albumsort")
+    record = namedtuple("record", "database artist origyear year album disc tracks genre upc label ripped application artistsort albumsort")
     tree = ET.parse(source)
     rippinglogs = tree.getroot()
     for log in rippinglogs.findall("./rippinglog"):
-        yield record._make((log.findtext("artist", ""),
+        yield record._make((log.findtext("database"),
+                            log.findtext("artist", ""),
                             log.findtext("origyear", log.findtext("year", "0")),
                             log.findtext("year", "0"),
                             log.findtext("album", ""),
@@ -203,12 +204,12 @@ def digitalalbums_in(source):
     :return:
     """
     onetrack = namedtuple("onetrack",
-                          "albumid albumsort titlesort artist year album genre discnumber totaldiscs label tracknumber totaltracks title live bootleg incollection upc encodingyear language origyear "
-                          "lastplayed playedcount album_created disc_created track_created")
+                          "database albumid albumsort titlesort artist year album genre discnumber totaldiscs label tracknumber totaltracks title live bootleg incollection upc language origyear lastplayed "
+                          "playedcount album_created disc_created track_created")
     tree = ET.parse(source)
     albums = tree.getroot()
     for album in albums.findall("./album"):
-        albumid = "{0}.{1}.{2}".format(album.findtext("artistsort", "")[0], album.findtext("artistsort", ""), album.findtext("albumsort", ""))
+        database = album.findtext("database")
         artist = album.findtext("artist", "")
         year = album.findtext("year", "0")
         album_title = album.findtext("title", "")
@@ -219,7 +220,6 @@ def digitalalbums_in(source):
         bootleg = album.findtext("bootleg", "N")
         incollection = album.findtext("incollection", "N")
         upc = album.findtext("upc", "")
-        encodingyear = album.findtext("encodingyear", dateformat(UTC.localize(datetime.utcnow()), "$Y"))
         language = album.findtext("language", "English")
         origyear = album.findtext("origyear", album.findtext("year", "0"))
         lastplayed = album.findtext("lastplayed")
@@ -235,11 +235,18 @@ def digitalalbums_in(source):
                 track_number = track.get("uid", "0")
                 track_title = track.findtext("title", "")
                 track_created = int(track.get("created", str(int(UTC.localize(datetime.utcnow()).timestamp()))))
-                yield onetrack._make((albumid, "", "", artist, year, album_title, genre, disc_number, totaldiscs, label, track_number, totaltracks, track_title, live, bootleg, incollection, upc, encodingyear,
+                albumid = "{0}.{1}.{2}.D{3}.T{4:>02}.N{5}{6}".format(album.findtext("artistsort", "")[0],
+                                                                     album.findtext("artistsort", ""),
+                                                                     album.findtext("albumsort", ""),
+                                                                     disc_number,
+                                                                     track_number,
+                                                                     live,
+                                                                     bootleg)
+                yield onetrack._make((database, albumid, "", "", artist, year, album_title, genre, disc_number, totaldiscs, label, track_number, totaltracks, track_title, live, bootleg, incollection, upc,
                                       language, origyear, lastplayed, playedcount, album_created, disc_created, track_created))
 
 
-def toto():
+def uselessfunction():
     regex = re.compile(r"\B\((\d)/\d\)$")
     tree = ET.parse(r"C:\Users\Xavier\AppData\Local\Temp\rippedcd.xml")
     logs = tree.getroot()
@@ -268,4 +275,4 @@ def toto():
 
 
 if __name__ == "__main__":
-    toto()
+    uselessfunction()

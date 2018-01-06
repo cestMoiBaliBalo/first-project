@@ -16,7 +16,7 @@
     -----
     {% endif %}
     {% for trackid, detail in tracks %}
-    {{ trackid }}. {{ detail[0][5] }}
+    {{ trackid|rjustify(2) }}. {{ detail[0][5] }}
     {% endfor %}
     {% endfor %}
     {% endfor %}

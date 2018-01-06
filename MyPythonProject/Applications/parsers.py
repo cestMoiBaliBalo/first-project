@@ -84,14 +84,27 @@ improvedfoldercontent.add_argument("-e", "--ext", dest="extensions", nargs="*")
 #     =========
 #  6. PARSER 6.
 #     =========
-readtable = argparse.ArgumentParser()
-readtable.add_argument("table", choices=["rundates", "backups"], help="Read table")
-readtable.add_argument("database", nargs="?", default=shared.DATABASE, type=database, help="Read database")
+database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
+group = database_parser.add_mutually_exclusive_group()
+group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path to database storing digital albums.", type=database, dest="db")
+group.add_argument("--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
 
 #     =========
 #  7. PARSER 7.
 #     =========
-database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
-group = database_parser.add_mutually_exclusive_group()
-group.add_argument("--database", dest="db", default=shared.DATABASE, help="Path to database storing digital albums.", type=database)
-group.add_argument("--test", nargs="?", const=True, default=False, action=shared.SetDatabase, help="Use test database.")
+readtable = argparse.ArgumentParser(parents=[database_parser])
+readtable.add_argument("table", choices=["tasks"], help="Read table")
+
+#     =========
+#  8. PARSER 8.
+#     =========
+loglevel_parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
+loglevel_parser.add_argument("--loglevel", help="Log level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+
+#     =========
+#  9. PARSER 9.
+#     =========
+subset_parser = argparse.ArgumentParser(parents=[database_parser], argument_default=argparse.SUPPRESS)
+subset_parser.add_argument("--artistsort", nargs="*", help="Subset digital albums by artistsort.")
+subset_parser.add_argument("--albumsort", nargs="*", help="Subset digital albums by albumsort.")
+subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by artist.")

@@ -3,16 +3,19 @@ import argparse
 import json
 import logging.config
 import operator
-from os.path import basename, exists, expandvars, join, normpath, splitext
 import subprocess
 import sys
+from os.path import basename, exists, expandvars, join, normpath, splitext
 from xml.etree.ElementTree import parse
+
 import yaml
 
 from Applications.shared import ARECA
 
 __author__ = 'Xavier ROSSET'
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 # ===============
 # Backup targets.
@@ -25,18 +28,16 @@ with open(join(expandvars("%_PYTHONPROJECT%"), "Areca", "Areca.json")) as fp:
 # Classes.
 # ========
 class GetTargets(argparse.Action):
-
     def __init__(self, option_strings, dest, **kwargs):
         super(GetTargets, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
-
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
-        setattr(namespace, self.dest, [item for item in sorted(targets) if targets[item] == getattr(namespace, "workspace")])
+        setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), targets.keys())))
 
         # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme. 
         if values:
-            setattr(namespace, self.dest, [item for item in [item for item in values if item in sorted(targets)] if targets[item] == getattr(namespace, "workspace")])
+            setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), filter(lambda i: i in targets, values))))
 
 
 # =================
@@ -49,7 +50,6 @@ parser.add_argument("-f", "--full", action="store_true")
 parser.add_argument("-c", "--check", action="store_true")
 parser.add_argument("-t", "--test", action="store_true")
 
-
 # ========
 # Logging.
 # ========
@@ -57,28 +57,25 @@ with open(join(expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as 
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("Backup.{0}".format(splitext(basename(__file__))[0]))
 
-
 # ================
 # Initializations.
 # ================
 status, returncode, arguments = 100, [], parser.parse_args()
 
-
 # ===============
 # Main algorithm.
 # ===============
 
+#    --------------------
+# 1. Log input arguments.
+#    --------------------
 
-#     --------------------
-#  1. Log input arguments.
-#     --------------------
-
-# --> 1.a. Targets available in JSON reference file.
+# 1.a. Targets available in JSON reference file.
 logger.debug("Configured targets.")
 for target, workspace in sorted(sorted(targets.items(), key=lambda i: int(i[0])), key=operator.itemgetter(1)):
     logger.debug("\t{0}: {1}.".format(target, workspace).expandtabs(4))
 
-# --> 1.b. Targets given by parser.
+# 1.b. Targets given by parser.
 logger.debug("Processed targets.")
 if arguments.targets:
     for target in sorted(arguments.targets, key=int):
@@ -86,9 +83,9 @@ if arguments.targets:
 elif not arguments.targets:
     logger.debug("\tAny coherent target hasn\'t been given: backup can\'t be processed!".expandtabs(4))
 
-# ------------------
-#  2. Process arguments.
-#     ------------------
+#    ------------------
+# 2. Process arguments.
+#    ------------------
 for target in arguments.targets:
 
     #  2.a. Get backup configuration file.
@@ -134,7 +131,6 @@ for target in arguments.targets:
         for line in process.stdout.splitlines():
             logger.info("\t%s".expandtabs(4) % (line,))
     returncode.append(code)
-
 
 # ===============
 # Exit algorithm.

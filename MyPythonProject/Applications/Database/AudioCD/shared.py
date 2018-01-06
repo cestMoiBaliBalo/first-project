@@ -8,7 +8,7 @@ from datetime import datetime
 from itertools import chain, compress, groupby
 from operator import itemgetter
 
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat, getnearestmultiple, gettabs, validalbumsort, validdatetime, validdiscnumber, validgenre, validproductcode, validtracks, validyear
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat, getnearestmultiple, gettabs, validalbumsort, validdatetime, validdb, validdiscnumber, validgenre, validproductcode, validtracks, validyear
 from ...xml import rippinglog_in
 
 __author__ = 'Xavier ROSSET'
@@ -26,31 +26,38 @@ class InsertRippingLog(object):
     """
     logger = logging.getLogger("{0}.InsertRippingLog".format(__name__))
 
-    def __init__(self, *logs, db=DATABASE):
+    def __init__(self, *logs):
         self._changes, _logs, now = 0, [], int(UTC.localize(datetime.utcnow()).timestamp())
         for log in logs:
 
             timestamp = now
             try:
-                artist, origyear, year, album, disc, tracks, genre, upc, label, timestamp, application, albumsort, artistsort = log
+                database, artist, origyear, year, album, disc, tracks, genre, upc, label, timestamp, application, albumsort, artistsort = log
             except ValueError:
-                artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort = log
+                database, artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort = log
 
-            # Check if `origyear` is valid.
+            # 1. Check if `database` is valid.
+            try:
+                database = validdb(database)
+            except ValueError as err:
+                self.logger.debug(err)
+                continue
+
+            # 2. Check if `origyear` is valid.
             try:
                 origyear = validyear(origyear)
             except ValueError as err:
                 self.logger.debug(err)
                 continue
 
-            # Check if `year` is valid.
+            # 3. Check if `year` is valid.
             try:
                 year = validyear(year)
             except ValueError as err:
                 self.logger.debug(err)
                 continue
 
-            # Check if `disc` is valid.
+            # 4. Check if `disc` is valid.
             try:
                 disc = int(disc)
             except (ValueError, TypeError) as err:
@@ -60,7 +67,7 @@ class InsertRippingLog(object):
                 self.logger.debug("Disc number must be greater than 0.")
                 continue
 
-            # Check if `tracks` is valid.
+            # 5. Check if `tracks` is valid.
             try:
                 tracks = int(tracks)
             except (ValueError, TypeError) as err:
@@ -70,66 +77,69 @@ class InsertRippingLog(object):
                 self.logger.debug("Total tracks number must be greater than 0.")
                 continue
 
-            # Check if `genre` is valid.
+            # 6. Check if `genre` is valid.
             try:
                 genre = validgenre(genre)
             except (ValueError, TypeError) as err:
                 self.logger.debug(err)
                 continue
 
-            # Check if `upc` is valid.
+            # 7. Check if `upc` is valid.
             try:
                 upc = validproductcode(upc)
             except (ValueError, TypeError) as err:
                 self.logger.debug(err)
                 continue
 
-            # Check if `albumsort` is valid.
+            # 8. Check if `albumsort` is valid.
             try:
                 albumsort = validalbumsort(albumsort)
             except (ValueError, TypeError) as err:
                 self.logger.debug(err)
                 continue
 
-            # Set `timestamp`.
-            # `timestamp` must be a local Unix epoch time.
+            # 9. Set `timestamp`.
+            #    `timestamp` must be a local Unix epoch time.
             if not timestamp:
                 timestamp = now
 
-            _logs.append((datetime.fromtimestamp(timestamp), artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, datetime.utcnow()))
+            # 10. Configure tuples gathering together log details.
+            _logs.append((database, datetime.fromtimestamp(timestamp), artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, datetime.utcnow()))
 
         if _logs:
-            conn = sqlite3.connect(db)
-            with conn:
-                conn.executemany(
-                        "INSERT INTO rippinglog (ripped, artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, utc_created) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                        "?, ?, ?, ?)", _logs)
-                self._changes = conn.total_changes
-                self.logger.debug("{0} records inserted.".format(self._changes))
-                if self._changes:
-                    for item in _logs:
-                        self.logger.debug(item)
-            conn.close()
+            _logs = dict((key, list(group)) for key, group in groupby(sorted(_logs, key=itemgetter(0)), key=itemgetter(0)))
+            for key, group in _logs.items():
+                group = [item[1:] for item in group]
+                conn = sqlite3.connect(key)
+                with conn:
+                    conn.executemany(
+                            "INSERT INTO rippinglog (ripped, artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, utc_created) "
+                            "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", group)
+                    self._changes = conn.total_changes
+                    self.logger.debug("{0} records inserted.".format(self._changes))
+                    if self._changes:
+                        for item in group:
+                            self.logger.debug(item)
+                conn.close()
 
     @classmethod
-    def fromjson(cls, fil, db=DATABASE):
+    def fromjson(cls, fil):
         """
 
         :param fil:
-        :param db:
         :return:
         """
-        return cls(*json.load(fil), db=db)
+        return cls(*json.load(fil))
 
     @classmethod
-    def fromxml(cls, fil, db=DATABASE):
+    def fromxml(cls, fil):
         """
 
         :param fil:
-        :param db:
         :return:
         """
-        return cls(*[(log.artist,
+        return cls(*[(log.database,
+                      log.artist,
                       log.origyear,
                       log.year,
                       log.album,
@@ -141,7 +151,7 @@ class InsertRippingLog(object):
                       log.ripped,
                       log.application,
                       log.albumsort,
-                      log.artistsort) for log in rippinglog_in(fil)], db=db)
+                      log.artistsort) for log in rippinglog_in(fil) if log.database])
 
     @property
     def changes(self):
@@ -160,7 +170,7 @@ def logrecord(t, *, logginglevel="debug"):
     """
     tabsize, headers = 3, ["Record", "Ripped", "Artistsort", "Albumsort", "Artist", "Origyear", "Year", "Album", "Label", "Genre", "UPC", "Application", "Disc", "Tracks", "Created", "Modified"]
     width = getnearestmultiple(max([len(header) for header in headers]), multiple=tabsize)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("{0}.logrecord".format(__name__))
     levels = {"default": logger.debug,
               "debug": logger.debug,
               "info": logger.info,
@@ -192,13 +202,12 @@ def logrecord(t, *, logginglevel="debug"):
 # =======================================
 # Main functions for working with tables.
 # =======================================
-def insertfromfile(*files, db=DATABASE):
+def insertfromfile(*files):
     """
     Insert ripping log(s) into `rippinglog` table.
     Logs are taken from JSON file-object(s) or XML file-object(s).
 
     :param files: file-object(s) where the logs are taken from.
-    :param db: database where `rippinglog` table is stored.
     :return: database total changes.
     """
     root = "rippinglogs"
@@ -225,11 +234,11 @@ def insertfromfile(*files, db=DATABASE):
 
         # JSON file.
         if structure == "json":
-            logs = InsertRippingLog.fromjson(fil, db=db)
+            logs = InsertRippingLog.fromjson(fil)
 
         # XML file.
         elif structure == "xml":
-            logs = InsertRippingLog.fromxml(fil, db=db)
+            logs = InsertRippingLog.fromxml(fil)
 
         # Insert logs into database.
         status += logs.changes
@@ -237,16 +246,16 @@ def insertfromfile(*files, db=DATABASE):
     return status
 
 
-def insertfromargs(db=DATABASE, **kwargs):
+def insertfromargs(**kwargs):
     """
     Insert ripping log(s) into `rippinglog` table.
     Logs are taken from keywords arguments gathered together into a python dictionary.
 
-    :param db: database where `rippinglog` table is stored.
     :param kwargs: field-value pairs.
     :return: database total changes.
     """
-    return InsertRippingLog((kwargs.get("artist"),
+    return InsertRippingLog((kwargs.get("database"),
+                             kwargs.get("artist"),
                              kwargs.get("origyear"),
                              kwargs.get("year"),
                              kwargs.get("album"),
@@ -257,7 +266,7 @@ def insertfromargs(db=DATABASE, **kwargs):
                              kwargs.get("label"),
                              kwargs.get("application"),
                              kwargs.get("albumsort"),
-                             kwargs.get("artistsort")), db=db).changes
+                             kwargs.get("artistsort"))).changes
 
 
 def deletelog(*uid, db=DATABASE):
@@ -494,15 +503,15 @@ def updatelog(*uid, db=DATABASE, **kwargs):
     #    Append modification date.
     if query:
         query = "{0}utc_modified=?, ".format(query)  # album=?, albumid=?, utc_modified=?, "
-        args.append(UTC.localize(datetime.utcnow()))  # ["the album", "1.20170000.1", datetime(2017, 10, 21, 16, 30, 45, tzinfo=timezone("utc"))]
+        args.append(UTC.localize(datetime.utcnow()).replace(tzinfo=None))  # ["the album", "1.20170000.1", datetime(2017, 10, 21, 16, 30, 45, tzinfo=timezone("utc"))]
         conn = sqlite3.connect(db)
         try:
             with conn:
                 conn.executemany("UPDATE rippinglog SET {0} WHERE rowid=?".format(query[:-2]), [tuple(chain(args, (rowid,))) for rowid in uid])
-                status = conn.total_changes
         except (sqlite3.OperationalError, sqlite3.Error) as err:
             logger.exception(err)
         else:
+            status = conn.total_changes
             logger.debug("{0:>3d} record(s) updated.".format(status))
         finally:
             conn.close()

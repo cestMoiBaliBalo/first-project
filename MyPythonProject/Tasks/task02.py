@@ -16,24 +16,24 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-#  1. --> Define argument to force ZIP file creation.
+# 1. --> Define argument to force ZIP file creation.
 database_parser.add_argument("-f", "--forced", action="store_true")
 
-#  2. --> Logging.
+# 2. --> Logging.
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Applications.Database.Tables")
 
-#  3. --> Constant(s).
+# 3. --> Constant(s).
 UID = 123456799
 
-#  4. --> Initialization(s).
+# 4. --> Initialization(s).
 status, arguments = 0, database_parser.parse_args()
 zipfiles = functools.partial(zipfiles, r"F:\passwords.7z", r"C:\Users\Xavier\Documents\Database.kdbx", r"Y:\Database.key")
-isdeltareached = functools.partial(isdeltareached, UID, "rundates")
-update = functools.partial(update, UID, "rundates")
+isdeltareached = functools.partial(isdeltareached, UID, "tasks")
+update = functools.partial(update, UID, "tasks")
 
-#  5. --> Main algorithm.
+# 5. --> Main algorithm.
 if isdeltareached(arguments.db) or arguments.forced:
     try:
         zipfiles()

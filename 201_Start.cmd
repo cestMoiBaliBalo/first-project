@@ -242,6 +242,9 @@ REM     --------------------------------------------
 REM     Sync FLAC files.
 XXCOPY "G:\Music\Lossless\*\*.flac" "%~2:\" /BI /FF /Y /oA:%_XXCOPYLOG%
 
+REM     Sync DSD files.
+XXCOPY "G:\Music\Lossless\*\*.dsf" "%~2:\" /BI /FF /Y /oA:%_XXCOPYLOG%
+
 REM     Remove extra files not present into the destination directory. Preserve "DCIM" if present.
 XXCOPY "%~2:\" "G:\Music\Lossless\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
 

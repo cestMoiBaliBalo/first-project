@@ -4,7 +4,6 @@ import sys
 from itertools import accumulate
 
 from Applications.Database.DigitalAudioFiles.shared import insertfromfile
-from Applications.parsers import database_parser
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -14,12 +13,15 @@ __status__ = "Production"
 # =================
 # Arguments parser.
 # =================
-parser = argparse.ArgumentParser(parents=[database_parser])
+parser = argparse.ArgumentParser()
 parser.add_argument("tracks", type=argparse.FileType(mode="r", encoding="UTF_8"))
+
+# ================
+# Initializations.
+# ================
+arguments = parser.parse_args()
 
 # ===============
 # Main algorithm.
 # ===============
-if __name__ == "__main__":
-    arguments = parser.parse_args()
-    sys.exit(list(accumulate(insertfromfile(arguments.tracks, db=arguments.db)))[-1])
+sys.exit(list(accumulate(insertfromfile(arguments.tracks)))[-1])

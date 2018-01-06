@@ -56,8 +56,8 @@ class Test02(unittest.TestCase):
         class ThatClass(MutableSequence):
 
             def __init__(self, seq):
-                self._index = 0
-                self._seq = sorted(sorted(sorted(seq, key=self.f1), key=self.f2), key=self.f3)
+                self._index = -1
+                self._seq = sorted(sorted(sorted(seq, key=lambda i: int(i.split(".")[2])), key=lambda i: int(i.split(".")[0])), key=lambda i: int(i.split(".")[1]))
 
             def __getitem__(self, item):
                 return self._seq[item]
@@ -72,56 +72,49 @@ class Test02(unittest.TestCase):
                 return len(self._seq)
 
             def __iter__(self):
-                for item in self._seq:
-                    yield item[2:6]
+                return self
+
+            def __next__(self):
+                self._index += 1
+                if self._index >= len(self._seq):
+                    raise StopIteration
+                return self._seq[self._index][2:6]
 
             def __call__(self, arg):
                 self._index += 1
                 try:
-                    return self._seq[self._index - 1][2:6]
+                    return self._seq[self._index][2:6]
                 except IndexError:
                     return arg
-
-            @property
-            def indexes(self):
-                return self._seq
 
             def insert(self, index, value):
                 self._seq.insert(index, value)
 
-            @staticmethod
-            def f1(s):
-                return int(s.split(".")[2])
+            @property
+            def sequence(self):
+                return self._seq
 
-            @staticmethod
-            def f2(s):
-                return int(s.split(".")[0])
-
-            @staticmethod
-            def f3(s):
-                return int(s.split(".")[1])
-
-        self.x = ThatClass(["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "2.20160422.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13",
-                            "2.20000823.13", "2.20170101.13", "1.20160422.02"])
+        self.obj = ThatClass(["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "2.20160422.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13",
+                              "2.20000823.13", "2.20170101.13", "1.20160422.02"])
 
     def test_01first(self):
-        self.assertListEqual(self.x.indexes, ["2.19841102.13", "2.19990822.13", "2.20000823.13", "2.20021014.13", "2.20160120.13", "2.20160125.13", "2.20160201.13", "1.20160422.02", "1.20160422.13",
-                                              "2.20160422.13", "2.20160422.15", "1.20160625.13", "2.20170101.13"])
+        self.assertListEqual(self.obj.sequence, ["2.19841102.13", "2.19990822.13", "2.20000823.13", "2.20021014.13", "2.20160120.13", "2.20160125.13", "2.20160201.13", "1.20160422.02", "1.20160422.13",
+                                                 "2.20160422.13", "2.20160422.15", "1.20160625.13", "2.20170101.13"])
 
     def test_02second(self):
-        self.assertListEqual(list(self.x), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
+        self.assertListEqual(list(self.obj), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
 
     def test_03third(self):
         sentinel = "2016"
-        self.assertListEqual(list(iter(partial(self.x, sentinel), sentinel)), ["1984", "1999", "2000", "2002"])
+        self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002"])
 
     def test_04fourth(self):
         sentinel = "2018"
-        self.assertListEqual(list(iter(partial(self.x, sentinel), sentinel)), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
+        self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
 
     def test_05fifth(self):
         sentinel = "2017"
-        self.assertListEqual(sorted(set(iter(partial(self.x, sentinel), sentinel))), ["1984", "1999", "2000", "2002", "2016"])
+        self.assertListEqual(sorted(set(iter(partial(self.obj, sentinel), sentinel))), ["1984", "1999", "2000", "2002", "2016"])
 
 
 class Test03(unittest.TestCase):
@@ -141,13 +134,7 @@ class Test03(unittest.TestCase):
         self.assertListEqual(sorted(self.x, key=myfunc1), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_04fourth(self):
-        def myfunc1(s):
-            return int(s.split("_")[1])
-
-        def myfunc2(s):
-            return int(s.split("_")[0])
-
-        self.assertListEqual(sorted(sorted(self.x, key=myfunc1), key=myfunc2), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
+        self.assertListEqual(sorted(sorted(self.x, key=lambda i: int(i.split("_")[1])), key=lambda i: int(i.split("_")[0])), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
 @unittest.skip
@@ -180,7 +167,7 @@ class Test05(unittest.TestCase):
         self.assertEqual(validmonth("2017-02"), 201702)
 
 
-class TestRegex(unittest.TestCase):
+class Test06(unittest.TestCase):
     """
     Test regular expressions.
     """
@@ -216,7 +203,7 @@ class TestRegex(unittest.TestCase):
         self.assertRegex("Février 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
 
 
-class TestCanFileBeProcessed(unittest.TestCase):
+class Test07(unittest.TestCase):
     def test_01first(self):
         self.assertTrue(canfilebeprocessed("flac", *()))
 
@@ -474,6 +461,7 @@ class Test02DefaultCDTrack(unittest.TestCase):
         self.assertDictEqual(self.otags, self.reftags)
 
 
+@unittest.skip
 class Test03DefaultCDTrack(unittest.TestCase):
     """
     Test "Applications.AudioCD.shared.rippinglog" function for default single CD.
@@ -506,10 +494,9 @@ class Test03DefaultCDTrack(unittest.TestCase):
             "InCollection": "Y",
             "TitleLanguage": "English",
             "Bootleg": "N",
-            "Title": "A Mansion in Darkness",
-            "Offset": "0"
+            "Title": "A Mansion in Darkness"
         }
-        self.first, self.second = ["King Diamond", "1987", "Abigail", "Hard Rock", "016861878825", "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
+        self.first, self.second = ["King Diamond", "1987", "1987", "Abigail", "1", "13", "Hard Rock", "016861878825", "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
         with tempfile.TemporaryDirectory() as directory:
             outfile = os.path.join(directory, "rippinglog.json")
 
@@ -521,7 +508,7 @@ class Test03DefaultCDTrack(unittest.TestCase):
                 with open(outfile, encoding=shared.UTF8) as fr:
                     self.second = json.load(fr)[0]
             if self.second:
-                self.second = self.second[0:5] + self.second[6:]
+                self.second = self.second[0:8] + self.second[9:]
 
     def test_01first(self):
         self.assertTrue(self.second)
@@ -530,6 +517,7 @@ class Test03DefaultCDTrack(unittest.TestCase):
         self.assertListEqual(self.first, self.second)
 
 
+@unittest.skip
 class Test04DefaultCDTrack(unittest.TestCase):
     """
     Test "Applications.AudioCD.shared.digitalaudiobase" function for default single CD.
@@ -586,6 +574,7 @@ class Test04DefaultCDTrack(unittest.TestCase):
         self.assertListEqual(self.first, self.second)
 
 
+@unittest.skip
 class Test05DefaultCDTrack(unittest.TestCase):
     """
     Test "Applications.AudioCD.shared.rippinglog" function for a multi CDs album.
@@ -622,7 +611,7 @@ class Test05DefaultCDTrack(unittest.TestCase):
             "OrigYear": "1987",
             "Offset": "0"
         }
-        self.first, self.second = ["King Diamond", "2016", "Abigail (1/2)", "Hard Rock", "016861878825",  "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
+        self.first, self.second = ["King Diamond", "1987", "2016", "Abigail (1/2)", "1", "13", "Hard Rock", "016861878825", "dBpoweramp 15.1", "1.19870000.1", "King Diamond"], None
         with tempfile.TemporaryDirectory() as directory:
             outfile = os.path.join(directory, "rippinglog.json")
 
@@ -634,7 +623,7 @@ class Test05DefaultCDTrack(unittest.TestCase):
                 with open(outfile, encoding=shared.UTF8) as fr:
                     self.second = json.load(fr)[0]
             if self.second:
-                self.second = self.second[0:5] + self.second[6:]
+                self.second = self.second[0:8] + self.second[9:]
 
     def test_01first(self):
         self.assertTrue(self.second)
@@ -1156,6 +1145,7 @@ class Test11DefaultCDTrack(unittest.TestCase):
         self.assertDictEqual(self.otags, self.reftags)
 
 
+@unittest.skip
 class Test12DefaultCDTrack(unittest.TestCase):
     """
     Test "Applications.AudioCD.shared.RippedCD" context manager with missing mandatory tags.
@@ -1341,7 +1331,7 @@ class Test14DefaultCDTrack(unittest.TestCase):
                 ofile = "T{0:0>2}.json".format(track + offset)
 
             # Create output tags json file.
-            with RippedCD("sbootlegs", ifile, "sbootlegs"):
+            with RippedCD("sbootlegs", ifile, "sbootlegs", "updtotaltracks"):
                 pass
 
         # Extract output tags into a dictionary.

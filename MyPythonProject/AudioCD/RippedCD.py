@@ -3,7 +3,6 @@ import argparse
 import sys
 
 from Applications.Database.AudioCD.shared import insertfromfile
-from Applications.parsers import database_parser
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -13,7 +12,7 @@ __status__ = "Production"
 # =================
 # Arguments parser.
 # =================
-parser = argparse.ArgumentParser(parents=[database_parser])
+parser = argparse.ArgumentParser()
 parser.add_argument("tracks", type=argparse.FileType(mode="r", encoding="UTF_8"))
 
 # ================
@@ -24,4 +23,4 @@ arguments = parser.parse_args()
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insertfromfile(arguments.tracks, db=arguments.db))
+sys.exit(insertfromfile(arguments.tracks))
