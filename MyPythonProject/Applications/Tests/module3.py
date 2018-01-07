@@ -98,7 +98,7 @@ class Test02(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution des enregistrements.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -136,7 +136,7 @@ class Test03(unittest.TestCase):
 
     def test_02second(self):
         """
-        1. Tester la restitution des enregistrements.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -173,7 +173,7 @@ class Test04(unittest.TestCase):
 
     def test_02second(self):
         """
-        1. Tester la restitution des enregistrements.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -210,7 +210,7 @@ class Test05(unittest.TestCase):
 
     def test_02second(self):
         """
-        1. Tester la restitution des enregistrements.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -240,7 +240,7 @@ class Test06(unittest.TestCase):
         # 3. Copy production DB into temporary folder.
         copy(src=DATABASE, dst=self.tempdir)
 
-        # 4. Count initial records stored into temporary DB.
+        # 4. Log both `genre` and `UPC` stored into temporary DB.
         conn = sqlite3.connect(self.db)
         curs = conn.cursor()
         curs.execute("SELECT genre, upc FROM rippinglog WHERE rowid=?", (self.rowid,))
@@ -249,7 +249,7 @@ class Test06(unittest.TestCase):
         self.logger.debug(genre)
         self.logger.debug(upc)
 
-        # 5. Update record.
+        # 5. Parse arguments.
         self.arguments = CD.parser.parse_args("rippinglog update {1} --genre Pop --upc 9999999999999 --ripped 1504122358 --database {0}".format(self.db, self.rowid).split())
 
     def tearDown(self):
@@ -273,10 +273,15 @@ class Test06(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Test that temporary database was changed.
+        2. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
         """
-        changes = self.arguments.function(ns=self.arguments)
-        self.logger.debug(changes)
+        self.assertEqual(self.arguments.function(ns=self.arguments), 1)
+
+    def test_03third(self):
+        """
+        3. Test that only temporary database was changed.
+        """
+        self.logger.debug(self.arguments.function(ns=self.arguments))
         conn = sqlite3.connect(self.db)
         curs = conn.cursor()
         curs.execute("SELECT genre, upc FROM rippinglog WHERE rowid=?", (self.rowid,))
@@ -287,105 +292,99 @@ class Test06(unittest.TestCase):
         self.assertEqual(genre, "Pop")
         self.assertEqual(upc, "9999999999999")
 
-    def test_03third(self):
+    def test_04fourth(self):
         """
-        3. Test that production database remains unchanged.
+        4. Test that production database remains unchanged.
         """
+        self.logger.debug(self.arguments.function(ns=self.arguments))
         conn = sqlite3.connect(DATABASE)
         curs = conn.cursor()
         curs.execute("SELECT genre, upc FROM rippinglog WHERE rowid=?", (self.rowid,))
         genre, upc = curs.fetchone()
         conn.close()
+        self.logger.debug(genre)
+        self.logger.debug(upc)
         self.assertEqual(genre, "Hard Rock")
         self.assertEqual(upc, "5017615832822")
 
 
-#
-#     def test_02second(self):
-#         """
-#         2. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
-#         """
-#         with tempfile.TemporaryDirectory() as directory:
-#             dst = os.path.join(directory, os.path.basename(self.arguments.db))
-#             copy(src=self.arguments.db, dst=dst)
-#             kwargs = {key: val for key, val in vars(self.arguments).items() if val}
-#             kwargs["db"] = dst
-#             self.assertEqual(self.arguments.function(**kwargs), 1)
-#
-#     def test_03third(self):
-#         """
-#         3. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
-#         """
-#         with tempfile.TemporaryDirectory() as directory:
-#             dst = os.path.join(directory, os.path.basename(self.arguments.db))
-#             copy(src=self.arguments.db, dst=dst)
-#             kwargs = {key: val for key, val in vars(self.arguments).items() if val}
-#             kwargs["db"] = dst
-#             if self.arguments.function(**kwargs):
-#                 conn = sqlite3.connect(dst, detect_types=sqlite3.PARSE_DECLTYPES)
-#                 curs = conn.cursor()
-#                 try:
-#                     curs.execute("SELECT genre, upc, ripped FROM rippinglog WHERE rowid=?", (28,))
-#                     row = curs.fetchone()
-#                     if row:
-#                         self.assertEqual(row[0], self.arguments.genre)
-#                         self.assertEqual(row[1], self.arguments.upc)
-#                         self.assertEqual(shared.dateformat(shared.LOCAL.localize(row[2]), shared.TEMPLATE4), "Mercredi 30 Août 2017 21:45:58 CEST (UTC+0200)")
-#                 finally:
-#                     conn.close()
+class Test07(unittest.TestCase):
+    """
+    Tester la suppression d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    """
+    logger = logging.getLogger("{0}.Test07".format(__name__))
+    rowid = 28
+
+    def setUp(self):
+        # 1. Define temporary directory.
+        self.tempdir = tempfile.mkdtemp()
+
+        # 2. Define temporary DB.
+        self.db = os.path.join(self.tempdir, os.path.basename(DATABASE))
+
+        # 3. Copy production DB into temporary folder.
+        copy(src=DATABASE, dst=self.tempdir)
+
+        # 4. Count initial records stored into temporary DB.
+        conn = sqlite3.connect(self.db)
+        curs = conn.cursor()
+        curs.execute("SELECT count(*) FROM rippinglog WHERE rowid=?", (self.rowid,))
+        count = curs.fetchone()[0]
+        conn.close()
+        self.logger.debug(count)
+
+        # 5. Parse arguments.
+        self.arguments = CD.parser.parse_args("rippinglog delete {1} --database {0} --loglevel DEBUG".format(self.db, self.rowid).split())
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
+    def test_01first(self):
+        """
+        1. Tester le fonctionnement du parser.
+        """
+        self.assertEqual(self.arguments.table, "rippinglog")
+        self.assertEqual(self.arguments.statement, "delete")
+        self.assertListEqual(self.arguments.rowid, [28])
+        self.assertTrue(self.arguments.donotpropagate)
+        self.assertIsNone(self.arguments.template(self.arguments))
+        self.assertFalse(self.arguments.test)
+        self.assertEqual(self.arguments.db, self.db)
+        self.assertEqual(self.arguments.loglevel, "DEBUG")
+
+    def test_02second(self):
+        """
+        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        """
+        self.assertEqual(self.arguments.function(ns=self.arguments), 1)
+
+    def test_03third(self):
+        """
+        3. Test that only temporary database was changed.
+        """
+        self.logger.debug(self.arguments.function(ns=self.arguments))
+        conn = sqlite3.connect(self.db)
+        curs = conn.cursor()
+        curs.execute("SELECT count(*) FROM rippinglog WHERE rowid=?", (self.rowid,))
+        count = curs.fetchone()[0]
+        conn.close()
+        self.logger.debug(count)
+        self.assertEqual(count, 0)
+
+    def test_04fourth(self):
+        """
+        4. Test that production database remains unchanged.
+        """
+        self.logger.debug(self.arguments.function(ns=self.arguments))
+        conn = sqlite3.connect(DATABASE)
+        curs = conn.cursor()
+        curs.execute("SELECT count(*) FROM rippinglog WHERE rowid=?", (self.rowid,))
+        count = curs.fetchone()[0]
+        conn.close()
+        self.logger.debug(count)
+        self.assertEqual(count, 1)
 
 
-# class Test04(unittest.TestCase):
-#     """
-#     Tester la suppression d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
-#     """
-#
-#     def setUp(self):
-#         self.arguments = CD.parser.parse_args("rippinglog delete 28".split())
-#
-#     def test_01first(self):
-#         """
-#         1. Tester le fonctionnement du parser.
-#         """
-#         self.assertEqual(self.arguments.table, "rippinglog")
-#         self.assertEqual(self.arguments.statement, "delete")
-#         self.assertListEqual(self.arguments.rowid, [28])
-#         self.assertTrue(self.arguments.donotpropagate)
-#         self.assertIsNone(self.arguments.template(self.arguments))
-#         self.assertFalse(self.arguments.test)
-#         self.assertEqual(self.arguments.db, DATABASE)
-#
-#     def test_02second(self):
-#         """
-#         2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
-#         """
-#         with tempfile.TemporaryDirectory() as directory:
-#             dst = os.path.join(directory, os.path.basename(self.arguments.db))
-#             copy(src=self.arguments.db, dst=dst)
-#             kwargs = {key: val for key, val in vars(self.arguments).items() if val}
-#             kwargs["db"] = dst
-#             self.assertEqual(self.arguments.function(**kwargs), 1)
-#
-#     def test_03third(self):
-#         """
-#         3. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
-#         """
-#         with tempfile.TemporaryDirectory() as directory:
-#             dst = os.path.join(directory, os.path.basename(self.arguments.db))
-#             copy(src=self.arguments.db, dst=dst)
-#             kwargs = {key: val for key, val in vars(self.arguments).items() if val}
-#             kwargs["db"] = dst
-#             if self.arguments.function(**kwargs):
-#                 log = 0
-#                 conn = sqlite3.connect(dst)
-#                 conn.row_factory = sqlite3.Row
-#                 with conn:
-#                     for row in conn.execute("SELECT count(*) AS count FROM rippinglog WHERE rowid=?", (28,)):
-#                         log = row["count"]
-#                 conn.close()
-#                 self.assertEqual(log, 0)
-#
-#
 # class Test05a(unittest.TestCase):
 #     """
 #     Tester la restitution d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
