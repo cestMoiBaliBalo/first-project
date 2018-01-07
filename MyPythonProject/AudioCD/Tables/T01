@@ -1,12 +1,5 @@
 {% for row in content %}
-
-    Record    : {{ row.rowid }}
-    Artistsort: {{ row.artistsort }}
-    Albumsort : {{ row.albumsort }}
-    Artist    : {{ row.artist }}
-    Year      : {{ row.year }}
-    Album     : {{ row.album }}
-    Genre     : {{ row.genre }}
-    UPC       : {{ row.upc }}
-    ripped    : {{ row.ripped|readable(tz=local) }}
+{% if row %}
+{{row}}
+{% endif %}
 {% endfor %}

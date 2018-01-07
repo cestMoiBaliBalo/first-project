@@ -1,0 +1,12 @@
+{% for key, group in content %}
+
+    Artistsort: {{ key[2:-15] }}
+    Albumsort : {{ key[-14:-2] }}
+    Album     : {{ group[0][-1] }}
+    Disc      : {{ key[-1] }}
+
+    {% for rowid, albumid, discid, trackid, title, album in group %}
+        {{ trackid|rjustify(2) }}. {{ title }}{{ rowid|rjustify(4) }}
+    {% endfor %}
+
+{% endfor %}

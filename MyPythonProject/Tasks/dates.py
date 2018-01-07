@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
-import os
-import yaml
 import json
 import logging
-from collections import namedtuple
+import os
 import xml.etree.ElementTree as ET
+from collections import namedtuple
 from logging.config import dictConfig
-from Applications.parsers import readtable
+
+import yaml
+
 from Applications.Database.Tables.shared import select
-from Applications.shared import dateformat, mainscript, now, LOCAL, UTC, UTF8, TEMPLATE4
+from Applications.parsers import readtable
+from Applications.shared import LOCAL, TEMPLATE4, UTC, UTF8, dateformat, now
 
 __author__ = 'Xavier ROSSET'
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 # ========
 # Logging.
@@ -20,36 +24,37 @@ with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encod
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Applications.Database.Tables")
 
-
 # ================
 # Initializations.
 # ================
-record, tasks = namedtuple("record", "uid rundate"), namedtuple("tasks", "task uid")
-
+record, tasks = namedtuple("record", "uid utc_run"), namedtuple("tasks", "description uid")
 
 # ==========
 # Arguments.
 # ==========
 arguments = readtable.parse_args()
 
-
 # ===============
 # Main algorithm.
 # ===============
 
-#  1 --> Initializations.
-logger.debug(mainscript(__file__))
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Repository.json")) as fp:
-    repo = {task.uid: task.task for task in [tasks._make(v) for k, v in json.load(fp).items()]}
+# 1 --> Initializations.
+logger.debug(arguments.db)
+logger.debug(arguments.table)
 
-#  2 --> Build XML file.
-root = ET.Element("Data", attrib=dict(css="firstcss.css", table=arguments.table))
-se = ET.SubElement(root, "Updated")
+# 2 --> Initializations.
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Repository.json")) as fp:
+    repo = {task.uid: task.description for task in [tasks._make(v) for k, v in json.load(fp).items()]}
+
+# 3 --> Build XML file.
+root = ET.Element("data", attrib=dict(table=arguments.table))
+se = ET.SubElement(root, "updated")
 se.text = now()
-for row in map(record._make, select(arguments.table, db=arguments.database)):
-    se = ET.SubElement(root, "Dates")
-    uid = ET.SubElement(se, "Task", attrib={"uid": str(row.uid)})
-    uid.text = repo[row.uid]
-    date = ET.SubElement(se, "LastRunDate")
-    date.text = dateformat(UTC.localize(row.rundate).astimezone(LOCAL), TEMPLATE4)
-ET.ElementTree(root).write(os.path.join(os.path.expandvars("%TEMP%"), "toto.xml"), encoding=UTF8, xml_declaration=True)
+for row in map(record._make, select(arguments.table, db=arguments.db)):
+    if row.uid in repo:
+        se = ET.SubElement(root, "dates")
+        uid = ET.SubElement(se, "task", attrib={"uid": str(row.uid)})
+        uid.text = repo[row.uid]
+        date = ET.SubElement(se, "lastrundate")
+        date.text = dateformat(UTC.localize(row.utc_run).astimezone(LOCAL), TEMPLATE4)
+ET.ElementTree(root).write(os.path.join(os.path.expandvars("%TEMP%"), "dates.xml"), encoding=UTF8, xml_declaration=True)

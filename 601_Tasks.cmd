@@ -28,7 +28,7 @@ REM -------------
 REM Display menu.
 REM -------------
 :MENU
-python %_PYTHONPROJECT%\Tasks\Tasks.py
+python %_PYTHONPROJECT%\Tasks\tasks.py
 
 
 REM ----------
@@ -59,7 +59,7 @@ REM -------------------
 REM Numbering pictures.
 REM -------------------
 IF ERRORLEVEL 36 (
-    python %_PYTHONPROJECT%\Images\Numbering.py
+    REM python %_PYTHONPROJECT%\Images\Numbering.py
     GOTO MENU
 )
 
@@ -68,7 +68,7 @@ REM ----------------------------------
 REM Delete "rippinglog" table records.
 REM ----------------------------------
 IF ERRORLEVEL 35 (
-    python %_PYTHONPROJECT%\AudioCD\Delete.py
+    REM python %_PYTHONPROJECT%\AudioCD\Delete.py
     GOTO MENU
 )
 
@@ -77,7 +77,7 @@ REM --------------------
 REM Edit folder content.
 REM --------------------
 IF ERRORLEVEL 34 (
-    python %_PYTHONPROJECT%\Files\FolderContent.py
+    REM python %_PYTHONPROJECT%\Files\FolderContent.py
     GOTO MENU
 )
 
@@ -86,11 +86,11 @@ REM ------------------
 REM Sort lists tester.
 REM ------------------
 IF ERRORLEVEL 33 (
-    CLS
-    PUSHD %_PYTHONPROJECT%
-    python -m unittest -v Applications.Tests.module1.Test03
-    POPD
-    PAUSE
+    REM CLS
+    REM PUSHD %_PYTHONPROJECT%
+    REM python -m unittest -v Applications.Tests.module1.Test03
+    REM POPD
+    REM PAUSE
     GOTO MENU
 )
 
@@ -100,9 +100,7 @@ REM Default Audio CD ripper tester.
 REM -------------------------------
 IF ERRORLEVEL 32 (
     CLS
-    PUSHD %_PYTHONPROJECT%
-    python -m unittest -v Applications.Tests.module1.Test01DefaultCDTrack Applications.Tests.module1.Test02DefaultCDTrack Applications.Tests.module1.Test03DefaultCDTrack Applications.Tests.module1.Test04DefaultCDTrack Applications.Tests.module1.Test05DefaultCDTrack Applications.Tests.module1.Test06DefaultCDTrack Applications.Tests.module1.Test07DefaultCDTrack Applications.Tests.module1.Test08DefaultCDTrack
-    POPD
+    python -m unittest -v Applications.Tests.module1
     PAUSE
     GOTO MENU
 )
@@ -112,11 +110,11 @@ REM ---------------
 REM Parsers tester.
 REM ---------------
 IF ERRORLEVEL 31 (
-    CLS
-    PUSHD %_PYTHONPROJECT%
-    python -m unittest -v Applications.Tests.module2
-    POPD
-    PAUSE
+    REM CLS
+    REM PUSHD %_PYTHONPROJECT%
+    REM python -m unittest -v Applications.Tests.module2
+    REM POPD
+    REM PAUSE
     GOTO MENU
 )
 
@@ -125,7 +123,7 @@ REM ----------------------------------
 REM Update "rippinglog" table records.
 REM ----------------------------------
 IF ERRORLEVEL 30 (
-    python %_PYTHONPROJECT%\AudioCD\Update.py
+    REM python %_PYTHONPROJECT%\AudioCD\Update.py
     GOTO MENU
 )
 
@@ -135,9 +133,7 @@ REM Regular expressions tester.
 REM ---------------------------
 IF ERRORLEVEL 29 (
     CLS
-    PUSHD %_PYTHONPROJECT%
-    python -m unittest -v Applications.Tests.module1.TestRegex
-    POPD
+    python -m unittest -v Applications.Tests.module2
     PAUSE
     GOTO MENU
 )
@@ -207,6 +203,15 @@ IF ERRORLEVEL 22 (
 )
 
 
+REM -------------
+REM Sync FIIO X5.
+REM -------------
+IF ERRORLEVEL 19 (
+    G:\Computing\201_Start.cmd 17 M
+    GOTO MENU
+)
+
+
 REM ---------------------------
 REM Display geometric sequence.
 REM ---------------------------
@@ -229,10 +234,7 @@ REM --------------------------
 REM Edit "rippinglog" content.
 REM --------------------------
 IF ERRORLEVEL 15 (
-    python %_PYTHONPROJECT%\AudioCD\RippedCD`View1.py
-    python %_PYTHONPROJECT%\AudioCD\RippedCD`View2.py
-    CLS
-    python %_PYTHONPROJECT%\AudioCD\RippedCD`View3.py
+    python %_PYTHONPROJECT%\AudioCD\Interface.py rippinglog select
     PAUSE
     GOTO MENU
 )
@@ -242,24 +244,24 @@ REM -------------------------------------
 REM Digital audio files HTML simple view.
 REM -------------------------------------
 IF ERRORLEVEL 13 (
-    python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
-    IF NOT ERRORLEVEL 1 (
-        IF EXIST "%_xmldigitalaudiobase%" (
-            java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"
-            DEL "%_xmldigitalaudiobase%"
-        )
-    )
+    REM python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
+    REM IF NOT ERRORLEVEL 1 (
+        REM IF EXIST "%_xmldigitalaudiobase%" (
+            REM java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"
+            REM DEL "%_xmldigitalaudiobase%"
+        REM )
+    REM )
     GOTO MENU
 )
 
 
-REM ------------------------
-REM Edit "rundates" content.
-REM ------------------------
+REM ---------------------
+REM Edit "tasks" content.
+REM ---------------------
 IF ERRORLEVEL 12 (
-    CLS
-    python %_PYTHONPROJECT%\Tasks\Dates.py "rundates"
-    PAUSE
+    REM CLS
+    REM python %_PYTHONPROJECT%\Tasks\Dates.py "tasks"
+    REM PAUSE
     GOTO MENU
 )
 
@@ -267,12 +269,12 @@ IF ERRORLEVEL 12 (
 REM -----------------------
 REM Edit "backups" content.
 REM -----------------------
-IF ERRORLEVEL 11 (
-    CLS
-    python %_PYTHONPROJECT%\Tasks\Dates.py "backups"
-    PAUSE
-    GOTO MENU
-)
+REM IF ERRORLEVEL 11 (
+REM     CLS
+REM     python %_PYTHONPROJECT%\Tasks\Dates.py "backups"
+REM     PAUSE
+REM     GOTO MENU
+REM )
 
 
 REM ----------------------
@@ -288,7 +290,7 @@ REM --------------
 REM Backup videos.
 REM --------------
 IF ERRORLEVEL 9 (
-    CALL "G:\Computing\start.cmd" 12
+    REM CALL "G:\Computing\start.cmd" 12
     GOTO MENU
 )
 

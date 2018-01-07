@@ -1,0 +1,93 @@
+{% extends "Main" %}
+
+
+{% block content1 %}
+    {{- menu -}}
+{% endblock %}
+
+
+{% block content2 %}
+
+    {%- if content %}
+
+        {%- set option1 = '<option value="year"' %}
+        {% if content["content"].view == "year" %}
+            {% set option1 = option1 ~ ' selected' %}
+        {% endif %}
+        {% set option1 = option1 ~ '>Years</option>' %}
+
+        {%- set option2 = '<option value="artist"' %}
+        {% if content["content"].view == "artist" %}
+            {% set option2 = option2 ~ ' selected' %}
+        {% endif %}
+        {% set option2 = option2 ~ '>Artists</option>' %}
+
+        {%- set option3 = '<option value="month"' %}
+        {% if content["content"].view == "month" %}
+            {% set option3 = option3 ~ ' selected' %}
+        {% endif %}
+        {% set option3 = option3 ~ '>Months</option>' %}
+
+        {%- set option4 = '<option value="genre"' %}
+        {% if content["content"].view == "genre" %}
+            {% set option4 = option4 ~ ' selected' %}
+        {% endif %}
+        {% set option4 = option4 ~ '>Genres</option>' %}
+
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>RIPPED CDs TOTALS</h2>
+                </div>
+                <div id="div2">
+                    <div>
+                        <form id="form" method="get" action="rippedcdstatistics">
+                             <select id="view" name="view">
+                                {{ option3 }}
+                                {{ option1 }}
+                                {{ option2 }}
+                                {{ option4 }}
+                            </select>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div id="wrapper">
+                <table id="{{ content["content"].tableid }}" class="tablesorter">
+                    <thead>
+                        <tr>
+                        {% for header in content["content"].header %}
+                            <th>{{ header|upper() }}</th>
+                        {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in content["content"].detail %}
+                        <tr>
+                            <td id="{{ item.id|normalize|e }}"><a href="{{ item.href|normalize2|e }}">{{ item.keys[1] }}</a></td>
+                            <td>{{ item.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% for script in content["scripts"] %}
+        <script type="text/javascript" src="{{ script }}"></script>
+        {% endfor %}
+
+    {% endif -%}
+
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
+{% endblock %}

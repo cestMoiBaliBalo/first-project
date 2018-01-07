@@ -6,17 +6,19 @@ import os
 import re
 import subprocess
 import zipfile
-from collections import MutableMapping
+from collections import MutableMapping, OrderedDict
 from contextlib import ContextDecorator
 from datetime import datetime
-from itertools import chain, repeat
+from itertools import filterfalse, repeat, tee, zip_longest
 from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 from string import Template
 
 import jinja2
+import yaml
 from PIL import Image, TiffImagePlugin
 from dateutil.parser import parse
+from dateutil.parser import parserinfo
 from dateutil.tz import gettz
 from pytz import timezone
 
@@ -36,16 +38,18 @@ locale.setlocale(locale.LC_ALL, "")
 APPEND = "a"
 WRITE = "w"
 DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db")
+TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
 ARECA = os.path.join(os.path.expandvars("%PROGRAMFILES%"), "Areca", "areca_cl.exe")
 DFTENCODING = "ISO-8859-1"
 DFTTIMEZONE = "Europe/Paris"
 UTC = timezone("UTC")
 LOCAL = timezone("Europe/Paris")
-TEMPLATE1 = "$day $d/$m/$Y $H:$M:$S $Z$z"
-TEMPLATE2 = "$day $d $month $Y $H:$M:$S $Z$z"
-TEMPLATE3 = "$d/$m/$Y $H:$M:$S $Z$z"
-TEMPLATE4 = "$day $d $month $Y $H:$M:$S ($Z$z)"
+TEMPLATE1 = "$day $d/$m/$Y $H:$M:$S $Z (UTC$z)"
+TEMPLATE2 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
+TEMPLATE3 = "$d/$m/$Y $H:$M:$S $Z (UTC$z)"
+TEMPLATE4 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE5 = "$Y-$m-$d"
+TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
 UTF8 = "UTF_8"
 UTF16 = "UTF_16LE"
@@ -54,12 +58,41 @@ COPYRIGHT = "\u00a9"
 DFTYEARREGEX = r"20[0-2]\d|19[6-9]\d"
 DFTMONTHREGEX = "0[1-9]|1[0-2]"
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
-UPCREGEX = r"^\d{12,13}$"
+UPCREGEX = r"\d{12,13}"
 ACCEPTEDANSWERS = ["N", "Y"]
 MUSIC = "F:\\"
 IMAGES = "H:\\"
-EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"], "documents": ["doc", "txt", "pdf", "xav"], "music": ["ape", "mp3", "m4a", "flac", "ogg"]}
-ZONES = ["US/Pacific", "US/Eastern", "Indian/Mayotte", "Asia/Tokyo", "Australia/Sydney"]
+LOCALMONTHS = ["Janvier",
+               "Février",
+               "Mars",
+               "Avril",
+               "Mai",
+               "Juin",
+               "Juillet",
+               "Août",
+               "Septembre",
+               "Octobre",
+               "Novembre",
+               "Decembre"]
+GENRES = ["Rock",
+          "Hard Rock",
+          "Heavy Metal",
+          "Trash Metal",
+          "Black Metal",
+          "Doom Metal",
+          "Progressive Rock",
+          "Alternative Rock",
+          "Pop",
+          "French Pop"]
+EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
+              "documents": ["doc", "txt", "pdf", "xav"],
+              "music": ["ape", "mp3", "m4a", "flac", "ogg"]}
+ZONES = ["UTC",
+         "US/Pacific",
+         "US/Eastern",
+         "Indian/Mayotte",
+         "Asia/Tokyo",
+         "Australia/Sydney"]
 PASSWORD = r"F*HJDa$_+t"
 NAS = r"192.168.1.20"
 
@@ -403,41 +436,65 @@ class GlobalInterface(object):
 
 
 class StringFormatter(object):
+    """
 
-    # ----------
-    # Constants.
-    # ----------
-    _REGEXES = {"1": r"(and|but|for|nor|or|so|yet)",
-                "2": r"((?:al)?though|as|because|if|since|so that|such as|to|unless|until|when|where(?:as)?|while)",
-                "3": r"(above|after|against|along(?:side)?|around|at|before|behind|below|between|beside|close to|down|(?:far )?from|in(?: front of)?(?:side)?(?:to)?|near|off?|on(?:to)?|out("
-                     r"?:side)?|over|toward|"
-                     r"under(?:neath)?|up(?: to)?)",
-                "4": r"(a(?:n(?:d)?)?|as|by|than|the|till|upon)"}
+    """
 
     # --------------------
     # Regular expressions.
     # --------------------
-    _REX1 = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
-    _REX2 = re.compile(r"^([a-z]+)\b", re.IGNORECASE)
-    _REX3 = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?)|mtv)\b", re.IGNORECASE)
-    _REX4 = re.compile(r"\b(')(d|ll|m|re|s|t|ve)\b", re.IGNORECASE)
-    _REX5 = re.compile(r"^([^\[]+)\[([^\]]+)\]$", re.IGNORECASE)
-    _REX6 = re.compile(r"\b({0}|{1}|{2}|{3})\b".format(_REGEXES["1"][1:-1], _REGEXES["2"][1:-1], _REGEXES["3"][1:-1], _REGEXES["4"][1:-1]), re.IGNORECASE)
-    _REX7 = re.compile(r"(\b-|\B\()([a-z]+)\b", re.IGNORECASE)
+    _REX01 = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
+    _REX02 = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?))\b", re.IGNORECASE)
+    _REX04 = re.compile(r"(\B\()([a-z]+)\b", re.IGNORECASE)  # Not used anymore!
+    _REX05a = re.compile(r"\b([a-z]+)'([a-z]+)\b", re.IGNORECASE)
+    _REX05b = re.compile(r"\b(o)'\b([a-z]+)\b", re.IGNORECASE)
+    _REX05c = re.compile(r"\b(o)'\B", re.IGNORECASE)
+    _REX05d = re.compile(r" \bn'\B ", re.IGNORECASE)
+    _REX05e = re.compile(r" \B'n\b ", re.IGNORECASE)
+    _REX05f = re.compile(r" \B'n'\B ", re.IGNORECASE)
+    _REX05g = re.compile(r"\b'n'\b", re.IGNORECASE)
+    _REX06 = re.compile(r"^(\([^)]+\) )\b([a-z]+)\b", re.IGNORECASE)
 
     # -------
     # Logger.
     # -------
     _logger = getLogger("{0}.StringFormatter".format(__name__))
 
-    # -----
-    def __init__(self, somestring=None):
-        self._inp_string = None
-        self._out_string = None
+    # --------------------
+    # Initialize instance.
+    # --------------------
+    def __init__(self, somestring=None, config=os.path.join(os.path.expandvars("%_COMPUTING%"), "stringformatter.yml")):
+
+        # Initializations.
+        self._inp_string, self._out_string = "", ""
+        dict_config, self._rex09, self._rex10, self._rex11, self._rex12, self._rex13 = None, None, None, None, None, None
         if somestring:
             self.inp_string = somestring
 
-    # -----
+        # Load configuration.
+        with open(config, encoding=UTF8) as fp:
+            dict_config = yaml.load(fp)
+        lowercases = dict_config.get("lowercases", [])
+        uppercases = dict_config.get("uppercases", [])
+        capitalized = dict_config.get("capitalized", [])
+        capitalize_first_word = dict_config.get("capitalize_first_word", False)
+        capitalize_last_word = dict_config.get("capitalize_last_word", False)
+        if lowercases:
+            self._rex09 = re.compile(r"\b({0})\b".format("|".join(lowercases)), re.IGNORECASE)
+        if uppercases:
+            self._rex10 = re.compile(r"\b({0})\b".format("|".join(uppercases)), re.IGNORECASE)
+        if capitalized:
+            self._rex11 = re.compile(r"\b({0})\b".format("|".join(capitalized)), re.IGNORECASE)
+        if capitalize_first_word:
+            self._rex12 = re.compile(r"^([a-z]+)\b", re.IGNORECASE)
+        if capitalize_last_word:
+            self._rex13 = re.compile(r"\b([a-z]+)$", re.IGNORECASE)
+
+        # Log regular expressions.
+        self._logger.debug(self._rex09)
+        self._logger.debug(self._rex10)
+        self._logger.debug(self._rex11)
+
     def convert(self, somestring=None):
         if somestring:
             self.inp_string = somestring
@@ -447,24 +504,53 @@ class StringFormatter(object):
         # ----------------
         # General process.
         # ----------------
-        # 1. Title is formatted in lowercase letters.
-        # 2. Words are capitalized --> _REX1.
-        # 3. Exceptions remains formatted in lowercase letters --> _REX6.
-        # 4. Capital letter is mandatory for the first word of the title --> _REX2.
-        # 5. Words with a leading parenthesis or a leading dash remain capitalized --> _REX7.
-        self._out_string = self._REX7.sub(self.cap, self._REX2.sub(self.cap, self._REX6.sub(self.low, self._REX1.sub(self.cap, self._out_string.lower()))))
+        # 1. Title is formatted with lowercase letters.
+        # 2. Words are capitalized --> _REX01.
+        self._out_string = self._REX01.sub(lambda match: match.group(1).capitalize(), self._out_string.lower().replace("[", "(").replace("]", ")"))
+        self._logger.debug(self._out_string)
+
+        # -------------------
+        # Exceptions process.
+        # -------------------
+        # 1. Words formatted only with lowercase letters --> _rex09.
+        # 2. Words formatted only with a capital letter --> _rex11.
+        # 3. Capital letter is mandatory for the first word of the title --> _rex12.
+        # 4. Capital letter is mandatory for the last word of the title --> _rex13.
+        # 5. Words formatted only with uppercase letters --> _rex10.
+        if self._rex09:
+            self._out_string = self._rex09.sub(lambda match: match.group(1).lower(), self._out_string)
+        if self._rex11:
+            self._out_string = self._rex11.sub(lambda match: " ".join([word.capitalize() for word in match.group(1).split()]), self._out_string)
+        if self._rex12:
+            self._out_string = self._rex12.sub(lambda match: match.group(1).capitalize(), self._out_string)
+        if self._rex13:
+            self._out_string = self._rex13.sub(lambda match: match.group(1).capitalize(), self._out_string)
+        if self._rex10:
+            self._out_string = self._rex10.sub(lambda match: match.group(1).upper(), self._out_string)
+        self._logger.debug(self._out_string)
+
+        # -----------------
+        # Acronyms process.
+        # -----------------
+        self._out_string = self._REX02.sub(lambda match: match.group(1).upper(), self._out_string)
+        self._logger.debug(self._out_string)
+
+        # --------------------
+        # Apostrophes process.
+        # --------------------
+        self._out_string = self._REX05a.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).lower()), self._out_string)
+        self._out_string = self._REX05b.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).capitalize()), self._out_string)
+        self._out_string = self._REX05c.sub(lambda match: "{0}'".format(match.group(1).lower()), self._out_string)
+        self._out_string = self._REX05d.sub(" 'n' ", self._out_string)
+        self._out_string = self._REX05e.sub(" 'n' ", self._out_string)
+        self._out_string = self._REX05f.sub(" 'n' ", self._out_string)
+        self._out_string = self._REX05g.sub(" 'n' ", self._out_string)
+        self._logger.debug(self._out_string)
 
         # -----------------
         # Specific process.
         # -----------------
-        # 1. Acronyms are formatted in lowercase letters --> _REX3.
-        # 2. Auxiliary contractions are formatted in lowercase letters --> _REX4.
-        # 3. Square brackets are replaced by parenthesis --> _REX5.
-        self._out_string = self._REX5.sub(self.parenth, self._REX4.sub(self.low, self._REX3.sub(self.upp, self._out_string)))
-
-        # ------------------
-        # Log output string.
-        # ------------------
+        self._out_string = self._REX06.sub(lambda match: "{0}{1}".format(match.group(1), match.group(2).capitalize()), self._out_string)
         self._logger.debug(self._out_string)
 
         # ---------------------
@@ -472,64 +558,50 @@ class StringFormatter(object):
         # ---------------------
         return self._out_string
 
-    # -----
     @property
     def inp_string(self):
         return self._inp_string
 
-    # -----
     @inp_string.setter
     def inp_string(self, arg):
         self._inp_string = arg
 
-    # -----
-    @staticmethod
-    def cap(match):
-        """
-        Get a regular expression match object and capitalize the first capturing group.
-        :param match: match object.
-        :return: formatted capturing group(s).
-        """
-        items = list(match.groups())
-        items[-1] = items[-1].capitalize()
-        return "".join(items)
 
-    # -----
-    @staticmethod
-    def upp(match):
-        """
-        Get a regular expression match object and set the first capturing group with uppercases.
-        :param match: match object.
-        :return: formatted capturing group(s).
-        """
-        return match.groups()[0].upper()
+class LocalParser(parserinfo):
+    MONTHS = [('Janvier', 'January'),
+              ('Février', 'February'),
+              ('Mars', 'March'),
+              ('Avril', 'April'),
+              ('Mai', 'May'),
+              ('Juin', 'June'),
+              ('Juillet', 'July'),
+              ('Août', 'August'),
+              ('Septembre', 'September'),
+              ('Octobre', 'October'),
+              ('Novembre', 'November'),
+              ('Decembre', 'December')]
 
-    # -----
-    @staticmethod
-    def low(match):
-        """
-        Get a regular expression match object and set the first capturing group with lowercases.
-        :param match: match object.
-        :return: formatted capturing group(s).
-        """
-        items = list(match.groups())
-        items[-1] = items[-1].lower()
-        return "".join(items)
-
-    # -----
-    @staticmethod
-    def parenth(match):
-        """
-        Get a regular expression match object and concatenate its first two capturing groups. Second group is parenthesised.
-        :param match: match object.
-        :return: formatted capturing group(s).
-        """
-        return "{d[0]}({d[1]})".format(d=match.groups())
+    def __init__(self, dayfirst=False, yearfirst=False):
+        super(LocalParser, self).__init__(dayfirst, yearfirst)
 
 
 # ===========================
 # Customized parsing actions.
 # ===========================
+class SetDatabase(argparse.Action):
+    """
+
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if values:
+            setattr(namespace, "db", TESTDATABASE)
+
+
 class GetPath(argparse.Action):
     """
     Set "destination" attribute with the full path corresponding to the "values".
@@ -625,21 +697,21 @@ class SetEndSeconds(argparse.Action):
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
         if not values:
-            setattr(namespace, self.dest, getattr(namespace, "start"))
+            setattr(namespace, self.dest, getattr(namespace, "beg"))
 
 
-class SetUID(argparse.Action):
-    """
-    Set "end" attribute.
-    Set "uid" attribute.
-    """
-
-    def __init__(self, option_strings, dest, **kwargs):
-        super(SetUID, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parsobj, namespace, values, option_string=None):
-        setattr(namespace, self.dest, values)
-        setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
+# class SetUID(argparse.Action):
+#     """
+#     Set "end" attribute.
+#     Set "uid" attribute.
+#     """
+#
+#     def __init__(self, option_strings, dest, **kwargs):
+#         super(SetUID, self).__init__(option_strings, dest, **kwargs)
+#
+#     def __call__(self, parsobj, namespace, values, option_string=None):
+#         setattr(namespace, self.dest, values)
+#         setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
 
 
 # ===================
@@ -669,9 +741,258 @@ class TemplatingEnvironment(object):
         self._environment = arg
 
 
-# ==========
-# Functions.
-# ==========
+# ==========================
+# Data validation functions.
+# ==========================
+def validpath(path):
+    """
+
+    :param path:
+    :return:
+    """
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(path))
+    if not os.path.isdir(path):
+        raise argparse.ArgumentTypeError('"{0}" is not a directory.'.format(path))
+    if not os.access(path, os.R_OK):
+        raise argparse.ArgumentTypeError('"{0}" is not a readable directory.'.format(path))
+    return path
+
+
+def validdb(db):
+    """
+
+    :param db:
+    :return:
+    """
+    try:
+        if not os.path.exists(db):
+            raise ValueError('"{0}" doesn\'t exist.'.format(db))
+    except TypeError:
+        raise ValueError('"{0}" doesn\'t exist.'.format(db))
+    return db
+
+
+def validdiscnumber(discnumber):
+    """
+
+    :param discnumber:
+    :return:
+    """
+    msg = r"is not a valid disc number."
+    try:
+        _discnumber = int(discnumber)
+    except (ValueError, TypeError):
+        raise ValueError('"{0}" {1}'.format(discnumber, msg))
+    if not _discnumber:
+        raise ValueError('"{0}" {1}'.format(discnumber, msg))
+    return _discnumber
+
+
+def validtracks(tracks):
+    """
+
+    :param tracks:
+    :return:
+    """
+    msg = r"is not a valid total tracks number."
+    try:
+        _tracks = int(tracks)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(tracks, msg))
+
+    if not _tracks:
+        raise ValueError('"{0}" {1}'.format(tracks, msg))
+
+    return _tracks
+
+
+def validalbumid(albumid):
+    """
+
+    :param albumid:
+    :return:
+    """
+    rex = re.compile(r"^([A-Z])\.\1[^.]+\.$")
+    selectors = [True, True]
+    try:
+        _artistsort = albumid[:-12]
+        _albumsort = albumid[-12:]
+    except TypeError:
+        raise ValueError('"{0}" is not a valid album ID.'.format(albumid))
+
+    match = rex.match(_artistsort)
+    if not match:
+        selectors[0] = False
+
+    try:
+        _albumsort = validalbumsort(_albumsort)
+    except TypeError:
+        selectors[1] = False
+
+    if not all(selectors):
+        if not any(selectors):
+            raise ValueError("Both `artistsort` and `albumsort` don\'t match the expected pattern.")
+        raise ValueError("`artistsort` or `albumsort` doesn\'t match the expected pattern.")
+
+    return "{0}{1}".format(_artistsort, _albumsort)
+
+
+def validalbumsort(albumsort):
+    """
+
+    :param albumsort:
+    :return:
+    """
+    rex1 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
+    rex2 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
+    msg = r"is not a valid albumsort."
+
+    try:
+        match1 = rex1.match(albumsort)
+        match2 = rex2.match(albumsort)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(albumsort, msg))
+
+    if all([not match1, not match2]):
+        raise ValueError('"{0}" {1}'.format(albumsort, msg))
+
+    return albumsort
+
+
+def validyear(year):
+    """
+
+    :param year:
+    :return:
+    """
+    regex, msg = re.compile("^({0})$".format(DFTYEARREGEX)), r"is not a valid year."
+
+    # Argument is converted to a string.
+    try:
+        year = str(year)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(year, msg))
+
+    # Does the string match the year pattern?.
+    try:
+        if not regex.match(year):
+            raise ValueError('"{0}" {1}'.format(year, msg))
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(year, msg))
+
+    # Year is returned as an integer.
+    return int(year)
+
+
+def validproductcode(productcode):
+    """
+
+    :param productcode:
+    :return:
+    """
+    regex, msg = re.compile(r"^{0}$".format(UPCREGEX)), r"is not a valid product code."
+
+    try:
+        productcode = str(productcode)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(productcode, msg))
+
+    if not regex.match(productcode):
+        raise ValueError('"{0}" {1}'.format(productcode, msg))
+
+    return productcode
+
+
+def validgenre(genre):
+    """
+
+    :param genre:
+    :return:
+    """
+    msg = r"is not a valid genre."
+    try:
+        if genre.lower() not in (item.lower() for item in GENRES):
+            raise ValueError('"{0}" {1}'.format(genre, msg))
+    except AttributeError:
+        raise ValueError('"{0}" {1}'.format(genre, msg))
+    return genre
+
+
+def validtimestamp(ts):
+    """
+    Check if string `time` is a valid Unix Epoch time.
+
+    :param ts: string representing a coherent number of seconds since the Epoch.
+    :return: string converted to integer characters. Raise an exception if `time` doesn't represent a coherent number of seconds.
+    """
+    msg = r"is not a valid Unix epoch time."
+    try:
+        ts = str(ts)
+    except TypeError:
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+
+    if not re.match(r"^\d{10}$", ts):
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    return int(ts)
+
+
+def validdatetime(ts):
+    """
+
+    :param ts:
+    :return:
+    """
+    error, msg = False, r"is not a valid timestamp."
+    try:
+        ts = int(ts)
+    except (ValueError, TypeError):
+        error = True
+
+    if error:
+        try:
+            struct = ts.timetuple()
+        except (TypeError, AttributeError):
+            raise ValueError('"{0}" {1}'.format(ts, msg))
+        return ts
+
+    try:
+        datobj = datetime.fromtimestamp(ts)
+    except OSError:
+        raise ValueError('"{0}" {1}'.format(ts, msg))
+    return datobj
+
+
+# ========================
+# Miscellaneous functions.
+# ========================
+def grouper(iterable, n, *, fillvalue=None):
+    """
+
+    :param iterable:
+    :param n:
+    :param fillvalue:
+    :return:
+    """
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+
+def partitioner(iterable, *, predicate=None):
+    """
+
+    :param iterable:
+    :param predicate:
+    :return:
+    """
+    if predicate is None:
+        predicate = bool
+    it1, it2 = tee(iterable)
+    return filter(predicate, it1), filterfalse(predicate, it2)
+
+
 def customformatterfactory(pattern=LOGPATTERN):
     return CustomFormatter(pattern)
 
@@ -681,7 +1002,13 @@ def customfilehandler(maxbytes, backupcount, encoding=UTF8):
 
 
 def readable(dt, template, tz=None):
-    """B"""
+    """
+
+    :param dt:
+    :param template:
+    :param tz:
+    :return:
+    """
     datobj = dt
     if tz:
         datobj = tz.localize(dt).astimezone(LOCAL)
@@ -689,50 +1016,11 @@ def readable(dt, template, tz=None):
 
 
 def now():
+    """
+
+    :return:
+    """
     return dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), TEMPLATE4)
-
-
-def validpath(path):
-    if not os.path.exists(path):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist'.format(path))
-    if not os.path.isdir(path):
-        raise argparse.ArgumentTypeError('"{0}" is not a directory'.format(path))
-    if not os.access(path, os.R_OK):
-        raise ValueError('"{0}" is not a readable directory'.format(path))
-    return path
-
-
-def validdb(db):
-    if not os.path.exists(db):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(db))
-    return db
-
-
-def validseconds(seconds):
-    if not re.match(r"^\d{10}$", seconds):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid seconds number'.format(seconds))
-    return int(seconds)
-
-
-def validunixepochtime(s):
-    """
-    Check if string `s` is a valid Unix Epoch time.
-
-    :param s: string representing a coherent number of seconds since the Epoch.
-    :return: string converted to integer characters. Raise an exception if `s` doesn't represent a coherent number of seconds.
-    """
-
-    # ----
-    logger = getLogger("{0}.validunixepochtime".format(__name__))
-    logger.debug(s)
-    logger.debug(dateformat(LOCAL.localize(datetime.fromtimestamp(int(s))), "$Y"))
-
-    # ----
-    if not re.match(r"^\d{10}$", s):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid Unix epoch time'.format(s))
-    if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(s))), "$Y")):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid Unix epoch time'.format(s))
-    return int(s)
 
 
 def dateformat(dt, template):
@@ -756,6 +1044,37 @@ def dateformat(dt, template):
                                          W=dt.strftime("%W"),
                                          Y=dt.strftime("%Y"),
                                          Z=dt.strftime("%Z"))
+
+
+def gettabs(length, *, tabsize=3):
+    x = int(length / tabsize)
+    y = length % tabsize
+    if y:
+        x += 1
+    return x * "\t"
+
+
+def getnearestmultiple(length, *, multiple=3):
+    x = int(length / multiple)
+    y = length % multiple
+    if y:
+        x += 1
+    return x * multiple
+
+
+def getrippingapplication(*, timestamp=None):
+    """
+    Get ripping application respective to the facultative input local timestamp.
+
+    :param timestamp: facultative input local timestamp.
+    :return: ripping application.
+    """
+    application = {"1512082800": "dBpoweramp 16.1", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    if not timestamp:
+        timestamp = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
+    for k, v in sorted(application.items(), key=lambda i: int(i[0]), reverse=True):
+        if LOCAL.localize(datetime.fromtimestamp(timestamp)) >= LOCAL.localize(datetime.fromtimestamp(int(k))):
+            return v
 
 
 def filesinfolder(*extensions, folder, excluded=None):
@@ -791,35 +1110,42 @@ def filesinfolder(*extensions, folder, excluded=None):
             yield os.path.join(root, file)
 
 
-def getdatefromseconds(start, stop, zone=DFTTIMEZONE):
+def getdatefromseconds(beg, end, zone=DFTTIMEZONE):
     """
     Return a map object yielding human readable dates corresponding to a range of seconds since the epoch.
-    :param start: range start seconds.
-    :param stop: range stop seconds.
+    :param beg: range start seconds.
+    :param end: range stop seconds.
     :param zone: not mandatory time zone appended to the map object.
     :return: map object.
     """
-    # def func1(item, iterable, pos=0):
-    #     iterable.insert(pos, item)
-    #     return iterable
-    #
-    # def func2(item, iterable, pos=0):
-    #     iterable.insert(pos, dateformat(timezone("UTC").localize(datetime.utcfromtimestamp(item)), TEMPLATE3))
-    #     return iterable
-    #
-    # def func3(ts, tz):
-    #     return dateformat(timezone("UTC").localize(datetime.utcfromtimestamp(ts)).astimezone(timezone(tz)), TEMPLATE3)
+    gap, width = 5, {}
 
-    if start > stop:
-        raise ValueError("Start epoch {0} must be lower than or equal to end epoch {1}".format(start, stop))
-    seconds, zones = range(start, stop + 1), list(ZONES)
-    zones.insert(2, zone)
-    list1 = [[dateformat(timezone("UTC").localize(datetime.utcfromtimestamp(ts)).astimezone(timezone(tz)), TEMPLATE3) for ts in seconds] for tz in zones]
-    list2 = list(zip(*list1))
-    list3 = list(zip(seconds, list2))
-    list4 = [list(chain.from_iterable(item)) for item in (((second,), timestamps) for second, timestamps in list3)]
-    return list4
-    # return map(func2, seconds, map(func1, seconds, (list(i) for i in zip(*(map(func3, seconds, repeat(zone)) for zone in zones)))), repeat(1))
+    if beg > end:
+        raise ValueError("Beginning Unix epoch time {0} must be lower than or equal to end Unix epoch time {1}".format(beg, end))
+    zones = list(ZONES)
+    zones.insert(0, zone)
+
+    # Create N lists (1 list for 1 timestamp) composed of 7 timezones.
+    mainlist = [[dateformat(timezone("UTC").localize(datetime.utcfromtimestamp(ts)).astimezone(timezone(tz)), TEMPLATE4) for tz in zones] for ts in range(beg, end + 1)]
+
+    # Convert to 7 lists (1 list for 1 timezone) composed of N timestamps.
+
+    # Associer dans un dictionnaire le fuseau avec l'ensemble de ses heures respectives.
+    # La clé est le fuseau ("Europe/Paris" par exemple).
+    # La valeur est la liste des heures respectives à chaque timestamp traité.
+    # Un "OrderedDict" est utilisé pour conserver l'ordre des fuseaux.
+    thatdict = OrderedDict(zip(zones, zip(*mainlist)))
+
+    # Justifier à gauche les heures en tenant compte de la longueur maximale respective à chaque fuseau.
+    # La longueur maximale respective à chaque fuseau est tout d'abord stockée dans un dictionnaire.
+    for tz in thatdict.keys():
+        width[tz] = max([len(item) for item in thatdict[tz]]) + gap
+    for tz in thatdict.keys():
+        thatdict[tz] = ["{:<{w}}".format(item, w=width[tz]) for item in thatdict[tz]]
+
+    # Convert to N lists (1 list for 1 timestamp) composed of 1 timestamp and 7 timezones and yield readable times.
+    for ts, z1, z2, z3, z4, z5, z6, z7 in zip(range(beg, end + 1), *[v for k, v in thatdict.items()]):
+        yield ts, z1, z2, z3, z4, z5, z6, z7
 
 
 def interface(obj):
@@ -861,6 +1187,65 @@ def xsltransform(xml, xsl, html):
     return process.returncode
 
 
+def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
+    """
+
+    :param tup:
+    :param headers:
+    :param char:
+    :param tabsize:
+    :param gap:
+    :return:
+    """
+
+    # 1. Initializations.
+    max_length, max_width, out_data, out_headers, separators = {}, {}, OrderedDict(), None, None
+
+    # 2. Set input headers.
+    inp_headers = list(headers)
+    if not headers:
+        inp_headers = ["header{0:>2d}".format(i) for i in range(len(tup[0]))]
+
+    # 3. Gather data per header.
+    input_data = OrderedDict(zip(inp_headers, zip(*tup)))
+
+    # 4. Get data maximum length and maximum allowed width.
+    for k, v in input_data.items():
+        x = 0
+        if headers:
+            x = len(k)
+        if any([bool(item) for item in v]):
+            x = max([len(item) for item in v if item])
+        if headers:
+            if len(k) > x:
+                x = len(k)
+        max_length[k] = x
+        max_width[k] = getnearestmultiple(x, multiple=tabsize) + gap
+
+    # 5. Justify data.
+    for k, v in input_data.items():
+        y = []
+        for item in v:
+            x = "{0}".format(gettabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
+            if item:
+                x = "{0}{1}".format(item, gettabs(max_width[k] - len(item), tabsize=tabsize)).expandtabs(tabsize)
+            y.append(x)
+        out_data[k] = y
+
+    # 6. Set output headers.
+    if headers:
+        out_headers = tuple(["{0}{1}".format(header.upper(), gettabs(max_width[header] - len(header), tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+        separators = tuple(["{0}{1}".format(char * max_length[header], gettabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+
+    # 7. Set output data.
+    out_data = zip(*[v for k, v in out_data.items()])
+
+    # 8. Return output data as iterator objects.
+    if headers:
+        return [separators, out_headers, separators], out_data
+    return None, out_data
+
+
 # ==========================
 # Jinja2 Customized filters.
 # ==========================
@@ -868,12 +1253,12 @@ def integertostring(intg):
     return str(intg)
 
 
-def rjustify(stg, width):
-    return stg.rjust(width)
+def rjustify(stg, width, char=""):
+    return "{0:{2}>{1}}".format(str(stg), width, char)
 
 
-def ljustify(stg, width):
-    return stg.ljust(width)
+def ljustify(stg, width, char=""):
+    return "{0:{2}<{1}}".format(stg, width, char)
 
 
 def repeatelement(elem, n):

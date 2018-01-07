@@ -1,0 +1,99 @@
+{% extends "Main" %}
+
+
+{% block content1 %}
+    {{- menu -}}
+{% endblock %}
+
+
+{% block content2 %}
+
+    {%- if content %}
+
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>DIGITAL ALBUMS</h2>
+                </div>
+            </div>
+            <div id="wrapper">
+                <form id="digitalalbums-form">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="uid"><input id="select-all" type="checkbox"></th>
+                                <th class="artist">artist</th>
+                                <th class="year">year</th>
+                                <th class="album">album</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for albums in content["albums"] %}
+                                {% for album in albums[1] %}
+                                    {% if album %}
+                                        {% set rowid, albumsort, artist, year, title = album %}
+                            <tr class="default">
+                                <td><input id="row-{{ rowid }}" type="checkbox"></td>
+                                <td><a href='/audiocollection/digitalaudiotracksbyartist?artistid={{ albumsort[2:-13]|e|normalize2 }}&amp;prevpage=digitalalbums_view-{{ content["page_cur"] }}'>{{ artist|e }}</a></td>
+                                <td>{{ year }}</td>
+                                <td><a href='/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumsort|e|normalize2 }}&amp;prevpage=digitalalbums_view-{{ content["page_cur"] }}'>{{ title|e }}</a></td>
+                            </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <input type="submit" value="Update" class="button no-cursor">
+                    <input type="reset" class="button no-cursor">
+                </form>
+            </div>
+
+            {%- if content["page_cfg"] %}
+
+            <div id="pages">
+
+                {%- set sep = " | " %}
+
+                {%- if content["page_cfg"]["previous"] -%}
+                    <a href="/audiocollection/digitalalbums_view?page={{ content["page_cfg"]["currentpage"] - 1 }}">previous</a>
+                    {{- sep -}}
+                {% endif %}
+
+                {%- for page in content["page_cfg"]["pages"] %}
+
+                    {%- if page == content["page_cfg"]["currentpage"] -%}
+                        <b>{{ page }}</b>
+                    {%- else -%}
+                        <a href="/audiocollection/digitalalbums_view?page={{ page }}">{{ page }}</a>
+                    {%- endif %}
+
+                {%- endfor %}
+
+                {%- if content["page_cfg"]["next"] %}
+                    {{- sep -}}
+                    <a href="/audiocollection/digitalalbums_view?page={{ content["page_cfg"]["currentpage"] + 1 }}">next</a>
+                {%- endif -%}
+
+            </div>
+
+            {%- endif %}
+
+            {% for script in content["scripts"] %}
+            <script type="text/javascript" src="{{ script }}"></script>
+            {% endfor %}
+        </div>
+    {% endif -%}
+
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
+{% endblock %}

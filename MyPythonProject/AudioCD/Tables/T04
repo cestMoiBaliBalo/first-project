@@ -1,0 +1,30 @@
+{% for row in content %}
+
+    Record    : {{ row[1][0][1][0].rowid }}
+    Artistsort: {{ row[0][2:-13] }}
+    Albumsort : {{ row[0][-12:] }}
+    Artist    : {{ row[1][0][1][0].artist }}
+    Year      : {{ row[1][0][1][0].year }}
+    Album     : {{ row[1][0][1][0].album }}
+    Genre     : {{ row[1][0][1][0].genre }}
+    UPC       : {{ row[1][0][1][0].upc }}
+    {% if row[1][0][1][0].created %}
+    Created   : {{ row[1][0][1][0].created|readable(tz=local) }}
+    {% endif %}
+    {% if row[1][0][1][0].played %}
+    Played    : {{ row[1][0][1][0].played|readable(tz=utc) }}
+    {% endif %}
+    Counter   : {{ row[1][0][1][0].count }}
+    {% for subrow in row[1] %}
+    {% if loop.length > 1 %}
+
+
+    Disc #{{ subrow[0] }}
+    {% endif %}
+
+        {% for ssubrow in subrow[1] %}
+        {{ ssubrow.trackid|rjustify(2) }}. {{ ssubrow.title }}
+        {% endfor %}
+    {% endfor %}
+
+{% endfor %}

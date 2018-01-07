@@ -15,8 +15,8 @@ import cherrypy
 import jinja2
 from pytz import timezone
 
-from .Database.AudioCD.shared import deletefromuid as deleterippedcd, getmonths, insertfromargs, select, selectfromuid, update, validyear
-from .Database.DigitalAudioFiles.shared import getartist, getlastplayed, selecttracks, selectalbums, updatelastplayed
+from .Database.AudioCD.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlogs, selectlog, updatelog, validyear
+from .Database.DigitalAudioFiles.shared import getartist, getlastplayeddate, gettrack, getalbumheader, updatelastplayeddate
 from .shared import DATABASE, DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX, LOCAL, MUSIC, TEMPLATE4, UPCREGEX, UTC, UTF8, WRITE, TemplatingEnvironment, dateformat, filesinfolder, localize_date, normalize, \
     normalize2, now
 
@@ -152,7 +152,7 @@ class DigitalAudioCollection(object):
 
     @artistsort_mapping.setter
     def artistsort_mapping(self, arg):
-        self._artistsort_mapping = dict([(item.artistsort, item.artist) for item in select(arg) if item.artistsort])
+        self._artistsort_mapping = dict([(item.artistsort, item.artist) for item in selectlogs(arg) if item.artistsort])
 
     # --------------------------------------------------
     # Getter and setter for "artists_mapping" attribute.
@@ -163,7 +163,7 @@ class DigitalAudioCollection(object):
 
     @artists_mapping.setter
     def artists_mapping(self, arg):
-        self._artists_mapping = dict([(item.artist, item.artistsort) for item in select(arg) if item.artistsort])
+        self._artists_mapping = dict([(item.artist, item.artistsort) for item in selectlogs(arg) if item.artistsort])
 
     # -------------------------------------------------
     # Getter and setter for "genres_mapping" attribute.
@@ -174,7 +174,7 @@ class DigitalAudioCollection(object):
 
     @genres_mapping.setter
     def genres_mapping(self, arg):
-        self._genres_mapping = dict([(normalize(item.genre), item.genre) for item in select(arg) if item.genre])
+        self._genres_mapping = dict([(normalize(item.genre), item.genre) for item in selectlogs(arg) if item.genre])
 
     # -------------------------------------------
     # Getter and setter for "rippedcd" attribute.
@@ -188,7 +188,7 @@ class DigitalAudioCollection(object):
         self._rippedcd = sorted(sorted([(dateformat(LOCAL.localize(item.ripped), "$Y$m"),
                                          dateformat(LOCAL.localize(item.ripped), "$month $Y"),
                                          LOCAL.localize(item.ripped),
-                                         item) for item in select(arg)],
+                                         item) for item in selectlogs(arg)],
                                        key=itemgetter(2), reverse=True),
                                 key=itemgetter(0), reverse=True)
 
@@ -212,7 +212,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums.setter
     def digitalalbums(self, arg):
-        self._digitalalbums = sorted(sorted([(row, row.albumid) for row in selectalbums(db=arg)], key=lambda i: i[1]), key=lambda i: i[1][2:-13])
+        self._digitalalbums = sorted(sorted([(row, row.albumid) for row in getalbumheader(db=arg)], key=lambda i: i[1]), key=lambda i: i[1][2:-13])
 
     # --------------------------------------------------------
     # Getter and setter for "digitalalbums_mapping" attribute.
@@ -223,7 +223,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums_mapping.setter
     def digitalalbums_mapping(self, arg):
-        reflist = [(row.albumid, row.album, row.artist, row.year) for row in selectalbums(db=arg)]
+        reflist = [(row.albumid, row.album, row.artist, row.year) for row in getalbumheader(db=arg)]
         self._digitalalbums_mapping = {albumid: (album, artist, year) for albumid, album, artist, year in reflist}
 
     # ---------------------------------------------------
@@ -235,7 +235,7 @@ class DigitalAudioCollection(object):
 
     @lastplayedalbums.setter
     def lastplayedalbums(self, arg):
-        self._lastplayedalbums = list(filter(lambda i: i.count > 0, getlastplayed(db=arg)))
+        self._lastplayedalbums = list(filter(lambda i: i.count > 0, getlastplayeddate(db=arg)))
 
     # ---------------------------------------------
     # Getter and setter for "audiofiles" attribute.
@@ -602,7 +602,7 @@ class DigitalAudioCollection(object):
         # Update log.
         elif mode == "update" and rowid:
             if int(rowid) > 0:
-                rippedcdlog = list(selectfromuid(int(rowid), db=self.database))[0]
+                rippedcdlog = list(selectlog(int(rowid), db=self.database))[0]
                 return {"dialog": self.TEMPLATE.rippedcdlog.render(mode=mode, content=rippedcdlog, genres=[(k, v, v.lower() == rippedcdlog.genre.lower()) for k, v in self.genres_mapping.items()])}
 
     # 3. Check ripped CD log.
@@ -670,7 +670,7 @@ class DigitalAudioCollection(object):
             new_tags = dict(tags)
             new_tags["genre"] = self.genres_mapping[tags["genre"]]
             new_tags["year"] = int(tags["year"])
-            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(update(int(rowid), db=self.database, **new_tags))})}
+            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(updatelog(int(rowid), db=self.database, **new_tags))})}
 
         # B. Delete log.
         if action.lower() == "delete":
@@ -799,7 +799,7 @@ class DigitalAudioCollection(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def get_digitalalbums_playedcount(self, albumid):
-        return {"count": list(selectalbums(self.database, albumid))[0].count}
+        return {"count": list(getalbumheader(self.database, albumid))[0].count}
 
     # -----------------------------------------------
     # Display played digital audio albums statistics.
@@ -842,7 +842,7 @@ class DigitalAudioCollection(object):
             logger.debug(row)
 
         # 3. Update matching record(s).
-        results = updatelastplayed(*list(map(int, data["rows"])), db=data.get("database", self.database))
+        results = updatelastplayeddate(*list(map(int, data["rows"])), db=data.get("database", self.database))
 
         #  4. Log results.
         logger.debug(results)
@@ -1037,7 +1037,7 @@ class DigitalAudioCollection(object):
         reflist = chain.from_iterable([[(row.albumid,
                                          row.discid,
                                          row.trackid,
-                                         row.title) for row in genobj if row] for genobj in map(selecttracks, repeat(db), albumid)])
+                                         row.title) for row in genobj if row] for genobj in map(gettrack, repeat(db), albumid)])
 
         #  2. Sort digital albums by "artistsort", "albumid", "discid", "trackid".
         reflist = sorted(sorted(sorted(sorted(reflist, key=itemgetter(2)), key=itemgetter(1)), key=lambda i: i[0]), key=lambda i: i[0][2:-13])

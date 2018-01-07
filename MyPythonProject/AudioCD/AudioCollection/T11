@@ -1,0 +1,144 @@
+{% extends "Main" %}
+
+
+{% block content1 %}
+    {{- menu -}}
+{% endblock %}
+
+
+{% block content2 %}
+
+    {%- if content %}
+
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>{{ maintitle|e|upper }}</h2>
+                </div>
+                <div id="div2">
+                    <div>
+                        <button type="button" id="refresh" class="button">Refresh</button>
+                        <button type="button" id="create" class="button">Create</button>
+                        <button type="button" id="output" class="button">Output</button>
+                    </div>
+                    <div>
+                        <form id="availableoutputs-form">
+                            <input type="checkbox" name="output" value="log">Log<br>
+                            <input type="checkbox" name="output" value="json">JSON<br>
+                            <input type="checkbox" name="output" value="xml">XML
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div id="wrapper">
+                <form id="rippedcd-form">
+                {% for logs in content.logs %}
+                    {% for log in logs[1] %}
+                        {% if log %}
+                        {% set log, ripped = log %}
+                    <h3>{{ log.rowid }}</h3>
+                    <div class="rippedcd">
+                        <div class="cover">
+                            <div class="innercover">
+                                <img width="120" height="120" alt="No cover found!" src="{{ log.albumsort|getcover(log.artist, log.artistsort)|normalize2|e }}">
+                            </div>
+                        </div>
+                        <div class="update">
+                            <input type="radio" name="rowid" value="{{ log.rowid }}">
+                        </div>
+                        <div class="tags">
+                            <table>
+                                <tr>
+                                    <td>Artistsort</td>
+                                    <td>{{ log.artistsort|e }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Albumsort</td>
+                                    <td>{{ log.albumsort }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Artist</td>
+                                    <td>{{ log.artist|e }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Year</td>
+                                    <td>{{ log.year }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Album</td>
+                                    <td>{{ log.album|e }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Genre</td>
+                                    <td>{{ log.genre|e }}</td>
+                                </tr>
+                                <tr>
+                                    <td>UPC</td>
+                                    <td>{{ log.upc }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Application</td>
+                                    <td>{{ log.application|e }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Ripped</td>
+                                    <td>{{ ripped|readable }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                    <input type="submit" value="Update" class="button no-cursor" disabled>
+                    <input type="reset" value="Reset" class="button no-cursor" disabled>
+                </form>
+            </div>
+            {% if pages_cfg %}
+            <div id="pages">
+
+                {%- set sep = " | " %}
+
+                {%- if pages_cfg["previous"] -%}
+                    <a href="/audiocollection/rippedcdlogs?page={{ pages_cfg["currentpage"] - 1 }}">previous</a>
+                    {{- sep -}}
+                {% endif %}
+
+                {%- for page in pages_cfg["pages"] %}
+
+                    {%- if page == pages_cfg["currentpage"] -%}
+                        <b>{{ page }}</b>
+                    {%- else -%}
+                        <a href="/audiocollection/rippedcdlogs?page={{ page }}">{{ page }}</a>
+                    {%- endif %}
+
+                {%- endfor %}
+
+                {%- if pages_cfg["next"] %}
+                    {{- sep -}}
+                    <a href="/audiocollection/rippedcdlogs?page={{ pages_cfg["currentpage"] + 1 }}">next</a>
+                {%- endif -%}
+
+            </div>
+            {% endif %}
+        </div>
+        <div id="div3"></div>
+        {% for script in content.scripts %}
+        <script type="text/javascript" src="{{ script }}"></script>
+        {% endfor %}
+
+    {% endif -%}
+
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
+{% endblock %}

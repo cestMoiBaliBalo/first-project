@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 import logging.config
 import os
-import yaml
 
 import cherrypy
+import yaml
 
 from Applications.cherrypy import DigitalAudioCollection
 
 __author__ = 'Xavier ROSSET'
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 if __name__ == '__main__':
-
     with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
         logging.config.dictConfig(yaml.load(fp))
-    logger = logging.getLogger("Applications.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
+    logger = logging.getLogger("Applications.Database.AudioCD")
 
     conf = {
         '/frameworks': {

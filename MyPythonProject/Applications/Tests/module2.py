@@ -1,15 +1,29 @@
 # -*- coding: utf-8 -*-
-from ..parsers import zipfile, epochconverter, deleterippinglog, foldercontent, improvedfoldercontent
-from itertools import repeat
 import argparse
-import unittest
+import logging.config
 import os
 import re
+import unittest
+from itertools import repeat
+
+import yaml
+
+from ..parsers import database_parser, epochconverter, foldercontent, improvedfoldercontent, loglevel_parser, zipfile
+from ..shared import validalbumsort, validgenre, validyear
 
 __author__ = 'Xavier ROSSET'
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
+
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+    logging.config.dictConfig(yaml.load(fp))
 
 
-class TestParser(unittest.TestCase):
+class Test01(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
 
@@ -59,7 +73,10 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(arguments.extensions)
 
 
-class TestSecondParser(unittest.TestCase):
+class Test02(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
         self.documents = os.path.expandvars("%_MYDOCUMENTS%")
@@ -109,58 +126,40 @@ class TestSecondParser(unittest.TestCase):
         self.assertListEqual(arguments.extensions, ["doc", "pdf", "txt", "css", "abc"])
 
 
-class TestThirdParser(unittest.TestCase):
+class Test03(unittest.TestCase):
+    """
+
+    """
 
     def test_01first(self):
         arguments = epochconverter.parse_args(["1480717470", "1480717479"])
-        self.assertEqual(arguments.start, 1480717470)
+        self.assertEqual(arguments.beg, 1480717470)
         self.assertEqual(arguments.end, 1480717479)
         self.assertEqual(arguments.zone, "Europe/Paris")
 
     def test_02second(self):
         arguments = epochconverter.parse_args(["1480717470"])
-        self.assertEqual(arguments.start, 1480717470)
+        self.assertEqual(arguments.beg, 1480717470)
         self.assertEqual(arguments.end, 1480717470)
         self.assertEqual(arguments.zone, "Europe/Paris")
 
     def test_03third(self):
         arguments = epochconverter.parse_args(["1480717470", "-z", "US/Eastern"])
-        self.assertEqual(arguments.start, 1480717470)
+        self.assertEqual(arguments.beg, 1480717470)
         self.assertEqual(arguments.end, 1480717470)
         self.assertEqual(arguments.zone, "US/Eastern")
 
     def test_04fourth(self):
         arguments = epochconverter.parse_args(["1480717470", "1480717479", "-z", "US/Eastern"])
-        self.assertEqual(arguments.start, 1480717470)
+        self.assertEqual(arguments.beg, 1480717470)
         self.assertEqual(arguments.end, 1480717479)
         self.assertEqual(arguments.zone, "US/Eastern")
 
 
-class TestFourthParser(unittest.TestCase):
+class Test04(unittest.TestCase):
+    """
 
-    def test_01first(self):
-        arguments = deleterippinglog.parse_args(["singled", "1", "100"])
-        self.assertListEqual(arguments.uid, [1, 100])
-
-    def test_02second(self):
-        arguments = deleterippinglog.parse_args(["singled", "1", "2", "3", "4", "100"])
-        self.assertListEqual(arguments.uid, [1, 2, 3, 4, 100])
-
-    def test_03third(self):
-        arguments = deleterippinglog.parse_args(["ranged", "1", "100"])
-        self.assertListEqual(arguments.uid, list(range(1, 101)))
-
-    def test_04fourth(self):
-        arguments = deleterippinglog.parse_args(["ranged", "100"])
-        self.assertListEqual(arguments.uid, list(range(100, 10000)))
-
-    def test_05fifth(self):
-        arguments = deleterippinglog.parse_args(["ranged", "245", "368"])
-        self.assertListEqual(arguments.uid, list(range(245, 369)))
-
-
-@unittest.skip
-class TestFifthParser(unittest.TestCase):
+    """
 
     def test_01first(self):
         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
@@ -171,19 +170,22 @@ class TestFifthParser(unittest.TestCase):
         self.assertListEqual(arguments.extensions, [])
 
     def test_03third(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg mp4"])
+        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
 
     def test_04fourth(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg mp4", "txt"])
+        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "txt"])
         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "txt"])
 
     def test_05fifth(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg mp4 aaa bbb", "txt", "xxx"])
+        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
 
 
-class TestSixthParser(unittest.TestCase):
+class Test05(unittest.TestCase):
+    """
+
+    """
 
     def test_01first(self):
         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
@@ -282,3 +284,106 @@ class TestSixthParser(unittest.TestCase):
         rex = "{0}{1}".format(rex1, rex2)
         regex = re.compile(rex, re.IGNORECASE)
         self.assertNotRegex(thatfile, regex)
+
+
+class Test06(unittest.TestCase):
+    """
+    Test `validyear` function.
+    """
+
+    def test_01first(self):
+        for argument in ["2017", 2017]:
+            with self.subTest(year=argument):
+                self.assertEqual(validyear(argument), 2017)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, 10.5]:
+            with self.subTest(year=argument):
+                self.assertRaises(ValueError, validyear, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validyear("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid year.')
+
+
+class Test07(unittest.TestCase):
+    """
+    Test `validalbumsort` function.
+    """
+
+    def test_01first(self):
+        for argument in ["1.20170000.1", "1.20170000.2", "2.20171019.1"]:
+            with self.subTest(albumsort=argument):
+                self.assertEqual(validalbumsort(argument), argument)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", 10.5]:
+            with self.subTest(year=argument):
+                self.assertRaises(ValueError, validalbumsort, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validalbumsort("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid albumsort.')
+
+
+class Test08(unittest.TestCase):
+    """
+    Test `validgenre` function.
+    """
+
+    def test_01first(self):
+        for argument in ["Rock", "Hard Rock", "black metal"]:
+            with self.subTest(genre=argument):
+                self.assertEqual(validgenre(argument), argument)
+
+    def test_02second(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", "some genre", 10.5]:
+            with self.subTest(genre=argument):
+                self.assertRaises(ValueError, validgenre, argument)
+
+    def test_03third(self):
+        with self.assertRaises(ValueError) as cm:
+            validgenre("abcdefghijklmnopqrstuvwxyz")
+        self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid genre.')
+
+
+class Test09(unittest.TestCase):
+    """
+
+    """
+
+    def test_01first(self):
+        arguments = database_parser.parse_args(["--database", r"g:\computing\database.db"])
+        self.assertEqual(arguments.db.lower(), r"g:\computing\database.db")
+        self.assertFalse(arguments.test)
+
+    def test_02second(self):
+        arguments = database_parser.parse_args(["--test"])
+        self.assertEqual(arguments.db.lower(), r"g:\computing\mypythonproject\applications\tests\database.db")
+        self.assertTrue(arguments.test)
+
+    def test_03third(self):
+        arguments = database_parser.parse_args([])
+        self.assertEqual(arguments.db.lower(), r"g:\computing\database.db")
+        self.assertFalse(arguments.test)
+
+    def test_04fourth(self):
+        arguments = database_parser.parse_args(["--database", r"g:\computing\mypythonproject\applications\tests\database.db"])
+        self.assertEqual(arguments.db.lower(), r"g:\computing\mypythonproject\applications\tests\database.db")
+        self.assertFalse(arguments.test)
+
+
+class Test10(unittest.TestCase):
+    """
+
+    """
+
+    def test_01first(self):
+        arguments = loglevel_parser.parse_args([])
+        self.assertEqual(arguments.loglevel, "INFO")
+
+    def test_02second(self):
+        arguments = loglevel_parser.parse_args(["--loglevel", "DEBUG"])
+        self.assertEqual(arguments.loglevel, "DEBUG")
