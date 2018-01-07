@@ -269,11 +269,14 @@ class Test06(unittest.TestCase):
         self.assertIsNone(self.arguments.template(self.arguments))
         self.assertFalse(self.arguments.test)
         self.assertEqual(self.arguments.db, self.db)
+        self.assertEqual(self.arguments.loglevel, "INFO")
 
-    def test02_second(self):
+    def test_02second(self):
         """
         2. Test that temporary database was changed.
         """
+        changes = self.arguments.function(ns=self.arguments)
+        self.logger.debug(changes)
         conn = sqlite3.connect(self.db)
         curs = conn.cursor()
         curs.execute("SELECT genre, upc FROM rippinglog WHERE rowid=?", (self.rowid,))
@@ -284,7 +287,7 @@ class Test06(unittest.TestCase):
         self.assertEqual(genre, "Pop")
         self.assertEqual(upc, "9999999999999")
 
-    def test03_third(self):
+    def test_03third(self):
         """
         3. Test that production database remains unchanged.
         """

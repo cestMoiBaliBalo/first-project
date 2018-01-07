@@ -470,7 +470,7 @@ def update_func(ns=None, **kwargs):
     donotpropagate = pairs.get("donotpropagate", False)
     rowid = pairs.get("rowid", [])
     if all([db, table, statement, rowid]):
-        kwargs = {key: val for key, val in pairs.items() if key not in ["db", "donotformat", "donotpropagate", "function", "rowid", "statement", "table", "template", "test", "track_title"]}
+        kwargs = {key: val for key, val in pairs.items() if key not in ["db", "donotformat", "donotpropagate", "function", "loglevel", "rowid", "statement", "table", "template", "test", "track_title"]}
         if kwargs:
             return getfunction(table, statement, donotpropagate, bool(rowid))(*rowid, db=db, **kwargs)
     return DEFAULT.get(table, DEFAULT["default"])
