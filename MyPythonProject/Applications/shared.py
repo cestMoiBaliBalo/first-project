@@ -93,8 +93,6 @@ ZONES = ["UTC",
          "Indian/Mayotte",
          "Asia/Tokyo",
          "Australia/Sydney"]
-PASSWORD = r"F*HJDa$_+t"
-NAS = r"192.168.1.20"
 
 
 # ========
