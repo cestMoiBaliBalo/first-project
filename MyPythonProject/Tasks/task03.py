@@ -54,7 +54,7 @@ parser = argparse.ArgumentParser(parents=[database_parser])
 parser.add_argument("-f", "--forced", action="store_true")
 
 # 2. --> Logging.
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     dictConfig(yaml.load(fp))
 logger = logging.getLogger("Applications.shared.zipfiles")
 

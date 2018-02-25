@@ -43,7 +43,7 @@ obj, arguments = [], parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
 try:
     config["loggers"]["Applications.AudioCD"]["level"] = MAPPING[arguments.debug].upper()

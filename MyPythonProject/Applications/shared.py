@@ -38,7 +38,7 @@ locale.setlocale(locale.LC_ALL, "")
 # ==========
 APPEND = "a"
 WRITE = "w"
-DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db")
+DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "database.db")
 TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
 ARECA = os.path.join(os.path.expandvars("%PROGRAMFILES%"), "Areca", "areca_cl.exe")
 DFTENCODING = "UTF_8"
@@ -462,7 +462,7 @@ class StringFormatter(object):
     # --------------------
     # Initialize instance.
     # --------------------
-    def __init__(self, somestring=None, config=os.path.join(os.path.expandvars("%_COMPUTING%"), "stringformatter.yml")):
+    def __init__(self, somestring=None, config=os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "stringformatter.yml")):
 
         # Initializations.
         self._inp_string, self._out_string = "", ""
@@ -999,7 +999,7 @@ def customformatterfactory(pattern=LOGPATTERN):
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(os.path.join(os.path.expandvars("%_COMPUTING%"), "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return RotatingFileHandler(os.path.join(os.path.expandvars("%_COMPUTING%"), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
 def readable(dt, template, tz=None):

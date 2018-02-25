@@ -27,7 +27,7 @@ arguments = parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
 for logger in ["Applications.AudioCD", "Applications.Database.AudioCD"]:
     try:
@@ -41,7 +41,7 @@ logger = logging.getLogger("Applications.AudioCD")
 # Main algorithm.
 # ===============
 uid, uploaded = [], 0
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "configuration.json"), encoding="UTF_8") as fr:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "configuration.json"), encoding="UTF_8") as fr:
     credentials = json.load(fr)
 if "cloud" in credentials:
     # Get tracks to upload to Synology Audio Station.

@@ -34,7 +34,7 @@ arguments = parser.parse_args()
 # ========
 
 # 1. Load logging configuration and adapt logger(s) level(s).
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding=UTF8) as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     config = yaml.load(fp)
 for logger in ["Applications.Database.AudioCD", "Database"]:
     try:

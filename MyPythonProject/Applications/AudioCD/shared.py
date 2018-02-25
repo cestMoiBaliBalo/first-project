@@ -1026,12 +1026,12 @@ profile = namedtuple("profile", "exclusions isinstancedfrom")
 # ==========
 TABSIZE = 3
 DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(.+)$"
-GENRES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Genres.json")
-LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Languages.json")
-ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Encoders.json")
+GENRES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Genres.json")
+LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Languages.json")
+ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Encoders.json")
 ENC_KEYS = ["name", "code", "folder", "extension"]
 PROFILES = {"default": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live"], DefaultAudioCDTags.fromfile),
             "alternative": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "live"], DefaultAudioCDTags.fromfile),
             "sbootlegs": profile(["albumsortcount", "albumsortyear", "bonus", "bootleg", "dottedbootlegtrackyear", "live", "groupby"], BootlegAudioCDTags.fromfile)}
-with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Mapping.json")), encoding="UTF_8") as fp:
+with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Mapping.json")), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

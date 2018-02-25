@@ -53,7 +53,7 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 # Logging.
 # ========
-with open(join(expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("Backup.{0}".format(splitext(basename(__file__))[0]))
 

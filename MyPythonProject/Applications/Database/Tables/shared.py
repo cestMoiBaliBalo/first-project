@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     arguments = tasks_parser.parse_args()
 
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         config = yaml.load(fp)
     for logger in ["Applications.Database.Tables"]:
         try:

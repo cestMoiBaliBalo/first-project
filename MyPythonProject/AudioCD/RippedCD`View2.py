@@ -23,7 +23,7 @@ __status__ = "Production"
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding=UTF8) as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     logging.config.dictConfig(yaml.load(fp))
 
 # ================

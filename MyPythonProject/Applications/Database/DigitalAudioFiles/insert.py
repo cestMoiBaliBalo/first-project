@@ -48,7 +48,7 @@ FIELDNAMES = ["index",
 # ---------------
 if __name__ == "__main__":
 
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         logging.config.dictConfig(yaml.load(fp))
     logger = logging.getLogger("Applications.Database.DigitalAudioFiles.insert")
 

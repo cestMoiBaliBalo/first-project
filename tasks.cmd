@@ -1,6 +1,6 @@
 @ECHO off
 
-REM An ambitious DOS script performing computing tasks (such as backup files or syncing local/remote ressources).
+REM An ambitious DOS script performing computing tasks (such as backup files or syncing local/remote resources).
 REM A menu brought by a python script is displayed allowing to choose among some configured tasks.
 REM DOS then performs both configuration of the execution environment and execution of the task itself.
 
@@ -24,11 +24,10 @@ SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
 SET _local_avchd=G:\Videos\AVCHD Videos
 SET _lossless=G:\Music\Lossless
 SET _lossy=G:\Music\Lossy
-SET _exclusions=%_COMPUTING%\exclusions.txt
-SET _exclusions1=%_COMPUTING%\exclusions1.txt
-SET _sdcard=%_COMPUTING%\SDCard-content.txt
-SET _sdcard_password=%_COMPUTING%\SDCard-password.txt
-SET _menu_images=%_COMPUTING%\menu-images.txt
+SET _exclusions=%_COMPUTING%\Resources\exclusions.txt
+SET _exclusions1=%_COMPUTING%\Resources\exclusions1.txt
+SET _sdcard=%_COMPUTING%\Resources\SDCard-content.txt
+SET _sdcard_password=%_COMPUTING%\Resources\SDCard-password.txt
 SET _copied=%TEMP%\copied.lst
 SET _removed=%TEMP%\removed.lst
 SET _tobearchived=%TEMP%\tobearchived.lst
@@ -341,10 +340,7 @@ IF ERRORLEVEL 17 (
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy local FLAC audio files to MyCloud." _answer
     IF [!_answer!] EQU [N] GOTO FIN18
     CLS
-    SET _ressource=
-    SET _extension=
-    CALL :LOG "%_copied%" _ressource _extension
-    XXCOPY "F:\*\?*\*.flac" "\\DISKSTATION\music\" /EX:"%_exclusions%" /CLONE /PZ0 /Fo:"!_ressource!_/$YMMDD_K_HHNNSS$!_extension!" /FM:L /oA:%_XXCOPYLOG%
+    XXCOPY "F:\*\?*\*.flac" "\\DISKSTATION\music\" /EX:"%_exclusions%" /CLONE /PZ0 /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -531,6 +527,7 @@ REM =========================================================
 
 :P5
 SET _tempvar=
+SET _m4a=0
 
 REM A. Display available drives.
 CALL :HEADER3 %_islossless%
@@ -568,6 +565,14 @@ FOR %%C IN (%_choice%) DO SET _drive=!_elem[%%C]!
 REM E. Convert drive letter into a valid path.
 FOR %%D IN (%_drive%) DO SET "_drive=%%~fD"
 
+REM F. Include MPEG-4 audio files?
+IF %_islossy% (
+    CALL :HEADER3 %_islossless%
+    SET _answer=
+    CALL :QUESTION "YN" "20" "Y" "Would you like to include MPEG-4 audio files too?" _answer
+    IF [!_answer!] EQU [Y] SET _m4a=1
+)
+
 REM F. Check modified files.
 CALL :HEADER3 %_islossless%
 SET _answer=
@@ -602,11 +607,23 @@ IF %_islossless% EQU 1 (
 
 REM H.2. Lossy audio files.
 IF %_islossy% EQU 1 (
+
+    REM --> MP3.
     ECHO:Check MPEG Layer III files...
     ECHO:
     ECHO:
     XXCOPY "%_lossy%\*\?*\*.mp3" "%_drive%" /BI /FF /L /oA:%_XXCOPYLOG%
     IF !ERRORLEVEL! EQU 0 SET /A _difference=1
+
+    REM --> M4A.
+    IF %_m4a% EQU 1 (
+        ECHO:Check MPEG-4 files...
+        ECHO:
+        ECHO:
+        XXCOPY "%_lossy%\*\?*\*.mp4" "%_drive%" /BI /FF /L /oA:%_XXCOPYLOG%
+        IF !ERRORLEVEL! EQU 0 SET /A _difference=1
+    )
+
 )
 
 REM I. Sync is not required.
@@ -632,27 +649,24 @@ GOTO MENU
 
 REM K. Continue flow by confirming or aborting.
 :P6
-SET _ressource=
-SET _extension=
-CALL :LOG "%_copied%" _ressource _extension
 
 REM K.1. Lossless audio files.
 IF %_islossless% EQU 1 (
     CALL :HEADER3 %_islossless%
     SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy local Hi-Res audio files to your mobile device." _answer
+    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy local Hi-Res audio files to the selected drive." _answer
     IF [!_answer!] EQU [N] GOTO END_P6
     CLS
     ECHO:
     ECHO:
 
     REM K.1.a. Sync FLAC files.
-    ECHO XXCOPY /EC "%_lossless%\*\?*\*.flac" "%_drive%" /KS /BI /FF /Y /Fo:"!_ressource!_/$YMMDD_K_HHNNSS$!_extension!" /FM:L /oA:%_XXCOPYLOG%
+    ECHO XXCOPY /EC "%_lossless%\*\?*\*.flac" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
 
     REM K.1.b. Sync DSD files.
-    ECHO XXCOPY /CE "%_lossless%\*\?*\*.dsf" "%_drive%" /KS /BI /FF /Y /Fo:"!_ressource!_/$YMMDD_K_HHNNSS$!_extension!" /FM:L /oA:%_XXCOPYLOG%
+    ECHO XXCOPY /CE "%_lossless%\*\?*\*.dsf" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
 
-    REM K.1.c. Remove extra files not present into the destination directory. Preserve "DCIM" if present.
+    REM K.1.c. Remove extra files not present into the destination drive. Preserve "DCIM" if present.
     ECHO XXCOPY /CE "%_drive%" "%_lossless%\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
 )
 
@@ -660,12 +674,19 @@ REM K.2. Lossy audio files.
 IF %_islossy% EQU 1 (
     CALL :HEADER3 %_islossless%
     SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy local Low-Res audio files to your mobile device." _answer
+    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy local Low-Res audio files to the selected drive." _answer
     IF [!_answer!] EQU [N] GOTO END_P6
     CLS
     ECHO:
     ECHO:
-    ECHO XXCOPY /EC "%_lossy%\*\?*\*.mp3" "%_drive%" /KS /BI /FF /Y /Fo:"!_ressource!_/$YMMDD_K_HHNNSS$!_extension!" /FM:L /oA:%_XXCOPYLOG%
+
+    REM K.2.a. Sync MP3 files.
+    ECHO XXCOPY /EC "%_lossy%\*\?*\*.mp3" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+
+    REM K.2.b. Sync M4A files.
+    IF %_m4a% EQU 1 ECHO XXCOPY /CE "%_lossy%\*\?*\*.mp4" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+
+    REM K.2.c. Remove extra files not present into the destination drive. Preserve "DCIM" if present.
     ECHO XXCOPY /CE "%_drive%" "%_lossy%\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
 )
 
@@ -841,10 +862,7 @@ CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application w
 IF [%_answer%] EQU [N] GOTO END_P4
 CLS
 ECHO:
-SET _ressource=
-SET _extension=
-CALL :LOG "%_copied%" _ressource _extension
-XXCOPY /EC %_src% %_dst% /EX:"%_exclusions%" /BI /FF /Y /KS /Fo:"!_ressource!_/$YMMDD_K_HHNNSS$!_extension!" /FM:L /oA:%_XXCOPYLOG%
+XXCOPY /EC %_src% %_dst% /EX:"%_exclusions%" /BI /FF /Y /KS /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
 XXCOPY /CE "\\DISKSTATION\music\" "F:\" /X:*recycle\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 
 ECHO:
@@ -870,6 +888,7 @@ REM    ----------
 REM A. Main menu.
 REM    ----------
 :DISPLAY
+SET _menu_images=Read;Rename;Write
 CLS
 ECHO:
 ECHO: =========================
@@ -1203,12 +1222,4 @@ REM 7. Run 7-Zip command.
 )
 
 :FIN_ARCHIVE
-EXIT /B 0
-
-
-:LOG
-FOR /F "usebackq delims=|" %%I IN ('%~1') DO (
-    SET %2=%%~dpnI
-    SET %3=%%~xI
-)
 EXIT /B 0

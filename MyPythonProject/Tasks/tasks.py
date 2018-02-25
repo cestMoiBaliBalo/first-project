@@ -59,7 +59,7 @@ y, choice = [], 99
 # ===============
 
 # 1. Load tasks, numbers and return codes.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Tasks.json")) as fp:
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Tasks.json")) as fp:
     tasks = json.load(fp)
 
 codes = dict([(str(number), code) for task, number, code in tasks])

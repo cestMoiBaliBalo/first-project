@@ -965,7 +965,7 @@ if __name__ == '__main__':
 
     # -----
     config = {}
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         config = yaml.load(fp)
     for logger in ["Applications.Database.AudioCD", "Applications.Database.DigitalAudioFiles", "Database"]:
         try:

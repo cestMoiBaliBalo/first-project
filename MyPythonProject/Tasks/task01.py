@@ -23,7 +23,7 @@ parser.add_argument("--force", action="store_true")
 arguments = parser.parse_args()
 
 # 2. --> Logging.
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("Applications.Database.Tables")
 
