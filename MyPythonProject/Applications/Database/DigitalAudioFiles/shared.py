@@ -13,7 +13,7 @@ from operator import itemgetter
 
 import jinja2
 
-from ..shared import Boolean, adapt_boolean, convert_boolean
+from ..shared import ToBoolean, adapt_booleanvalue, convert_tobooleanvalue
 from ...parsers import subset_parser
 from ...shared import DATABASE, LOCAL, TemplatingEnvironment, UTC, rjustify, validdatetime, validdb, validgenre, validproductcode, validyear
 from ...xml import digitalalbums_in
@@ -26,12 +26,12 @@ __status__ = "Production"
 # ================
 # SQLite3 adapter.
 # ================
-sqlite3.register_adapter(Boolean, adapt_boolean)
+sqlite3.register_adapter(ToBoolean, adapt_booleanvalue)
 
 # ==================
 # SQLite3 converter.
 # ==================
-sqlite3.register_converter("boolean", convert_boolean)
+sqlite3.register_converter("boolean", convert_tobooleanvalue)
 
 # ==========
 # Constants.
@@ -189,7 +189,7 @@ class InsertDigitalAlbum(MutableSequence):
             # 12. Split attributes into three tuples respective to the three focused tables.
 
             # 12.a. `albums` table.
-            albums_tuple = (track.albumid[:-11], track.artist, year, track.album, totaldiscs, genre, Boolean(track.live), Boolean(track.bootleg), Boolean(track.incollection), track.language, upc,
+            albums_tuple = (track.albumid[:-11], track.artist, year, track.album, totaldiscs, genre, ToBoolean(track.live), ToBoolean(track.bootleg), ToBoolean(track.incollection), track.language, upc,
                             album_created, origyear, lastplayeddate, playedcount)
 
             # 12.b. `discs` table.
@@ -363,123 +363,8 @@ def insertfromfile(*files):
 
 
 def getalbumdetail(db=DATABASE, **kwargs):
-    """
-    Get digital audio albums detail.
-
-    :param db: Database storing digital audio tables.
-    :return: Digital audio albums detail sorted by album ID, disc ID, track ID.
-    """
-    logger = logging.getLogger("{0}.getalbumdetail".format(__name__))
-
-    #  1. Initializations.
-    record = namedtuple("record",
-                        "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played discid tracks trackid title track_rowid")
-    where, rows, args = "", [], ()
-
-    #  2. SELECT clause.
-    select = "SELECT a.rowid, a.albumid, a.artist, a.origyear, a.album, a.discs, a.label, a.genre, a.upc, a.year, a.live, a.bootleg, a.incollection, a.language, a.utc_created, a.utc_modified, a.utc_played, " \
-             "a.played, b.discid, b.tracks, c.trackid, c.title, c.rowid " \
-             "FROM albums a " \
-             "JOIN discs b ON a.albumid=b.albumid " \
-             "JOIN tracks c ON a.albumid=c.albumid AND b.discid=c.discid"
-
-    #  3. WHERE clause.
-
-    #  3.a. Subset by `artistsort`.
-    artistsort = kwargs.get("artistsort", [])
-    if artistsort:
-        where = "{0}(".format(where)
-        for item in artistsort:
-            where = "{0}lower(substr(a.albumid, 3, length(a.albumid) - 15)) LIKE ? OR ".format(where)
-            args += ("%{0}%".format(item.lower()),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.b. Subset by `albumsort`.
-    albumsort = kwargs.get("albumsort", [])
-    if albumsort:
-        where = "{0}(".format(where)
-        for item in albumsort:
-            where = "{0}substr(a.albumid, length(a.albumid) - 11, 12) LIKE ? OR ".format(where)
-            args += ("%{0}%".format(item),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.c. Subset by `artist`.
-    artist = kwargs.get("artist", [])
-    if artist:
-        where = "{0}(".format(where)
-        for item in artist:
-            where = "{0}lower(artist) LIKE ? OR ".format(where)
-            args += ("%{0}%".format(item.lower()),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.d. Subset by `genre`.
-    genre = kwargs.get("genre", [])
-    if genre:
-        where = "{0}(".format(where)
-        for item in genre:
-            where = "{0}lower(genre)=? OR ".format(where)
-            args += (item.lower(),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.d. Subset by ROWID.
-    uid = kwargs.get("uid", [])
-    if uid:
-        where = "{0}(".format(where)
-        for item in uid:
-            where = "{0}a.rowid=? OR ".format(where)
-            args += (item,)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.e. Subset by `album`.
-    album = kwargs.get("album", [])
-    if album:
-        where = "{0}(".format(where)
-        for item in album:
-            where = "{0}lower(album) LIKE ? OR ".format(where)
-            args += ("%{0}%".format(item),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.f. Subset by `year`.
-    year = kwargs.get("year", [])
-    if year:
-        where = "{0}(".format(where)
-        for item in year:
-            where = "{0}year=? OR ".format(where)
-            args += (item,)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 3.g. Subset by `albumid`.
-    albumid = kwargs.get("albumid", [])
-    if albumid:
-        where = "{0}(".format(where)
-        for item in albumid:
-            where = "{0}a.albumid LIKE ? OR ".format(where)
-            args += ("%{0}%".format(item),)
-        where = "{0}) AND ".format(where[:-4])
-
-    # 4. ORDER BY clause.
-    logger.debug(kwargs.get("orderby"))
-    orderby = "ORDER BY a.albumid, b.discid, c.trackid"
-    mylist = list(filter(lambda i: bool(i), map(rex.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
-    if mylist:
-        orderby = "ORDER BY {0}".format(", ".join(mylist))
-
-    # 5. Build SQL statement.
-    if where:
-        where = "WHERE {0}".format(where[:-5])
-    sql = "{0} {1}".format(select, orderby)
-    if where:
-        sql = "{0} {1} {2}".format(select, where, orderby)
-    logger.debug(sql)
-    logger.debug(args)
-
-    #  6. Run SQL statement.
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute(sql, args):
-        rows.append(row)
-    conn.close()
-    for row in rows:
-        yield record._make(row)
+    for row in _getalbumdetail(db, **kwargs):
+        yield row
 
 
 def getgroupedalbums(db=DATABASE, **kwargs):
@@ -503,7 +388,7 @@ def getgroupedalbums(db=DATABASE, **kwargs):
                    item.bootleg,
                    item.incollection,
                    int(LOCAL.localize(item.utc_created).timestamp()),
-                   item.album) for item in filter(func, getalbumdetail(db)))
+                   item.album) for item in filter(func, _getalbumdetail(db)))
     albumslist = sorted(sorted(sorted(sorted(albumslist, key=itemgetter(4)), key=itemgetter(3)), key=itemgetter(2)), key=lambda i: (i[0], i[1]))
     for album in albumslist:
         logger.debug("----------------")
@@ -521,44 +406,49 @@ def getgroupedalbums(db=DATABASE, **kwargs):
         yield artistsort, artist, albums
 
 
-def getalbumidfromartist(db=DATABASE, artist=None):
+def getalbumidfromartist(arg=None, db=DATABASE):
     """
     Get album(s) ID matching the input artist.
 
-    :param artist: Requested artist.
+    :param arg: Requested artist.
     :param db: Database storing `albums` table.
     :return: Album(s) unique ID list.
     """
-    record = namedtuple("record", "rowid albumid")
-    argument, rows = (), []
-    statement = "SELECT rowid, albumid FROM albums ORDER BY albumid"
-    if artist:
-        statement = "SELECT rowid, albumid FROM albums WHERE lower(substr(albumid, 3, length(albumid)-15))=? OR lower(artist)=? ORDER BY albumid"
-        argument = (artist.lower(), artist.lower())
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute(statement, argument):
-        rows.append(row)
-    conn.close()
-    for row in rows:
-        yield record._make(row)
+    kwargs = dict()
+    if arg:
+        kwargs = dict(artist=arg, artistsort=arg)
+    for row in _getalbumid(db, **kwargs):
+        yield row
 
 
-def getalbumidfromgenre(genre, db=DATABASE):
+def getalbumidfromgenre(arg=None, db=DATABASE):
     """
     Get album(s) ID matching the input genre.
 
-    :param genre: Requested genre.
+    :param arg: Requested genre.
     :param db: Database storing `albums` table.
     :return: Album(s) unique ID list.
     """
-    record = namedtuple("record", "rowid albumid")
-    rows = []
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute("SELECT rowid, albumid FROM albums WHERE lower(genre)=? ORDER BY albumid", (genre.lower(),)):
-        rows.append(row)
-    conn.close()
-    for row in rows:
-        yield record._make(row)
+    kwargs = dict()
+    if arg:
+        kwargs = dict(genre=arg)
+    for row in _getalbumid(db, **kwargs):
+        yield row
+
+
+def getalbumidfromalbumsort(arg=None, db=DATABASE):
+    """
+    Get album(s) ID matching the input albumsort.
+
+    :param arg: Requested albumsort.
+    :param db: Database storing `albums` table.
+    :return: Album(s) unique ID list.
+    """
+    kwargs = dict()
+    if arg:
+        kwargs = dict(albumsort=arg)
+    for row in _getalbumid(db, **kwargs):
+        yield row
 
 
 def checkalbumid(albumid, *, db=DATABASE):
@@ -570,7 +460,7 @@ def checkalbumid(albumid, *, db=DATABASE):
     return bool(count)
 
 
-def getalbumid(uid, db=DATABASE):
+def getalbumid(uid, *, db=DATABASE):
     """
     Get album ID matching the input unique ROWID.
 
@@ -578,16 +468,8 @@ def getalbumid(uid, db=DATABASE):
     :param db: Database storing `albums` table.
     :return: Album unique ID.
     """
-    conn = sqlite3.connect(db)
-    curs = conn.cursor()
-    curs.execute("SELECT albumid FROM albums WHERE rowid=?", (uid,))
-    try:
-        albumid = curs.fetchone()[0]
-    except TypeError:
-        albumid = None
-    finally:
-        conn.close()
-    return uid, albumid
+    for row in _getalbumid(db, rowid=uid):
+        yield row
 
 
 def getrowid(*albumid, db=DATABASE):
@@ -621,7 +503,7 @@ def getalbumheader(db=DATABASE, albumid=None, **kwargs):
     logger = logging.getLogger("{0}.getalbumheader".format(__name__))
     tabsize, rows = 3, []
     record = namedtuple("record", "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played")
-    for row in getalbumdetail(db=db, albumid=albumid, **kwargs):
+    for row in _getalbumdetail(db, albumid=albumid, **kwargs):
         rows.append((row.rowid,
                      row.albumid,
                      row.artist,
@@ -865,6 +747,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     :param kwargs: key-value pairs enumerating field-value to update.
     :return: Tuple composed of `albums` total change(s), `discs` total change(s) and `tracks` total change(s).
     """
+    d = {False: 0, True: 1}
 
     # 1.Define logger.
     logger = logging.getLogger("{0}.updatealbum".format(__name__))
@@ -926,7 +809,19 @@ def updatealbum(uid, db=DATABASE, **kwargs):
         kwargs["played"] = played
         del kwargs["dcount"]
 
-    # 9. Set query.
+    # 9. Adapt `live` tag value from boolean to integer.
+    if "live" in kwargs:
+        kwargs["live"] = d[kwargs["live"]]
+
+    # 10. Adapt `bootleg` tag value from boolean to integer.
+    if "bootleg" in kwargs:
+        kwargs["bootleg"] = d[kwargs["bootleg"]]
+
+    # 11. Adapt `incollection` tag value from boolean to integer.
+    if "incollection" in kwargs:
+        kwargs["incollection"] = d[kwargs["incollection"]]
+
+    # 12. Set query.
     logger.debug(kwargs)
     for k, v in kwargs.items():
         query = "{0}{1}=?, ".format(query, k)  # album=?, albumid=?, "
@@ -938,7 +833,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     logger.debug(query)
     logger.debug(args)
 
-    # 10. Update `albums` table.
+    # 13. Update `albums` table.
     #     Update may be propagated to both `discs` and `tracks` tables.
     try:
         with conn:
@@ -969,7 +864,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
         logger.info("TRACKS table: {0:>3d} record(s) updated.".format(trkcount))
         conn.close()
 
-    # 11. Return total changes.
+    # 14. Return total changes.
     return inp_albumid, albcount, dsccount, trkcount
 
 
@@ -1071,9 +966,179 @@ def getartist(db=DATABASE):
         yield record._make(row)
 
 
-# ============================================
-# Main algorithm if module run as main script.
-# ============================================
+# ====================================================
+# This function mustn't be used from external scripts.
+# ====================================================
+def _getalbumdetail(db, **kwargs):
+    """
+    Get digital audio albums detail.
+
+    :param db: Database storing digital audio tables.
+    :return: Digital audio albums detail sorted by album ID, disc ID, track ID.
+    """
+    logger = logging.getLogger("{0}._getalbumdetail".format(__name__))
+    d = {False: 0, True: 1}
+
+    #  1. Initializations.
+    record = namedtuple("record",
+                        "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played discid tracks trackid title track_rowid")
+    where, rows, args = "", [], ()
+
+    #  2. SELECT clause.
+    select = "SELECT a.rowid, a.albumid, a.artist, a.origyear, a.album, a.discs, a.label, a.genre, a.upc, a.year, a.live, a.bootleg, a.incollection, a.language, a.utc_created, a.utc_modified, a.utc_played, " \
+             "a.played, b.discid, b.tracks, c.trackid, c.title, c.rowid " \
+             "FROM albums a " \
+             "JOIN discs b ON a.albumid=b.albumid " \
+             "JOIN tracks c ON a.albumid=c.albumid AND b.discid=c.discid"
+
+    #  3. WHERE clause.
+
+    #  3.a. Subset by `artistsort`.
+    artistsort = kwargs.get("artistsort", [])
+    if artistsort:
+        where = "{0}(".format(where)
+        for item in artistsort:
+            where = "{0}lower(substr(a.albumid, 3, length(a.albumid) - 15)) LIKE ? OR ".format(where)
+            args += ("%{0}%".format(item.lower()),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.b. Subset by `albumsort`.
+    albumsort = kwargs.get("albumsort", [])
+    if albumsort:
+        where = "{0}(".format(where)
+        for item in albumsort:
+            where = "{0}substr(a.albumid, length(a.albumid) - 11, 12) LIKE ? OR ".format(where)
+            args += ("%{0}%".format(item),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.c. Subset by `artist`.
+    artist = kwargs.get("artist", [])
+    if artist:
+        where = "{0}(".format(where)
+        for item in artist:
+            where = "{0}lower(artist) LIKE ? OR ".format(where)
+            args += ("%{0}%".format(item.lower()),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.d. Subset by `genre`.
+    genre = kwargs.get("genre", [])
+    if genre:
+        where = "{0}(".format(where)
+        for item in genre:
+            where = "{0}lower(genre)=? OR ".format(where)
+            args += (item.lower(),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.d. Subset by ROWID.
+    uid = kwargs.get("uid", [])
+    if uid:
+        where = "{0}(".format(where)
+        for item in uid:
+            where = "{0}a.rowid=? OR ".format(where)
+            args += (item,)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.e. Subset by `album`.
+    album = kwargs.get("album", [])
+    if album:
+        where = "{0}(".format(where)
+        for item in album:
+            where = "{0}lower(album) LIKE ? OR ".format(where)
+            args += ("%{0}%".format(item),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.f. Subset by `year`.
+    year = kwargs.get("year", [])
+    if year:
+        where = "{0}(".format(where)
+        for item in year:
+            where = "{0}year=? OR ".format(where)
+            args += (item,)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.g. Subset by `albumid`.
+    albumid = kwargs.get("albumid", [])
+    if albumid:
+        where = "{0}(".format(where)
+        for item in albumid:
+            where = "{0}a.albumid LIKE ? OR ".format(where)
+            args += ("%{0}%".format(item),)
+        where = "{0}) AND ".format(where[:-4])
+
+    # 3.h. Subset by `live`.
+    live = kwargs.get("live", None)
+    if live is not None:
+        where = "{0}live=? AND ".format(where)
+        args += (d[live],)
+
+    # 3.i. Subset by `bootleg`.
+    bootleg = kwargs.get("bootleg", None)
+    if bootleg is not None:
+        where = "{0}bootleg=? AND ".format(where)
+        args += (d[bootleg],)
+
+    # 3.j. Subset by `incollection`.
+    incollection = kwargs.get("incollection", None)
+    if incollection is not None:
+        where = "{0}incollection=? AND ".format(where)
+        args += (d[incollection],)
+
+    # 4. ORDER BY clause.
+    logger.debug(kwargs.get("orderby"))
+    orderby = "ORDER BY a.albumid, b.discid, c.trackid"
+    mylist = list(filter(lambda i: bool(i), map(rex.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
+    if mylist:
+        orderby = "ORDER BY {0}".format(", ".join(mylist))
+
+    # 5. Build SQL statement.
+    if where:
+        where = "WHERE {0}".format(where[:-5])
+    sql = "{0} {1}".format(select, orderby)
+    if where:
+        sql = "{0} {1} {2}".format(select, where, orderby)
+    logger.debug(sql)
+    logger.debug(args)
+
+    #  6. Run SQL statement.
+    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
+    for row in conn.execute(sql, args):
+        rows.append(row)
+    conn.close()
+    for row in rows:
+        yield record._make(row)
+
+
+def _getalbumid(db, **kwargs):
+    """
+    """
+    d = {"default": "lower($(field))=?", "rowid": "$(field)=?"}
+    record = namedtuple("record", "rowid albumid")
+    statement, where, args, rows = "SELECT rowid, albumid FROM albums", "", (), []
+    for key, value in kwargs.items():
+        where = "{0}{1} OR ".format(where, Template(d.get(key, d["default"])).substitute(field=key))
+        try:
+            args += (value.lower(),)
+        except AttributeError:
+            args += (value,)
+    if where:
+        statement = "{0} WHERE ({1}) ORDER BY albumid".format(statement, where[:-4])
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    try:
+        curs.execute(statement, args)
+    except sqlite3.OperationalError:
+         pass
+    else:
+        rows = curs.fetchall()
+    finally:
+        conn.close()
+    for row in rows:
+        yield record._make(row)
+
+
+# ===============================================
+# Main algorithm if module is run as main script.
+# ===============================================
 if __name__ == "__main__":
 
     def getalbum(item):

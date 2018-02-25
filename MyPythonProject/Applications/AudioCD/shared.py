@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import shutil
-from base64 import b85decode
 from collections import MutableMapping, MutableSequence, namedtuple
 from contextlib import ContextDecorator, ExitStack
 from datetime import datetime
@@ -750,7 +749,6 @@ def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "ripping
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
-            # obj = [tuple(item) for item in obj]
     while True:
         obj.append([db,
                     track.artist,
@@ -780,7 +778,6 @@ def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "d
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
-        # obj = [tuple(item) for item in obj]
     while True:
         obj.append([db,
                     track.index,
@@ -889,26 +886,7 @@ def getmetadata(audiofil):
     return result(audiofil, True, tags, audioobj)
 
 
-def updatemetadata(audioobj, logger=None, **kwargs):
-    """
-    Update metadata of an audio file.
-    :param audioobj: audio file object.
-    :param logger: logger to log raised exception(s).
-    :param kwargs: dictionary enumerating metadata to update.
-    :return: boolean value depending on whether metadata have been updated or not.
-    """
-    for k, v in kwargs.items():
-        audioobj[k] = v
-    try:
-        audioobj.save()
-    except MutagenError as err:
-        if logger:
-            logger.exception(err)
-        return False
-    return True
-
-
-def audiofilesinfolder(*extensions, folder):
+def get_audiofiles(*extensions, folder):
     """
     Return a generator object yielding both FLAC and Monkey's Audio files stored in "folder" having extension enumerated in "extensions".
     :param extensions: not mandatory list of extension(s) to filter files.
@@ -919,27 +897,36 @@ def audiofilesinfolder(*extensions, folder):
         yield audiofil, audioobj, tags
 
 
-def copy_audiofiles_to_remotedirectory(*args, server=shared.NAS, user="admin", password=b85decode(shared.PASSWORD).decode()):
+def upload_audiofiles(server, user, password, *files, test=False):
     """
     Upload audio file(s) to a remote directory on the NAS server.
-    :param args: list of audio files.
     :param server: IP address of the NAS server.
     :param user: user for creating connection to the server.
     :param password: password for creating connection to the server.
+    :param files: list of audio files.
+    :param test:
     :return: None.
     """
-
-    # --> Check existing files.
-    if not any(map(os.path.exists, args)):
-        return
+    uploaded, selectors = [], []
 
     # --> Logging.
-    logger = logging.getLogger("{0}.copy_audiofiles_to_remotedirectory".format(__name__))
+    logger = logging.getLogger("{0}.upload_audiofile".format(__name__))
+
+    # --> Check existing files.
+    if not any(map(os.path.exists, files)):
+        logger.debug("No eligible file found.")
+        return uploaded
 
     # --> Initializations.
     refdirectory = "/music"
-    genexp = ((item.file, item.tags) for item in (getmetadata(file) for file in compress(args, map(os.path.exists, args))) if item.found)
-    files = dict([(a, b["albumsort"][:-3]) for a, b in genexp if "albumsort" in b])
+    files = [(item.file, item.tags) for item in [getmetadata(file) for file in compress(files, map(os.path.exists, files))] if item.found]
+    for file, tags in files:
+        if all(["artistsort" in tags, "albumsort" in tags, "album" in tags]):
+            selectors.append(True)
+        else:
+            selectors.append(False)
+    for file, tags in compress(files, [not selector for selector in selectors]):
+        logger.debug("{0} is rejected.".format(file))
 
     # --> Copy local audio files to remote directory.
     stack1 = ExitStack()
@@ -950,22 +937,83 @@ def copy_audiofiles_to_remotedirectory(*args, server=shared.NAS, user="admin", p
     else:
         with stack1:
             ftp.chdir(refdirectory)
-            for file in files:
+            for file, tags in compress(files, selectors):
                 wdir = ftp.path.join(refdirectory, "/".join(os.path.splitdrive(os.path.dirname(file))[1][1:].split("\\")))
-                logger.debug(wdir)
-                logger.debug(file)
-                logger.debug(files[file])
-                stack2 = ExitStack()
-                while True:
-                    try:
-                        stack2.enter_context(shared.AlternativeChangeRemoteCurrentDirectory(ftp, wdir))
-                    except ftputil.error.PermanentError:
-                        ftp.makedirs(wdir)
-                    else:
-                        break
-                with stack2:
-                    ftp.upload(file, os.path.basename(file))
-                logger.debug(ftp.getcwd())
+                logger.debug("Source file to upload\t\t: {0}".format(file).expandtabs(3))
+                logger.debug("Source file name\t\t\t\t: {0}".format(os.path.basename(file)).expandtabs(3))
+                logger.debug("Target directory\t\t\t\t: {0}".format(wdir).expandtabs(3))
+                logger.debug("Artistsort\t: {0}".format(tags["artistsort"]).expandtabs(3))
+                logger.debug("Albumsort\t: {0}".format(tags["albumsort"]).expandtabs(3))
+                logger.debug("Album\t\t\t: {0}".format(tags["album"]).expandtabs(3))
+                if not test:
+                    stack2 = ExitStack()
+                    while True:
+                        try:
+                            stack2.enter_context(shared.AlternativeChangeRemoteCurrentDirectory(ftp, wdir))
+                        except ftputil.error.PermanentError:
+                            ftp.makedirs(wdir)
+                        else:
+                            break
+                    with stack2:
+                        ftp.upload(file, os.path.basename(file))
+                        uploaded.append(file)
+                    logger.debug("Restored current directory\t: {0}".format(ftp.getcwd()).expandtabs(3))
+    for file in uploaded:
+        yield file
+
+
+def set_audiofilename(track):
+    """
+
+    :param track:
+    :return:
+    """
+    logger = logging.getLogger("{0}.set_audiofilename".format(__name__))
+    default1_template = r"F:\${firstletter}\${artistsort}\${year} - ${album}\1.Free Lossless Audio Codec\1.${year}0000.${albumsortcount}.13.D${discnumber}.T${tracknumber}.flac"
+    default2_template = r"F:\${firstletter}\${artistsort}\${year} - ${album}\CD${discnumber}\1.Free Lossless Audio Codec\1.${year}0000.${albumsortcount}.13.D${discnumber}.T${tracknumber}.flac"
+    alt11_template = r"F:\${firstletter}\${artistsort}\1\${year} - ${album}\1.Free Lossless Audio Codec\1.${year}0000.${albumsortcount}.13.D${discnumber}.T${tracknumber}.flac"
+    alt12_template = r"F:\${firstletter}\${artistsort}\1\${year} - ${album}\CD${discnumber}\1.Free Lossless Audio Codec\1.${year}0000.${albumsortcount}.13.D${discnumber}.T${tracknumber}.flac"
+    mapping = {
+        "kiss":
+            {
+                1: alt11_template,
+                99: alt12_template
+            },
+        "metallica":
+            {
+                1: alt11_template,
+                99: alt12_template
+            },
+        "springsteen, bruce":
+            {
+                1: alt11_template,
+                99: alt12_template
+            },
+        "u2":
+            {
+                1: alt11_template,
+                99: alt12_template
+            },
+        "default":
+            {
+                1: default1_template,
+                99: default2_template
+            }
+    }
+    template, file = None, None
+    if all([track.artistsort, track.albumsort, track.origyear, track.totaldiscs, track.discnumber, track.tracknumber]):
+        templates = mapping.get(track.artistsort.lower(), mapping["default"])
+        template = templates.get(track.totaldiscs, templates[99])
+        file = Template(template).substitute(firstletter=track.artistsort[0],
+                                             artistsort=track.artistsort,
+                                             year=track.origyear,
+                                             album=track.album,
+                                             albumsortcount=track.albumsortcount,
+                                             discnumber=track.discnumber,
+                                             tracknumber=track.tracknumber)
+    logger.debug(template)
+    logger.debug(file)
+    return file
 
 
 # ================

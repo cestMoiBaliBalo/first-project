@@ -35,10 +35,9 @@ import yaml
 from dateutil.parser import parse
 from pytz import timezone
 
-from Applications.Database.AudioCD.shared import deletelog, insertfromargs, insertfromfile as insertlogsfromfile, selectlog, selectlogs, updatelog
+from Applications.Database.AudioCD.shared import deletelog, insertfromargs, insertfromfile as insertlogsfromfile, selectlogs_fromkeywords, selectlogs_fromuid, updatelog
 from Applications.Database.DigitalAudioFiles.shared import deletealbum, deletealbumheader, deletetrack, getalbumdetail, getalbumheader, getalbumid, getrowid, insertfromfile as insertalbumsfromfile, \
     updatealbum, updatetrack
-from Applications.Database.shared import Boolean
 from Applications.parsers import database_parser, loglevel_parser
 from Applications.shared import DATABASE, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, LOCALMONTHS, LocalParser, StringFormatter, TEMPLATE4, TEMPLATE6, TemplatingEnvironment, UTC, dateformat, grouper, \
     prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdiscnumber, validproductcode, validtimestamp, validtracks, validyear
@@ -103,6 +102,21 @@ class DoNotFormatTitle(argparse.Action):
             setattr(namespace, "title", getattr(namespace, "track_title"))
 
 
+class SetLive(argparse.Action):
+    """
+
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetLive, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if values:
+            setattr(namespace, "live", not values)
+            setattr(namespace, self.dest, None)
+
+
 # ===========
 # Decorators.
 # ===========
@@ -127,6 +141,14 @@ def deco2(func):
                  row.trackid,
                  row.title,
                  row.album) for row in func(**kwargs)]
+
+    return wrapper
+
+
+def deco8(func):
+    def wrapper(*args, **kwargs):
+        for row in func(*args, db=kwargs.get("db", DATABASE)):
+            yield row
 
     return wrapper
 
@@ -209,10 +231,6 @@ dateformat = dateprint_formatter(dateformat)
 # ==========
 # Functions.
 # ==========
-def boolean(stg):
-    return Boolean(stg)
-
-
 def albumid(stg):
     """
     Check if a string match the albumsort pattern.
@@ -398,14 +416,17 @@ def insert_func(ns=None, **kwargs):
     :param kwargs: Dictionary holding parsed arguments.
     :return: Inserted records count.
     """
+    logger = logging.getLogger("{0}.insert_func".format(__name__))
     pairs = dict(kwargs)
     if ns:
         pairs = {k: v for k, v in vars(ns).items()}
+    for k, v in pairs.items():
+        logger.debug("{0}: {1}".format(k, v))
     db = pairs.get("db")
     table = pairs.get("table")
     statement = pairs.get("statement")
     if all([db, table, statement]):
-        kwargs = {key: val for key, val in pairs.items() if key not in ["db", "table", "statement", "function", "template"]}
+        kwargs = {key: val for key, val in pairs.items() if key not in ["db", "function", "loglevel", "statement", "table", "template"]}
         if kwargs:
             return CONFIGURATION[table][statement](db=db, **kwargs)
     return DEFAULT.get(table, DEFAULT["default"])
@@ -419,9 +440,12 @@ def select_func(ns=None, **kwargs):
     :param kwargs: Dictionary holding parsed arguments.
     :return: Selected records list.
     """
+    logger = logging.getLogger("{0}.select_func".format(__name__))
     pairs = dict(kwargs)
     if ns:
         pairs = {k: v for k, v in vars(ns).items()}
+    for k, v in pairs.items():
+        logger.debug("{0}: {1}".format(k, v))
     db = pairs.get("db")
     table = pairs.get("table")
     statement = pairs.get("statement")
@@ -440,9 +464,12 @@ def delete_func(ns=None, **kwargs):
     :param kwargs: Dictionary holding parsed arguments.
     :return: Deleted records count.
     """
+    logger = logging.getLogger("{0}.delete_func".format(__name__))
     pairs = dict(kwargs)
     if ns:
         pairs = {k: v for k, v in vars(ns).items()}
+    for k, v in pairs.items():
+        logger.debug("{0}: {1}".format(k, v))
     db = pairs.get("db")
     table = pairs.get("table")
     statement = pairs.get("statement")
@@ -461,9 +488,12 @@ def update_func(ns=None, **kwargs):
     :param kwargs: Dictionary holding parsed arguments.
     :return: Updated records count.
     """
+    logger = logging.getLogger("{0}.update_func".format(__name__))
     pairs = dict(kwargs)
     if ns:
         pairs = {k: v for k, v in vars(ns).items()}
+    for k, v in pairs.items():
+        logger.debug("{0}: {1}".format(k, v))
     db = pairs.get("db")
     table = pairs.get("table")
     statement = pairs.get("statement")
@@ -587,13 +617,13 @@ CONFIGURATION = {
                 {
                     True:
                         {
-                            False: selectlogs,
-                            True: selectlog
+                            False: selectlogs_fromkeywords,
+                            True: deco8(selectlogs_fromuid)
                         },
                     False:
                         {
-                            False: selectlogs,
-                            True: selectlog
+                            False: selectlogs_fromkeywords,
+                            True: deco8(selectlogs_fromuid)
                         }
                 },
             "update":
@@ -741,12 +771,12 @@ delete_parent.add_argument("keys", nargs="+", action=GetRowID, help="List of uni
 # 3. UPDATE statement.
 #    -----------------
 update_parent = argparse.ArgumentParser(description="Shared parser for `update` subparsers.", add_help=False, argument_default=argparse.SUPPRESS)
+update_parent.set_defaults(donotpropagate=True)
 update_parent.set_defaults(function=update_func)
 update_parent.set_defaults(template=gettemplate)
-update_parent.set_defaults(donotpropagate=True)
 update_parent.add_argument("keys", nargs="+", action=GetRowID, help="List of unique keys. ROWID or ALBUMID. Mandatory.")
 update_parent.add_argument("--artist", help="Album artist. Optional.", metavar="The Artist")
-update_parent.add_argument("--year", type=year, help="Album year. Optional. Only integers are allowed.")
+update_parent.add_argument("--year", help="Album year. Optional. Only integers are allowed.", type=year)
 update_parent.add_argument("--album", help="Album. Optional.", metavar="The Album")
 update_parent.add_argument("--label", help="Album label. Optional.")
 update_parent.add_argument("--genre", choices=GENRES, help="Album genre. Optional.")
@@ -756,10 +786,10 @@ update_parent.add_argument("--genre", choices=GENRES, help="Album genre. Optiona
 #    ---------------
 subset_parser = argparse.ArgumentParser(description="Shared parser for subset results.", add_help=False, argument_default=argparse.SUPPRESS)
 subset_parser.add_argument("--artistsort", nargs="*", help="Subset results by `artistsort`. Optional.")
-subset_parser.add_argument("--albumsort", nargs="*", help="Subset results by `albumsort`. Optional.")
-subset_parser.add_argument("--artist", nargs="*", help="Subset results by `artist`. Optional.")
-subset_parser.add_argument("--year", nargs="*", type=year, help="Subset results by `year`. Optional.")
-subset_parser.add_argument("--album", nargs="*", help="Subset results by `album`. Optional.")
+subset_parser.add_argument("--albumsort", help="Subset results by `albumsort`. Optional.")
+subset_parser.add_argument("--artist", help="Subset results by `artist`. Optional.")
+subset_parser.add_argument("--year", nargs="*", help="Subset results by `year`. Optional.", type=year)
+subset_parser.add_argument("--album", help="Subset results by `album`. Optional.")
 subset_parser.add_argument("--genre", nargs="*", help="Subset results by `genre`. Optional.")
 
 # =================
@@ -783,9 +813,9 @@ parser_log_select = subparser_log.add_parser("select",
                                              parents=[select_parent, database_parser, subset_parser, loglevel_parser],
                                              description="Subparser for selecting record(s) from `rippinglog` table.",
                                              argument_default=argparse.SUPPRESS)
-parser_log_select.add_argument("--label", nargs="*", type=year, help="Subset results by `label`. Optional.")
-parser_log_select.add_argument("--rippedyear", nargs="*", type=year, help="Subset results by `ripped year`. Optional.")
-parser_log_select.add_argument("--rippedmonth", nargs="*", type=validmonth, help="Subset results by `ripped month`. Optional.")
+parser_log_select.add_argument("--label", help="Subset results by `label`. Optional.")
+parser_log_select.add_argument("--rippedyear", type=year, help="Subset results by `ripped year`. Optional.")
+parser_log_select.add_argument("--rippedmonth", type=validmonth, help="Subset results by `ripped month`. Optional.")
 parser_log_select.add_argument("--orderby", nargs="*", default=["rowid"])
 
 #  1.b. DELETE statement.
@@ -827,16 +857,16 @@ parser_log_insert.add_argument("tracks", type=tracks, help="Total tracks number.
 parser_log_insert.add_argument("genre", choices=GENRES, help="Album genre. Mandatory.")
 parser_log_insert.add_argument("upc", type=productcode, help="Album product code. Mandatory.")
 parser_log_insert.add_argument("label", help="Album label. Mandatory.")
-parser_log_insert.add_argument("--application", nargs="?", default="dBpoweramp 15.1", help="Ripping application. Optional.")
+parser_log_insert.add_argument("--application", default="dBpoweramp 15.1", help="Ripping application. Optional.")
 parser_log_insert.add_argument("--ripped", type=unixepochtime, help="Ripping local Unix epoch time. Optional.", metavar="1500296048")
 
 #  1.e. INSERTFROMFILE statement.
 parser_log_insertff = subparser_log.add_parser("insertfromfile",
                                                parents=[database_parser, loglevel_parser],
                                                description="Subparser for inserting record(s) into `rippinglog` table from file(s).")
+parser_log_insertff.set_defaults(donotpropagate=True)
 parser_log_insertff.set_defaults(function=insert_func)
 parser_log_insertff.set_defaults(template=gettemplate)
-parser_log_insertff.set_defaults(donotpropagate=True)
 parser_log_insertff.add_argument("file", nargs="+", type=argparse.FileType(mode="r", encoding="UTF_8"), help="Input file(s). UTF-8 encoded JSON or XML. Mandatory.")
 
 #     --------------------------
@@ -851,14 +881,17 @@ parser_alb_select = subparser_alb.add_parser("select",
                                              parents=[select_parent, database_parser, subset_parser, loglevel_parser],
                                              description="Subparser for selecting record(s) from `albums` table.",
                                              argument_default=argparse.SUPPRESS)
-parser_alb_select.add_argument("--label", nargs="*", type=year, help="Subset results by `label`. Optional.")
-parser_alb_select.add_argument("--orderby", nargs="*", default=["albumid", "discid", "trackid"])
+alb_select_group = parser_alb_select.add_mutually_exclusive_group()
+alb_select_group.add_argument("--live", nargs="?", const=True, default=None, help="Live album. Optional.")
+alb_select_group.add_argument("--notlive", nargs="?", const=True, default=None, help="Studio album. Optional.", action=SetLive)
+parser_alb_select.add_argument("--label", help="Subset results by `label`. Optional.")
+parser_alb_select.add_argument("--orderby", default=["albumid", "discid", "trackid"])
 
 #  2.b. DELETE statement.
 parser_alb_delete = subparser_alb.add_parser("delete",
                                              parents=[delete_parent, database_parser, loglevel_parser],
                                              description="Subparser for deleting record(s) from `albums` table.")
-parser_alb_delete.add_argument("--donotpropagate", nargs="?", default=False, const=True)
+parser_alb_delete.add_argument("--donotpropagate", action="store_true")
 
 #  2.c. UPDATE statement.
 parser_alb_update = subparser_alb.add_parser("update",
@@ -867,9 +900,9 @@ parser_alb_update = subparser_alb.add_parser("update",
                                              argument_default=argparse.SUPPRESS)
 alb_update_group = parser_alb_update.add_mutually_exclusive_group()
 parser_alb_update.add_argument("--albumid", type=albumid, help="Album unique ID. Optional.", metavar="Artist, The.1.20170000.1")
-parser_alb_update.add_argument("--live", type=boolean, help="Live album. Optional.")
-parser_alb_update.add_argument("--bootleg", type=boolean, help="Bootleg album. Optional.")
-parser_alb_update.add_argument("--incollection", type=boolean, help="Album in personal collection. Optional.")
+parser_alb_update.add_argument("--live", action="store_true", help="Live album. Optional.")
+parser_alb_update.add_argument("--bootleg", action="store_true", help="Bootleg album. Optional.")
+parser_alb_update.add_argument("--incollection", action="store_true", help="Album in personal collection. Optional.")
 parser_alb_update.add_argument("--upc", type=productcode, help="Album product code. Optional.")
 parser_alb_update.add_argument("--utc_played", type=unixepochtime, help="Album last played UTC Unix epoch time. Optional.", metavar="1500296048")
 alb_update_group.add_argument("--played", type=int, help="Album played counter. Optional.")
@@ -878,10 +911,11 @@ alb_update_group.add_argument("--dcount", action="store_true", help="Decrement p
 
 #  2.d. INSERTFROMFILE statement.
 parser_alb_insertff = subparser_alb.add_parser("insertfromfile",
-                                               parents=[database_parser, loglevel_parser], description="Subparser for inserting record(s) into `rippinglog` table from file(s).")
+                                               parents=[database_parser, loglevel_parser],
+                                               description="Subparser for inserting record(s) into `rippinglog` table from file(s).")
+parser_alb_insertff.set_defaults(donotpropagate=True)
 parser_alb_insertff.set_defaults(function=insert_func)
 parser_alb_insertff.set_defaults(template=gettemplate)
-parser_alb_insertff.set_defaults(donotpropagate=True)
 parser_alb_insertff.add_argument("file", nargs="+", type=argparse.FileType(mode="r", encoding="UTF_8"), help="Input file(s). UTF-8 encoded JSON or XML. Mandatory.")
 
 #     --------------------------
@@ -896,9 +930,9 @@ parser_trk_select = subparser_trk.add_parser("select",
                                              parents=[select_parent, database_parser, loglevel_parser],
                                              description="Subparser for selecting record(s) from `tracks` table.",
                                              argument_default=argparse.SUPPRESS)
-parser_trk_select.add_argument("--artistsort", nargs="*", help="Subset results by `artistsort`. Optional.")
-parser_trk_select.add_argument("--albumsort", nargs="*", help="Subset results by `albumsort`. Optional.")
-parser_trk_select.add_argument("--orderby", nargs="*", default=["albumid", "discid", "trackid"])
+parser_trk_select.add_argument("--artistsort", help="Subset results by `artistsort`. Optional.")
+parser_trk_select.add_argument("--albumsort", help="Subset results by `albumsort`. Optional.")
+parser_trk_select.add_argument("--orderby", default=["albumid", "discid", "trackid"])
 
 #  3.b. DELETE statement.
 parser_trk_delete = subparser_trk.add_parser("delete",
@@ -944,6 +978,9 @@ if __name__ == '__main__':
     # -----
     for argument, value in sorted(vars(arguments).items()):
         logger.info("{0}: {1}".format(argument, value))
+    for argument in ["live", "notlive"]:
+        if getattr(arguments, argument) is None:
+            delattr(arguments, argument)
 
     # -----
     if arguments.template(arguments):

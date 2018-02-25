@@ -8,7 +8,7 @@ from logging.config import dictConfig
 
 import yaml
 
-from Applications.Database.Tables.shared import select
+from Applications.Database.Tables.shared import selectfrom
 from Applications.parsers import readtable
 from Applications.shared import LOCAL, TEMPLATE4, UTC, UTF8, dateformat, now
 
@@ -50,7 +50,7 @@ with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Reposit
 root = ET.Element("data", attrib=dict(table=arguments.table))
 se = ET.SubElement(root, "updated")
 se.text = now()
-for row in map(record._make, select(arguments.table, db=arguments.db)):
+for row in map(record._make, selectfrom(arguments.table, db=arguments.db)):
     if row.uid in repo:
         se = ET.SubElement(root, "dates")
         uid = ET.SubElement(se, "task", attrib={"uid": str(row.uid)})

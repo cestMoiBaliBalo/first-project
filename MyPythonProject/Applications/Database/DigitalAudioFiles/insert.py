@@ -43,12 +43,6 @@ FIELDNAMES = ["index",
               "titlelanguage",
               "origyear"]
 
-# -------
-# Parser.
-# -------
-parser = argparse.ArgumentParser(parents=[database_parser])
-parser.add_argument("step", type=int, nargs="+", choices=[1, 2])
-
 # ---------------
 # Main algorithm.
 # ---------------
@@ -58,6 +52,8 @@ if __name__ == "__main__":
         logging.config.dictConfig(yaml.load(fp))
     logger = logging.getLogger("Applications.Database.DigitalAudioFiles.insert")
 
+    parser = argparse.ArgumentParser(parents=[database_parser])
+    parser.add_argument("step", type=int, nargs="+", choices=[1, 2])
     arguments = parser.parse_args()
     for step in sorted(arguments.step):
 
@@ -94,4 +90,5 @@ if __name__ == "__main__":
                 with open(TAGS_JSON) as jsonfile:
                     inserted = insertfromfile(jsonfile)
             logger.debug(inserted)
+
     sys.exit(0)

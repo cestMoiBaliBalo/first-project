@@ -118,7 +118,7 @@ for item in list(zip(*[iter(tasks)] * 3)):
         else:
             for task, number, code, width in ((task, number, code, width) for (task, number, code), width in zip(item, [0, COLUMN * 2, 0])):
                 if task:
-                    menu += "{2}{0:>{1}}".format("{0:<{1}}".format("{0:>2d}. {1}".format(number, task), width), COLUMN * 3, menu)
+                    menu = "{2}{0:>{1}}".format("{0:<{1}}".format("{0:>2d}. {1}".format(number, task), width), COLUMN * 3, menu)
             y.append(menu)
             continue
 
@@ -131,6 +131,19 @@ for item in list(zip(*[iter(tasks)] * 3)):
             for task, number, code, width in ((task, number, code, width) for (task, number, code), width in zip(item, [0, 0, COLUMN])):
                 if task:
                     menu = "{2}{0:>{1}}".format("{0:<{1}}".format("{0:>2d}. {1}".format(number, task), width), COLUMN * 3, menu)
+            y.append(menu)
+            continue
+
+        # Case 6.
+        try:
+            assert [bool(item) for item in list(zip(*item))[0]] == [False, True, True]
+        except AssertionError:
+            pass
+        else:
+            for task, number, code, width in ((task, number, code, width) for (task, number, code), width in zip(item, [0, COLUMN, COLUMN])):
+                if task:
+                    menu = "{2}{0:<{1}}".format("{0:>2d}. {1}".format(number, task), width, menu)
+            menu = "{0:>{1}}".format(menu, COLUMN * 3)
             y.append(menu)
             continue
 

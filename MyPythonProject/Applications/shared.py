@@ -6,10 +6,11 @@ import os
 import re
 import subprocess
 import zipfile
+from base64 import b85decode, b85encode
 from collections import MutableMapping, OrderedDict
 from contextlib import ContextDecorator
 from datetime import datetime
-from itertools import filterfalse, repeat, tee, zip_longest
+from itertools import dropwhile, filterfalse, islice, repeat, tee, zip_longest
 from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 from string import Template
@@ -40,7 +41,7 @@ WRITE = "w"
 DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db")
 TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
 ARECA = os.path.join(os.path.expandvars("%PROGRAMFILES%"), "Areca", "areca_cl.exe")
-DFTENCODING = "ISO-8859-1"
+DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
 UTC = timezone("UTC")
 LOCAL = timezone("Europe/Paris")
@@ -56,7 +57,7 @@ UTF16 = "UTF_16LE"
 UTF16BOM = "\ufeff"
 COPYRIGHT = "\u00a9"
 DFTYEARREGEX = r"20[0-2]\d|19[6-9]\d"
-DFTMONTHREGEX = "0[1-9]|1[0-2]"
+DFTMONTHREGEX = r"0[1-9]|1[0-2]"
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
 UPCREGEX = r"\d{12,13}"
 ACCEPTEDANSWERS = ["N", "Y"]
@@ -773,9 +774,10 @@ def validdb(db):
 
 def validdiscnumber(discnumber):
     """
+    Check if string `discnumber` is a coherent disc number
 
-    :param discnumber:
-    :return:
+    :param discnumber: disc number.
+    :return: disc number converted to numeric characters.
     """
     msg = r"is not a valid disc number."
     try:
@@ -789,27 +791,27 @@ def validdiscnumber(discnumber):
 
 def validtracks(tracks):
     """
+    Check if string `tracks` is a coherent track number.
 
-    :param tracks:
-    :return:
+    :param tracks: track number.
+    :return: track number converted to numeric characters.
     """
     msg = r"is not a valid total tracks number."
     try:
         _tracks = int(tracks)
     except TypeError:
         raise ValueError('"{0}" {1}'.format(tracks, msg))
-
     if not _tracks:
         raise ValueError('"{0}" {1}'.format(tracks, msg))
-
     return _tracks
 
 
 def validalbumid(albumid):
     """
+    Check if string `albumid` is a coherent unique album ID.
 
-    :param albumid:
-    :return:
+    :param albumid: unique album ID.
+    :return: unique album ID.
     """
     rex = re.compile(r"^([A-Z])\.\1[^.]+\.$")
     selectors = [True, True]
@@ -838,9 +840,10 @@ def validalbumid(albumid):
 
 def validalbumsort(albumsort):
     """
+    Check if string `albumsort` is a coherent `albumsort` tag.
 
-    :param albumsort:
-    :return:
+    :param albumsort: `albumsort` tag.
+    :return: `albumsort` tag.
     """
     rex1 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
     rex2 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
@@ -851,18 +854,17 @@ def validalbumsort(albumsort):
         match2 = rex2.match(albumsort)
     except TypeError:
         raise ValueError('"{0}" {1}'.format(albumsort, msg))
-
     if all([not match1, not match2]):
         raise ValueError('"{0}" {1}'.format(albumsort, msg))
-
     return albumsort
 
 
 def validyear(year):
     """
+    Check if string `year` is a coherent year.
 
-    :param year:
-    :return:
+    :param year: year.
+    :return: year converted to numeric characters.
     """
     regex, msg = re.compile("^({0})$".format(DFTYEARREGEX)), r"is not a valid year."
 
@@ -885,9 +887,10 @@ def validyear(year):
 
 def validproductcode(productcode):
     """
+    Check if string `productcode` is a coherent product code.
 
-    :param productcode:
-    :return:
+    :param productcode: product code.
+    :return: product code.
     """
     regex, msg = re.compile(r"^{0}$".format(UPCREGEX)), r"is not a valid product code."
 
@@ -895,18 +898,17 @@ def validproductcode(productcode):
         productcode = str(productcode)
     except TypeError:
         raise ValueError('"{0}" {1}'.format(productcode, msg))
-
     if not regex.match(productcode):
         raise ValueError('"{0}" {1}'.format(productcode, msg))
-
     return productcode
 
 
 def validgenre(genre):
     """
+    Check if string `genre` is a coherent audio genre.
 
-    :param genre:
-    :return:
+    :param genre: audio genre.
+    :return: audio genre.
     """
     msg = r"is not a valid genre."
     try:
@@ -919,12 +921,12 @@ def validgenre(genre):
 
 def validtimestamp(ts):
     """
-    Check if string `time` is a valid Unix Epoch time.
+    Check if string `ts` is a coherent Unix time.
 
-    :param ts: string representing a coherent number of seconds since the Epoch.
-    :return: string converted to integer characters. Raise an exception if `time` doesn't represent a coherent number of seconds.
+    :param ts: Unix time.
+    :return: Unix time converted to numeric characters.
     """
-    msg = r"is not a valid Unix epoch time."
+    msg = r"is not a valid Unix time."
     try:
         ts = str(ts)
     except TypeError:
@@ -939,11 +941,12 @@ def validtimestamp(ts):
 
 def validdatetime(ts):
     """
+    Check if string `ts` is a coherent Unix time or a coherent python datetime object.
 
-    :param ts:
-    :return:
+    :param ts: Unix time or python datetime object.
+    :return: (Unix time converted to a) python datetime naive object respective to the local system time zone.
     """
-    error, msg = False, r"is not a valid timestamp."
+    error, msg = False, r"is not a valid Unix time."
     try:
         ts = int(ts)
     except (ValueError, TypeError):
@@ -1001,11 +1004,12 @@ def customfilehandler(maxbytes, backupcount, encoding=UTF8):
 
 def readable(dt, template, tz=None):
     """
+    Return a human readable (naive or aware) datetime object respective to the local system time zone.
 
-    :param dt:
-    :param template:
-    :param tz:
-    :return:
+    :param dt: datetime object. Naive or aware.
+    :param template: template to make the object human readable.
+    :param tz: datetime object original time zone.
+    :return: human readable datetime object respective to the local system time zone.
     """
     datobj = dt
     if tz:
@@ -1013,20 +1017,21 @@ def readable(dt, template, tz=None):
     return dateformat(datobj, template)
 
 
-def now():
+def now(template=TEMPLATE4):
     """
 
     :return:
     """
-    return dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), TEMPLATE4)
+    return dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), template)
 
 
 def dateformat(dt, template):
     """
-    Return a human readable date from a datetime object.
+    Return a human readable datetime aware object.
+
     :param dt: datetime object.
-    :param template: template used to return datetime oject.
-    :return: human readable date.
+    :param template: template to make the object human readable.
+    :return: human readable datetime object.
     """
     return Template(template).substitute(day=dt.strftime("%A").capitalize(),
                                          month=dt.strftime("%B").capitalize(),
@@ -1070,9 +1075,7 @@ def getrippingapplication(*, timestamp=None):
     application = {"1512082800": "dBpoweramp 16.1", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
     if not timestamp:
         timestamp = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
-    for k, v in sorted(application.items(), key=lambda i: int(i[0]), reverse=True):
-        if LOCAL.localize(datetime.fromtimestamp(timestamp)) >= LOCAL.localize(datetime.fromtimestamp(int(k))):
-            return v
+    return list(islice(dropwhile(lambda i: int(i[0]) > timestamp, sorted(application.items(), key=lambda i: int(i[0]), reverse=True)), 1))[0][1]
 
 
 def filesinfolder(*extensions, folder, excluded=None):
@@ -1242,6 +1245,14 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
     if headers:
         return [separators, out_headers, separators], out_data
     return None, out_data
+
+
+def base85_encode(strg, encoding="utf-8"):
+    return b85encode(strg.encode(encoding=encoding))
+
+
+def base85_decode(bytobj, encoding="utf-8"):
+    return b85decode(bytobj).decode(encoding=encoding)
 
 
 # ==========================

@@ -1,19 +1,22 @@
-# -*- utf-8 -*-
-import os
-import yaml
+# -*- coding: utf-8 -*-
 import logging
+import os
 from functools import partial
 from logging.config import dictConfig
-from Applications.shared import filesinfolder, IMAGES
+
+import yaml
+
+from Applications.shared import IMAGES, filesinfolder
 
 __author__ = 'Xavier ROSSET'
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 # ================
 # Initializations.
 # ================
 images = partial(filesinfolder, "jpg", folder=IMAGES, excluded=["Recover", "iPhone", "Recycle", "\$Recycle"])
-
 
 # ===============
 # Main algorithm.
@@ -27,4 +30,4 @@ if __name__ == "__main__":
 
     # --> Main algorithm.
     for image in images():
-        logger.debug(image)
+        logger.info(image)

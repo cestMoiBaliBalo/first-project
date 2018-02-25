@@ -5,7 +5,7 @@ import re
 import sqlite3
 from collections import Counter, namedtuple
 from datetime import datetime
-from itertools import chain, compress, groupby
+from itertools import chain, compress, groupby, repeat
 from operator import itemgetter
 
 from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat, getnearestmultiple, gettabs, validalbumsort, validdatetime, validdb, validdiscnumber, validgenre, validproductcode, validtracks, validyear
@@ -40,28 +40,28 @@ class InsertRippingLog(object):
             try:
                 database = validdb(database)
             except ValueError as err:
-                self.logger.debug(err)
+                self.logger.debug("Database: {0}".format(err))
                 continue
 
             # 2. Check if `origyear` is valid.
             try:
                 origyear = validyear(origyear)
             except ValueError as err:
-                self.logger.debug(err)
+                self.logger.debug("Origyear: {0}".format(err))
                 continue
 
             # 3. Check if `year` is valid.
             try:
                 year = validyear(year)
             except ValueError as err:
-                self.logger.debug(err)
+                self.logger.debug("Year: {0}".format(err))
                 continue
 
             # 4. Check if `disc` is valid.
             try:
                 disc = int(disc)
             except (ValueError, TypeError) as err:
-                self.logger.debug(err)
+                self.logger.debug("Disc: {0}".format(err))
                 continue
             if not disc:
                 self.logger.debug("Disc number must be greater than 0.")
@@ -71,7 +71,7 @@ class InsertRippingLog(object):
             try:
                 tracks = int(tracks)
             except (ValueError, TypeError) as err:
-                self.logger.debug(err)
+                self.logger.debug("Tracks: {0}".format(err))
                 continue
             if not tracks:
                 self.logger.debug("Total tracks number must be greater than 0.")
@@ -81,21 +81,21 @@ class InsertRippingLog(object):
             try:
                 genre = validgenre(genre)
             except (ValueError, TypeError) as err:
-                self.logger.debug(err)
+                self.logger.debug("Genre: {0}".format(err))
                 continue
 
             # 7. Check if `upc` is valid.
             try:
                 upc = validproductcode(upc)
             except (ValueError, TypeError) as err:
-                self.logger.debug(err)
+                self.logger.debug("Product code: {0}".format(err))
                 continue
 
             # 8. Check if `albumsort` is valid.
             try:
                 albumsort = validalbumsort(albumsort)
             except (ValueError, TypeError) as err:
-                self.logger.debug(err)
+                self.logger.debug("Albumsort: {0}".format(err))
                 continue
 
             # 9. Set `timestamp`.
@@ -104,23 +104,40 @@ class InsertRippingLog(object):
                 timestamp = now
 
             # 10. Configure tuples gathering together log details.
+            self.logger.debug(timestamp)
+            self.logger.debug(artist)
+            self.logger.debug(origyear)
+            self.logger.debug(year)
+            self.logger.debug(album)
+            self.logger.debug(disc)
+            self.logger.debug(tracks)
+            self.logger.debug(genre)
+            self.logger.debug(upc)
+            self.logger.debug(label)
+            self.logger.debug(application)
+            self.logger.debug(albumsort)
+            self.logger.debug(artistsort)
             _logs.append((database, datetime.fromtimestamp(timestamp), artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, datetime.utcnow()))
 
         if _logs:
-            _logs = dict((key, list(group)) for key, group in groupby(sorted(_logs, key=itemgetter(0)), key=itemgetter(0)))
+            self._changes, _logs = 0, dict((key, list(group)) for key, group in groupby(sorted(_logs, key=itemgetter(0)), key=itemgetter(0)))
             for key, group in _logs.items():
                 group = [item[1:] for item in group]
                 conn = sqlite3.connect(key)
-                with conn:
-                    conn.executemany(
-                            "INSERT INTO rippinglog (ripped, artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, utc_created) "
-                            "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", group)
-                    self._changes = conn.total_changes
-                    self.logger.debug("{0} records inserted.".format(self._changes))
+                try:
+                    with conn:
+                        conn.executemany(
+                                "INSERT INTO rippinglog (ripped, artist, origyear, year, album, disc, tracks, genre, upc, label, application, albumsort, artistsort, utc_created) "
+                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", group)
+                except sqlite3.IntegrityError:
+                    pass
+                finally:
+                    self._changes += conn.total_changes
+                    self.logger.debug("{0} records inserted into '{1}'.".format(conn.total_changes, key))
                     if self._changes:
                         for item in group:
                             self.logger.debug(item)
-                conn.close()
+                    conn.close()
 
     @classmethod
     def fromjson(cls, fil):
@@ -210,6 +227,7 @@ def insertfromfile(*files):
     :param files: file-object(s) where the logs are taken from.
     :return: database total changes.
     """
+    logger = logging.getLogger("{0}.insertfromfile".format(__name__))
     root = "rippinglogs"
     regex1, regex2, regex3 = re.compile(r"^<([^>]+)>$"), re.compile(r"^</([^>]+)>$"), re.compile(r"^<\?xml[^>]+>$")
     status = 0
@@ -242,6 +260,7 @@ def insertfromfile(*files):
 
         # Insert logs into database.
         status += logs.changes
+        logger.debug("{0} records inserted.".format(status))
 
     return status
 
@@ -254,7 +273,7 @@ def insertfromargs(**kwargs):
     :param kwargs: field-value pairs.
     :return: database total changes.
     """
-    return InsertRippingLog((kwargs.get("database"),
+    return InsertRippingLog((kwargs.get("db"),
                              kwargs.get("artist"),
                              kwargs.get("origyear"),
                              kwargs.get("year"),
@@ -288,14 +307,195 @@ def deletelog(*uid, db=DATABASE):
     return status
 
 
-def selectlogs(db=DATABASE, **kwargs):
+def selectlogs_fromuid(*uid, db=DATABASE):
+    """
+
+    :param uid:
+    :param db: database where `rippinglog` is stored.
+    :return:
+    """
+    for row in _selectlogs(db, uid=uid):
+        yield row
+
+
+def selectlogs_fromkeywords(db=DATABASE, **kwargs):
+    """
+
+    :param uid:
+    :param db: database where `rippinglog` is stored.
+    :return:
+    """
+    for row in _selectlogs(db, **kwargs):
+        yield row
+
+
+def selectlogs_frommonth(*month, db=DATABASE):
+    """
+
+    :param month:
+    :param db:
+    :return:
+    """
+    for row in _selectlogs(db, rippedmonth=month):
+        yield row
+
+
+def selectlogs_fromyear(*year, db=DATABASE):
+    """
+
+    :param year:
+    :param db:
+    :return:
+    """
+    for row in _selectlogs(db, rippedyear=year):
+        yield row
+
+
+def updatelog(*uid, db=DATABASE, **kwargs):
+    """
+
+    :param uid:
+    :param db:
+    :param kwargs:
+    :return:
+    """
+    logger = logging.getLogger("{0}.updatelog".format(__name__))
+    status, query, args = 0, "", []
+
+    # 1. Map validation functions to table fields.
+    functions = {"albumsort": validalbumsort,
+                 "disc": validdiscnumber,
+                 "genre": validgenre,
+                 "ripped": validdatetime,
+                 "origyear": validyear,
+                 "tracks": validtracks,
+                 "upc": validproductcode,
+                 "year": validyear}
+
+    # 2. Validate input pairs.
+    #    Change `selectors` values to accept/reject pairs:
+    #       - "1": input value is accepted. Respective field will be updated.
+    #       - "0": input value is rejected. Respective field won't be updated.
+    pairs = dict(kwargs)
+    keys = sorted(pairs.keys())
+    selectors = [1] * len(pairs)
+    for key in keys:
+        error = False
+        func = functions.get(key)
+        if func:
+            try:
+                pairs[key] = func(pairs[key])
+            except ValueError:
+                error = True
+        if error:
+            selectors[keys.index(key)] = 0
+
+    # 3. Build SQL statement.
+    pairs = {k: v for k, v in pairs.items() if k in compress(keys, selectors)}
+    for k, v in pairs.items():
+        query = "{0}{1}=?, ".format(query, k)  # album=?, albumsort=?, "
+        args.append(v)  # ["the album", "1.20170000.1"]
+
+    # 4. Run SQL statement.
+    #    Append modification date.
+    if query:
+        query = "{0}utc_modified=?, ".format(query)  # album=?, albumid=?, utc_modified=?, "
+        args.append(UTC.localize(datetime.utcnow()).replace(tzinfo=None))  # ["the album", "1.20170000.1", datetime(2017, 10, 21, 16, 30, 45, tzinfo=timezone("utc"))]
+        conn = sqlite3.connect(db)
+        try:
+            with conn:
+                conn.executemany("UPDATE rippinglog SET {0} WHERE rowid=?".format(query[:-2]), [tuple(chain(args, (rowid,))) for rowid in uid])
+        except (sqlite3.OperationalError, sqlite3.Error) as err:
+            logger.exception(err)
+        finally:
+            status = conn.total_changes
+            conn.close()
+        logger.debug("{0:>3d} record(s) updated.".format(status))
+
+    # 5. Return total changes.
+    return status
+
+
+def getartistsort(db=DATABASE):
+    """
+
+    :param db:
+    :return:
+    """
+    c = Counter([row.artistsort for row in _selectlogs(db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def getgenre(db=DATABASE):
+    """
+
+    :param db:
+    :return:
+    """
+    c = Counter([row.genre for row in _selectlogs(db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def rippedmonth(db=DATABASE):
+    c = Counter([dateformat(LOCAL.localize(row.ripped), "$Y$m") for row in _selectlogs(db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def rippedyear(db=DATABASE):
+    c = Counter([dateformat(LOCAL.localize(row.ripped), "$Y") for row in _selectlogs(db)])
+    for k, v in c.items():
+        yield k, v
+
+
+def get_uploadedtracks(db=DATABASE):
+    for file, utc_created, utc_uploaded in _gettracks(db):
+        yield file, utc_created, utc_uploaded
+
+
+def get_trackstoupload(db=DATABASE):
+    for rowid, file, utc_created in _gettracks(db, uploaded=False):
+        yield rowid, file, utc_created
+
+
+def uploadtracks(*uid, db=DATABASE):
+    return _updatetracks(db, *uid)
+
+
+def insert_tracks(*files, db=DATABASE):
+    """
+    Alimenter la table `audiostation` lors de l'extraction des pistes d'un CD audio.
+
+    :param files:
+    :param db:
+    :return:
+    """
+    logger = logging.getLogger("{0}.insert_tracks".format(__name__))
+    changes = _inserttracks(db, *files)
+    logger.debug(changes)
+    return changes
+
+
+def delete_tracks(*uid, db=DATABASE):
+    logger = logging.getLogger("{0}.delete_tracks".format(__name__))
+    changes = _deletetracks(db, *uid)
+    logger.debug(changes)
+    return changes
+
+
+# ======================================================
+# These functions mustn't be used from external scripts.
+# ======================================================
+def _selectlogs(db, **kwargs):
     """
 
     :param db: database where `rippinglog` table is stored.
     :param kwargs: additional arguments(s) to subset and/or to sort SQL statement results.
     :return:
     """
-    logger = logging.getLogger("{0}.selectlogs".format(__name__))
+    logger = logging.getLogger("{0}._selectlogs".format(__name__))
 
     #  1. Initializations.
     record = namedtuple("record", "rowid ripped artistsort albumsort artist origyear year album label genre upc application disc tracks utc_created utc_modified")
@@ -427,129 +627,56 @@ def selectlogs(db=DATABASE, **kwargs):
         yield record._make(row)
 
 
-def selectlog(*uid, db=DATABASE, **kwargs):
-    """
-
-    :param uid:
-    :param db: database where `rippinglog` is stored.
-    :param kwargs: additional arguments(s) to subset and/or to sort SQL statement results.
-    :return:
-    """
-    for row in selectlogs(db=db, uid=uid, **kwargs):
-        yield row
-
-
-def selectlogsfrommonth(*month, db=DATABASE):
-    """
-
-    :param month:
-    :param db:
-    :return:
-    """
-    record = namedtuple("record", "rowid ripped artistsort albumsort artist origyear year album label genre upc application disc tracks utc_created utc_modified")
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute("SELECT a.rowid, a.* FROM rippinglog a ORDER BY ripped DESC"):
-        logrecord(tuple(row))
-        if int(LOCAL.localize(tuple(row)[1]).strftime("%Y%m")) in month:
-            yield record._make(row)
-
-
-def updatelog(*uid, db=DATABASE, **kwargs):
-    """
-
-    :param uid:
-    :param db:
-    :param kwargs:
-    :return:
-    """
-    logger = logging.getLogger("{0}.updatelog".format(__name__))
-    status, query, args = 0, "", []
-
-    # 1. Map validation functions to table fields.
-    functions = {"albumsort": validalbumsort,
-                 "disc": validdiscnumber,
-                 "genre": validgenre,
-                 "ripped": validdatetime,
-                 "origyear": validyear,
-                 "tracks": validtracks,
-                 "upc": validproductcode,
-                 "year": validyear}
-
-    # 2. Validate input pairs.
-    #    Change `selectors` values to accept/reject pairs:
-    #       - "1": input value is accepted. Respective field will be updated.
-    #       - "0": input value is rejected. Respective field won't be updated.
-    pairs = dict(kwargs)
-    keys = sorted(pairs.keys())
-    selectors = [1] * len(pairs)
-    for key in keys:
-        error = False
-        func = functions.get(key)
-        if func:
-            try:
-                pairs[key] = func(pairs[key])
-            except ValueError:
-                error = True
-        if error:
-            selectors[keys.index(key)] = 0
-
-    # 3. Build SQL statement.
-    pairs = {k: v for k, v in pairs.items() if k in compress(keys, selectors)}
-    for k, v in pairs.items():
-        query = "{0}{1}=?, ".format(query, k)  # album=?, albumsort=?, "
-        args.append(v)  # ["the album", "1.20170000.1"]
-
-    # 4. Run SQL statement.
-    #    Append modification date.
-    if query:
-        query = "{0}utc_modified=?, ".format(query)  # album=?, albumid=?, utc_modified=?, "
-        args.append(UTC.localize(datetime.utcnow()).replace(tzinfo=None))  # ["the album", "1.20170000.1", datetime(2017, 10, 21, 16, 30, 45, tzinfo=timezone("utc"))]
+def _inserttracks(db, *files):
+    changes = 0
+    if files:
         conn = sqlite3.connect(db)
         try:
             with conn:
-                conn.executemany("UPDATE rippinglog SET {0} WHERE rowid=?".format(query[:-2]), [tuple(chain(args, (rowid,))) for rowid in uid])
-        except (sqlite3.OperationalError, sqlite3.Error) as err:
-            logger.exception(err)
-        else:
-            status = conn.total_changes
-            logger.debug("{0:>3d} record(s) updated.".format(status))
+                conn.executemany("INSERT INTO audiostation (file, utc_created) VALUES (?, ?)", zip(files, repeat(datetime.utcnow())))
+        except sqlite3.OperationalError:
+            pass
         finally:
+            changes = conn.total_changes
             conn.close()
-
-    # 5. Return total changes.
-    return status
+    return changes
 
 
-def getartistsort(db=DATABASE):
-    """
-
-    :param db:
-    :return:
-    """
-    c = Counter([row.artistsort for row in selectlogs(db=db)])
-    for k, v in c.items():
-        yield k, v
-
-
-def getgenre(db=DATABASE):
-    """
-
-    :param db:
-    :return:
-    """
-    c = Counter([row.genre for row in selectlogs(db=db)])
-    for k, v in c.items():
-        yield k, v
+def _gettracks(db, *, uploaded=True):
+    d1 = {False: "rowid, file, utc_created", True: "file, utc_created, utc_uploaded"}
+    d2 = {False: 0, True: 1}
+    statement = "SELECT {0} FROM audiostation WHERE status=? ORDER BY utc_created".format(d1[uploaded])
+    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
+    files = [(row[0], row[1], row[2]) for row in conn.execute(statement, (d2[uploaded],))]
+    conn.close()
+    for file in files:
+        yield file[0], file[1], file[2]
 
 
-def rippedmonth(db=DATABASE):
-    c = Counter([dateformat(LOCAL.localize(row.ripped), "$Y$m") for row in selectlogs(db=db)])
-    for k, v in c.items():
-        yield k, v
+def _updatetracks(db, *uid, uploaded=True):
+    changes, d = 0, {False: 0, True: 1}
+    conn = sqlite3.connect(db)
+    try:
+        with conn:
+            conn.executemany("UPDATE audiostation SET status=?, utc_uploaded=? WHERE rowid=?", zip(repeat(d[uploaded]), repeat(datetime.utcnow()), uid))
+    except sqlite3.OperationalError:
+        pass
+    finally:
+        changes = conn.total_changes
+        conn.close()
+    return changes
 
 
-def rippedyear(db=DATABASE):
-    c = {k: v for k, v in rippedmonth(db=db)}
-    c = Counter([month[:4] for month in c.keys()])
-    for k, v in c.items():
-        yield k, v
+def _deletetracks(db, *uid):
+    changes = 0
+    if uid:
+        conn = sqlite3.connect(db)
+        try:
+            with conn:
+                conn.executemany("DELETE FROM audiostation WHERE uid=?", [(rowid,) for rowid in uid])
+        except sqlite3.OperationalError:
+            pass
+        finally:
+            changes = conn.total_changes
+            conn.close()
+    return changes

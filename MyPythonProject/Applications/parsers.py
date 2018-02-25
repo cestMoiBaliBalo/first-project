@@ -87,7 +87,7 @@ improvedfoldercontent.add_argument("-e", "--ext", dest="extensions", nargs="*")
 database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
 group = database_parser.add_mutually_exclusive_group()
 group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path to database storing digital albums.", type=database, dest="db")
-group.add_argument("--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
+group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
 
 #     =========
 #  7. PARSER 7.
@@ -108,3 +108,49 @@ subset_parser = argparse.ArgumentParser(parents=[database_parser], argument_defa
 subset_parser.add_argument("--artistsort", nargs="*", help="Subset digital albums by artistsort.")
 subset_parser.add_argument("--albumsort", nargs="*", help="Subset digital albums by albumsort.")
 subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by artist.")
+
+#     ==========
+# 10. PARSER 10.
+#     ==========
+tasks_parser = argparse.ArgumentParser()
+tasks_parser.add_argument("-t", "--table", default="tasks", choices=["tasks"])
+subparser = tasks_parser.add_subparsers(dest="action")
+parser_select = subparser.add_parser("select", argument_default=argparse.SUPPRESS, parents=[loglevel_parser, database_parser])
+parser_select.add_argument("taskid", type=int)
+parser_select.add_argument("--days", default=10, type=int)
+parser_select.add_argument("--dontcreate", action="store_true")
+parser_select.add_argument("--forced", action="store_true")
+parser_update = subparser.add_parser("update", argument_default=argparse.SUPPRESS, parents=[loglevel_parser, database_parser])
+parser_update.add_argument("taskid", type=int)
+
+#     ==========
+# 11. PARSER 11.
+#     ==========
+
+# --------------
+# Parent parser.
+# --------------
+images_pparser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
+images_pparser.add_argument("files", nargs="+", help="Source directories or images")
+images_pparser.add_argument("--ext", nargs="*", dest="extensions", default=["jpg"])
+images_pparser.add_argument("--test", action="store_true")
+
+# -------------
+# Child parser.
+# -------------
+images_cparser = argparse.ArgumentParser()
+subparser = images_cparser.add_subparsers(dest="script")
+
+# --> Rename images.
+images_rename = subparser.add_parser("rename", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+images_rename.add_argument("--index", default="1", type=int, help="Starting index")
+
+# --> Write tags.
+images_write = subparser.add_parser("write", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+images_write.add_argument("--city")
+images_write.add_argument("--location")
+images_write.add_argument("--keywords", nargs="*")
+images_write.add_argument("--copyright", action="store_true")
+
+# --> Read tags.
+images_read = subparser.add_parser("read", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])

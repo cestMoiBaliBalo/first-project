@@ -8,7 +8,7 @@ from itertools import repeat
 
 import yaml
 
-from ..parsers import database_parser, epochconverter, foldercontent, improvedfoldercontent, loglevel_parser, zipfile
+from ..parsers import database_parser, epochconverter, foldercontent, improvedfoldercontent, loglevel_parser, tasks_parser, zipfile
 from ..shared import validalbumsort, validgenre, validyear
 
 __author__ = 'Xavier ROSSET'
@@ -386,4 +386,45 @@ class Test10(unittest.TestCase):
 
     def test_02second(self):
         arguments = loglevel_parser.parse_args(["--loglevel", "DEBUG"])
+        self.assertEqual(arguments.loglevel, "DEBUG")
+
+
+class Test11(unittest.TestCase):
+    """
+
+    """
+
+    def test_01first(self):
+        arguments = tasks_parser.parse_args(["select", "123456789"])
+        self.assertEqual(arguments.action, "select")
+        self.assertEqual(arguments.table, "tasks")
+        self.assertEqual(arguments.taskid, 123456789)
+        self.assertEqual(arguments.days, 10)
+        # self.assertFalse(arguments.dontcreate)
+        self.assertEqual(arguments.loglevel, "INFO")
+
+    def test_02second(self):
+        arguments = tasks_parser.parse_args(["update", "123456789"])
+        self.assertEqual(arguments.action, "update")
+        self.assertEqual(arguments.table, "tasks")
+        self.assertEqual(arguments.taskid, 123456789)
+        self.assertEqual(arguments.loglevel, "INFO")
+
+    def test_03third(self):
+        arguments = tasks_parser.parse_args(["select", "123456789", "--days", "20", "--loglevel", "DEBUG", "--test"])
+        self.assertEqual(arguments.action, "select")
+        self.assertEqual(arguments.table, "tasks")
+        self.assertEqual(arguments.taskid, 123456789)
+        self.assertEqual(arguments.days, 20)
+        # self.assertFalse(arguments.dontcreate)
+        self.assertEqual(arguments.loglevel, "DEBUG")
+
+    @unittest.skip
+    def test_04fourth(self):
+        arguments = tasks_parser.parse_args(["--table", "sometable", "select", "123456789", "--days", "20", "--loglevel", "DEBUG", "--test"])
+        self.assertEqual(arguments.action, "select")
+        self.assertEqual(arguments.table, "sometable")
+        self.assertEqual(arguments.taskid, 123456789)
+        self.assertEqual(arguments.days, 20)
+        # self.assertFalse(arguments.dontcreate)
         self.assertEqual(arguments.loglevel, "DEBUG")
