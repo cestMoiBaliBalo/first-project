@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Interface.py: Command line application for tables maintenance.
+tables.py: Command line application for tables maintenance.
 
 Can be used as follow:
 
@@ -39,19 +39,13 @@ from Applications.Database.AudioCD.shared import deletelog, insertfromargs, inse
 from Applications.Database.DigitalAudioFiles.shared import deletealbum, deletealbumheader, deletetrack, getalbumdetail, getalbumheader, getalbumid, getrowid, insertfromfile as insertalbumsfromfile, \
     updatealbum, updatetrack
 from Applications.parsers import database_parser, loglevel_parser
-from Applications.shared import DATABASE, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, LOCALMONTHS, LocalParser, StringFormatter, TEMPLATE4, TEMPLATE6, TemplatingEnvironment, UTC, dateformat, grouper, \
+from Applications.shared import DATABASE, DFTMONTHREGEX, DFTYEARREGEX, GENRES, LOCAL, LOCALMONTHS, LocalParser, StringFormatter, TEMPLATE4, TEMPLATE6, TemplatingEnvironment, UTC, dateformat, grouper, \
     prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdiscnumber, validproductcode, validtimestamp, validtracks, validyear
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-# ==========
-# Constants.
-# ==========
-GENRES = ["Rock", "Hard Rock", "Progressive Rock", "Alternative Rock", "Black Metal", "Doom Metal", "Heavy Metal", "Pop", "French Pop"]
-
 
 # ========
 # Classes.
@@ -344,11 +338,11 @@ def validmonth(month):
 
     match = rex1.match(month)
     if match:
-        return int(dateformat(LOCAL.localize(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True))), "$Y$m"))
+        return int(dateformat(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True)), fromtz=LOCAL, template="$Y$m"))
     match = rex2.match(month)
     if match:
         if match.group(1) in LOCALMONTHS:
-            return int(dateformat(LOCAL.localize(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True))), "$Y$m"))
+            return int(dateformat(parse(month, default=datetime.utcnow(), parserinfo=LocalParser(dayfirst=True)), fromtz=LOCAL, template="$Y$m"))
     raise argparse.ArgumentTypeError('"{0}" is not a valid month format'.format(month))
 
 
@@ -979,8 +973,11 @@ if __name__ == '__main__':
     for argument, value in sorted(vars(arguments).items()):
         logger.info("{0}: {1}".format(argument, value))
     for argument in ["live", "notlive"]:
-        if getattr(arguments, argument) is None:
-            delattr(arguments, argument)
+        try:
+            if getattr(arguments, argument) is None:
+                delattr(arguments, argument)
+        except AttributeError:
+            pass
 
     # -----
     if arguments.template(arguments):

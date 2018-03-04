@@ -99,7 +99,7 @@ IF ERRORLEVEL 31 (
 
 
 IF ERRORLEVEL 30 (
-    CALL "C:\Users\Xavier\Downloads\DOS snippets\new5.cmd"
+    CALL "%_PYTHONPROJECT%\AudioCD\rippinglog_update.cmd"
     GOTO MENU
 )
 
@@ -158,10 +158,10 @@ REM ----------------------------------------
 IF ERRORLEVEL 24 (
 
 :MENU24
-    SET _tempvar=
     SET _answer=
+    SET _clear=0
 
-    REM 1. Display available drives.
+    REM 1. Set backup destination.
     REM    %TEMP% is available for test purposes.
     CALL :HEADER4
     ECHO:
@@ -177,7 +177,7 @@ IF ERRORLEVEL 24 (
         IF !_num! GTR 9 ECHO: !_num!. !_letter!
     )
     SET /A "_num+=1"
-    SET _elem[!_num!]=%TEMP%\
+    SET _elem[!_num!]=%TEMP%\PersonalDocuments\
     IF !_num! LEQ 9 ECHO:  !_num!. System temporary folder
     IF !_num! GTR 9 ECHO: !_num!. System temporary folder
     ECHO:
@@ -185,27 +185,64 @@ IF ERRORLEVEL 24 (
     SET /P _choice=Please choose a drive or press ENTER to quit: || GOTO FIN24
 
     REM 2. %_choice% must be an integer number.
-    FOR /F "tokens=* delims=0123456789" %%A IN ("%_choice%") DO SET _tempvar=%%A
+    SET _tempvar=
+    FOR /F "tokens=* delims=0123456789" %%A IN ("!_choice!") DO SET _tempvar=%%A
     IF DEFINED _tempvar GOTO MENU24
 
     REM 3. %_choice% must be lower or equal than the number of available drives.
-    IF !_choice! GTR !_num! GOTO MENU24
+    SET _ok=1
+    IF !_choice! LSS 1 SET _ok=0
+    IF !_choice! GTR !_num! SET _ok=0
+    IF !_ok! EQU 0 GOTO MENU24
 
-    REM 4. Grab drive letter once %_choice% is checked as valid.
+    REM 4. Grab backup destination once %_choice% is checked as valid.
     FOR %%C IN (!_choice!) DO SET _drive=!_elem[%%C]!
 
-    REM 5. Convert drive letter into a valid path.
+    REM 5. Convert backup destination into a valid path.
     FOR %%D IN (!_drive!) DO SET "_drive=%%~fD"
 
-    REM 6. Confirm or abort backup.
+    REM 6. Set backup type.
+:ARCHIVE_TYPE
     CALL :HEADER4
+    ECHO:
+    ECHO:
+    ECHO: Backup type:
+    ECHO:
+    ECHO: 1. Differential backup (default^)
+    ECHO: 2. Full backup
+    ECHO:
+    ECHO:
+    SET /P _backuptype=Please choose backup type: || SET _backuptype=1
+    SET _tempvar=
+    SET _ok=1
+    FOR /F "tokens=* delims=12" %%A IN ("!_backuptype!") DO SET _tempvar=%%A
+    IF DEFINED _tempvar GOTO ARCHIVE_TYPE
+    IF !_backuptype! LSS 1 SET _ok=0
+    IF !_backuptype! GTR 2 SET _ok=0
+    IF !_ok! EQU 0 GOTO ARCHIVE_TYPE
+
+    REM 7. Confirm or abort backup.
+    CALL :HEADER4
+    ECHO:
+    ECHO:
     SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy important personal files to your local SD Memory Card." _answer
     IF [!_answer!] EQU [N] GOTO FIN24
-
-    REM 7. Backup every single files listed into "%_COMPUTING%\SDCard.txt".
-    IF EXIST %_tobearchived% DEL %_tobearchived%
     CLS
+
+    REM 8. Extract content of 7-Zip archive.
+    IF !_backuptype! EQU 1 (
+        IF EXIST "!_drive!Documents.7z" (
+            FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO SET _password=%%~I
+            PUSHD !_drive!
+            "C:\Program Files\7-Zip\7z.exe" x -y -p"!_password!" "Documents.7z"
+            IF !ERRORLEVEL! EQU 0 SET _clear=1
+            POPD
+        )
+    )
+
+    REM 9. Backup every single files listed into "%_COMPUTING%\SDCard.txt".
+    IF EXIST %_tobearchived% DEL %_tobearchived%
     SET /A "_first=1"
     FOR /F "usebackq tokens=1" %%F IN ("%_sdcard%") DO (
         SET _switch=/CE
@@ -218,8 +255,18 @@ IF ERRORLEVEL 24 (
     ECHO:
     ECHO:
 
-    REM 8. Backup important personal files.
-    XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "!_drive!Administratif\" /CLONE /Z0 /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
+    REM 10. Backup PyCharm configuration.
+    XXCOPY /CE "%USERPROFILE%\.PyCharmCE*\config\*.jar" "!_drive!" /CLONE /Z0 /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
+    IF !ERRORLEVEL! EQU 0 (
+        FOR /F "usebackq delims=\ tokens=1-3,*" %%I IN ("%_copied%") DO (
+            ECHO %%~L >> "%_tobearchived%"
+        )
+    )
+    ECHO:
+    ECHO:
+
+    REM 11. Backup important personal files.
+    XXCOPY /CE "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "!_drive!Administratif\" /CLONE /Z0 /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
     IF !ERRORLEVEL! EQU 0 (
         FOR /F "usebackq delims=\ tokens=1-4,*" %%I IN ("%_copied%") DO (
             ECHO %%~M >> "%_tobearchived%"
@@ -228,7 +275,7 @@ IF ERRORLEVEL 24 (
     ECHO:
     ECHO:
 
-    REM 9. Backup computing projects.
+    REM 12. Backup computing projects.
     XXCOPY /CE "%_COMPUTING%\" "!_drive!Computing\" /EX:"%_exclusions1%" /CLONE /Z0 /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
     IF !ERRORLEVEL! EQU 0 (
         FOR /F "usebackq delims=\ tokens=1,*" %%I IN ("%_copied%") DO (
@@ -238,15 +285,16 @@ IF ERRORLEVEL 24 (
     ECHO:
     ECHO:
 
-    REM 9. Create/Update 7-Zip archive.
-    FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO SET _password=%%~I
+    REM 13. Create/Update 7-Zip archive.
     IF EXIST %_tobearchived% (
-        SET _exitcode=
-        CALL :ARCHIVE "a" "7z" "!_drive!Documents" "!_password!" "WIN" "!_drive!" _exitcode "%_tobearchived%"
-        IF !_exitcode! EQU 0 (
-            IF ["!_drive!"] NEQ ["%TEMP%\"] XXCOPY "!_drive!" /RS /S /Y /X:*.7z /Fo:%_removed% /FM:L /oA:%_XXCOPYLOG%
-        )
+        FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO SET _password=%%~I
+        SET _clear=0
+        CALL "%_COMPUTING%\shared.cmd" "ARCHIVE" "a" "7z" "!_drive!Documents" "!_password!" "WIN" "!_drive!" "%_tobearchived%"
+        IF !ERRORLEVEL! EQU 0 SET _clear=1
     )
+
+    REM 14. Remove archived files.
+    IF !_clear! EQU 1 XXCOPY /EC "!_drive!" /RS /S /H /R /Y /PD0 /X:*.7z /Fo:%_removed% /FM:L /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -370,7 +418,7 @@ IF ERRORLEVEL 15 (
     CLS
     ECHO:
     ECHO:
-    python %_PYTHONPROJECT%\AudioCD\Interface.py rippinglog select
+    python %_PYTHONPROJECT%\Tasks\tables.py rippinglog select
     ECHO:
     PAUSE
     GOTO MENU
@@ -405,7 +453,17 @@ IF ERRORLEVEL 12 (
     CLS
     ECHO:
     ECHO:
-    python %_PYTHONPROJECT%\AudioCD\Interface.py tasks select
+    python %_PYTHONPROJECT%\Tasks\tables.py tasks select
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
+
+
+IF ERRORLEVEL 10 (
+    CLS
+    CALL :FOLDERCONTENT "G:\Music\Lossy"
+    ECHO:
     ECHO:
     PAUSE
     GOTO MENU
@@ -527,7 +585,6 @@ REM =========================================================
 
 :P5
 SET _tempvar=
-SET _m4a=0
 
 REM A. Display available drives.
 CALL :HEADER3 %_islossless%
@@ -557,7 +614,10 @@ FOR /F "tokens=* delims=0123456789" %%A IN ("%_choice%") DO SET _tempvar=%%A
 IF DEFINED _tempvar GOTO P5
 
 REM C. %_choice% must be lower or equal than the number of available drives.
-IF %_choice% GTR %_num% GOTO P5
+SET _ok=1
+IF %_choice% LSS 1 SET _ok=0
+IF %_choice% GTR %_num% SET _ok=0
+IF %_ok% EQU 0 GOTO P5
 
 REM D. Grab drive letter once %_choice% is checked as valid.
 FOR %%C IN (%_choice%) DO SET _drive=!_elem[%%C]!
@@ -566,6 +626,7 @@ REM E. Convert drive letter into a valid path.
 FOR %%D IN (%_drive%) DO SET "_drive=%%~fD"
 
 REM F. Include MPEG-4 audio files?
+SET _m4a=0
 IF %_islossy% (
     CALL :HEADER3 %_islossless%
     SET _answer=
@@ -762,7 +823,10 @@ FOR /F "tokens=* delims=0123456789" %%A IN ("%_choice%") DO SET _tempvar=%%A
 IF DEFINED _tempvar GOTO P1
 
 REM 2. %_choice% must be lower or equal than the number of available letters.
-IF %_choice% GTR %_num% GOTO P1
+SET _ok=1
+IF %_choice% LSS 1 SET _ok=0
+IF %_choice% GTR %_num% SET _ok=0
+IF %_ok% EQU 0 GOTO P1
 
 REM 3. Grab folder once %_choice% is checked as valid.
 FOR %%C IN (%_choice%) DO SET _key=!_elem[%%C]!
@@ -801,7 +865,10 @@ FOR /F "tokens=* delims=0123456789" %%A IN ("%_choice%") DO SET _tempvar=%%A
 IF DEFINED _tempvar GOTO P2
 
 REM 2. %_choice% must be lower or equal than the number of available letters.
-IF %_choice% GTR %_num% GOTO P2
+IF %_choice% GTR %_num% GOTO P2SET _ok=1
+IF %_choice% LSS 1 SET _ok=0
+IF %_choice% GTR %_num% SET _ok=0
+IF %_ok% EQU 0 GOTO P2
 
 REM 3. Grab folder once %_choice% is checked as valid.
 FOR %%C IN (%_choice%) DO SET _key=!_elem[%%C]!
@@ -983,7 +1050,7 @@ REM    Facultative.
 CALL:HEADER1 %_choice%
 ECHO:
 ECHO:
-CHOICE /C YN /T 20 /N /d N /m "Would you like to set copyright? Press [Y] for Yes or [N] for No."
+CHOICE /C YN /T 20 /N /d N /M "Would you like to set copyright? Press [Y] for Yes or [N] for No."
 IF %ERRORLEVEL% EQU 1 (
     SET _command=!_command!--copyright
     SET /A "_run=1"
@@ -1014,6 +1081,7 @@ REM F. Starting index for rename mode.
 REM    -------------------------------
 :INDEX
 SET _tempvar=
+SET _ok=1
 CALL:HEADER1 %_choice%
 ECHO:
 ECHO:
@@ -1021,7 +1089,8 @@ SET /P _index=Please enter starting index : || GOTO COMMAND
 FOR /F "usebackq delims=|" %%I IN ('%_index%') DO SET _index=%%~I
 FOR /F "usebackq delims=0123456789 tokens=*" %%I IN ('%_index%') DO SET _tempvar=%%I
 IF DEFINED _tempvar GOTO INDEX
-IF %_index% EQU 0 GOTO INDEX
+IF %_index% EQU 0 SET _ok=0
+IF %_ok% EQU 0 GOTO INDEX
 SET _command=!_command!--index "%_index%"
 SET /A "_run=1"
 GOTO COMMAND
@@ -1040,7 +1109,7 @@ IF DEFINED _command (
         ECHO:
         CALL:FUNCTION1 %_choice% _command
         SET _command=python script.py !_command!
-        CHOICE /m "The following command will be run: !_command!. Do you agree?"
+        CHOICE /M "The following command will be run: !_command!. Do you agree?"
         IF ERRORLEVEL 2 GOTO END_COMMAND
         CLS
         PUSHD %_PYTHONPROJECT%
@@ -1141,85 +1210,119 @@ EXIT /B 0
 SET %5=Y
 ECHO:
 ECHO:
-CHOICE /C %~1 /T %~2 /N /d %~3 /m "%~4 Press [Y] for Yes or [N] for No."
+CHOICE /C %~1 /T %~2 /N /d %~3 /M "%~4 Press [Y] for Yes or [N] for No."
 IF ERRORLEVEL 2 SET %5=N
 EXIT /B 0
 
 
-:ARCHIVE
-REM     %1 : archive command. Add (default) or Update.
-REM     %2 : archive type. 7z (default) or zip.
-REM     %3 : archive name.
-REM     %4 : password. Facultative.
-REM     %5 : files list encoding. UTF-8 (default) or WIN.
-REM     %6 : current directory. Facultative.
-REM     %7 : 7-Zip exit code.
-REM     %8 : files list. Mandatory. From 1 to N.
-SETLOCAL ENABLEDELAYEDEXPANSION
-SET _currdir=
-SET /A "_run=0"
+rem :ARCHIVE
+rem REM     %1 : archive command. Add (default) or Update.
+rem REM     %2 : archive type. 7z (default) or zip.
+rem REM     %3 : archive name.
+rem REM     %4 : password. Facultative.
+rem REM     %5 : files list encoding. UTF-8 (default) or WIN.
+rem REM     %6 : current directory. Facultative.
+rem REM     %7 : 7-Zip exit code.
+rem REM     %8 : files list. Mandatory. From 1 to N.
+rem SETLOCAL ENABLEDELAYEDEXPANSION
+rem SET _currdir=
+rem SET /A "_run=0"
 
-REM 1. Initialize command.
-IF ["%~1"] EQU [""] SET _command=a -y
-IF ["%~1"] NEQ [""] SET _command=%~1 -y
+rem REM 1. Initialize command.
+rem IF ["%~1"] EQU [""] SET _command=a -y
+rem IF ["%~1"] NEQ [""] SET _command=%~1 -y
 
-REM 2. Append archive type if defined.
-IF ["%~2"] EQU [""] SET _command=%_command% -t7z
-IF ["%~2"] NEQ [""] SET _command=%_command% -t%~2
+rem REM 2. Append archive type if defined.
+rem IF ["%~2"] EQU [""] SET _command=%_command% -t7z
+rem IF ["%~2"] NEQ [""] SET _command=%_command% -t%~2
 
-REM 3. Append password if defined.
-IF ["%~4"] NEQ [""] SET _command=%_command% -p"%~4"
+rem REM 3. Append password if defined.
+rem IF ["%~4"] NEQ [""] SET _command=%_command% -p"%~4"
 
-REM 4. Append files list encoding if defined.
-IF ["%~5"] EQU [""] SET _command=%_command% -scsUTF-8
-IF ["%~5"] NEQ [""] SET _command=%_command% -scs%~5
+rem REM 4. Append files list encoding if defined.
+rem IF ["%~5"] EQU [""] SET _command=%_command% -scsUTF-8
+rem IF ["%~5"] NEQ [""] SET _command=%_command% -scs%~5
 
-REM 5. Append archive name.
-FOR %%I IN ("%~3") DO (
-    IF ["%~2"] EQU [""] SET _command=%_command% "%%~nI.7z"
-    IF ["%~2"] NEQ [""] SET _command=%_command% "%%~nI.%~2"
+rem REM 5. Append archive name.
+rem FOR %%I IN ("%~3") DO (
+rem     IF ["%~2"] EQU [""] SET _command=%_command% "%%~nI.7z"
+rem     IF ["%~2"] NEQ [""] SET _command=%_command% "%%~nI.%~2"
+rem )
+
+rem REM 6. Get working directory.
+rem IF ["%~6"] EQU [""] FOR /F "usebackq" %%I IN (`CD`) DO SET _currdir=%%I
+rem IF ["%~6"] NEQ [""] SET _currdir=%~6
+rem IF NOT EXIST "%_currdir%" (
+rem     ENDLOCAL
+rem     SET %7=100
+rem     GOTO FIN_ARCHIVE
+rem )
+
+rem REM 6. Append files list(s).
+rem :LISTS
+rem SET _list=%~8
+rem IF NOT DEFINED _list GOTO FIN_LISTS
+rem IF DEFINED _list (
+rem     SET _command=%_command% @"%_list%"
+rem     SET /A "_run=1"
+rem )
+rem SHIFT /8
+rem GOTO LISTS
+
+rem REM 7. Run 7-Zip command.
+rem :FIN_LISTS
+rem (
+rem     IF %_run% EQU 1 (
+rem         SET _question=The following command will be run: %_command%. Would you like to continue?
+rem         SET _answer=
+rem         REM CALL :QUESTION "YN" "20" "Y" "!_question!" _answer
+rem         REM IF ["!_answer!"] EQU ["Y"] (
+rem             PUSHD "%_currdir%"
+rem             "C:\Program Files\7-Zip\7z.exe" %_command%
+rem             ENDLOCAL
+rem             SET %7=!ERRORLEVEL!
+rem             POPD
+rem             GOTO FIN_ARCHIVE
+rem         REM )
+rem     )
+rem     ENDLOCAL
+rem     SET %7=100
+rem     GOTO FIN_ARCHIVE
+rem )
+
+rem :FIN_ARCHIVE
+rem EXIT /B 0
+
+
+:FOLDERCONTENT
+SETLOCAL
+
+SET /A "_num=0"
+:EXCLUSIONS
+SET _excl=%~2
+IF NOT DEFINED _excl GOTO FIN_EXCLUSIONS
+IF DEFINED _excl SET (
+    SET /A "_num+=1"
+    SET _elem[!_num!]=.%_excl%
+    SHIFT /2
+    GOTO EXCLUSIONS
 )
+:FIN_EXCLUSIONS
 
-REM 6. Get working directory.
-IF ["%~6"] EQU [""] FOR /F "usebackq" %%I IN (`CD`) DO SET _currdir=%%I
-IF ["%~6"] NEQ [""] SET _currdir=%~6
-IF NOT EXIST "%_currdir%" (
-    ENDLOCAL
-    SET %7=100
-    GOTO FIN_ARCHIVE
-)
+DEL "%TEMP%\titi.txt" 2> nul
 
-REM 6. Append files list(s).
-:LISTS
-SET _list=%~8
-IF NOT DEFINED _list GOTO FIN_LISTS
-IF DEFINED _list (
-    SET _command=%_command% @"%_list%"
-    SET /A "_run=1"
-)
-SHIFT /8
-GOTO LISTS
-
-REM 7. Run 7-Zip command.
-:FIN_LISTS
-(
-    IF %_run% EQU 1 (
-        SET _question=The following command will be run: %_command%. Would you like to continue?
-        SET _answer=
-        REM CALL :QUESTION "YN" "20" "Y" "!_question!" _answer
-        REM IF ["!_answer!"] EQU ["Y"] (
-            PUSHD "%_currdir%"
-            "C:\Program Files\7-Zip\7z.exe" %_command%
-            ENDLOCAL
-            SET %7=!ERRORLEVEL!
-            POPD
-            GOTO FIN_ARCHIVE
-        REM )
+PUSHD "%~1"
+FOR /R %%I IN ("*") DO (
+    SET /A "_run=0"
+    IF %_num% GTR 0 FOR /L %%X IN (1, 1, %_num%) DO IF ["%%~xI"] EQU ["!_elem[%%X]!"] SET /A "_run=1"
+    IF %_num% EQU 0 SET /A "_run=1"
+    IF !_run! EQU 1 (
+        ECHO %%~I;%%~zI Ko;%%~aI
+        ECHO %%~I;%%~zI Ko;%%~aI >> "%TEMP%\titi.txt"
     )
-    ENDLOCAL
-    SET %7=100
-    GOTO FIN_ARCHIVE
 )
+POPD
 
-:FIN_ARCHIVE
+ENDLOCAL
 EXIT /B 0
+

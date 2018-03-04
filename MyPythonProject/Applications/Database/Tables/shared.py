@@ -239,8 +239,8 @@ if __name__ == "__main__":
 
     if arguments.action == "select":
         if getattr(arguments, "forced", False):
-            sys.exit(1)
-        d = {False: 0, True: 1}
+            sys.exit(0)
+        d = {False: 1, True: 0}
         sys.exit(d[isdeltareached(arguments.taskid, arguments.table, db=arguments.db, days=arguments.days, create=not getattr(arguments, "dontcreate", False))])
 
     elif arguments.action == "update":

@@ -21,6 +21,7 @@ SET _areca=C:/Program Files/Areca/areca_cl.exe
 SET _lossless=G:\Music\Lossless
 SET _lossy=G:\Music\Lossy
 SET _videos=%USERPROFILE%\videos
+SET _sdcard=%_COMPUTING%\Resources\SDCard-content.txt
 SET _exclusions1=G:\Computing\Resources\exclusions1.txt
 
 
@@ -70,31 +71,34 @@ REM     /Y    Suppresses the prompt prior to each file-delete.
 REM     /ED   Preserves the directory even if it becomes empty.
 REM     /ED1  Preserves 1 level of empty directories. All subdirectories under %TEMP% are removed.
 :STEP1
-XXCOPY %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /X:*.lst /oA:%_XXCOPYLOG%
+XXCOPY %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /oA:%_XXCOPYLOG%
 XXCOPY C:\Users\Xavier\AppData\Local\*.txt /RS /DB#1 /R /H /Y /PD0 /ED /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
 
-REM     ---------------------------------------------------------
-REM  5. Backup "sandboxie.ini" and others single important files.
-REM     ---------------------------------------------------------
+REM     ------------------------------
+REM  4. Backup single important files.
+REM     ------------------------------
 REM     /Y:  suppresses prompt when overwriting existing files.
 REM     /BI: backs up incrementally. Different, by time/size, files only.
 :STEP3
 IF EXIST "y:" (
-    XXCOPY "%WINDIR%\sandboxie.ini" "y:\" /KS /Y /BI /FF
-    XXCOPY "%_MYDOCUMENTS%\comptes.gnucash" "y:\" /KS /Y /BI /FF
-    XXCOPY "%_MYDOCUMENTS%\comptes.xlsx" "y:\" /KS /Y /BI /FF
-    XXCOPY "%_MYDOCUMENTS%\Database.kdbx" "y:\" /KS /Y /BI /FF
-    XXCOPY "%_COMPUTING%\Resources\database.db" "y:\" /KS /Y /BI /FF
+    SET "_first=1"
+    FOR /F "usebackq tokens=1" %%F IN ("%_sdcard%") DO (
+        SET _switch=/CE
+        IF !_first! EQU 1 SET _switch=/EC
+        SET /A "_first=0"
+        CALL SET _file=%%~F
+        XXCOPY !_switch! "!_file!" "y:\" /KS /Y /BI /FF /oA:%_XXCOPYLOG%
+    )
 )
 SHIFT
 GOTO MAIN
 
 
 REM     -----------------------
-REM  6. Remove Areca log files.
+REM  5. Remove Areca log files.
 REM     -----------------------
 REM     /DB#14: removes files older than or equal to 14 days.
 :STEP4
@@ -104,7 +108,7 @@ GOTO MAIN
 
 
 REM     ------------------------------
-REM  8. Backup "G:\Computing" content.
+REM  6. Backup "G:\Computing" content.
 REM     ------------------------------
 REM     /DB#14: removes files older than or equal to 14 days.
 REM     /IA   : copies file(s) only if destination directory doesn't exist.
@@ -116,7 +120,7 @@ GOTO MAIN
 
 
 REM     -------------------------------------------------------------------------
-REM  9. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
+REM  7. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
 REM     -------------------------------------------------------------------------
 REM     Extra files are deleted.
 :STEP7
@@ -125,9 +129,9 @@ SHIFT
 GOTO MAIN
 
 
-REM     --------------------
-REM 10. Clone PDF documents.
-REM     --------------------
+REM    --------------------
+REM 8. Clone PDF documents.
+REM    --------------------
 :STEP9
 IF EXIST "z:\Z123456789" XXCOPY "%_MYDOCUMENTS%\Administratif\*\*.pdf" "z:\Z123456789\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
 IF EXIST "%_CLOUDSTATION%\Documents\Administratif" XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "%_CLOUDSTATION%\Documents\Administratif\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -140,9 +144,9 @@ SHIFT
 GOTO MAIN
 
 
-REM     -----------------
-REM 11. Clone album arts.
-REM     -----------------
+REM    -----------------
+REM 9. Clone album arts.
+REM    -----------------
 :STEP10
 IF EXIST "z:\Z123456790" XXCOPY "%_MYDOCUMENTS%\Album Art\*\*.jpg" "z:\Z123456790\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
@@ -150,7 +154,7 @@ GOTO MAIN
 
 
 REM     ---------------------------
-REM 12. Clone MP3Tag configuration.
+REM 10. Clone MP3Tag configuration.
 REM     ---------------------------
 :STEP11
 IF EXIST "z:\Z123456791" XXCOPY "%APPDATA%\MP3Tag\" "z:\Z123456791\" /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -159,7 +163,7 @@ GOTO MAIN
 
 
 REM     -----------------
-REM 13. Clone MP4 videos.
+REM 11. Clone MP4 videos.
 REM     -----------------
 :STEP12
 IF EXIST "z:\Z123456792" XXCOPY "%_CLOUDSTATION%\Vidéos\*.mp4" "z:\Z123456792\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -168,10 +172,15 @@ GOTO MAIN
 
 
 REM     -------------------------------
-REM 14. Delete GNUCash sandbox content.
+REM 12. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
-python G:\Computing\MyPythonProject\Tasks\Task01.py
+SET _taskid=123456798
+python -m Applications.Database.Tables.shared select %_taskid%
+IF %ERRORLEVEL% EQU 0 (
+    "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent
+    python -m Applications.Database.Tables.shared update %_taskid%
+)
 SHIFT
 GOTO MAIN
 
@@ -197,7 +206,7 @@ REM     ------------------------------------------------
 
 
 REM     -----------------------------------------------
-REM 16. Copy audio FLAC files to "\\Diskstation\music".
+REM 13. Copy audio FLAC files to "\\Diskstation\music".
 REM     -----------------------------------------------
 :STEP20
 XXCOPY "F:\%~2\?*\2\%~3\*\*.flac" "\\Diskstation\music\%~2\" /KS /BI /FF /I /Y /oA:%_XXCOPYLOG%
@@ -209,18 +218,19 @@ GOTO MAIN
 
 
 REM     -----------------
-REM 19. Backup documents.
+REM 14. Backup documents.
 REM     -----------------
+REM Incremental backup.
+REM Target Group : "workspace.documents".
+REM Target : "Documents (USB Drive)".
 :STEP18
 IF EXIST "y:" (
-    REM Incremental backup.
-    REM Target Group : "workspace.documents".
-    REM Target : "Documents (USB Drive)".
+    SET _taskid=123456802
     "%_areca%" backup -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
-    python -m Applications.Database.Tables.shared select 123456802 --days 20
-    IF ERRORLEVEL 1 (
+    python -m Applications.Database.Tables.shared select !_taskid! --days 20
+    IF !ERRORLEVEL! EQU 0 (
         "%_areca%" merge -c -k -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg" -from 0 -to 0
-        python -m Applications.Database.Tables.shared update 123456802
+        python -m Applications.Database.Tables.shared update !_taskid!
     )
 )
 IF [%2] EQU [] (
@@ -233,14 +243,15 @@ GOTO MAIN
 
 
 REM     ----------------------------------
-REM 19. Move videos to local CloudStation.
+REM 15. Move videos to local CloudStation.
 REM     ----------------------------------
 :STEP19
-python -m Applications.Database.Tables.shared select 123456801 --days 5
-IF ERRORLEVEL 1 (
-    python G:\Computing\MyPythonProject\Tasks\Task04.py
-    IF ERRORLEVEL 0 (
-        python -m Applications.Database.Tables.shared update 123456801
+SET _taskid=123456801
+python -m Applications.Database.Tables.shared select %_taskid% --days 5
+IF %ERRORLEVEL% EQU 0 (
+    python %_PYTHONPROJECT%\Tasks\Task04.py
+    IF !ERRORLEVEL! EQU 0 (
+        python -m Applications.Database.Tables.shared update %_taskid%
     )
 )
 SHIFT
@@ -248,7 +259,7 @@ GOTO MAIN
 
 
 REM     ----------------------------
-REM 21. Backup AVCHD videos to "X:".
+REM 16. Backup AVCHD videos to "X:".
 REM     ----------------------------
 :STEP24
 SHIFT

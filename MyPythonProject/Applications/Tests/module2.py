@@ -355,8 +355,8 @@ class Test09(unittest.TestCase):
     """
 
     def test_01first(self):
-        arguments = database_parser.parse_args(["--database", r"g:\computing\database.db"])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\database.db")
+        arguments = database_parser.parse_args(["--database", r"g:\computing\resources\database.db"])
+        self.assertEqual(arguments.db.lower(), r"g:\computing\resources\database.db")
         self.assertFalse(arguments.test)
 
     def test_02second(self):
@@ -366,7 +366,7 @@ class Test09(unittest.TestCase):
 
     def test_03third(self):
         arguments = database_parser.parse_args([])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\database.db")
+        self.assertEqual(arguments.db.lower(), r"g:\computing\resources\database.db")
         self.assertFalse(arguments.test)
 
     def test_04fourth(self):

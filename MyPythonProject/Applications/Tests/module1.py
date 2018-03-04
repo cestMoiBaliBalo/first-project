@@ -11,7 +11,7 @@ from operator import eq, gt, lt
 
 import yaml
 
-from AudioCD.Interface import validmonth
+from Tasks.tables import validmonth
 from .. import shared
 from ..AudioCD.shared import DefaultAudioCDTags, RippedCD, canfilebeprocessed, changealbum, changetrack, digitalaudiobase, rippinglog
 

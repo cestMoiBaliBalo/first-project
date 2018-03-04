@@ -12,7 +12,7 @@ from shutil import copy, rmtree
 
 import yaml
 
-import AudioCD.Interface as CD
+import Tasks.tables as CD
 # import AudioCD.RippedTracks as RT
 # from .. import shared
 from Applications.Database.AudioCD.shared import insertfromfile as insertlogfromfile
@@ -30,7 +30,7 @@ __status__ = "Production"
 # ========
 class Test01(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test01".format(__name__))
     rowid = 28
@@ -67,7 +67,7 @@ class Test01(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -83,7 +83,7 @@ class Test01(unittest.TestCase):
 
 class Test02(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test02".format(__name__))
     rowid = 28
@@ -120,7 +120,7 @@ class Test02(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -135,7 +135,7 @@ class Test02(unittest.TestCase):
 
     def test_03third(self):
         """
-        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[-1]
         self.logger.debug(row)
@@ -151,7 +151,7 @@ class Test02(unittest.TestCase):
 
 class Test03(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test03".format(__name__))
 
@@ -173,7 +173,7 @@ class Test03(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -188,7 +188,7 @@ class Test03(unittest.TestCase):
 
     def test_03third(self):
         """
-        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[-1]
         self.logger.debug(row)
@@ -204,7 +204,7 @@ class Test03(unittest.TestCase):
 
 class Test04(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test04".format(__name__))
 
@@ -226,7 +226,7 @@ class Test04(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -241,7 +241,7 @@ class Test04(unittest.TestCase):
 
     def test_03third(self):
         """
-        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[-1]
         self.logger.debug(row)
@@ -257,7 +257,7 @@ class Test04(unittest.TestCase):
 
 class Test05(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test05".format(__name__))
 
@@ -279,7 +279,7 @@ class Test05(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.logger.debug(row)
@@ -294,7 +294,7 @@ class Test05(unittest.TestCase):
 
     def test_03third(self):
         """
-        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        3. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[-1]
         self.logger.debug(row)
@@ -310,7 +310,7 @@ class Test05(unittest.TestCase):
 
 class Test06(unittest.TestCase):
     """
-    Tester la mise à jour d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la mise à jour d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test06".format(__name__))
     upc = "9999999999999"
@@ -363,7 +363,7 @@ class Test06(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(self.arguments.function(ns=self.arguments), self.count)
 
@@ -401,7 +401,7 @@ class Test06(unittest.TestCase):
 
 class Test07(unittest.TestCase):
     """
-    Tester la suppression d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la suppression d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test07".format(__name__))
     rowid = 28
@@ -445,7 +445,7 @@ class Test07(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(self.arguments.function(ns=self.arguments), self.count)
 
@@ -475,7 +475,7 @@ class Test07(unittest.TestCase):
 
 class Test08(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test08".format(__name__))
     rowid = 30
@@ -498,7 +498,7 @@ class Test08(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         row = self.arguments.function(ns=self.arguments)[0]
         self.assertEqual(row.rowid, self.rowid)
@@ -516,7 +516,7 @@ class Test08(unittest.TestCase):
 
 class Test09(unittest.TestCase):
     """
-    Tester la suppression d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la suppression d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     Sans propagation à `discs` et `tracks`.
     """
     logger = logging.getLogger("{0}.Test09".format(__name__))
@@ -569,7 +569,7 @@ class Test09(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(self.arguments.function(ns=self.arguments), self.count)
 
@@ -643,7 +643,7 @@ class Test09(unittest.TestCase):
 
 class Test10(unittest.TestCase):
     """
-    Tester la suppression d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la suppression d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     Avec propagation à `discs` et `tracks`.
     """
     logger = logging.getLogger("{0}.Test10".format(__name__))
@@ -708,7 +708,7 @@ class Test10(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la suppression à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertListEqual(self.arguments.function(ns=self.arguments), [(self.albumid, self.acount, self.dcount, self.tcount)])
 
@@ -782,7 +782,7 @@ class Test10(unittest.TestCase):
 
 class Test11(unittest.TestCase):
     """
-    Tester la mise à jour d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la mise à jour d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     Album unique key is not updated.
     """
     logger = logging.getLogger("{0}.Test11".format(__name__))
@@ -889,7 +889,7 @@ class Test11(unittest.TestCase):
 
 class Test12(unittest.TestCase):
     """
-    Tester la mise à jour du nombre de lectures et de la date de dernière lecture de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la mise à jour du nombre de lectures et de la date de dernière lecture de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test12".format(__name__))
     utcplayed = 1505040486
@@ -975,7 +975,7 @@ class Test12(unittest.TestCase):
 
 class Test13(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test13".format(__name__))
 
@@ -1003,14 +1003,14 @@ class Test13(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(len(self.arguments.function(ns=self.arguments)), self.count)
 
 
 class Test14(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test14".format(__name__))
 
@@ -1038,14 +1038,14 @@ class Test14(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(len(self.arguments.function(ns=self.arguments)), self.count)
 
 
 class Test15(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test15".format(__name__))
 
@@ -1073,14 +1073,14 @@ class Test15(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(len(self.arguments.function(ns=self.arguments)), self.count)
 
 
 class Test16(unittest.TestCase):
     """
-    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la restitution d'un enregistrement de la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test16".format(__name__))
 
@@ -1109,14 +1109,14 @@ class Test16(unittest.TestCase):
 
     def test_02second(self):
         """
-        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+        2. Tester la restitution à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
         """
         self.assertEqual(len(self.arguments.function(ns=self.arguments)), self.count)
 
 
 class Test17(unittest.TestCase):
     """
-    Tester l'incrémentation du compteur de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester l'incrémentation du compteur de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test17".format(__name__))
     rowid = 10
@@ -1202,7 +1202,7 @@ class Test17(unittest.TestCase):
 
 class Test18(unittest.TestCase):
     """
-    Tester la décrémentation du compteur de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester la décrémentation du compteur de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     """
     logger = logging.getLogger("{0}.Test18".format(__name__))
     rowid = 10
@@ -1280,7 +1280,7 @@ class Test18(unittest.TestCase):
 class Test19(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("rippinglog select 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("rippinglog select 28 --test".split())
@@ -1296,7 +1296,7 @@ class Test19(unittest.TestCase):
 class Test20(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("rippinglog update 28 --genre Rock".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("rippinglog update 28 --genre Rock --test".split())
@@ -1312,7 +1312,7 @@ class Test20(unittest.TestCase):
 class Test21(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("rippinglog delete 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("rippinglog delete 28 --test".split())
@@ -1328,7 +1328,7 @@ class Test21(unittest.TestCase):
 class Test22(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("albums select 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("albums select 28 --test".split())
@@ -1344,7 +1344,7 @@ class Test22(unittest.TestCase):
 class Test23(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("albums update 28 --genre Rock".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("albums update 28 --genre Rock --test".split())
@@ -1360,7 +1360,7 @@ class Test23(unittest.TestCase):
 class Test24(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("albums delete 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("albums delete 28 --test".split())
@@ -1376,7 +1376,7 @@ class Test24(unittest.TestCase):
 class Test25(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("tracks select 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("tracks select 28 --test".split())
@@ -1392,7 +1392,7 @@ class Test25(unittest.TestCase):
 class Test26(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("tracks update 28 Title".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("tracks update 28 Title --test".split())
@@ -1408,7 +1408,7 @@ class Test26(unittest.TestCase):
 class Test27(unittest.TestCase):
     def test_01first(self):
         self.arguments = CD.parser.parse_args("tracks delete 28".split())
-        self.assertEqual(self.arguments.db, r"G:\Computing\database.db")
+        self.assertEqual(self.arguments.db, r"G:\Computing\Resources\database.db")
 
     def test_02second(self):
         self.arguments = CD.parser.parse_args("tracks delete 28 --test".split())
@@ -1423,7 +1423,7 @@ class Test27(unittest.TestCase):
 
 class Test28(unittest.TestCase):
     """
-    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+    Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
     Les données proviennent de la ligne de commande.
     """
     logger = logging.getLogger("{0}.Test28".format(__name__))
@@ -1541,7 +1541,7 @@ class Test28(unittest.TestCase):
 
 # class Test29(unittest.TestCase):
 #     """
-#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
 #     Les données proviennent d'un fichier XML encodé en UTF-8.
 #     """
 #     logger = logging.getLogger("{0}.Test29".format(__name__))
@@ -2051,7 +2051,7 @@ if __name__ == "__main__":
 #
 # class Test12(unittest.TestCase):
 #     """
-#     Tester la mise à jour d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+#     Tester la mise à jour d'un enregistrement de la table `albums` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
 #     Album unique key is updated.
 #     """
 #
@@ -2092,7 +2092,7 @@ if __name__ == "__main__":
 #
 #     def test_03third(self):
 #         """
-#         3. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+#         3. Tester la mise à jour à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
 #         """
 #         with tempfile.TemporaryDirectory() as directory:
 #             database = os.path.join(directory, os.path.basename(self.arguments.db))
@@ -2135,7 +2135,7 @@ if __name__ == "__main__":
 
 # class Test13c(unittest.TestCase):
 #     """
-#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
 #     Les données proviennent d'un fichier XML encodé en UTF-8.
 #     """
 #
@@ -2154,7 +2154,7 @@ if __name__ == "__main__":
 #
 #     def test_02second(self):
 #         """
-#         2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+#         2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
 #         """
 #         with tempfile.TemporaryDirectory() as directory:
 #             dst = os.path.join(directory, os.path.basename(self.arguments.db))
@@ -2165,7 +2165,7 @@ if __name__ == "__main__":
 #
 #     def test_03third(self):
 #         """
-#         3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+#         3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
 #         """
 #         with tempfile.TemporaryDirectory() as directory:
 #             dst = os.path.join(directory, os.path.basename(self.arguments.db))
@@ -2191,7 +2191,7 @@ if __name__ == "__main__":
 #
 # class Test13d(unittest.TestCase):
 #     """
-#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+#     Tester l'insertion d'un enregistrement dans la table `rippinglog` à l'aide du parser configuré dans `MyPythonProject\AudioCD\tables.py`.
 #     Les données proviennent d'un fichier JSON encodé en UTF-8.
 #     """
 #
@@ -2210,7 +2210,7 @@ if __name__ == "__main__":
 #
 #     def test_02second(self):
 #         """
-#         2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+#         2. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
 #         """
 #         with tempfile.TemporaryDirectory() as directory:
 #             dst = os.path.join(directory, os.path.basename(self.arguments.db))
@@ -2221,7 +2221,7 @@ if __name__ == "__main__":
 #
 #     def test_03third(self):
 #         """
-#         3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\Interface.py`.
+#         3. Tester l'insertion à l'aide de la fonction configurée dans `MyPythonProject\AudioCD\tables.py`.
 #         """
 #         with tempfile.TemporaryDirectory() as directory:
 #             dst = os.path.join(directory, os.path.basename(self.arguments.db))
@@ -2501,7 +2501,7 @@ if __name__ == "__main__":
 #
 # class Test17(unittest.TestCase):
 #     """
-#     Tester le comportement des attributs optionnels `database` et `test` reçus par le parser configuré dans `MyPythonProject\AudioCD\Interface.py`.
+#     Tester le comportement des attributs optionnels `database` et `test` reçus par le parser configuré dans `MyPythonProject\AudioCD\tables.py`.
 #     """
 #
 #     def test_01first(self):

@@ -1,48 +1,53 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
-import functools
 import logging.config
 import os
 import sys
-from subprocess import run
+from collections import OrderedDict
 
 import yaml
 
-from Applications.Database.Tables.shared import isdeltareached, update
-from Applications.parsers import database_parser
+from Applications.Database.AudioCD.shared import selectlogs_fromuid
+from Applications.shared import LOCAL, TEMPLATE4, UTC, dateformat, DATABASE, TESTDATABASE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Production"
+__status__ = "Development"
 
-# 1. --> Parser.
-parser = argparse.ArgumentParser(parents=[database_parser])
-parser.add_argument("--force", action="store_true")
-arguments = parser.parse_args()
-
-# 2. --> Logging.
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("Applications.Database.Tables")
 
-# 3. --> Constant(s).
-UID = 123456798
+db = {True: TESTDATABASE, False: DATABASE}
 
-# 4. --> Initialization(s).
-status = 0
-isdeltareached = functools.partial(isdeltareached, UID, "tasks", db=arguments.db)
-update = functools.partial(update, UID, "tasks", db=arguments.db)
+parser = argparse.ArgumentParser()
+parser.add_argument("uid", type=int)
+parser.add_argument("-t", "--test", action="store_true")
 
-# 5. --> Main algorithm.
-if isdeltareached() or arguments.force:
-    process = run([r"C:\Program Files\Sandboxie\Start.exe", r"/box:GNUCash", "delete_sandbox_silent"])
-    logger.info(process.args)
-    logger.info(process.returncode)
-    if not process.returncode:
-        status = update()
+arguments = parser.parse_args()
 
-# 6. --> Exit algorithm.
-logger.info(status)
-sys.exit(status)
+result = list(selectlogs_fromuid(arguments.uid, db=db[arguments.test]))
+if not result:
+    sys.exit(1)
+row = result[0]
+with open(os.path.join(os.path.expandvars("%TEMP%"), "rippinglog_{0}.txt".format(arguments.uid)), mode="w", encoding="ISO-8859-1") as fw:
+    for k, v in OrderedDict(zip(("rowid", "ripped", "artistsort", "albumsort", "artist", "origyear", "year", "album", "label", "genre", "upc", "application", "disc", "tracks", "utc_created", "utc_modified"),
+                                (row.rowid,
+                                 dateformat(UTC.localize(row.ripped).astimezone(LOCAL), TEMPLATE4),
+                                 row.artistsort,
+                                 row.albumsort,
+                                 row.artist,
+                                 row.origyear,
+                                 row.year,
+                                 row.album,
+                                 row.label,
+                                 row.genre,
+                                 row.upc,
+                                 row.application,
+                                 row.disc,
+                                 row.tracks,
+                                 dateformat(UTC.localize(row.utc_created).astimezone(LOCAL), TEMPLATE4),
+                                 row.utc_modified))).items():
+        fw.write("{0};{1}\n".format(k, v))
+sys.exit(0)
