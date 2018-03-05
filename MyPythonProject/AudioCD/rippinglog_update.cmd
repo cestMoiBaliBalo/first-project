@@ -407,14 +407,12 @@ REM     ------------------
 :COMMAND
 IF DEFINED _command (
     CALL :HEADER
+    CALL :SUBHEADER
     ECHO:
     ECHO:
     ECHO:
     SET _message=Would you like to alter the chosen tags?
     IF %_tags% EQU 1 SET _message=Would you like to alter tag `%_key%` with value `%_value%`?
-    CALL :SUBHEADER
-    ECHO:
-    ECHO:
     CHOICE /C YN /N /T 20 /D N /M "!_message! Press [Y] for Yes or [N] for No."
     IF ERRORLEVEL 2 GOTO FIN
     SET _command=python tables.py rippinglog update %_rowid% %_command:~0,-1%

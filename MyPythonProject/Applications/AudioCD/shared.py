@@ -745,12 +745,17 @@ def album(track):
 
 
 def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "rippinglog.json"), db=shared.DATABASE):
+    logger = logging.getLogger("{0}.rippinglog".format(__name__))
+    logger.debug(db)
+    logger.debug(track.artistsort)
+    logger.debug(track.albumsort[:-3])
+    logger.debug(album(track))
     obj = []
     if os.path.exists(fil):
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
     while True:
-        obj.append([db,
+        obj.append((db,
                     track.artist,
                     track.origyear,
                     track.year,
@@ -762,13 +767,15 @@ def rippinglog(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "ripping
                     track.label,
                     shared.getrippingapplication(),
                     track.albumsort[:-3],
-                    track.artistsort])
+                    track.artistsort))
         try:
             obj = list(set(obj))
-        except TypeError:
+        except TypeError as err:
+            logger.debug(err)
             obj.clear()
         else:
             break
+    logger.debug(obj)
     with open(fil, mode=shared.WRITE, encoding="UTF_8") as fw:
         json.dump(sorted(obj, key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
@@ -779,7 +786,7 @@ def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "d
         with open(fil, encoding="UTF_8") as fr:
             obj = json.load(fr)
     while True:
-        obj.append([db,
+        obj.append((db,
                     track.index,
                     track.albumsort[:-3],
                     track.titlesort,
@@ -798,7 +805,7 @@ def digitalaudiobase(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "d
                     track.incollection,
                     track.upc,
                     track.titlelanguage,
-                    track.origyear])
+                    track.origyear))
         try:
             obj = list(set(obj))
         except TypeError:

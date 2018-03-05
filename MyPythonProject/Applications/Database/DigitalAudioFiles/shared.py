@@ -10,6 +10,7 @@ from datetime import datetime
 from functools import partial
 from itertools import accumulate, chain, groupby, repeat
 from operator import itemgetter
+from string import Template
 
 import jinja2
 
@@ -201,6 +202,7 @@ class InsertDigitalAlbum(MutableSequence):
             # 13. Gather tuples together into a single list.
             self._tracks.append((database, albums_tuple, discs_tuple, tracks_tuple))
 
+        self.logger.debug(self._tracks)
         if self._tracks:
             self._tracks = sorted(sorted(sorted(sorted(self._tracks, key=lambda i: i[3][2]), key=lambda i: i[3][1]), key=lambda i: i[3][0]), key=itemgetter(0))
 
@@ -314,7 +316,10 @@ def insertfromfile(*files):
 
         if tracks:
             for key, group in groupby(tracks, key=itemgetter(0)):
-                for album, disc, track in list(group)[1:]:
+                group = list(group)
+                logger.debug(key)
+                logger.debug(group)
+                for database, album, disc, track in group:
 
                     for item in album:
                         logger.debug(item)
@@ -1127,7 +1132,7 @@ def _getalbumid(db, **kwargs):
     try:
         curs.execute(statement, args)
     except sqlite3.OperationalError:
-         pass
+        pass
     else:
         rows = curs.fetchall()
     finally:
