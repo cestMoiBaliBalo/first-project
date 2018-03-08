@@ -4,6 +4,7 @@ import argparse
 import logging.config
 import os
 from contextlib import ExitStack
+import sys
 
 import yaml
 
@@ -57,10 +58,12 @@ logger = logging.getLogger("Applications.AudioCD")
 # ===============
 logger.debug(mainscript(__file__))
 stack = ExitStack()
+value = 0
 try:
     rippedcd = stack.enter_context(RippedCD(arguments.profile, arguments.file, *arguments.decorators, test=arguments.test))
 except ValueError as err:
     logger.debug(err)
+    value = 100
 else:
     with stack:
         if arguments.profile in ["default"]:
@@ -70,3 +73,5 @@ else:
 
             # 2. Ripped CD database.
             rippinglog(rippedcd.new, db=arguments.db)
+
+sys.exit(value)

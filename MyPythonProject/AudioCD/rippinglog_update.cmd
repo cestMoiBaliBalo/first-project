@@ -1,3 +1,5 @@
+@ECHO off
+SETLOCAL ENABLEDELAYEDEXPANSION
 REM ===========
 REM Exit codes.
 REM ===========
@@ -85,14 +87,14 @@ FOR /F "delims=; tokens=1-%_count%" %%A IN (%_menu%) DO (
 
 
 REM    ===============
-REM A. Enter Database.
+REM A. Choose Database.
 REM    ===============
 :DATABASE
 CALL :HEADER
 ECHO:
 ECHO:
 ECHO: 1. Test database
-ECHO: 2. Production database (default^)
+ECHO: 2. Production database (default)
 ECHO:
 ECHO:
 ECHO:
@@ -103,29 +105,76 @@ FOR /F "tokens=* delims=12" %%A IN ("%_database%") DO SET _tempvar=%%A
 IF DEFINED _tempvar GOTO DATABASE
 
 
-REM    ============
-REM B. Enter ROWID.
-REM    ============
-:ROWID
-SET _command=
-SET _message=
-SET _tempvar=
+REM    =============
+REM B. Choose ROWID.
+REM    =============
+SET _command=AudioCD\Tools\titi.py
+SET _titi=%TEMP%\titi.txt
+IF %_database% EQU 1 SET _command=%_command% --test
+
+REM B.1. Extract `rippinglog` content.
+PUSHD %_PYTHONPROJECT%
+python %_command%
+POPD
+
+REM B.2. Content not available.
+IF NOT EXIST "%_titi%" EXIT /B 6
+
+REM B.3. Content available: display logs.
+SET _itemsperpage=30
+SET _page=1
+SET _logs=0
+FOR /F "usebackq delims=| tokens=1-2" %%I IN ("%_titi%") DO SET /A "_logs+=1"
+
+:MAIN
+SET /A "_items=%_itemsperpage%*%_page%"
+SET _count=0
+SET _num=0
 CALL :HEADER
 ECHO:
 ECHO:
 ECHO:
-SET /P _rowid=Please enter the required ROWID or press ENTER to quit: || EXIT /B 4
+FOR /F "usebackq delims=| tokens=1-2" %%I IN ("%_titi%") DO (
+    IF !_count! LSS %_items% (
+        SET /A "_num+=1"
+        SET _rows[!_num!]=%%J
+        IF !_num! LEQ 9 ECHO:   !_num!. %%I
+        IF !_num! GTR 9 IF !_num! LEQ 99 ECHO:  !_num!. %%I
+        IF !_num! GTR 99 ECHO: !_num!. %%I
+        SET _lastreadrowid=%%J
+        SET /A "_count+=1"
+    )
+)
+IF %_count% LSS %_logs% (
+    ECHO:
+    ECHO:
+    CHOICE /C YN /N /D Y /T 10 /M "Would you like to load more records?"
+    IF ERRORLEVEL 2 GOTO ROWID
+    SET /A "_page+=1"
+    GOTO MAIN
+)
+
+REM B.4. Choose log.
+:ROWID
+SET _command=
+SET _message=
+SET _tempvar=
+ECHO:
+ECHO:
+SET /P _rowid=Please choose the log to update or press ENTER to exit: || GOTO /B 4
 FOR /F "delims=|" %%A IN ("%_rowid%") DO SET _rowid=%%~A
 FOR /F "tokens=* delims=0123456789" %%A IN ("%_rowid%") DO SET _tempvar=%%A
 (
     IF DEFINED _tempvar GOTO ROWID
     IF %_rowid% LSS 1 GOTO ROWID
+    IF %_rowid% GTR %_logs% GOTO ROWID
 )
+CALL SET _rowid=%%_rows[%_rowid%]%%
 (
-    SET _command=python task01.py "%_rowid%"
+    SET _command=task01.py "%_rowid%"
     IF %_database% EQU 1 SET _command=!_command! --test
     PUSHD "%_PYTHONPROJECT%\Tasks"
-    !_command!
+    python !_command!
     IF !ERRORLEVEL! EQU 1 SET _message=No data found for ROWID %_rowid%. Would you like to continue?
     IF DEFINED _message (
         POPD

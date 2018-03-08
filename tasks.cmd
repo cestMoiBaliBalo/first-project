@@ -1309,7 +1309,7 @@ IF DEFINED _excl SET (
 )
 :FIN_EXCLUSIONS
 
-DEL "%TEMP%\titi.txt" 2> nul
+DEL "%TEMP%\titi.txt" 2> NUL
 
 PUSHD "%~1"
 FOR /R %%I IN ("*") DO (
