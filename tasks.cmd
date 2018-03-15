@@ -1,4 +1,4 @@
-@ECHO off
+ECHO on
 
 REM An ambitious DOS script performing computing tasks (such as backup files or syncing local/remote resources).
 REM A menu brought by a python script is displayed allowing to choose among some configured tasks.
@@ -34,18 +34,17 @@ SET _sdcard_password=%_RESOURCES%\SDCard-password.txt
 SET _copied=%TEMP%\copied.lst
 SET _removed=%TEMP%\removed.lst
 SET _tobearchived=%TEMP%\tobearchived.lst
-<<<<<<< master
+SET _cp=1252
 FOR /L %%I IN (1, 1, 50) DO SET _folders[%%I]=
 FOR /L %%I IN (1, 1, 50) DO SET _args[%%I]=
-=======
-SET _cp=1252
->>>>>>> Update tasks.cmd
 
 
 REM ===============
 REM Main algorithm.
 REM ===============
-FOR /F "usebackq" %%I IN (`CHCP`) DO IF %%I NEQ %_cp% CHCP %_cp%
+FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO (
+    FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp%
+)
 
 
 REM -------------
