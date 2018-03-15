@@ -37,7 +37,7 @@ IF ["%~1"] EQU ["ARCHIVE"] (
     SET _list="%~8"
     IF NOT DEFINED _list GOTO END_FILES1
     IF DEFINED _list (
-        SET _files=!_files! @%_list%
+        SET _files=!_files!!_list! 
         SET _run=1
     )
     SHIFT /8
@@ -45,7 +45,7 @@ IF ["%~1"] EQU ["ARCHIVE"] (
 :END_FILES1
 
     IF !_run! EQU 1 (
-        CALL :ARCHIVE !_command! !_type! !_name! !_password! !_encoding! !_currdir! _exit !_files!
+        CALL :ARCHIVE !_command! !_type! !_name! !_password! !_encoding! !_currdir! _exit !_files:~0,-1!
         EXIT /B !_exit!
     )
     EXIT /B 100
@@ -127,7 +127,7 @@ IF NOT EXIST "%_currdir%" (
 
 REM 6. Append files list(s).
 :FILES2
-SET _list="%~8"
+SET _list=%8
 IF NOT DEFINED _list GOTO END_FILES2
 IF DEFINED _list (
     SET _command=%_command% @%_list%
@@ -135,9 +135,9 @@ IF DEFINED _list (
 )
 SHIFT /8
 GOTO FILES2
+:END_FILES2
 
 REM 7. Run 7-Zip command.
-:END_FILES2
 (
     IF %_run% EQU 1 (
         PUSHD "%_currdir%"
