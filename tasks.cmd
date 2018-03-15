@@ -34,14 +34,18 @@ SET _sdcard_password=%_RESOURCES%\SDCard-password.txt
 SET _copied=%TEMP%\copied.lst
 SET _removed=%TEMP%\removed.lst
 SET _tobearchived=%TEMP%\tobearchived.lst
+<<<<<<< master
 FOR /L %%I IN (1, 1, 50) DO SET _folders[%%I]=
 FOR /L %%I IN (1, 1, 50) DO SET _args[%%I]=
+=======
+SET _cp=1252
+>>>>>>> Update tasks.cmd
 
 
 REM ===============
 REM Main algorithm.
 REM ===============
-CHCP 1252
+FOR /F "usebackq" %%I IN (`CHCP`) DO IF %%I NEQ %_cp% CHCP %_cp%
 
 
 REM -------------
