@@ -1,0 +1,47 @@
+SETLOCAL ENABLEDELAYEDEXPANSION
+SET _count=0
+PUSHD "%~1"
+ECHO:
+ECHO:
+FOR /R %%I IN ("{{ pattern }}") DO (
+
+{# Process any of the given extensions #}
+{% if mode == "I" %}
+
+    {%- for extension in extensions %}
+        {%- if loop.first %}
+    SET _run=0
+        {% endif %}
+    IF /I ["%%~xI"] EQU [".{{ extension }}"] SET _run=1
+        {% if loop.last %}
+    IF !_run! EQU 1 (
+{{ self.content() -}}
+    )
+        {% endif %}
+    {%- endfor %}
+
+{%- endif %}
+
+{#- Exclude all of the given extensions #}
+{% if mode == "E" %}
+
+    {%- for extension in extensions %}
+        {%- if loop.first %}
+    SET _run=1
+        {% endif %}
+    IF /I ["%%~xI"] EQU [".{{ extension }}"] SET _run=0
+        {% if loop.last %}
+    IF !_run! EQU 1 (
+{{ self.content() -}}
+    )
+        {% endif %}
+    {% endfor %}
+
+{%- endif %}
+
+{%- if mode == "G" %}
+{{ self.content() -}}
+{% endif %}
+)
+POPD
+EXIT /B %_count%

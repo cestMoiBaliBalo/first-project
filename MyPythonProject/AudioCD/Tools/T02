@@ -1,0 +1,7 @@
+{% extends "T01" %}
+
+{% block content %}
+        SET /A "_count+=1"
+        ECHO: %%~I^|%%~zI Ko^|%%~aI
+        ECHO: %%~I^|%%~zI Ko^|%%~aI >> "%TEMP%\foldercontent.tmp"
+{% endblock %}

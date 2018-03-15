@@ -175,6 +175,21 @@ class InsertRippingLog(object):
         return self._changes
 
 
+# ===========
+# Decorators.
+# ===========
+def validrippeddate(func):
+    def wrapper(ts):
+        try:
+            result = func(ts)
+        except ValueError:
+            raise
+        else:
+            return result[0]
+
+    return wrapper
+
+
 # ==========
 # Functions.
 # ==========
@@ -366,7 +381,7 @@ def updatelog(*uid, db=DATABASE, **kwargs):
     functions = {"albumsort": validalbumsort,
                  "disc": validdiscnumber,
                  "genre": validgenre,
-                 "ripped": validdatetime,
+                 "ripped": validrippeddate(validdatetime),
                  "origyear": validyear,
                  "tracks": validtracks,
                  "upc": validproductcode,

@@ -2,13 +2,11 @@
 import argparse
 import logging.config
 import os
-import re
 import unittest
-from itertools import repeat
 
 import yaml
 
-from ..parsers import database_parser, epochconverter, foldercontent, improvedfoldercontent, loglevel_parser, tasks_parser, zipfile
+from ..parsers import database_parser, epochconverter, loglevel_parser, tasks_parser, zipfile
 from ..shared import validalbumsort, validgenre, validyear
 
 __author__ = 'Xavier ROSSET'
@@ -156,134 +154,134 @@ class Test03(unittest.TestCase):
         self.assertEqual(arguments.zone, "US/Eastern")
 
 
-class Test04(unittest.TestCase):
-    """
+# class Test04(unittest.TestCase):
+#     """
+#
+#     """
+#
+#     def test_01first(self):
+#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
+#         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
+#
+#     def test_02second(self):
+#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5"])
+#         self.assertListEqual(arguments.extensions, [])
+#
+#     def test_03third(self):
+#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
+#         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
+#
+#     def test_04fourth(self):
+#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "txt"])
+#         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "txt"])
+#
+#     def test_05fifth(self):
+#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
+#         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
 
-    """
 
-    def test_01first(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
-        self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
-
-    def test_02second(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5"])
-        self.assertListEqual(arguments.extensions, [])
-
-    def test_03third(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
-        self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
-
-    def test_04fourth(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "txt"])
-        self.assertListEqual(arguments.extensions, ["jpg", "mp4", "txt"])
-
-    def test_05fifth(self):
-        arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
-        self.assertListEqual(arguments.extensions, ["jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
-
-
-class Test05(unittest.TestCase):
-    """
-
-    """
-
-    def test_01first(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-        self.assertListEqual(arguments.extensions, ["jpg"])
-
-    def test_02second(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-        self.assertListEqual(arguments.excluded, ["iPhone", "Recover"])
-
-    def test_03third_1(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-        rex = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\")
-
-    def test_03third_2(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-        rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        self.assertEqual(rex, "^(?:H:\\\\iPhone|H:\\\\Recover)\\\\")
-
-    def test_03third_3(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
-        rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        self.assertEqual(rex, "^(?:H:\\\\Recover)\\\\")
-
-    def test_04fourth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\.+\.(?:jpg)$")
-
-    def test_05fifth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-        thatfile = r"H:\iPhone\IMG_0390.JPG"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertRegex(thatfile, regex)
-
-    def test_06sixth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
-        thatfile = r"H:\iPhone\IMG_0390.RAW"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertRegex(thatfile, regex)
-
-    def test_07seventh(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
-        thatfile = r"H:\iPhone\IMG_0390.TXT"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertNotRegex(thatfile, regex)
-
-    def test_08eighth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-        thatfile = r"H:\iPhone\IMG_0390.JPG"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertRegex(thatfile, regex)
-
-    def test_09ninth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-        thatfile = r"H:\iPhone\IMG_0390.TXT"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertRegex(thatfile, regex)
-
-    def test_10tenth(self):
-        arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
-        thatfile = r"H:\iPhone\IMG_0390.TXT"
-        rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-        rex2 = r".+$"
-        if arguments.extensions:
-            rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-        rex = "{0}{1}".format(rex1, rex2)
-        regex = re.compile(rex, re.IGNORECASE)
-        self.assertNotRegex(thatfile, regex)
+# class Test05(unittest.TestCase):
+#     """
+#
+#     """
+#
+#     def test_01first(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
+#         self.assertListEqual(arguments.extensions, ["jpg"])
+#
+#     def test_02second(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
+#         self.assertListEqual(arguments.excluded, ["iPhone", "Recover"])
+#
+#     def test_03third_1(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
+#         rex = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\")
+#
+#     def test_03third_2(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
+#         rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         self.assertEqual(rex, "^(?:H:\\\\iPhone|H:\\\\Recover)\\\\")
+#
+#     def test_03third_3(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
+#         rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         self.assertEqual(rex, "^(?:H:\\\\Recover)\\\\")
+#
+#     def test_04fourth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\.+\.(?:jpg)$")
+#
+#     def test_05fifth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
+#         thatfile = r"H:\iPhone\IMG_0390.JPG"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertRegex(thatfile, regex)
+#
+#     def test_06sixth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
+#         thatfile = r"H:\iPhone\IMG_0390.RAW"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertRegex(thatfile, regex)
+#
+#     def test_07seventh(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
+#         thatfile = r"H:\iPhone\IMG_0390.TXT"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertNotRegex(thatfile, regex)
+#
+#     def test_08eighth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
+#         thatfile = r"H:\iPhone\IMG_0390.JPG"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertRegex(thatfile, regex)
+#
+#     def test_09ninth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
+#         thatfile = r"H:\iPhone\IMG_0390.TXT"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertRegex(thatfile, regex)
+#
+#     def test_10tenth(self):
+#         arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
+#         thatfile = r"H:\iPhone\IMG_0390.TXT"
+#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
+#         rex2 = r".+$"
+#         if arguments.extensions:
+#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
+#         rex = "{0}{1}".format(rex1, rex2)
+#         regex = re.compile(rex, re.IGNORECASE)
+#         self.assertNotRegex(thatfile, regex)
 
 
 class Test06(unittest.TestCase):

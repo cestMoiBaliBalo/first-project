@@ -4,7 +4,6 @@ REM An ambitious DOS script performing computing tasks (such as backup files or 
 REM A menu brought by a python script is displayed allowing to choose among some configured tasks.
 REM DOS then performs both configuration of the execution environment and execution of the task itself.
 
-REM
 SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 
 
@@ -20,17 +19,23 @@ REM Initializations 2.
 REM ==================
 ::SET _xmldigitalaudiobase=%TEMP%\digitalaudiobase.xml
 ::SET _digitalaudiobase=%_COMPUTING%\digitalaudiobase\digitalaudiobase
+SET _AUDIOCD=%_PYTHONPROJECT%\AudioCD
+SET _RESOURCES=%_COMPUTING%\Resources
 SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
 SET _local_avchd=G:\Videos\AVCHD Videos
 SET _lossless=G:\Music\Lossless
 SET _lossy=G:\Music\Lossy
-SET _exclusions=%_COMPUTING%\Resources\exclusions.txt
-SET _exclusions1=%_COMPUTING%\Resources\exclusions1.txt
-SET _sdcard=%_COMPUTING%\Resources\SDCard-content.txt
-SET _sdcard_password=%_COMPUTING%\Resources\SDCard-password.txt
+SET _exclusions=%_RESOURCES%\exclusions.txt
+SET _exclusions1=%_RESOURCES%\exclusions1.txt
+SET _foldercontent=%_AUDIOCD%\Tools\foldercontent.py
+SET _folders=%_RESOURCES%\folders.txt
+SET _sdcard=%_RESOURCES%\SDCard-content.txt
+SET _sdcard_password=%_RESOURCES%\SDCard-password.txt
 SET _copied=%TEMP%\copied.lst
 SET _removed=%TEMP%\removed.lst
 SET _tobearchived=%TEMP%\tobearchived.lst
+FOR /L %%I IN (1, 1, 50) DO SET _folders[%%I]=
+FOR /L %%I IN (1, 1, 50) DO SET _args[%%I]=
 
 
 REM ===============
@@ -56,7 +61,15 @@ REM -------------------
 REM Numbering pictures.
 REM -------------------
 IF ERRORLEVEL 36 (
-    REM python %_PYTHONPROJECT%\Images\Numbering.py
+    GOTO MENU
+)
+
+
+REM -----------------------------------
+REM Delete log from `rippinglog` table.
+REM -----------------------------------
+IF ERRORLEVEL 35 (
+    CALL "%_AUDIOCD%\rippinglog_delete.cmd"
     GOTO MENU
 )
 
@@ -65,11 +78,6 @@ REM ------------------
 REM Sort lists tester.
 REM ------------------
 IF ERRORLEVEL 33 (
-    REM CLS
-    REM PUSHD %_PYTHONPROJECT%
-    REM python -m unittest -v Applications.Tests.module1.Test03
-    REM POPD
-    REM PAUSE
     GOTO MENU
 )
 
@@ -78,9 +86,6 @@ REM -------------------------------
 REM Default Audio CD ripper tester.
 REM -------------------------------
 IF ERRORLEVEL 32 (
-    REM CLS
-    REM python -m unittest -v Applications.Tests.module1
-    REM PAUSE
     GOTO MENU
 )
 
@@ -89,29 +94,23 @@ REM ---------------
 REM Parsers tester.
 REM ---------------
 IF ERRORLEVEL 31 (
-    REM CLS
-    REM PUSHD %_PYTHONPROJECT%
-    REM python -m unittest -v Applications.Tests.module2
-    REM POPD
-    REM PAUSE
     GOTO MENU
 )
 
 
+REM -----------------------------------
+REM Update log from `rippinglog` table.
+REM -----------------------------------
 IF ERRORLEVEL 30 (
-    CALL "%_PYTHONPROJECT%\AudioCD\rippinglog_update.cmd"
+    CALL "%_AUDIOCD%\rippinglog_update.cmd"
     GOTO MENU
 )
-
 
 
 REM ---------------------------
 REM Regular expressions tester.
 REM ---------------------------
 IF ERRORLEVEL 29 (
-    REM CLS
-    REM python -m unittest -v Applications.Tests.module2
-    REM PAUSE
     GOTO MENU
 )
 
@@ -460,13 +459,59 @@ IF ERRORLEVEL 12 (
 )
 
 
+REM -----------------------
+REM Display folder content.
+REM -----------------------
 IF ERRORLEVEL 10 (
+
+:MENU10
     CLS
-    CALL :FOLDERCONTENT "G:\Music\Lossy"
+    ECHO:
+    ECHO:
+    SET _num=0
+    SET _count=
+    FOR /F "usebackq delims=| tokens=1-3" %%I IN ("%_folders%") DO (
+        SET /A "_num+=1"
+        SET _folders[!_num!]=%%~I
+        SET _args[!_num!]=%%K
+        IF !_num! LEQ 9 ECHO:  !_num!. %%J
+        IF !_num! GTR 9 ECHO: !_num!. %%J
+    )
+    ECHO:
+    ECHO:
+    SET _tempvar=
+    SET /P _choice=Please choose folder: || GOTO FIN10
+    python %_AUDIOCD%\Tools\check_choice.py !_choice! !_num!
+    IF ERRORLEVEL 1 GOTO MENU10
+
+    REM 4. Create a command file using a python script.
+    REM    Python is used because its parsing builtin API is more powerful.
+    DEL "%TEMP%\foldercontent.cmd" "%TEMP%\foldercontent.tmp" 2> NUL
+    FOR /F "usebackq" %%I IN ('!_choice!') DO python %_foldercontent% !_args[%%I]!
+
+    REM 5. Run the resulting command file.
+    REM    The command file stores only a `FOR /R` loop and gets as input argument the folder to loop over.
+    IF EXIST "%TEMP%\foldercontent.cmd" (
+        FOR /F "usebackq" %%I IN ('!_choice!') DO (
+            CALL "%TEMP%\foldercontent.cmd" !_folders[%%I]!
+            SET _count=!ERRORLEVEL!
+        )
+    )
     ECHO:
     ECHO:
     PAUSE
+    IF DEFINED _count (
+        ECHO:
+        ECHO:
+        ECHO: !_count! files found.
+        ECHO:
+        ECHO:
+        PAUSE
+    )
+
+:FIN10
     GOTO MENU
+
 )
 
 
@@ -627,7 +672,7 @@ FOR %%D IN (%_drive%) DO SET "_drive=%%~fD"
 
 REM F. Include MPEG-4 audio files?
 SET _m4a=0
-IF %_islossy% (
+IF %_islossy% EQU 1 (
     CALL :HEADER3 %_islossless%
     SET _answer=
     CALL :QUESTION "YN" "20" "Y" "Would you like to include MPEG-4 audio files too?" _answer
@@ -681,7 +726,7 @@ IF %_islossy% EQU 1 (
         ECHO:Check MPEG-4 files...
         ECHO:
         ECHO:
-        XXCOPY "%_lossy%\*\?*\*.mp4" "%_drive%" /BI /FF /L /oA:%_XXCOPYLOG%
+        XXCOPY "%_lossy%\*\?*\*.m4a" "%_drive%" /BI /FF /L /oA:%_XXCOPYLOG%
         IF !ERRORLEVEL! EQU 0 SET /A _difference=1
     )
 
@@ -742,13 +787,13 @@ IF %_islossy% EQU 1 (
     ECHO:
 
     REM K.2.a. Sync MP3 files.
-    ECHO XXCOPY /EC "%_lossy%\*\?*\*.mp3" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+    XXCOPY /EC "%_lossy%\*\?*\*.mp3" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
 
     REM K.2.b. Sync M4A files.
-    IF %_m4a% EQU 1 ECHO XXCOPY /CE "%_lossy%\*\?*\*.mp4" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+    IF %_m4a% EQU 1 XXCOPY /CE "%_lossy%\*\?*\*.m4a" "%_drive%" /KS /BI /FF /Y /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
 
     REM K.2.c. Remove extra files not present into the destination drive. Preserve "DCIM" if present.
-    ECHO XXCOPY /CE "%_drive%" "%_lossy%\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
+    XXCOPY /CE "%_drive%" "%_lossy%\" /RS /S /BB /PD0 /Y /X:DCIM\ /oA:%_XXCOPYLOG%
 )
 
 ECHO:
@@ -770,11 +815,11 @@ ECHO:
 ECHO:
 ECHO: Available options:
 ECHO:
-ECHO:  1. By parent folder.
+ECHO:  1. By parent folder (default^).
 ECHO:  2. By artist folder.
 ECHO:
 ECHO:
-SET /P _choice=Please choose an option or press ENTER to quit: || GOTO END_P00
+SET /P _choice=Please choose an option or press ENTER to choose the default option: || SET _choice=1
 
 REM 1. %_choice% must be an integer number.
 FOR /F "tokens=* delims=12" %%A IN ("%_choice%") DO SET _tempvar=%%A
@@ -1255,13 +1300,13 @@ rem IF ["%~6"] NEQ [""] SET _currdir=%~6
 rem IF NOT EXIST "%_currdir%" (
 rem     ENDLOCAL
 rem     SET %7=100
-rem     GOTO FIN_ARCHIVE
+rem     GOTO END_ARCHIVE
 rem )
 
 rem REM 6. Append files list(s).
 rem :LISTS
 rem SET _list=%~8
-rem IF NOT DEFINED _list GOTO FIN_LISTS
+rem IF NOT DEFINED _list GOTO END_LISTS
 rem IF DEFINED _list (
 rem     SET _command=%_command% @"%_list%"
 rem     SET /A "_run=1"
@@ -1270,7 +1315,7 @@ rem SHIFT /8
 rem GOTO LISTS
 
 rem REM 7. Run 7-Zip command.
-rem :FIN_LISTS
+rem :END_LISTS
 rem (
 rem     IF %_run% EQU 1 (
 rem         SET _question=The following command will be run: %_command%. Would you like to continue?
@@ -1282,47 +1327,96 @@ rem             "C:\Program Files\7-Zip\7z.exe" %_command%
 rem             ENDLOCAL
 rem             SET %7=!ERRORLEVEL!
 rem             POPD
-rem             GOTO FIN_ARCHIVE
+rem             GOTO END_ARCHIVE
 rem         REM )
 rem     )
 rem     ENDLOCAL
 rem     SET %7=100
-rem     GOTO FIN_ARCHIVE
+rem     GOTO END_ARCHIVE
 rem )
 
-rem :FIN_ARCHIVE
+rem :END_ARCHIVE
 rem EXIT /B 0
 
 
-:FOLDERCONTENT
-SETLOCAL
+rem :FOLDERCONTENT
+rem REM %1: Folder path.
+rem REM %2: Files count.
+rem REM %3: --exclude, --only or --pattern optional argument.
+rem REM %4: extension(s) repective to optional argument.
+rem SETLOCAL ENABLEDELAYEDEXPANSION
 
-SET /A "_num=0"
-:EXCLUSIONS
-SET _excl=%~2
-IF NOT DEFINED _excl GOTO FIN_EXCLUSIONS
-IF DEFINED _excl SET (
-    SET /A "_num+=1"
-    SET _elem[!_num!]=.%_excl%
-    SHIFT /2
-    GOTO EXCLUSIONS
-)
-:FIN_EXCLUSIONS
+rem SET _count=0
+rem SET _num=0
+rem SET _pattern=*
+rem IF /I ["%~3"] EQU ["--only"] GOTO ONLY
+rem IF /I ["%~3"] EQU ["--exclude"] GOTO EXCLUSIONS
+rem IF /I ["%~3"] EQU ["--pattern"] GOTO PATTERN
 
-DEL "%TEMP%\titi.txt" 2> NUL
+rem :EXCLUSIONS
+rem SET _excl=%~4
+rem SET _type=E
+rem IF NOT DEFINED _excl GOTO END_EXCLUSIONS
+rem IF DEFINED _excl (
+rem     SET /A "_num+=1"
+rem     SET _excl[!_num!]=.%_excl%
+rem     SHIFT /4
+rem     GOTO EXCLUSIONS
+rem )
+rem :END_EXCLUSIONS
+rem GOTO FILESLIST
 
-PUSHD "%~1"
-FOR /R %%I IN ("*") DO (
-    SET /A "_run=0"
-    IF %_num% GTR 0 FOR /L %%X IN (1, 1, %_num%) DO IF ["%%~xI"] EQU ["!_elem[%%X]!"] SET /A "_run=1"
-    IF %_num% EQU 0 SET /A "_run=1"
-    IF !_run! EQU 1 (
-        ECHO %%~I;%%~zI Ko;%%~aI
-        ECHO %%~I;%%~zI Ko;%%~aI >> "%TEMP%\titi.txt"
-    )
-)
-POPD
+rem :ONLY
+rem SET _incl=%~4
+rem SET _type=I
+rem IF NOT DEFINED _incl GOTO END_ONLY
+rem IF DEFINED _incl (
+rem     SET /A "_num+=1"
+rem     SET _incl[!_num!]=.%_incl%
+rem     SHIFT /4
+rem     GOTO ONLY
+rem )
+rem :END_ONLY
+rem GOTO FILESLIST
 
-ENDLOCAL
-EXIT /B 0
+rem :PATTERN
+rem SET _patt=%~4
+rem IF NOT DEFINED _patt GOTO END_PATTERN
+rem IF DEFINED _patt SET _pattern=%_patt%
+rem :END_PATTERN
+rem GOTO FILESLIST
 
+rem :FILESLIST
+rem DEL "%TEMP%\titi.tmp" 2> NUL
+rem PUSHD "%~1"
+rem FOR /R %%I IN ("%_pattern%") DO (
+
+rem     SET _run=1
+rem     IF %_num% GTR 0 (
+
+rem         IF ["%_type%"] EQU ["I"] (
+rem             SET _run=0
+rem             FOR /L %%X IN (1, 1, %_num%) DO IF ["%%~xI"] EQU ["!_incl[%%X]!"] SET _run=1
+rem         )
+
+rem         IF ["%_type%"] EQU ["E"] (
+rem             SET _run=1
+rem             FOR /L %%X IN (1, 1, %_num%) DO IF ["%%~xI"] EQU ["!_excl[%%X]!"] SET _run=0
+rem         )
+
+rem     )
+rem     IF !_run! EQU 1 (
+rem         SET /A "_count+=1"
+rem         ECHO %%~I^|%%~zI Ko^|%%~aI
+rem         ECHO %%~I^|%%~zI Ko^|%%~aI >> "%TEMP%\titi.tmp"
+rem     )
+
+rem )
+rem POPD
+rem :END_FILESLIST
+
+rem (
+rem     ENDLOCAL
+rem     SET %~2=%_count%
+rem )
+rem EXIT /B 0

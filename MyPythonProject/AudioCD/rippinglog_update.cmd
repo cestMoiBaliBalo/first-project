@@ -1,14 +1,11 @@
-@ECHO off
-SETLOCAL ENABLEDELAYEDEXPANSION
 REM ===========
 REM Exit codes.
 REM ===========
 REM 0: script worked well without any issues.
 REM 1: no alterable tags menu can be displayed.
 REM 2: no tags plain text file can be found into %TEMP% directory.
-REM 3: exit chosen as no data have been found for the chosen ROWID.
-REM 4: exit chosen at ROWID choice step.
-REM 5: exit chosen at alterable tag choice step.
+REM 3: exit without any alteration.
+REM 4: An issue occurred into an external script.
 
 
 REM ==================
@@ -21,9 +18,11 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
+SET _databases[1]=%_PYTHONPROJECT%\Applications\Tests\database.db
+SET _databases[2]=%_COMPUTING%\Resources\database.db
+SET _command=
 SET _count=
 SET _first=1
-SET _length=0
 SET _menu="artistsort;albumsort;artist;origyear;year;album;genre;label;upc;application;disc;tracks"
 SET _tags=0
 
@@ -35,193 +34,103 @@ CALL "%_COMPUTING%\shared.cmd" GETOCCURENCES %_menu% ";"
 SET _count=%ERRORLEVEL%
 IF %_count% EQU 0 EXIT /B 1
 FOR /F "delims=; tokens=1-%_count%" %%A IN (%_menu%) DO (
-    (
-        SET _newvalue[%%A]=
-        SET _l3[%%A]=
-    )
-    IF %_count% GEQ 2 (
-        SET _newvalue[%%B]=
-        SET _l3[%%B]=
-    )
-    IF %_count% GEQ 3 (
-        SET _newvalue[%%C]=
-        SET _l3[%%C]=
-    )
-    IF %_count% GEQ 4 (
-        SET _newvalue[%%D]=
-        SET _l3[%%D]=
-    )
-    IF %_count% GEQ 5 (
-        SET _newvalue[%%E]=
-        SET _l3[%%E]=
-    )
-    IF %_count% GEQ 6 (
-        SET _newvalue[%%F]=
-        SET _l3[%%F]=
-    )
-    IF %_count% GEQ 7 (
-        SET _newvalue[%%G]=
-        SET _l3[%%G]=
-    )
-    IF %_count% GEQ 8 (
-        SET _newvalue[%%H]=
-        SET _l3[%%H]=
-    )
-    IF %_count% GEQ 9 (
-        SET _newvalue[%%I]=
-        SET _l3[%%I]=
-    )
-    IF %_count% GEQ 10 (
-        SET _newvalue[%%J]=
-        SET _l3[%%J]=
-    )
-    IF %_count% GEQ 11 (
-        SET _newvalue[%%K]=
-        SET _l3[%%K]=
-    )
-    IF %_count% GEQ 12 (
-        SET _newvalue[%%L]=
-        SET _l3[%%L]=
-    )
+    SET _newvalue[%%A]=
+    IF %_count% GEQ 2 SET _newvalue[%%B]=
+    IF %_count% GEQ 3 SET _newvalue[%%C]=
+    IF %_count% GEQ 4 SET _newvalue[%%D]=
+    IF %_count% GEQ 5 SET _newvalue[%%E]=
+    IF %_count% GEQ 6 SET _newvalue[%%F]=
+    IF %_count% GEQ 7 SET _newvalue[%%G]=
+    IF %_count% GEQ 8 SET _newvalue[%%H]=
+    IF %_count% GEQ 9 SET _newvalue[%%I]=
+    IF %_count% GEQ 10 SET _newvalue[%%J]=
+    IF %_count% GEQ 11 SET _newvalue[%%K]=
+    IF %_count% GEQ 12 SET _newvalue[%%L]=
 )
 
 
-REM    ===============
+REM    ================
 REM A. Choose Database.
-REM    ===============
+REM    ================
 :DATABASE
 CALL :HEADER
 ECHO:
 ECHO:
 ECHO: 1. Test database
-ECHO: 2. Production database (default)
+ECHO: 2. Production database (default^)
 ECHO:
 ECHO:
 ECHO:
 SET _tempvar=
-SET /P _database=Please enter the required database: || SET _database=2
+SET /P _database=Please enter the required database or press ENTER to choose the default database: || SET _database=2
 FOR /F "delims=|" %%A IN ("%_database%") DO SET _database=%%~A
 FOR /F "tokens=* delims=12" %%A IN ("%_database%") DO SET _tempvar=%%A
 IF DEFINED _tempvar GOTO DATABASE
-
-
-REM    =============
-REM B. Choose ROWID.
-REM    =============
-SET _command=AudioCD\Tools\titi.py
-SET _titi=%TEMP%\titi.txt
-IF %_database% EQU 1 SET _command=%_command% --test
-
-REM B.1. Extract `rippinglog` content.
-PUSHD %_PYTHONPROJECT%
-python %_command%
-POPD
-
-REM B.2. Content not available.
-IF NOT EXIST "%_titi%" EXIT /B 6
-
-REM B.3. Content available: display logs.
-SET _itemsperpage=30
-SET _page=1
-SET _logs=0
-FOR /F "usebackq delims=| tokens=1-2" %%I IN ("%_titi%") DO SET /A "_logs+=1"
-
-:MAIN
-SET /A "_items=%_itemsperpage%*%_page%"
-SET _count=0
-SET _num=0
-CALL :HEADER
-ECHO:
-ECHO:
-ECHO:
-FOR /F "usebackq delims=| tokens=1-2" %%I IN ("%_titi%") DO (
-    IF !_count! LSS %_items% (
-        SET /A "_num+=1"
-        SET _rows[!_num!]=%%J
-        IF !_num! LEQ 9 ECHO:   !_num!. %%I
-        IF !_num! GTR 9 IF !_num! LEQ 99 ECHO:  !_num!. %%I
-        IF !_num! GTR 99 ECHO: !_num!. %%I
-        SET _lastreadrowid=%%J
-        SET /A "_count+=1"
-    )
-)
-IF %_count% LSS %_logs% (
-    ECHO:
-    ECHO:
-    CHOICE /C YN /N /D Y /T 10 /M "Would you like to load more records?"
-    IF ERRORLEVEL 2 GOTO ROWID
-    SET /A "_page+=1"
-    GOTO MAIN
-)
-
-REM B.4. Choose log.
-:ROWID
-SET _command=
-SET _message=
-SET _tempvar=
-ECHO:
-ECHO:
-SET /P _rowid=Please choose the log to update or press ENTER to exit: || GOTO /B 4
-FOR /F "delims=|" %%A IN ("%_rowid%") DO SET _rowid=%%~A
-FOR /F "tokens=* delims=0123456789" %%A IN ("%_rowid%") DO SET _tempvar=%%A
-(
-    IF DEFINED _tempvar GOTO ROWID
-    IF %_rowid% LSS 1 GOTO ROWID
-    IF %_rowid% GTR %_logs% GOTO ROWID
-)
-CALL SET _rowid=%%_rows[%_rowid%]%%
-(
-    SET _command=task01.py "%_rowid%"
-    IF %_database% EQU 1 SET _command=!_command! --test
-    PUSHD "%_PYTHONPROJECT%\Tasks"
-    python !_command!
-    IF !ERRORLEVEL! EQU 1 SET _message=No data found for ROWID %_rowid%. Would you like to continue?
-    IF DEFINED _message (
-        POPD
-        ECHO:
-        ECHO:
-        CHOICE /C YN /T 20 /N /d N /m "!_message! Press [Y] for Yes or [N] for No."
-        IF ERRORLEVEL 2 EXIT /B 3
-        IF ERRORLEVEL 1 GOTO ROWID
-    )
-    POPD
-)
-SET _command=
-SET _tagsfile=%TEMP%\rippinglog_%_rowid%.txt
-
-
-REM    ===============================================
-REM C. Store both current tags and respective lengths.
-REM    ===============================================
-IF NOT EXIST "%_tagsfile%" EXIT /B 2
-FOR /F "usebackq delims=; tokens=1-2" %%I IN ("%_tagsfile%") DO (
-    FOR /F "usebackq" %%A IN ('%%I') DO SET _key=%%A
-    SET _value=%%J
-    CALL "%_COMPUTING%\shared.cmd" GETLENGTH "!_value!"
-    SET _errorlevel=!ERRORLEVEL!
-    IF !_errorlevel! GTR !_length! SET _length=!_errorlevel!
-    SET _length[!_key!]=!_errorlevel!
-    SET _currvalue[!_key!]="!_value!"
-)
-SET /A "_length+=10"
+CALL SET _database=%%_databases[%_database%]%%
 
 
 REM    =======================
-REM D. Alter tags main script.
+REM B. Display available logs.
+REM    =======================
+PUSHD "%_PYTHONPROJECT%\AudioCD\Tools"
+CALL rippinglogs.cmd "%_database%"
+SET _rowid=%ERRORLEVEL%
+POPD
+
+REM B.2. Issue occurred into `rippinglogs.cmd`.
+IF %_rowid% EQU -1 EXIT /B 4
+
+REM B.3. Exit chosen into `rippinglogs.cmd`.
+IF %_rowid% EQU 0 EXIT /B 3
+
+
+REM    =============
+REM C. Choose a log.
+REM    =============
+(
+    PUSHD "%_PYTHONPROJECT%\AudioCD\Tools"
+    python rippinglog.py "%_rowid%" --database "%_database%"
+    IF ERRORLEVEL 1 (
+        POPD
+        ECHO:
+        ECHO:
+        ECHO: No data found for ROWID %_rowid%. Script will exit.
+        ECHO:
+        PAUSE & EXIT /B 2
+    )
+    POPD
+)
+SET _tagsfile=%TEMP%\rippinglog_%_rowid%.tmp
+IF NOT EXIST "%_tagsfile%" EXIT /B 2
+
+
+REM    ========================
+REM D. Store chosen log detail.
+REM    ========================
+REM    Strip whitespaces at first.
+FOR /F "usebackq delims=: tokens=1,*" %%I IN ("%_tagsfile%") DO (
+    FOR /F "usebackq" %%A IN ('%%I') DO SET _key=%%A
+    SET _value=%%~J
+    SET _currvalue[!_key!]="!_value!"
+)
+
+
+REM    =======================
+REM E. Alteration main script.
 REM    =======================
 :MENU
 CALL :HEADER
 
 
-REM    -----------------------------------
-REM 1. Display tags.
-REM    Both current values and new values.
-REM    -----------------------------------
+REM    ------------------------------------
+REM 1. Display chosen log detail.
+REM    Keys, current values and new values.
+REM    ------------------------------------
 CALL :SUBHEADER
 
 
 REM    ----------------------------
-REM 2. Display alterable tags menu.
+REM 2. Display alterable keys menu.
 REM    ----------------------------
 ECHO:
 ECHO:
@@ -297,14 +206,14 @@ IF !_ok! EQU 0 GOTO MENU
 
 
 REM    --------------------------------
-REM 3. Convert _key from number to tag.
+REM 3. Convert key from number to name.
 REM    --------------------------------
 CALL SET _key=%%_keys[%_key%]%%
 
 
-REM    ---------------------------------------------------
-REM 4. Display available genres if altered tag is `genre`.
-REM    ---------------------------------------------------
+REM    --------------------------------------------------
+REM 4. Display available genres if chosen key is `genre`.
+REM    --------------------------------------------------
 IF /I ["%_key%"] EQU ["genre"] (
 :GENRE
     CALL :HEADER
@@ -331,18 +240,16 @@ IF /I ["%_key%"] EQU ["genre"] (
     IF !_genre! GTR !_num! SET _ok=0
     IF !_ok! EQU 0 GOTO GENRE
     FOR %%G IN (!_genre!) DO SET _genre=!_genres[%%G]!
-    SET _newvalue[%_key%]="!_genre!"
     SET _value=!_genre!
 )
 
 
-REM    ---------------------------------------------------
-REM 5. Prompt for new value if altered tag is not `genre`.
-REM    ---------------------------------------------------
+REM    --------------------------------------------------
+REM 5. Prompt for new value if chosen key is not `genre`.
+REM    --------------------------------------------------
 IF /I ["%_key%"] NEQ ["genre"] (
     SET /P _value=Please enter "%_key%" new value: || GOTO MENU
     FOR /F "delims=|" %%I IN ("!_value!") DO SET _value=%%~I
-    SET _newvalue[%_key%]="!_value!"
 )
 
 
@@ -403,30 +310,26 @@ IF /I ["%_key%"] EQU ["year"] (
 
 
 REM     --------------------------------------
-REM 10. Compare current value to new value.
+REM 10. Compare current value and new value.
 REM     Set _command if a difference is found.
 REM     --------------------------------------
 (
     CALL SET _current=%%_currvalue[%_key%]%%
     IF [!_current!] NEQ ["%_value%"] (
-        SET _l3=
         SET /A "_tags+=1"
         SET _command=%_command%--%_key% "%_value%" 
-        CALL SET _l1=%%_length[%_key%]%%
-        SET /A "_l2=%_length%-!_l1!"
-        FOR /L %%X IN (1, 1, !_l2!) DO SET _l3=!_l3! 
-        SET _l3[%_key%]=!_l3!%_value%
+        SET _newvalue[%_key%]=%_value%
     )
 )
 
 
 REM     ---------------------------
-REM 11. Update alterable tags menu.
+REM 11. Update alterable keys menu.
 REM     ---------------------------
-REM     Remove alterabled tag from menu.
+REM     Remove chosen key from menu.
 
 REM     Remove quotes at first.
-FOR %%M IN (%_menu%) DO SET _menu=%%~M
+FOR /F "usebackq" %%M IN ('%_menu%') DO SET _menu=%%~M
 
 REM     Look for the chosen tag into the menu.
 CALL SET _result=%%_menu:;%_key%;=;%%
@@ -450,9 +353,9 @@ IF /I ["%_result%"] NEQ ["%_menu%"] (
 )
 
 
-REM     ------------------
-REM 12. Run python script.
-REM     ------------------
+REM     -------------------------------------------
+REM 12. Alter chosen key(s) by running `tables.py`.
+REM     -------------------------------------------
 :COMMAND
 IF DEFINED _command (
     CALL :HEADER
@@ -460,12 +363,9 @@ IF DEFINED _command (
     ECHO:
     ECHO:
     ECHO:
-    SET _message=Would you like to alter the chosen tags?
-    IF %_tags% EQU 1 SET _message=Would you like to alter tag `%_key%` with value `%_value%`?
-    CHOICE /C YN /N /T 20 /D N /M "!_message! Press [Y] for Yes or [N] for No."
-    IF ERRORLEVEL 2 GOTO FIN
-    SET _command=python tables.py rippinglog update %_rowid% %_command:~0,-1%
-    IF %_database% EQU 1 SET _command=!_command! --test
+    CHOICE /C YN /N /T 30 /D N /M "Would you like to alter the chosen log? Press [Y] for Yes or [N] for No."
+    IF ERRORLEVEL 2 GOTO END
+    SET _command=python tables.py rippinglog update %_rowid% %_command:~0,-1% --database "%_database%"
     (
         PUSHD "%_PYTHONPROJECT%\AudioCD"
         ECHO !_command!
@@ -475,10 +375,10 @@ IF DEFINED _command (
 )
 
 
-REM     ---------------
-REM 13. Exit algorithm.
-REM     ---------------
-:FIN
+REM    ============
+REM F. Exit script.
+REM    ============
+:END
 DEL "%_tagsfile%" 2> nul
 EXIT /B 0
 
@@ -497,11 +397,16 @@ EXIT /B 0
 :SUBHEADER
 ECHO:
 ECHO:
-FOR /F "usebackq delims=; tokens=1,2" %%I IN ("%_tagsfile%") DO (
-    IF NOT DEFINED _l3[%%I] ECHO: %%~I;%%J
-    IF DEFINED _l3[%%I] (
-        CALL SET _x=%%_l3[%%I]%%
-        ECHO: %%~I;%%J!_x!
+SETLOCAL
+FOR /F "usebackq delims=: tokens=1,*" %%I IN ("%_tagsfile%") DO (
+    FOR /F "usebackq" %%A IN ('%%I') DO SET _key=%%A
+    IF NOT DEFINED _newvalue[!_key!] ECHO: %%~I:%%J
+    IF DEFINED _newvalue[!_key!] (
+        CALL SET _x=%%_newvalue[!_key!]%%
+        ECHO: %%~I:%%J!_x!
     )
 )
-EXIT /B 0
+(
+    ENDLOCAL
+    EXIT /B 0
+)

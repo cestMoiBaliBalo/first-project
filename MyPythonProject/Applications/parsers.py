@@ -19,9 +19,11 @@ def unixepochtime(time):
     :return:
     """
     try:
-        _unixepochtime = shared.validtimestamp(time)
+        _unixepochtime = shared.validdatetime(time)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
+    else:
+        _unixepochtime = _unixepochtime[0]
     return _unixepochtime
 
 
@@ -69,17 +71,17 @@ epochconverter.add_argument("-z", "--zone", help="Time zone", default=shared.DFT
 #     =========
 #  4. PARSER 4.
 #     =========
-foldercontent = argparse.ArgumentParser()
-foldercontent.add_argument("folder", type=shared.validpath)
-foldercontent.add_argument("extensions", nargs="*")
+# foldercontent = argparse.ArgumentParser()
+# foldercontent.add_argument("folder", type=shared.validpath)
+# foldercontent.add_argument("extensions", nargs="*")
 
 #     =========
 #  5. PARSER 5.
 #     =========
-improvedfoldercontent = argparse.ArgumentParser()
-improvedfoldercontent.add_argument("folder", type=shared.validpath)
-improvedfoldercontent.add_argument("excluded", nargs="*")
-improvedfoldercontent.add_argument("-e", "--ext", dest="extensions", nargs="*")
+# improvedfoldercontent = argparse.ArgumentParser()
+# improvedfoldercontent.add_argument("folder", type=shared.validpath)
+# improvedfoldercontent.add_argument("excluded", nargs="*")
+# improvedfoldercontent.add_argument("-e", "--ext", dest="extensions", nargs="*")
 
 #     =========
 #  6. PARSER 6.
@@ -154,3 +156,25 @@ images_write.add_argument("--copyright", action="store_true")
 
 # --> Read tags.
 images_read = subparser.add_parser("read", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+
+#     ==========
+# 12. PARSER 12.
+#     ==========
+foldercontent = argparse.ArgumentParser()
+subparser = foldercontent.add_subparsers(dest="command")
+
+# -----
+parser1 = subparser.add_parser("1")
+parser1.add_argument("extensions", nargs="*", help="only given extensions. Facultative", default=[])
+
+# -----
+parser2 = subparser.add_parser("2")
+parser2.add_argument("group", nargs="+", choices=["computing", "documents", "lossless", "lossy", "music"], action=shared.GetExtensions)
+group = parser2.add_mutually_exclusive_group()
+group.add_argument("-e", "--excl", dest="exclude", nargs="*", action=shared.ExcludeExtensions, help="exclude enumerated extension(s)")
+group.add_argument("-k", "--keep", nargs="*", action=shared.KeepExtensions, help="exclude all extensions but enumerated extension(s)")
+parser2.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.IncludeExtensions, help="include enumerated extension(s)")
+
+# -----
+parser3 = subparser.add_parser("3")
+parser3.add_argument("extensions", nargs="+", help="excluded extensions. Mandatory.")

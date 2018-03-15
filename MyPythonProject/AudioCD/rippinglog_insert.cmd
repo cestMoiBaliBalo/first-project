@@ -25,7 +25,7 @@ CLS
 ECHO:
 ECHO:
 ECHO: 1. Test Database.
-ECHO: 2. Production Database (default).
+ECHO: 2. Production Database (default^).
 ECHO:
 ECHO:
 SET /P _database=Please choose impacted base or press ENTER to choose default base: || SET _database=2
