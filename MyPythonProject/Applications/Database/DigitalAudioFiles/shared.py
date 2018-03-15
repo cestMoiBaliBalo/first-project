@@ -791,7 +791,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     # 6. Convert last played Unix epoch time into python datetime object.
     if "utc_played" in kwargs:
         try:
-            kwargs["utc_played"] = LOCAL.localize(validdatetime(kwargs["utc_played"])).astimezone(UTC).replace(tzinfo=None)
+            kwargs["utc_played"] = LOCAL.localize(validdatetime(kwargs["utc_played"])[1]).astimezone(UTC).replace(tzinfo=None)
         except ValueError:
             del kwargs["utc_played"]
 

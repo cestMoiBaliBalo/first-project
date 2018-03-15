@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rippinglogs>
+    <rippinglog ripped="1505235316">
+        <artistsort>Artist 1, The</artistsort>
+        <albumsort>1.20170000.1</albumsort>
+        <artist>The Artist 1</artist>
+        <year>2017</year>
+        <album>Album 1</album>
+        <genre>Hard Rock</genre>
+        <upc>1234567890123</upc>
+    </rippinglog>
+    <rippinglog>
+        <artistsort>Artist 2, The</artistsort>
+        <albumsort>1.20160000.1</albumsort>
+        <artist>The Artist 2</artist>
+        <year>2016</year>
+        <album>Album 2</album>
+        <genre>Hard Rock</genre>
+        <upc>1234567890124</upc>
+    </rippinglog>
+    <rippinglog ripped="1505055303">
+        <artistsort>Artist 3, The</artistsort>
+        <albumsort>1.20150000.1</albumsort>
+        <artist>The Artist 3</artist>
+        <year>2015</year>
+        <album>Album 3</album>
+        <genre>Hard Rock</genre>
+        <upc>1234567890125</upc>
+    </rippinglog>
+</rippinglogs>

@@ -87,7 +87,9 @@ GENRES = ["Rock",
           "French Pop"]
 EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
               "documents": ["doc", "txt", "pdf", "xav"],
-              "music": ["ape", "mp3", "m4a", "flac", "ogg"]}
+              "music": ["ape", "mp3", "m4a", "flac", "ogg", "tak", "wv"],
+              "lossless": ["ape", "flac", "tak", "wv"],
+              "lossy": ["mp3", "m4a", "ogg"]}
 ZONES = ["UTC",
          "US/Pacific",
          "US/Eastern",
@@ -919,24 +921,24 @@ def validgenre(genre):
     return genre
 
 
-def validtimestamp(ts):
-    """
-    Check if string `ts` is a coherent Unix time.
-
-    :param ts: Unix time.
-    :return: Unix time converted to numeric characters.
-    """
-    msg = r"is not a valid Unix time."
-    try:
-        ts = str(ts)
-    except TypeError:
-        raise ValueError('"{0}" {1}'.format(ts, msg))
-
-    if not re.match(r"^\d{10}$", ts):
-        raise ValueError('"{0}" {1}'.format(ts, msg))
-    if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
-        raise ValueError('"{0}" {1}'.format(ts, msg))
-    return int(ts)
+# def validtimestamp(ts):
+#     """
+#     Check if string `ts` is a coherent Unix time.
+#
+#     :param ts: Unix time.
+#     :return: Unix time converted to numeric characters.
+#     """
+#     msg = r"is not a valid Unix time."
+#     try:
+#         ts = str(ts)
+#     except TypeError:
+#         raise ValueError('"{0}" {1}'.format(ts, msg))
+#
+#     if not re.match(r"^\d{10}$", ts):
+#         raise ValueError('"{0}" {1}'.format(ts, msg))
+#     if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
+#         raise ValueError('"{0}" {1}'.format(ts, msg))
+#     return int(ts)
 
 
 def validdatetime(ts):
@@ -954,16 +956,18 @@ def validdatetime(ts):
 
     if error:
         try:
-            struct = ts.timetuple()
+            _struct = ts.timetuple()
         except (TypeError, AttributeError):
             raise ValueError('"{0}" {1}'.format(ts, msg))
-        return ts
+        return int(ts.timestamp()), ts, _struct
 
     try:
         datobj = datetime.fromtimestamp(ts)
     except OSError:
         raise ValueError('"{0}" {1}'.format(ts, msg))
-    return datobj
+    else:
+        _struct = datobj.timetuple()
+    return ts, datobj, _struct
 
 
 # ========================

@@ -40,7 +40,7 @@ from Applications.Database.DigitalAudioFiles.shared import deletealbum, deleteal
     updatealbum, updatetrack
 from Applications.parsers import database_parser, loglevel_parser
 from Applications.shared import DATABASE, DFTMONTHREGEX, DFTYEARREGEX, GENRES, LOCAL, LOCALMONTHS, LocalParser, StringFormatter, TEMPLATE4, TEMPLATE6, TemplatingEnvironment, UTC, dateformat, grouper, \
-    prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdiscnumber, validproductcode, validtimestamp, validtracks, validyear
+    prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdiscnumber, validproductcode, validdatetime, validtracks, validyear
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -288,9 +288,11 @@ def unixepochtime(stg):
     :return:
     """
     try:
-        _unixepochtime = validtimestamp(stg)
+        _unixepochtime = validdatetime(stg)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
+    else:
+        _unixepochtime = _unixepochtime[0]
     return _unixepochtime
 
 

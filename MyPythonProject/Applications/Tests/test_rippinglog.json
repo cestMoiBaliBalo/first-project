@@ -1,0 +1,46 @@
+[
+    [
+        "The Artist 1",
+        2017,
+        2017,
+        "Album 1",
+        1,
+        10,
+        "Hard Rock",
+        "1234567890123",
+        "Columbia Records",
+        "dBpoweramp 15.1",
+        "1.20170000.1",
+        "Artist 1, The"
+    ],
+    [
+        "The Artist 2",
+        2016,
+        2016,
+        "Album 2",
+        1,
+        12,
+        "Hard Rock",
+        "1234567890124",
+        "Columbia Records",
+        1505594938,
+        "dBpoweramp 15.1",
+        "1.20160000.1",
+        "Artist 2, The"
+    ],
+    [
+        "The Artist 3",
+        2015,
+        2015,
+        "Album 3",
+        2,
+        10,
+        "Hard Rock",
+        "1234567890124",
+        "Columbia Records",
+        1505055303,
+        "dBpoweramp 15.1",
+        "1.20150000.1",
+        "Artist 3, The"
+    ]
+]
