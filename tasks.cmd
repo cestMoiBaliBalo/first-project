@@ -1,4 +1,4 @@
-ECHO on
+@ECHO off
 
 REM An ambitious DOS script performing computing tasks (such as backup files or syncing local/remote resources).
 REM A menu brought by a python script is displayed allowing to choose among some configured tasks.
