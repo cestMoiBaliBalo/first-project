@@ -701,20 +701,6 @@ class SetEndSeconds(argparse.Action):
             setattr(namespace, self.dest, getattr(namespace, "beg"))
 
 
-# class SetUID(argparse.Action):
-#     """
-#     Set "end" attribute.
-#     Set "uid" attribute.
-#     """
-#
-#     def __init__(self, option_strings, dest, **kwargs):
-#         super(SetUID, self).__init__(option_strings, dest, **kwargs)
-#
-#     def __call__(self, parsobj, namespace, values, option_string=None):
-#         setattr(namespace, self.dest, values)
-#         setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
-
-
 # ===================
 # Jinja2 environment.
 # ===================
@@ -725,13 +711,13 @@ class TemplatingEnvironment(object):
 
     def set_environment(self, **kwargs):
         for k, v in kwargs["globalvars"].items():
-            self.environment.globals[k] = v
+            self._environment.globals[k] = v
         for k, v in kwargs["filters"].items():
-            self.environment.filters[k] = v
+            self._environment.filters[k] = v
 
     def set_template(self, **templates):
         for k, v in templates.items():
-            setattr(self, k, self.environment.get_template(v))
+            setattr(self, k, self._environment.get_template(v))
 
     @property
     def environment(self):
@@ -919,26 +905,6 @@ def validgenre(genre):
     except AttributeError:
         raise ValueError('"{0}" {1}'.format(genre, msg))
     return genre
-
-
-# def validtimestamp(ts):
-#     """
-#     Check if string `ts` is a coherent Unix time.
-#
-#     :param ts: Unix time.
-#     :return: Unix time converted to numeric characters.
-#     """
-#     msg = r"is not a valid Unix time."
-#     try:
-#         ts = str(ts)
-#     except TypeError:
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#
-#     if not re.match(r"^\d{10}$", ts):
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#     if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#     return int(ts)
 
 
 def validdatetime(ts):
@@ -1220,7 +1186,7 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
         if headers:
             x = len(k)
         if any([bool(item) for item in v]):
-            x = max([len(item) for item in v if item])
+            x = max([len(str(item)) for item in v if item])
         if headers:
             if len(k) > x:
                 x = len(k)
@@ -1233,7 +1199,7 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
         for item in v:
             x = "{0}".format(gettabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
             if item:
-                x = "{0}{1}".format(item, gettabs(max_width[k] - len(item), tabsize=tabsize)).expandtabs(tabsize)
+                x = "{0}{1}".format(item, gettabs(max_width[k] - len(str(item)), tabsize=tabsize)).expandtabs(tabsize)
             y.append(x)
         out_data[k] = y
 
@@ -1264,6 +1230,10 @@ def base85_decode(bytobj, encoding="utf-8"):
 # ==========================
 def integertostring(intg):
     return str(intg)
+
+
+def cjustify(stg, width, char=""):
+    return "{0:{2}^{1}}".format(stg, width, char)
 
 
 def rjustify(stg, width, char=""):

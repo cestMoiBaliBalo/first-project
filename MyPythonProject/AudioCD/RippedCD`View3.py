@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 import yaml
 
-from Applications.Database.AudioCD.shared import selectlogs
+from Applications.Database.AudioCD.shared import selectlogs_fromkeywords
 from Applications.parsers import database_parser
 from Applications.shared import LOCAL, TEMPLATE4, UTF8, dateformat, getnearestmultiple, gettabs
 
@@ -63,7 +63,7 @@ if not arguments.orderby:
 
 # 3. Get ripped CDs list.
 reflist = [(str(row.rowid), row.artistsort, row.albumsort, row.artist, str(row.origyear), str(row.year), row.album, dateformat(LOCAL.localize(row.ripped), TEMPLATE4)) for row in
-           selectlogs(arguments.db, orderby=orderby)]
+           selectlogs_fromkeywords(db=arguments.db, orderby=orderby)]
 
 # 4. Gather audio tags together per family into an ordered dictionary to preserve tags sequence.
 tags = OrderedDict(zip(headers, zip(*reflist)))

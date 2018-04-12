@@ -43,7 +43,7 @@ logger.debug(arguments.db)
 logger.debug(arguments.table)
 
 # 2 --> Initializations.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Repository.json")) as fp:
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Tasks.json")) as fp:
     repo = {task.uid: task.description for task in [tasks._make(v) for k, v in json.load(fp).items()]}
 
 # 3 --> Build XML file.

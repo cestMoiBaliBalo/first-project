@@ -1,4 +1,12 @@
 @ECHO off
+
+
+REM __author__ = 'Xavier ROSSET'
+REM __maintainer__ = 'Xavier ROSSET'
+REM __email__ = 'xavier.python.computing@protonmail.com'
+REM __status__ = "Production"
+
+
 SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 
 
@@ -17,9 +25,9 @@ SET _jsonrippedcd=%TEMP%\rippinglog.json
 SET _jsonrippedtracks=%TEMP%\digitalaudiodatabase.json
 
 
-REM ===============
-REM Main algorithm.
-REM ===============
+REM ============
+REM Main script.
+REM ============
 
 
 :MAIN

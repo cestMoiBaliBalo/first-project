@@ -69,22 +69,7 @@ epochconverter.add_argument("end", help="End epoch", type=unixepochtime, nargs="
 epochconverter.add_argument("-z", "--zone", help="Time zone", default=shared.DFTTIMEZONE)
 
 #     =========
-#  4. PARSER 4.
-#     =========
-# foldercontent = argparse.ArgumentParser()
-# foldercontent.add_argument("folder", type=shared.validpath)
-# foldercontent.add_argument("extensions", nargs="*")
-
-#     =========
-#  5. PARSER 5.
-#     =========
-# improvedfoldercontent = argparse.ArgumentParser()
-# improvedfoldercontent.add_argument("folder", type=shared.validpath)
-# improvedfoldercontent.add_argument("excluded", nargs="*")
-# improvedfoldercontent.add_argument("-e", "--ext", dest="extensions", nargs="*")
-
-#     =========
-#  6. PARSER 6.
+#  3. PARSER 3.
 #     =========
 database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
 group = database_parser.add_mutually_exclusive_group()
@@ -92,28 +77,28 @@ group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path 
 group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
 
 #     =========
-#  7. PARSER 7.
+#  4. PARSER 4.
 #     =========
 readtable = argparse.ArgumentParser(parents=[database_parser])
 readtable.add_argument("table", choices=["tasks"], help="Read table")
 
 #     =========
-#  8. PARSER 8.
+#  5. PARSER 5.
 #     =========
 loglevel_parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
 loglevel_parser.add_argument("--loglevel", help="Log level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
 
 #     =========
-#  9. PARSER 9.
+#  6. PARSER 6.
 #     =========
 subset_parser = argparse.ArgumentParser(parents=[database_parser], argument_default=argparse.SUPPRESS)
 subset_parser.add_argument("--artistsort", nargs="*", help="Subset digital albums by artistsort.")
 subset_parser.add_argument("--albumsort", nargs="*", help="Subset digital albums by albumsort.")
 subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by artist.")
 
-#     ==========
-# 10. PARSER 10.
-#     ==========
+#     =========
+#  7. PARSER 7.
+#     =========
 tasks_parser = argparse.ArgumentParser()
 tasks_parser.add_argument("-t", "--table", default="tasks", choices=["tasks"])
 subparser = tasks_parser.add_subparsers(dest="action")
@@ -125,9 +110,9 @@ parser_select.add_argument("--forced", action="store_true")
 parser_update = subparser.add_parser("update", argument_default=argparse.SUPPRESS, parents=[loglevel_parser, database_parser])
 parser_update.add_argument("taskid", type=int)
 
-#     ==========
-# 11. PARSER 11.
-#     ==========
+#     =========
+#  8. PARSER 8.
+#     =========
 
 # --------------
 # Parent parser.
@@ -157,9 +142,9 @@ images_write.add_argument("--copyright", action="store_true")
 # --> Read tags.
 images_read = subparser.add_parser("read", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
 
-#     ==========
-# 12. PARSER 12.
-#     ==========
+#     =========
+#  9. PARSER 9.
+#     =========
 foldercontent = argparse.ArgumentParser()
 subparser = foldercontent.add_subparsers(dest="command")
 

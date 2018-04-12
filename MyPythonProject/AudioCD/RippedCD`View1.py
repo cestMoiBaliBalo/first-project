@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from Applications.Database.AudioCD.shared import selectlogs
+from Applications.Database.AudioCD.shared import selectlogs_fromkeywords
 from Applications.parsers import database_parser, loglevel_parser
 from Applications.shared import UTF8
 
@@ -70,7 +70,7 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-logs = list(selectlogs(db=arguments.db, logginglevel="info"))
+logs = list(selectlogs_fromkeywords(db=arguments.db))
 if logs:
     sys.exit(0)
 sys.exit(100)

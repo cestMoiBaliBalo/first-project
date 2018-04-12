@@ -34,7 +34,7 @@ def clearscreen():
 # ===================
 # Jinja2 environment.
 # ===================
-environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Templates"), encoding=DFTENCODING),
+environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Manager"), encoding=DFTENCODING),
                           trim_blocks=True,
                           lstrip_blocks=True,
                           keep_trailing_newline=True)
@@ -42,7 +42,7 @@ environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvar
 # ================
 # Jinja2 template.
 # ===============
-template = environment.get_template("T1")
+template = environment.get_template("T01")
 
 # ====================
 # Regular expressions.
@@ -59,7 +59,7 @@ y, choice = [], 99
 # ===============
 
 # 1. Load tasks, numbers and return codes.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Tasks.json")) as fp:
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Menu.json")) as fp:
     tasks = json.load(fp)
 
 codes = dict([(str(number), code) for task, number, code in tasks])

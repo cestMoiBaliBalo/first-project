@@ -1,3 +1,10 @@
+REM __author__ = 'Xavier ROSSET'
+REM __maintainer__ = 'Xavier ROSSET'
+REM __email__ = 'xavier.python.computing@protonmail.com'
+REM __status__ = "Production"
+SETLOCAL ENABLEDELAYEDEXPANSION
+
+
 REM ================
 REM Initializations.
 REM ================
@@ -5,23 +12,32 @@ SET _me=%~n0
 SET _myparent=%~dp0
 
 
+REM ============
+REM Main script.
+REM ============
 IF ["%~1"] EQU [""] GOTO END
 
-REM Get string length.
+REM A. Get string length.
 IF ["%~1"] EQU ["GETLENGTH"] (
     SET _result=
     CALL :GETLENGTH _result "%~2"
-    EXIT /B !_result!
+    (
+        ENDLOCAL
+        EXIT /B !_result!
+    )
 )
 
-REM Get number of occurences from a separated string.
+REM B. Get number of occurences from a separated string.
 IF ["%~1"] EQU ["GETOCCURENCES"] (
     SET _result=
     CALL :GET_OCCURENCES _result "%~2" "%~3"
-    EXIT /B !_result!
+    (
+        ENDLOCAL
+        EXIT /B !_result!
+    )
 )
 
-REM Update 7-Zip archive content.
+REM C. Update 7-Zip archive content.
 IF ["%~1"] EQU ["ARCHIVE"] (
 
     SET _files=
@@ -35,25 +51,29 @@ IF ["%~1"] EQU ["ARCHIVE"] (
 
 :FILES1
     SET _list="%~8"
-    IF NOT DEFINED _list GOTO END_FILES1
-    IF DEFINED _list (
-        SET _files=!_files!!_list! 
-        SET _run=1
-    )
+    IF [!_list!] EQU [""] GOTO END_FILES1
+    SET _files=!_files!!_list! 
+    SET _run=1
     SHIFT /8
     GOTO FILES1
-:END_FILES1
 
+:END_FILES1
     IF !_run! EQU 1 (
         CALL :ARCHIVE !_command! !_type! !_name! !_password! !_encoding! !_currdir! _exit !_files:~0,-1!
         EXIT /B !_exit!
     )
-    EXIT /B 100
+    (
+        ENDLOCAL
+        EXIT /B 100
+    )
 
 )
 
 :END
-EXIT /B 0
+(
+    ENDLOCAL
+    EXIT /B 0
+)
 
 
 REM    ==================

@@ -1,0 +1,19 @@
+@ECHO off
+SETLOCAL
+SET _cp=1252
+FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp%
+{% for src, wildcard, dst in command1 %}
+
+REM -----
+XXCOPY.EXE "{{ src }}\{{ wildcard }}" "{{ dst }}\" /BI /FF /L /oA:%_XXCOPYLOG%
+IF %ERRORLEVEL% EQU 0 XXCOPY.EXE "{{ src }}\{{ wildcard }}" "{{ dst }}\" /KS /BI /FF /Y /oA:%_XXCOPYLOG%
+{% endfor %}
+
+{%- for src, dst in command2 %}
+
+REM -----
+XXCOPY.EXE "{{ src }}\" "{{ dst }}\" /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+{% endfor %}
+
+ENDLOCAL
+EXIT /B 0

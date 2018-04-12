@@ -1,0 +1,71 @@
+
+ {{ cwd|cjustify(218) }}
+
+
+{# ================= #}
+{# Available folders #}
+{# ================= #}
+{% for item in menu %}
+     {% if loop.first %}
+
+
+     {% endif %}
+{{ loop.index|rjustify(3) }}. {{ item }}
+     {% if loop.last %}
+
+
+     {% endif %}
+{% endfor -%}
+
+
+{# =============== #}
+{# Available files #}
+{# =============== #}
+{% for file, size in collection1 %}
+     {% if loop.first %}
+
+
+ ======
+ Files.
+ ======
+     {% endif %}
+ {{ loop.index|rjustify(5) }}. {{ file }}{{ size }}
+     {% if loop.last %}
+
+
+     {% endif %}
+{% endfor -%}
+
+
+{# ====================== #}
+{# Empty directories list #}
+{# ====================== #}
+{% for directory in collection2 %}
+    {% if loop.first %}
+ ==================
+ Empty directories.
+ ==================
+    {% endif %}
+ {{ loop.index|rjustify(3) }}. {{ directory }}
+     {% if loop.last %}
+
+
+     {% endif %}
+{% endfor -%}
+
+
+{# =============== #}
+{# Extensions list #}
+{# =============== #}
+{% for extension, count in collection3 %}
+    {% if loop.first %}
+ ===========
+ Extensions.
+ ===========
+    {% endif %}
+ {{ extension }}: {{ count }}
+    {% if loop.last %}
+
+
+    {% endif %}
+{% endfor %}

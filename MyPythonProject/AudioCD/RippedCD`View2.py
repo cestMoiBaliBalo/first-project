@@ -5,12 +5,13 @@ Log ripped audio CDs into an XML file (`%TEMP%\rippedaudiocds.xml`).
 import argparse
 import logging.config
 import os
+import sys
 import xml.etree.ElementTree as ET
 from operator import itemgetter
 
 import yaml
 
-from Applications.Database.AudioCD.shared import selectlogs
+from Applications.Database.AudioCD.shared import selectlogs_fromkeywords
 from Applications.parsers import database_parser
 from Applications.shared import LOCAL, TEMPLATE4, UTF8, dateformat
 from Applications.xml import rippinglog_view1, rippinglog_view2
@@ -56,7 +57,7 @@ for step in arguments.steps:
                                   row.application,
                                   row.albumsort,
                                   row.artistsort)
-                                 for row in selectlogs(arguments.db)], key=itemgetter(3), reverse=True), key=itemgetter(2), reverse=True)
+                                 for row in selectlogs_fromkeywords(db=arguments.db)], key=itemgetter(3), reverse=True), key=itemgetter(2), reverse=True)
         if reflist:
             ET.ElementTree(rippinglog_view1(reflist)).write(output, encoding=UTF8, xml_declaration=True)
 
@@ -72,6 +73,8 @@ for step in arguments.steps:
                            row.application,
                            row.albumsort,
                            row.artistsort)
-                          for row in selectlogs(arguments.db)], key=itemgetter(2))
+                          for row in selectlogs_fromkeywords(db=arguments.db)], key=itemgetter(2))
         if reflist:
             ET.ElementTree(rippinglog_view2(reflist)).write(output, encoding=UTF8, xml_declaration=True)
+
+sys.exit(0)
