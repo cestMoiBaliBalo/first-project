@@ -1,7 +1,7 @@
-{%- for album, albumid in content %}
+{%- for album in content %}
 <div class="cover">
     <div class="innercover">
-        <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumid|normalize2()|e }}&prevpage=index"><img src="{{ albumid[-12:]|getcover(albumid[2:-13])|normalize2()|e }}" alt="No cover found!" width="150" height="150"/></a>
+        <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ album.albumid|normalize2()|e }}&prevpage=index"><img src="{{ album.albumid[-12:]|getcover(album.albumid[2:-13])|normalize2()|e }}" alt="No cover found!" width="150" height="150"/></a>
         <div class="album">{{ album.album|e }}</div>
     </div>
 </div>

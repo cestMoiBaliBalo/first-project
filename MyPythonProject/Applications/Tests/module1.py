@@ -10,7 +10,6 @@ import yaml
 
 from Tasks.tables import validmonth
 from .. import shared
-from ..AudioCD.shared import canfilebeprocessed
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -200,33 +199,33 @@ class Test06(unittest.TestCase):
         self.assertRegex("Février 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
 
 
-class Test07(unittest.TestCase):
-    def test_01first(self):
-        self.assertTrue(canfilebeprocessed("flac", *()))
-
-    def test_02second(self):
-        self.assertFalse(canfilebeprocessed("pdf", *()))
-
-    def test_03third(self):
-        self.assertTrue(canfilebeprocessed("flac", *("flac",)))
-
-    def test_04fourth(self):
-        self.assertFalse(canfilebeprocessed("mp3", *("flac",)))
-
-    def test_05fifth(self):
-        self.assertFalse(canfilebeprocessed("flac", *("pdf",)))
-
-    def test_06sixth(self):
-        self.assertTrue(canfilebeprocessed("FLAC", *()))
-
-    def test_07seventh(self):
-        self.assertFalse(canfilebeprocessed("PDF", *()))
-
-    def test_08eighth(self):
-        self.assertTrue(canfilebeprocessed("FLAC", *("flac",)))
-
-    def test_09ninth(self):
-        self.assertTrue(canfilebeprocessed("flac", *("FLAC",)))
-
-    def test_10tenth(self):
-        self.assertTrue(canfilebeprocessed("FLAC", *("FLAC",)))
+# class Test07(unittest.TestCase):
+#     def test_01first(self):
+#         self.assertTrue(canfilebeprocessed("flac", *()))
+#
+#     def test_02second(self):
+#         self.assertFalse(canfilebeprocessed("pdf", *()))
+#
+#     def test_03third(self):
+#         self.assertTrue(canfilebeprocessed("flac", *("flac",)))
+#
+#     def test_04fourth(self):
+#         self.assertFalse(canfilebeprocessed("mp3", *("flac",)))
+#
+#     def test_05fifth(self):
+#         self.assertFalse(canfilebeprocessed("flac", *("pdf",)))
+#
+#     def test_06sixth(self):
+#         self.assertTrue(canfilebeprocessed("FLAC", *()))
+#
+#     def test_07seventh(self):
+#         self.assertFalse(canfilebeprocessed("PDF", *()))
+#
+#     def test_08eighth(self):
+#         self.assertTrue(canfilebeprocessed("FLAC", *("flac",)))
+#
+#     def test_09ninth(self):
+#         self.assertTrue(canfilebeprocessed("flac", *("FLAC",)))
+#
+#     def test_10tenth(self):
+#         self.assertTrue(canfilebeprocessed("FLAC", *("FLAC",)))

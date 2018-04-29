@@ -1,0 +1,38 @@
+
+   SYNC REPOSITORIES
+
+
+{# ================== #}
+{# DISPLAY LOG DETAIL #}
+{# ================== #}
+{% for key, value in log.items() %}
+    {% if loop.first %}
+
+
+    {% endif %}
+    {% set tag, cur_value, new_value = value %}
+ {{ tag }}: {{ cur_value }}{{ new_value }}
+    {% if loop.last %}
+
+
+
+    {% endif %}
+{% endfor -%}
+
+{# =========================== #}
+{# DISPLAY ALTERABLE TAGS MENU #}
+{# =========================== #}
+{% for item in menu %}
+    {% if loop.first %}
+
+ {{ title }}
+
+
+    {% endif %}
+ {{ loop.index|rjustify(3) }}. {{ item }}.
+    {% if loop.last %}
+
+
+
+    {% endif %}
+{% endfor -%}

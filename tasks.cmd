@@ -197,7 +197,7 @@ IF ERRORLEVEL 24 (
     ECHO:
     ECHO:
     SET /P _choice=Please choose a drive or press ENTER to quit: || GOTO FIN24
-    python %_AUDIOCD%\Tools\check_choice.py !_choice! !_num!
+    python %_AUDIOCD%\Shared\check_choice.py !_choice! !_num!
     IF ERRORLEVEL 1 GOTO MENU24
 
     REM 2. Grab backup destination once %_choice% is checked as valid.
@@ -218,7 +218,7 @@ IF ERRORLEVEL 24 (
     ECHO:
     ECHO:
     SET /P _backuptype=Please choose backup type: || SET _backuptype=1
-    python %_AUDIOCD%\Tools\check_choice.py !_backuptype! "2"
+    python %_AUDIOCD%\Shared\check_choice.py !_backuptype! "2"
     IF ERRORLEVEL 1 GOTO ARCHIVE_TYPE
 
     REM 5. Confirm or abort backup.
@@ -698,7 +698,7 @@ POPD
 ECHO:
 ECHO:
 SET /P _choice=Please choose a folder or press ENTER to quit: || GOTO END_P2
-python %_AUDIOCD%\Tools\check_choice.py %_choice% %_num%
+python %_AUDIOCD%\Shared\check_choice.py %_choice% %_num%
 IF ERRORLEVEL 1 GOTO P2
 FOR %%C IN (%_choice%) DO SET _key=!_elem[%%C]!
 

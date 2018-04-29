@@ -22,7 +22,7 @@ __status__ = "Production"
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     dictConfig(yaml.load(fp))
-logger = logging.getLogger("Applications.Database.Tables")
+logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
 # ================
 # Initializations.

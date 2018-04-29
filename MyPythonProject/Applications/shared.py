@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import argparse
 import io
 import locale
@@ -583,7 +584,7 @@ class LocalParser(parserinfo):
               ('Decembre', 'December')]
 
     def __init__(self, dayfirst=False, yearfirst=False):
-        super(LocalParser, self).__init__(dayfirst, yearfirst)
+        super().__init__(dayfirst, yearfirst)
 
 
 # ===========================
@@ -833,8 +834,8 @@ def validalbumsort(albumsort):
     :param albumsort: `albumsort` tag.
     :return: `albumsort` tag.
     """
-    rex1 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
-    rex2 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
+    rex1 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
+    rex2 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
     msg = r"is not a valid albumsort."
 
     try:
@@ -1064,7 +1065,7 @@ def filesinfolder(*extensions, folder, excluded=None):
         regex1 = re.compile(r"(?:{0})".format("|".join(map(os.path.normpath, map(os.path.join, repeat(folder), excluded))).replace("\\", r"\\").replace("$", r"\$")), re.IGNORECASE)
 
     # --> Walk through folder.
-    for root, folders, files in os.walk(folder):
+    for root, _, files in os.walk(folder):
 
         # Regular expression for extension(s) inclusion.
         rex2 = r"\.[a-z0-9]{3,}$"
@@ -1137,13 +1138,13 @@ def zipfiles(archive, *files):
     if not os.path.exists(os.path.dirname(archive)):
         raise OSError('"{0}" doesn\'t exist. Please enter an existing directory.'.format(os.path.dirname(archive)))
     with zipfile.ZipFile(archive, "w") as thatzip:
-        logger.info('"{0}" used as ZIP file.'.format(archive))
+        logger.info('"%s" used as ZIP file.', archive)
         for file in files:
             if os.path.exists(file):
                 thatzip.write(file, arcname=os.path.basename(file))
-                logger.info('"{0}" successfully written.'.format(file))
+                logger.info('"%s" successfully written.', file)
                 continue
-            logger.info('Failed to write "{0}".'.format(file))
+            logger.info('Failed to write "%s".', file)
 
 
 def mainscript(stg, align="^", fill="=", length=140):
@@ -1158,16 +1159,17 @@ def xsltransform(xml, xsl, html):
     return process.returncode
 
 
-def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
+def prettyprint(*iterable, headers=(), char="=", tabsize=3, gap=3):
     """
 
-    :param tup:
+    :param iterable:
     :param headers:
     :param char:
     :param tabsize:
     :param gap:
     :return:
     """
+    sequence = [list(item) for item in iterable]
 
     # 1. Initializations.
     max_length, max_width, out_data, out_headers, separators = {}, {}, OrderedDict(), None, None
@@ -1175,10 +1177,10 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
     # 2. Set input headers.
     inp_headers = list(headers)
     if not headers:
-        inp_headers = ["header{0:>2d}".format(i) for i in range(len(tup[0]))]
+        inp_headers = ["header{0:>2d}".format(i) for i in range(len(sequence[0]))]
 
     # 3. Gather data per header.
-    input_data = OrderedDict(zip(inp_headers, zip(*tup)))
+    input_data = OrderedDict(zip(inp_headers, zip(*sequence)))
 
     # 4. Get data maximum length and maximum allowed width.
     for k, v in input_data.items():
@@ -1217,6 +1219,18 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
     return None, out_data
 
 
+def left_justify(iterable):
+    """
+
+    :param iterable:
+    :return:
+    """
+    sequence = list(iterable)
+    length = max([len(str(item)) for item in sequence])
+    for item in ["{0:<{1}}".format(item, length) for item in sequence]:
+        yield item
+
+
 def base85_encode(strg, encoding="utf-8"):
     return b85encode(strg.encode(encoding=encoding))
 
@@ -1225,9 +1239,9 @@ def base85_decode(bytobj, encoding="utf-8"):
     return b85decode(bytobj).decode(encoding=encoding)
 
 
-# ==========================
-# Jinja2 Customized filters.
-# ==========================
+# ======================
+# Jinja2 Custom filters.
+# ======================
 def integertostring(intg):
     return str(intg)
 

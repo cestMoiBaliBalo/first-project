@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging.config
 import os
+import sys
 from fnmatch import fnmatch
 from shutil import move
-import sys
 
 import yaml
 
@@ -16,7 +16,7 @@ __status__ = "Production"
 
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("TASK04")
+logger = logging.getLogger("PythonProject.AudioCD.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
 SRC = os.path.join(os.path.expandvars("%USERPROFILE%"), "Videos")
 DST = os.path.join(os.path.expandvars("%_CLOUDSTATION%"), "Vidéos")
@@ -29,5 +29,4 @@ for video in list(grouper(filter(lambda i: fnmatch(i, "*.mp4"), os.listdir(SRC))
             pass
         else:
             logger.info('"{0}" moved to CloudStation'.format(video))
-
 sys.exit(0)

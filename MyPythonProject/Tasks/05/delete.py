@@ -48,13 +48,13 @@ T1 = template.environment.get_template("T01")
 # ===============
 # Main algorithm.
 # ===============
-level, page, step, q_pressed, delete = init()
+error, page, step, q_pressed, delete = init()
 while not q_pressed:
 
     if step == 1:
         database = shared.prompt_databases(T1)
         if not database:
-            level, q_pressed = 100, True
+            error, q_pressed = 100, True
         if not q_pressed:
             step += 1
 
@@ -62,15 +62,15 @@ while not q_pressed:
         if not database:
             run("CLS", shell=True)
             print(T1.render(menu=[], logs=[], title=""))
-            input(" Some issue occurred: database not found. Press any key to quit.")
-            level, q_pressed = 101, True
+            input(" An issue occurred: database is missing. Press any key to quit.")
+            error, q_pressed = 101, True
         if not q_pressed:
             logs = [(artist, origyear, year, album, label, genre, upc, disc, tracks, artistsort, albumsort, rowid) for
                     rowid, ripped, artistsort, albumsort, artist, origyear, year, album, label, genre, upc, application, disc, tracks, utc_created, utc_modified in selectlogs_fromuid(db=database)]
             logs = sorted(sorted(sorted(logs, key=itemgetter(3)), key=itemgetter(10)), key=itemgetter(9))
             uid = shared.prompt_logs(T1, *grouper(logs, 30))
             if not uid:
-                level, q_pressed = 100, True
+                error, q_pressed = 100, True
             if not q_pressed:
                 step += 1
 
@@ -78,11 +78,11 @@ while not q_pressed:
         while True:
             run("CLS", shell=True)
             print(T1.render(menu=[], logs=[], title=""))
-            answer = input(" Please confirm logs removal. Press [Y] to confirm or [N] to cancel: ")
+            answer = input(" Please confirm log(s) deletion. Press [Y] to confirm or [N] to cancel: ")
             if answer.upper() not in ACCEPTEDANSWERS:
                 continue
             if answer.upper() == "N":
-                level = 100
+                error = 100
             elif answer.upper() == "Y":
                 delete = True
             q_pressed = True
@@ -94,10 +94,10 @@ while not q_pressed:
 if delete:
     run("CLS", shell=True)
     print(T1.render(menu=[], logs=[], title=""))
-    input(" {0:>2d} logs removed. Press any key to quit.".format(deletelog(*uid, db=database)))
+    input(" {0:>2d} logs deleted. Press any key to quit.".format(deletelog(*uid, db=database)))
 
 # ===============
 # Exit algorithm.
 # ===============
 run("CLS", shell=True)
-sys.exit(level)
+sys.exit(error)

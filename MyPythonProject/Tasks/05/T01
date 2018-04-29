@@ -12,7 +12,7 @@
 
 
     {% endif %}
- {{ loop.index|rjustify(5) }}. {{ item }}.
+ {{ loop.index|rjustify(3) }}. {{ item }}.
     {% if loop.last %}
 
 
@@ -32,7 +32,7 @@
     {% endif %}
     {% if item %}
         {% set artist, origyear, year, album, label, genre, upc, disc, tracks, artistsort, albumsort, rowid = item %}
- {{ loop.index|rjustify(5) }}. {{ artist }}{{ origyear }}{{ year }}{{ album }}{{ label }}{{ genre }}{{ upc }}{{ artistsort }}{{ albumsort }}
+ {{ loop.index|rjustify(3) }}. {{ artist }}{{ origyear }}{{ year }}{{ album }}{{ label }}{{ genre }}{{ upc }}{{ artistsort }}{{ albumsort }}
     {% endif %}
     {% if loop.last %}
 

@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple, MutableSequence
-from Applications.descriptors import Answers, Year
-from itertools import accumulate, repeat
-from contextlib import contextmanager
-from logging.config import dictConfig
-from Applications import shared
-from operator import itemgetter
 import argparse
-import logging
 import glob
-import yaml
-import sys
+import logging
 import os
 import re
+import sys
+from collections import MutableSequence, namedtuple
+from contextlib import contextmanager
+from itertools import accumulate, repeat
+from logging.config import dictConfig
+from operator import itemgetter
+
+import yaml
+
+from Applications import shared
+from Applications.descriptors import Answers, Year
 
 __author__ = 'Xavier ROSSET'
 
@@ -21,7 +23,6 @@ __author__ = 'Xavier ROSSET'
 # Classes.
 # ========
 class LocalInterface(shared.GlobalInterface):
-
     # Data descriptor(s).
     year = Year()
     test = Answers("N", "Y", default="Y")
@@ -32,7 +33,6 @@ class LocalInterface(shared.GlobalInterface):
 
 
 class ImagesCollection(MutableSequence):
-
     def __init__(self, year):
         self._collection = None
         self.collection = year
@@ -120,7 +120,6 @@ class ImagesCollection(MutableSequence):
 
 
 class Log(object):
-
     def __init__(self, index=0):
         self._index = 0
         self.index = index
@@ -194,7 +193,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("year", type=validyear, nargs="+")
 parser.add_argument("-t", "--test", action="store_true")
 
-
 # ===============
 # Main algorithm.
 # ===============
@@ -265,7 +263,7 @@ if __name__ == "__main__":
                         logger.info(msg)
                     continue
 
-                #    ---------------------------------------------------------------
+                # ---------------------------------------------------------------
                 # 2. Aucun fichier du répertoire ne répond au masque "CCYYMM_xxxxx".
                 #    ---------------------------------------------------------------
                 if all(not i.match for i in map(func1, map(os.path.basename, files))):
@@ -279,7 +277,7 @@ if __name__ == "__main__":
                                 results.append(result)
                     continue
 
-                #    ------------------------------------------------------------------
+                # ------------------------------------------------------------------
                 # 3. Au moins un fichier du répertoire répond au masque "CCYYMM_xxxxx".
                 #    ------------------------------------------------------------------
                 msg = '"{0}": renaming needed.'.format(curdir)

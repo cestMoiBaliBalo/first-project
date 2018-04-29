@@ -3,7 +3,6 @@ import json
 import os
 import re
 import sys
-from contextlib import contextmanager
 from itertools import chain
 from subprocess import run
 
@@ -20,16 +19,6 @@ __status__ = "Production"
 # Constants.
 # ==========
 COLUMN = 56
-
-
-# ==========
-# Functions.
-# ==========
-@contextmanager
-def clearscreen():
-    run("CLS", shell=True)
-    yield
-
 
 # ===================
 # Jinja2 environment.
@@ -152,8 +141,8 @@ y = ["{0:>{1}}".format(item, len(item) + 8) for item in y]
 # 2. Display tasks launcher.
 o = template.render(menu=y)
 while True:
-    with clearscreen():
-        print(o)
+    run("CLS", shell=True)
+    print(o)
     choice = input("\t\tPlease enter task: ".expandtabs(4))
     if choice:
         if not rex1.match(choice):

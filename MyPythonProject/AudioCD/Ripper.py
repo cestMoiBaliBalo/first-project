@@ -3,8 +3,8 @@
 import argparse
 import logging.config
 import os
-from contextlib import ExitStack
 import sys
+from contextlib import ExitStack, suppress
 
 import yaml
 
@@ -46,12 +46,10 @@ obj, arguments = [], parser.parse_args()
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
-try:
+with suppress(KeyError):
     config["loggers"]["Applications.AudioCD"]["level"] = MAPPING[arguments.debug].upper()
-except KeyError:
-    pass
 logging.config.dictConfig(config)
-logger = logging.getLogger("Applications.AudioCD")
+logger = logging.getLogger("MyPythonProject.AudioCD.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
 # ===============
 # Main algorithm.
@@ -60,7 +58,7 @@ logger.debug(mainscript(__file__))
 stack = ExitStack()
 value = 0
 try:
-    rippedcd = stack.enter_context(RippedCD(arguments.profile, arguments.file, *arguments.decorators, test=arguments.test))
+    rippedcd = stack.enter_context(RippedCD(arguments.profile, arguments.file, *arguments.decorators))
 except ValueError as err:
     logger.debug(err)
     value = 100
@@ -69,9 +67,11 @@ else:
         if arguments.profile in ["default"]:
 
             # 1. Digital audio files database.
+            logger.debug("Insert data into ALBUMS, DISCS and TRACKS tables.")
             digitalaudiobase(rippedcd.new, db=arguments.db)
 
             # 2. Ripped CD database.
+            logger.debug("Insert data into RIPPINGLOG table.")
             rippinglog(rippedcd.new, db=arguments.db)
 
 sys.exit(value)

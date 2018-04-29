@@ -6,6 +6,7 @@ import argparse
 import logging.config
 import os
 import sys
+from contextlib import suppress
 
 import yaml
 
@@ -37,19 +38,15 @@ arguments = parser.parse_args()
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     config = yaml.load(fp)
 for logger in ["Applications.Database.AudioCD", "Database"]:
-    try:
+    with suppress(KeyError):
         config["loggers"][logger]["level"] = arguments.loglevel.upper()
-    except KeyError:
-        pass
 
 # 2. Set up a specific stream handler if required.
 if arguments.console:
 
     # 2.a. Define `audiocd_console` as second stream handler for `Applications.Database.AudioCD`.
-    try:
+    with suppress(KeyError):
         config["loggers"]["Applications.Database.AudioCD"]["handlers"] = ["file", "audiocd_console"]
-    except KeyError:
-        pass
 
     # 2.b. Set up `audiocd_console` for `Applications.Database.AudioCD`.
     config["handlers"]["audiocd_console"] = {}

@@ -94,13 +94,12 @@ def get_folders(directory):
 
 
 def has_extension(directory, *extensions):
-    d = {False: 0, True: 1}
-    ext = []
-    for _dirname, _dirnames, _filenames in os.walk(directory):
+    mapping, ext = {False: 0, True: 1}, []
+    for _, _dirnames, _filenames in os.walk(directory):
         if not _dirnames:
             if _filenames:
                 ext.extend(os.path.splitext(file)[1][1:] for file in _filenames)
-    return d[any(map(lambda i: bool(i.lower() in [extension.lower() for extension in extensions]), ext))]
+    return mapping[any(map(lambda i: bool(i.lower() in [extension.lower() for extension in extensions]), ext))]
 
 
 def init():
@@ -162,7 +161,7 @@ while not q_pressed:
     if step == 1:
         while True:
             run("CLS", shell=True)
-            print(T1.render(menu=repositories, title="Available audio repositories:", message=False))
+            print(T1.render(menu=repositories, title="Available audio repositories."))
             answer = input(" Please choose source repository or press [Q] to quit: ")
             if answer.upper() == "Q":
                 q_pressed, level = True, 100
@@ -174,9 +173,13 @@ while not q_pressed:
             else:
                 if not int(answer):
                     continue
-                step += 1
                 repository = configuration["repositories"][repository]
                 extensions = configuration["extensions"][configuration["compression"][repository]]
+                artists = OrderedDict(sorted(get_artists(), key=itemgetter(0)))
+                selectors = OrderedDict((name, has_extension(path, *extensions)) for name, path in artists.items())
+                selectors = list(zip(*selectors.items()))
+                menu = list(itertools.compress(data=selectors[0], selectors=selectors[1]))
+                step += 1
                 break
 
     #    ---------------
@@ -185,36 +188,42 @@ while not q_pressed:
     elif step == 2:
         if not repository:
             run("CLS", shell=True)
-            print(T1.render(menu=[], message=True))
-            input(" Some issue occurred: repository is missing. Press any key to quit.")
-            q_pressed, level = True, 101
+            print(T1.render(menu=[]))
+            input(" An issue occurred: repository is missing. Press any key to quit.")
+            q_pressed, level = True, 1
+        if not artists:
+            run("CLS", shell=True)
+            print(T1.render(menu=[]))
+            input(" An issue occurred: artists are missing. Press any key to quit.")
+            q_pressed, level = True, 2
+        if not menu:
+            run("CLS", shell=True)
+            print(T1.render(menu=[]))
+            input(" An issue occurred: menu is missing. Press any key to quit.")
+            q_pressed, level = True, 3
         if not q_pressed:
-            artists = OrderedDict(sorted(get_artists(), key=itemgetter(0)))
-            selectors = OrderedDict((name, has_extension(path, *extensions)) for name, path in artists.items())
-            selectors = list(zip(*selectors.items()))
-            menu = list(itertools.compress(data=selectors[0], selectors=selectors[1]))
-            if not menu:
-                input(" No artist found. Press any key to quit.")
-                q_pressed, level = True, 102
-            if not q_pressed:
-                while True:
-                    run("CLS", shell=True)
-                    print(T1.render(menu=menu, title="Available artists:", message=False))
-                    answer = input(" Please choose artist or press [Q] to quit: ")
-                    if answer.upper() == "Q":
-                        q_pressed, level = True, 100
-                        break
-                    try:
-                        artist = menu[int(answer) - 1]
-                    except (ValueError, IndexError):
+            while True:
+                run("CLS", shell=True)
+                print(T1.render(menu=menu, title="Available artists."))
+                answer = input(" Please choose artist or press [Q] to quit: ")
+                if answer.upper() == "Q":
+                    q_pressed, level = True, 100
+                    break
+                try:
+                    artist = menu[int(answer) - 1]
+                except (ValueError, IndexError):
+                    continue
+                else:
+                    if not int(answer):
                         continue
-                    else:
-                        if not int(answer):
-                            continue
-                        step += 1
-                        artist = artists[artist]
-                        destination = os.path.join(repository, os.path.splitdrive(artist)[1][1:])
-                        break
+                    artist = artists[artist]
+                    destination = os.path.join(repository, os.path.splitdrive(artist)[1][1:])
+                    albums = OrderedDict((album, (path, albumsort)) for album, path, albumsort in sorted(get_albums(artist), key=itemgetter(2)))
+                    selectors = OrderedDict((item[0], has_extension(item[1][0], *extensions)) for item in albums.items())
+                    selectors = list(zip(*selectors.items()))
+                    menu = list(itertools.compress(data=selectors[0], selectors=selectors[1]))
+                    step += 1
+                    break
 
     #     ------------------
     #  C. Pick up album.
@@ -222,33 +231,29 @@ while not q_pressed:
     elif step == 3:
         if not artist:
             run("CLS", shell=True)
-            print(T1.render(menu=[], message=True))
-            input(" Some issue occurred: artist is missing. Press any key to quit.")
-            q_pressed, level = True, 103
+            print(T1.render(menu=[]))
+            input(" An issue occurred: artist is missing. Press any key to quit.")
+            q_pressed, level = True, 4
         if not q_pressed:
-            albums = OrderedDict((album, (path, albumsort)) for album, path, albumsort in sorted(get_albums(artist), key=itemgetter(2)))
-            selectors = OrderedDict((item[0], has_extension(item[1][0], *extensions)) for item in albums.items())
-            selectors = list(zip(*selectors.items()))
-            menu = list(itertools.compress(data=selectors[0], selectors=selectors[1]))
 
             if not menu:
                 while True:
                     run("CLS", shell=True)
-                    print(T1.render(menu=[], message=True))
-                    answer = input(" No album found for {0}. Would you like to select another artist? Press [Y] for Yes or [N] for No. ".format(artist))
+                    print(T1.render(menu=[]))
+                    answer = input(" No albums found for {0}. Would you like to pick up another artist? Press [Y] for Yes or [N] for No. ".format(artist))
                     if answer.upper() not in ACCEPTEDANSWERS:
                         continue
                     if answer.upper() == "N":
-                        q_pressed = True
+                        q_pressed, level = True, 100
                     elif answer.upper() == "Y":
-                        level, step = 104, 2
+                        step = 2
                     break
 
-            if menu:
+            elif menu:
                 while True:
                     run("CLS", shell=True)
-                    print(T1.render(menu=menu, title="Available albums:", message=False))
-                    answer = input(" Please choose album to copy or press [Q] to quit: ")
+                    print(T1.render(menu=menu, title="Available albums."))
+                    answer = input(" Please choose album or press [Q] to quit: ")
                     if answer.upper() == "Q":
                         q_pressed, level = True, 100
                         break
@@ -259,27 +264,32 @@ while not q_pressed:
                     else:
                         if not int(answer):
                             continue
-                        step += 1
                         source = albums[album][0]
                         albumsort = albums[album][1]
                         destination = os.path.join(destination, albumsort)
+                        arguments.append((source, destination, extensions))
+                        step += 1
                         break
 
     #    ----------------
     # F. Add other albums.
     #    -----------------
     elif step == 4:
-        if not source or not destination:
+        if not source:
             run("CLS", shell=True)
-            print(T1.render(menu=[], message=True))
-            input(" Some issue occurred: source or destination is missing. Press any key to quit.")
-            q_pressed, level = True, 105
+            print(T1.render(menu=[]))
+            input(" An issue occurred: source directory is missing. Press any key to quit.")
+            q_pressed, level = True, 5
+        if not destination:
+            run("CLS", shell=True)
+            print(T1.render(menu=[]))
+            input(" An issue occurred: destination directory is missing. Press any key to quit.")
+            q_pressed, level = True, 6
         if not q_pressed:
-            arguments.append((source, destination, extensions))
             while True:
                 run("CLS", shell=True)
-                print(T1.render(menu=[], message=True))
-                answer = input(" Would you like to append another album? Press [Y] for Yes or [N] for No. ")
+                print(T1.render(menu=[]))
+                answer = input(" Would you like to pick up another album? Press [Y] for Yes or [N] for No. ")
                 if answer.upper() not in ACCEPTEDANSWERS:
                     continue
                 if answer.upper() == "N":
@@ -294,12 +304,12 @@ while not q_pressed:
     elif step == 5:
         while True:
             run("CLS", shell=True)
-            print(T1.render(menu=[], message=True))
+            print(T1.render(menu=[]))
             answer = input(" Would you like to copy files? Press [Y] for Yes or [N] for No. ")
             if answer.upper() not in ACCEPTEDANSWERS:
                 continue
             if answer.upper() == "N":
-                level = 1
+                level = 100
             copy, q_pressed = True, True
             break
 

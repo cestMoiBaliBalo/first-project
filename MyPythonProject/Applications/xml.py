@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import itertools
 import os
 import re
@@ -58,11 +59,11 @@ def audiofileslist(obj):
 
     # 6. "ArtistsList" element.
     se = ET.SubElement(root, "ArtistsList")
-    for artist1, groups in obj.groupedby_artist:
+    for artist, groups in obj.groupedby_artist:
         groups = list(groups)
-        sse = ET.SubElement(se, "Artist", attrib={"name": artist1, "count": str(len(groups))})
-        groups = [(art, ext, len(list(groups))) for (art, ext), groups in obj.groupedby_artist_extension if art == artist1]
-        for artist2, extension, count in groups:
+        sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
+        groups = [(art, ext, len(list(groups))) for (art, ext), groups in obj.groupedby_artist_extension if art == artist]
+        for _, extension, count in groups:
             ssse = ET.SubElement(sse, "Extension", attrib={"name": extension.upper()})
             ssse.text = str(count)
 
@@ -131,7 +132,7 @@ def rippinglog_view2(reflist):
     se = ET.SubElement(root, "created")
     se.text = now()
 
-    for rowid, readable_date, ripped, artist, year, album, upc, genre, application, albumsort, artistsort in reflist:
+    for rowid, readable_date, _, artist, year, album, upc, genre, _, albumsort, artistsort in reflist:
         sse = ET.SubElement(root, "rippinglog", attrib={"uid": str(rowid)})
 
         # ArtistSort.

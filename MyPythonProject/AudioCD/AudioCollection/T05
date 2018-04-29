@@ -48,24 +48,24 @@
             </div>
             {% if content["view"] == "default" %}
 
-            {%- for row, albumid in content["detail"] %}
+            {%- for digitalalbum in content["albums"] %}
             <div class="cover">
                 <div class="innercover">
-                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ albumid[-12:]|getcover(albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
-                    <div class="album">{{ row.album|e }}</div>
+                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.albumid[-12:]|getcover(digitalalbum.albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                    <div class="album">{{ digitalalbum.album|e }}</div>
                 </div>
             </div>
             {% endfor %}
 
             {%- else -%}
 
-            {% for key, group in content["detail"] %}
-            <h3>{{ key|e }}</h3>
-                {% for row, albumid in group %}
+            {% for key, group in content["albums"] %}
+            <h3>{{ content["mapping"]|getvalue(key)|e }}</h3>
+                {% for digitalalbum in group %}
                     <div class="cover">
                         <div class="innercover">
-                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ albumid[-12:]|getcover(albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
-                            <div class="album">{{ row.album|e }}</div>
+                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.albumid[-12:]|getcover(digitalalbum.albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                            <div class="album">{{ digitalalbum.album|e }}</div>
                         </div>
                     </div>
                 {% endfor %}

@@ -73,11 +73,10 @@ def pprint_extensions(*iterable):
 
 def pprint_files(*iterable, length=229):
     keys = list(zip(*iterable))[0]
-    # length1 = max([len(key) for key in keys])
-
     pairs = list(zip(*iterable))[1]
     pairs = ["{0:n}".format(int(pair)) for pair in pairs]
     length2 = max([len(pair) for pair in pairs])
+
     # Left justify keys.
     keys = ["{0:<{1}}".format(key, length - length2) for key in keys]
 

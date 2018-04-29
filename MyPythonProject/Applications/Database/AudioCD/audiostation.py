@@ -5,6 +5,7 @@ import os
 import sqlite3
 from datetime import datetime
 from itertools import repeat
+from contextlib import suppress
 
 import yaml
 
