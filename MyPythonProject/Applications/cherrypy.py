@@ -2,22 +2,23 @@
 # pylint: disable=no-member
 import collections
 import datetime
-from functools import partial
-from itertools import accumulate, chain, repeat, groupby, zip_longest
 import json
 import logging
-from operator import itemgetter
 import os
 import re
+from functools import partial
+from itertools import accumulate, chain, groupby, repeat, zip_longest
+from operator import itemgetter
 from string import Template
 
 import cherrypy
 import jinja2
 from pytz import timezone
 
-from .Database.AudioCD.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlogs, selectlog, updatelog, validyear
-from .Database.DigitalAudioFiles.shared import getartist, getlastplayeddate, gettrack, getalbumheader, updatelastplayeddate
-from .shared import DATABASE, DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX, LOCAL, MUSIC, TEMPLATE4, UPCREGEX, UTC, UTF8, WRITE, TemplatingEnvironment, dateformat, filesinfolder, localize_date, normalize, \
+# from .Database.AudioCD.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, validyear
+from .Database.AudioCD.shared import deletelog as deleterippedcd, insertfromargs, updatelog, validyear
+from .Database.DigitalAudioFiles.shared import getalbumheader, getartist, getlastplayeddate, gettrack, updatelastplayeddate
+from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, dateformat, filesinfolder, localize_date, normalize, \
     normalize2, now
 
 __author__ = 'Xavier ROSSET'
@@ -26,10 +27,17 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-# ==========
-# Functions.
-# ==========
+# =====================
+# Jinja2 local filters.
+# =====================
 def getalbumid(albumsort, artist, artistsort=None):
+    """
+
+    :param albumsort:
+    :param artist:
+    :param artistsort:
+    :return:
+    """
     art, firstletter = artist, artist[0]
     if artistsort:
         art, firstletter = artistsort, artistsort[0]
@@ -37,13 +45,35 @@ def getalbumid(albumsort, artist, artistsort=None):
 
 
 def getcover(albumsort, artist, artistsort=None):
+    """
+
+    :param albumsort:
+    :param artist:
+    :param artistsort:
+    :return:
+    """
     art, firstletter = artist, artist[0]
     if artistsort:
         art, firstletter = artistsort, artistsort[0]
     return Template(r"albumart/$a/$b/$c/iPod-Front.jpg").substitute(a=firstletter.upper(), b=art, c=albumsort)
 
 
+def getvalue(dictionary, key):
+    """
+
+    :param dictionary:
+    :param key:
+    :return:
+    """
+    return dictionary.get(key, key)
+
+
 def timestamp(dt):
+    """
+
+    :param dt:
+    :return:
+    """
     return int(dt.timestamp())
 
 
@@ -97,6 +127,7 @@ class DigitalAudioCollection(object):
                                       "normalize2": normalize2,
                                       "getalbumid": getalbumid,
                                       "getcover": getcover,
+                                      "getvalue": getvalue,
                                       "localize": localize_date,
                                       "readable": partial(dateformat, template=TEMPLATE4),
                                       "readmonth": partial(dateformat, template="$Y$m"),
@@ -152,7 +183,8 @@ class DigitalAudioCollection(object):
 
     @artistsort_mapping.setter
     def artistsort_mapping(self, arg):
-        self._artistsort_mapping = dict([(item.artistsort, item.artist) for item in selectlogs(arg) if item.artistsort])
+        # self._artistsort_mapping = dict([(item.artistsort, item.artist) for item in selectlogs(arg) if item.artistsort])
+        self._artistsort_mapping = {}
 
     # --------------------------------------------------
     # Getter and setter for "artists_mapping" attribute.
@@ -163,7 +195,8 @@ class DigitalAudioCollection(object):
 
     @artists_mapping.setter
     def artists_mapping(self, arg):
-        self._artists_mapping = dict([(item.artist, item.artistsort) for item in selectlogs(arg) if item.artistsort])
+        # self._artists_mapping = dict([(item.artist, item.artistsort) for item in selectlogs(arg) if item.artistsort])
+        self._artists_mapping = {}
 
     # -------------------------------------------------
     # Getter and setter for "genres_mapping" attribute.
@@ -174,7 +207,8 @@ class DigitalAudioCollection(object):
 
     @genres_mapping.setter
     def genres_mapping(self, arg):
-        self._genres_mapping = dict([(normalize(item.genre), item.genre) for item in selectlogs(arg) if item.genre])
+        # self._genres_mapping = dict([(normalize(item.genre), item.genre) for item in selectlogs(arg) if item.genre])
+        self._genres_mapping = {}
 
     # -------------------------------------------
     # Getter and setter for "rippedcd" attribute.
@@ -185,12 +219,13 @@ class DigitalAudioCollection(object):
 
     @rippedcd.setter
     def rippedcd(self, arg):
-        self._rippedcd = sorted(sorted([(dateformat(LOCAL.localize(item.ripped), "$Y$m"),
-                                         dateformat(LOCAL.localize(item.ripped), "$month $Y"),
-                                         LOCAL.localize(item.ripped),
-                                         item) for item in selectlogs(arg)],
-                                       key=itemgetter(2), reverse=True),
-                                key=itemgetter(0), reverse=True)
+        # self._rippedcd = sorted(sorted([(dateformat(LOCAL.localize(item.ripped), "$Y$m"),
+        #                                  dateformat(LOCAL.localize(item.ripped), "$month $Y"),
+        #                                  LOCAL.localize(item.ripped),
+        #                                  item) for item in selectlogs(arg)],
+        #                                key=itemgetter(2), reverse=True),
+        #                         key=itemgetter(0), reverse=True)
+        self._rippedcd = []
 
     # -------------------------------------------------
     # Getter and setter for "digitalartists" attribute.
@@ -212,7 +247,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums.setter
     def digitalalbums(self, arg):
-        self._digitalalbums = sorted(sorted([(row, row.albumid) for row in getalbumheader(db=arg)], key=lambda i: i[1]), key=lambda i: i[1][2:-13])
+        self._digitalalbums = sorted(sorted(getalbumheader(db=arg), key=lambda album: album.albumid), key=lambda album: album.albumid[2:-13])
 
     # --------------------------------------------------------
     # Getter and setter for "digitalalbums_mapping" attribute.
@@ -235,7 +270,7 @@ class DigitalAudioCollection(object):
 
     @lastplayedalbums.setter
     def lastplayedalbums(self, arg):
-        self._lastplayedalbums = list(filter(lambda i: i.count > 0, getlastplayeddate(db=arg)))
+        self._lastplayedalbums = list(filter(lambda i: i.played > 0, getlastplayeddate(db=arg)))
 
     # ---------------------------------------------
     # Getter and setter for "audiofiles" attribute.
@@ -280,7 +315,8 @@ class DigitalAudioCollection(object):
 
     @months.setter
     def months(self, arg):
-        self._months = list(getmonths(db=arg))
+        # self._months = list(getmonths(db=arg))
+        self._months = []
 
     # ------------------
     # Refresh functions.
@@ -317,34 +353,32 @@ class DigitalAudioCollection(object):
         :param start: Number of the first displayed cover.
         :return: HTML template rendered with CherryPy.
         """
-        detail = None
+        albums = None
+        mapping = dict([(dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums])
 
         # 1. Covers view.
         if view == "default":
             beg = int(start)
             end = int(start) + int(coversperpage)
-            detail = self.digitalalbums[beg:end]
+            albums = self.digitalalbums[beg:end]
 
         # 2. Covers grouped by artist.
         elif view == "artists":
-            detail = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=lambda i: i[1][2:-13])]
+            albums = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=lambda album: album.albumid[2:-13])]
 
         # 3. Covers grouped by month.
         elif view == "months":
-            detail = [(key[1], list(group)) for key, group in groupby(sorted(sorted([(tup[0],
-                                                                                      tup[0].albumid,
-                                                                                      tup[0].created,
-                                                                                      dateformat(LOCAL.localize(tup[0].created), "$Y$m"),
-                                                                                      dateformat(LOCAL.localize(tup[0].created), "$month $Y")) for tup in self.digitalalbums],
-                                                                                    key=lambda i: i[1]),
-                                                                             key=lambda i: i[3], reverse=True),
-                                                                      key=lambda i: (i[3], i[4]))]
+            albums = sorted(sorted(self.digitalalbums, key=lambda album: album.albumid), key=lambda album: dateformat(LOCAL.localize(album.utc_created), "$Y$m"), reverse=True)
+            albums = [(key, list(group)) for key, group in groupby(albums, key=lambda album: dateformat(LOCAL.localize(album.utc_created), "$Y$m"))]
 
         # 4. Return HTML page.
         return self.TEMPLATE.index.render(body="index",
                                           menu=self.TEMPLATE.menu.render(months=self.months),
                                           stylesheets=["stylesheets/common.css", "stylesheets/index.css"],
-                                          content={"detail": detail, "view": view, "scripts": ["frameworks/jquery.js", "scripts/functions.js", "scripts/index.js", "scripts/common.js"]})
+                                          content={"albums": albums,
+                                                   "mapping": mapping,
+                                                   "view": view,
+                                                   "scripts": ["frameworks/jquery.js", "scripts/functions.js", "scripts/index.js", "scripts/common.js"]})
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -596,14 +630,14 @@ class DigitalAudioCollection(object):
         """
 
         # Create log.
-        if mode == "create":
-            return {"dialog": self.TEMPLATE.rippedcdlog.render(mode="create", genres=[(k, v, v.lower() == "rock") for k, v in self.genres_mapping.items()])}
+        # if mode == "create":
+        #     return {"dialog": self.TEMPLATE.rippedcdlog.render(mode="create", genres=[(k, v, v.lower() == "rock") for k, v in self.genres_mapping.items()])}
 
         # Update log.
-        elif mode == "update" and rowid:
-            if int(rowid) > 0:
-                rippedcdlog = list(selectlog(int(rowid), db=self.database))[0]
-                return {"dialog": self.TEMPLATE.rippedcdlog.render(mode=mode, content=rippedcdlog, genres=[(k, v, v.lower() == rippedcdlog.genre.lower()) for k, v in self.genres_mapping.items()])}
+        # elif mode == "update" and rowid:
+        #     if int(rowid) > 0:
+        #         rippedcdlog = list(selectlog(int(rowid), db=self.database))[0]
+        #         return {"dialog": self.TEMPLATE.rippedcdlog.render(mode=mode, content=rippedcdlog, genres=[(k, v, v.lower() == rippedcdlog.genre.lower()) for k, v in self.genres_mapping.items()])}
 
     # 3. Check ripped CD log.
     @cherrypy.expose
@@ -776,25 +810,25 @@ class DigitalAudioCollection(object):
         album = collections.namedtuple("album", "period lastplayed ripped artistsort albumsort artist year album genre")
 
         # Last played audio CDs list.
-        lastplayedalbums = list(filter(lambda i: self.getplayedperiod(UTC.localize(i.played).astimezone(LOCAL))[0], self.lastplayedalbums))
-        lastplayedalbums = [(self.getplayedperiod(UTC.localize(i.played).astimezone(LOCAL))[1],
-                             dateformat(UTC.localize(i.played).astimezone(LOCAL), "$day $d $month $Y"),
-                             UTC.localize(i.played).astimezone(LOCAL),
-                             i.albumid[2:-13],
-                             i.albumid[-12:],
-                             i.artist,
-                             i.year,
-                             i.album,
-                             i.genre) for i in lastplayedalbums]
+        lastplayedalbums = filter(lambda i: self.getplayedperiod(UTC.localize(i.utc_played).astimezone(LOCAL))[0], self.lastplayedalbums)
+        lastplayedalbums = [(self.getplayedperiod(UTC.localize(album.utc_played).astimezone(LOCAL))[1],
+                             dateformat(UTC.localize(album.utc_played).astimezone(LOCAL), "$day $d $month $Y"),
+                             UTC.localize(album.utc_played).astimezone(LOCAL),
+                             album.albumid[2:-13],
+                             album.albumid[-12:],
+                             album.artist,
+                             album.year,
+                             album.album,
+                             album.genre) for album in lastplayedalbums]
         lastplayedalbums = [album._make(i) for i in lastplayedalbums]
         lastplayedalbums = sorted(sorted([(i[0], i[1], i[2], i) for i in lastplayedalbums], key=itemgetter(2), reverse=True), key=itemgetter(0))
 
         # Return HTML page.
-        return self.TEMPLATE.digitalalbums_playedview.render(menu=self.TEMPLATE.menu.render(months=getmonths(db=self._database)),
-                                                             current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
-                                                             maintitle="Played Audio CDs",
-                                                             id="refresh-2",
-                                                             content=[(key, list(group)) for key, group in groupby(lastplayedalbums, key=lambda i: (i[0], self.PERIODS[i[0]]))])
+        # return self.TEMPLATE.digitalalbums_playedview.render(menu=self.TEMPLATE.menu.render(months=getmonths(db=self._database)),
+        #                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+        #                                                      maintitle="Played Audio CDs",
+        #                                                      id="refresh-2",
+        #                                                      content=[(key, list(group)) for key, group in groupby(lastplayedalbums, key=lambda i: (i[0], self.PERIODS[i[0]]))])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()

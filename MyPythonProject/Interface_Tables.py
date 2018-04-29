@@ -40,12 +40,13 @@ from Applications.Database.DigitalAudioFiles.shared import deletealbum, deleteal
     updatealbum, updatetrack
 from Applications.parsers import database_parser, loglevel_parser
 from Applications.shared import DATABASE, DFTMONTHREGEX, DFTYEARREGEX, GENRES, LOCAL, LOCALMONTHS, LocalParser, StringFormatter, TEMPLATE4, TEMPLATE6, TemplatingEnvironment, UTC, dateformat, grouper, \
-    prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdiscnumber, validproductcode, validdatetime, validtracks, validyear
+    prettyprint as pp, readable, rjustify, validalbumid, validalbumsort, validdatetime, validdiscnumber, validproductcode, validtracks, validyear
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
 
 # ========
 # Classes.
@@ -950,7 +951,7 @@ parser_trk_update.add_argument("--donotformat", nargs="?", default=False, const=
 if __name__ == '__main__':
 
     # -----
-    TEMPLATE = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Tables")))
+    TEMPLATE = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Templates")))
     TEMPLATE.set_environment(globalvars={"local": LOCAL,
                                          "utc": UTC},
                              filters={"readable": partial(readable, template=TEMPLATE4),
@@ -969,7 +970,7 @@ if __name__ == '__main__':
         except KeyError:
             pass
     logging.config.dictConfig(config)
-    logger = logging.getLogger("Database.Interface")
+    logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
     # -----
     for argument, value in sorted(vars(arguments).items()):

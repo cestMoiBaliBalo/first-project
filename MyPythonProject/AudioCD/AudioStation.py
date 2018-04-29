@@ -48,7 +48,8 @@ if "cloud" in credentials:
     files = dict([(file, rowid) for rowid, file, utc_created in get_trackstoupload(db=arguments.db)])
 
     # Upload tracks then get respective ROWID.
-    uid = [files[file] for file in upload_audiofiles(credentials["cloud"]["server"], credentials["cloud"]["user"], base85_decode(credentials["cloud"]["password"]), *list(sorted(files)), test=getattr(arguments, "test", False))]
+    uid = [files[file] for file in
+           upload_audiofiles(credentials["cloud"]["server"], credentials["cloud"]["user"], base85_decode(credentials["cloud"]["password"]), *list(sorted(files)), test=getattr(arguments, "test", False))]
     logger.debug(len(uid))
 
     # Update tracks status.

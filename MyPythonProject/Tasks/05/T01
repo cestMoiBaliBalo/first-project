@@ -1,0 +1,42 @@
+
+   SYNC REPOSITORIES
+
+
+{# ==================== #}
+{# DISPLAY MENU CONTENT #}
+{# ==================== #}
+{% for item in menu %}
+    {% if loop.first %}
+
+ {{ title }}
+
+
+    {% endif %}
+ {{ loop.index|rjustify(3) }}. {{ item }}.
+    {% if loop.last %}
+
+
+
+    {% endif %}
+{% endfor -%}
+
+{# ==================== #}
+{# DISPLAY RIPPING LOGS #}
+{# ==================== #}
+{% for item in logs %}
+    {% if loop.first %}
+
+ {{ title }}
+
+
+    {% endif %}
+    {% if item %}
+        {% set artist, origyear, year, album, label, genre, upc, disc, tracks, artistsort, albumsort, rowid = item %}
+ {{ loop.index|rjustify(3) }}. {{ artist }}{{ origyear }}{{ year }}{{ album }}{{ label }}{{ genre }}{{ upc }}{{ artistsort }}{{ albumsort }}
+    {% endif %}
+    {% if loop.last %}
+
+
+
+    {% endif %}
+{% endfor %}

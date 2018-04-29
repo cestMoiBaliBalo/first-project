@@ -1,0 +1,18 @@
+
+   SYNC AUDIO REPOSITORIES
+
+
+{% for item in menu %}
+    {% if loop.first %}
+
+ {{ title }}
+
+
+    {% endif %}
+ {{ loop.index|rjustify(2) }}. {{ item }}
+    {% if loop.last %}
+
+
+
+    {% endif %}
+{% endfor %}

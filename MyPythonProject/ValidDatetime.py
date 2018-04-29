@@ -17,6 +17,15 @@ with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging
     logging.config.dictConfig(yaml.load(fp))
 
 
+def some_function(ts):
+    try:
+        result = validrippeddate(validdatetime)(ts)
+    except ValueError:
+        raise
+    else:
+        return result
+
+
 def validrippeddate(func):
     def wrapper(ts):
         try:
@@ -29,6 +38,7 @@ def validrippeddate(func):
     return wrapper
 
 
+print("# ========== #")
 try:
     a, b, c = validdatetime(sys.argv[1])
 except ValueError:
@@ -40,6 +50,7 @@ else:
     print(c)
     print(c.tm_year)
 
+print("# ========== #")
 try:
     a, b, c = validdatetime(datetime.datetime(2018, 3, 14, 5, 55, 23, tzinfo=UTC))
 except ValueError:
@@ -50,6 +61,7 @@ else:
     print(b.astimezone(LOCAL))
     print(c.tm_year)
 
+print("# ========== #")
 try:
     a, b, c = validdatetime(datetime.datetime(2018, 3, 14, 6, 55, 23))
 except ValueError:
@@ -60,6 +72,7 @@ else:
     print(LOCAL.localize(b).astimezone(UTC))
     print(c.tm_year)
 
+print("# ========== #")
 try:
     a, b, c = validdatetime(152100692312345)
 except ValueError:
@@ -70,25 +83,17 @@ else:
     print(LOCAL.localize(b).astimezone(UTC))
     print(c.tm_year)
 
-
-def titi(ts):
-    try:
-        result = validrippeddate(validdatetime)(ts)
-    except ValueError:
-        raise
-    else:
-        return result
-
-
+print("# ========== #")
 try:
-    result = titi(1521149245)
+    result = some_function(1521149245)
 except ValueError as err:
     print(err)
 else:
     print(result)
 
+print("# ========== #")
 try:
-    result = titi("AAAAAAAAAA")
+    result = some_function("AAAAAAAAAA")
 except ValueError as err:
     print(err)
 else:

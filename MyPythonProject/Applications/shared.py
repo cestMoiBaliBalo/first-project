@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import argparse
 import io
 import locale
@@ -583,7 +584,7 @@ class LocalParser(parserinfo):
               ('Decembre', 'December')]
 
     def __init__(self, dayfirst=False, yearfirst=False):
-        super(LocalParser, self).__init__(dayfirst, yearfirst)
+        super().__init__(dayfirst, yearfirst)
 
 
 # ===========================
@@ -701,20 +702,6 @@ class SetEndSeconds(argparse.Action):
             setattr(namespace, self.dest, getattr(namespace, "beg"))
 
 
-# class SetUID(argparse.Action):
-#     """
-#     Set "end" attribute.
-#     Set "uid" attribute.
-#     """
-#
-#     def __init__(self, option_strings, dest, **kwargs):
-#         super(SetUID, self).__init__(option_strings, dest, **kwargs)
-#
-#     def __call__(self, parsobj, namespace, values, option_string=None):
-#         setattr(namespace, self.dest, values)
-#         setattr(namespace, "uid", list(range(getattr(namespace, "start"), values + 1)))
-
-
 # ===================
 # Jinja2 environment.
 # ===================
@@ -725,13 +712,13 @@ class TemplatingEnvironment(object):
 
     def set_environment(self, **kwargs):
         for k, v in kwargs["globalvars"].items():
-            self.environment.globals[k] = v
+            self._environment.globals[k] = v
         for k, v in kwargs["filters"].items():
-            self.environment.filters[k] = v
+            self._environment.filters[k] = v
 
     def set_template(self, **templates):
         for k, v in templates.items():
-            setattr(self, k, self.environment.get_template(v))
+            setattr(self, k, self._environment.get_template(v))
 
     @property
     def environment(self):
@@ -847,8 +834,8 @@ def validalbumsort(albumsort):
     :param albumsort: `albumsort` tag.
     :return: `albumsort` tag.
     """
-    rex1 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
-    rex2 = re.compile("^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
+    rex1 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
+    rex2 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
     msg = r"is not a valid albumsort."
 
     try:
@@ -919,26 +906,6 @@ def validgenre(genre):
     except AttributeError:
         raise ValueError('"{0}" {1}'.format(genre, msg))
     return genre
-
-
-# def validtimestamp(ts):
-#     """
-#     Check if string `ts` is a coherent Unix time.
-#
-#     :param ts: Unix time.
-#     :return: Unix time converted to numeric characters.
-#     """
-#     msg = r"is not a valid Unix time."
-#     try:
-#         ts = str(ts)
-#     except TypeError:
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#
-#     if not re.match(r"^\d{10}$", ts):
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#     if not re.match(DFTYEARREGEX, dateformat(LOCAL.localize(datetime.fromtimestamp(int(ts))), "$Y")):
-#         raise ValueError('"{0}" {1}'.format(ts, msg))
-#     return int(ts)
 
 
 def validdatetime(ts):
@@ -1098,7 +1065,7 @@ def filesinfolder(*extensions, folder, excluded=None):
         regex1 = re.compile(r"(?:{0})".format("|".join(map(os.path.normpath, map(os.path.join, repeat(folder), excluded))).replace("\\", r"\\").replace("$", r"\$")), re.IGNORECASE)
 
     # --> Walk through folder.
-    for root, folders, files in os.walk(folder):
+    for root, _, files in os.walk(folder):
 
         # Regular expression for extension(s) inclusion.
         rex2 = r"\.[a-z0-9]{3,}$"
@@ -1171,13 +1138,13 @@ def zipfiles(archive, *files):
     if not os.path.exists(os.path.dirname(archive)):
         raise OSError('"{0}" doesn\'t exist. Please enter an existing directory.'.format(os.path.dirname(archive)))
     with zipfile.ZipFile(archive, "w") as thatzip:
-        logger.info('"{0}" used as ZIP file.'.format(archive))
+        logger.info('"%s" used as ZIP file.', archive)
         for file in files:
             if os.path.exists(file):
                 thatzip.write(file, arcname=os.path.basename(file))
-                logger.info('"{0}" successfully written.'.format(file))
+                logger.info('"%s" successfully written.', file)
                 continue
-            logger.info('Failed to write "{0}".'.format(file))
+            logger.info('Failed to write "%s".', file)
 
 
 def mainscript(stg, align="^", fill="=", length=140):
@@ -1192,16 +1159,17 @@ def xsltransform(xml, xsl, html):
     return process.returncode
 
 
-def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
+def prettyprint(*iterable, headers=(), char="=", tabsize=3, gap=3):
     """
 
-    :param tup:
+    :param iterable:
     :param headers:
     :param char:
     :param tabsize:
     :param gap:
     :return:
     """
+    sequence = [list(item) for item in iterable]
 
     # 1. Initializations.
     max_length, max_width, out_data, out_headers, separators = {}, {}, OrderedDict(), None, None
@@ -1209,10 +1177,10 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
     # 2. Set input headers.
     inp_headers = list(headers)
     if not headers:
-        inp_headers = ["header{0:>2d}".format(i) for i in range(len(tup[0]))]
+        inp_headers = ["header{0:>2d}".format(i) for i in range(len(sequence[0]))]
 
     # 3. Gather data per header.
-    input_data = OrderedDict(zip(inp_headers, zip(*tup)))
+    input_data = OrderedDict(zip(inp_headers, zip(*sequence)))
 
     # 4. Get data maximum length and maximum allowed width.
     for k, v in input_data.items():
@@ -1220,7 +1188,7 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
         if headers:
             x = len(k)
         if any([bool(item) for item in v]):
-            x = max([len(item) for item in v if item])
+            x = max([len(str(item)) for item in v if item])
         if headers:
             if len(k) > x:
                 x = len(k)
@@ -1233,7 +1201,7 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
         for item in v:
             x = "{0}".format(gettabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
             if item:
-                x = "{0}{1}".format(item, gettabs(max_width[k] - len(item), tabsize=tabsize)).expandtabs(tabsize)
+                x = "{0}{1}".format(item, gettabs(max_width[k] - len(str(item)), tabsize=tabsize)).expandtabs(tabsize)
             y.append(x)
         out_data[k] = y
 
@@ -1251,6 +1219,18 @@ def prettyprint(*tup, headers=(), char="=", tabsize=3, gap=3):
     return None, out_data
 
 
+def left_justify(iterable):
+    """
+
+    :param iterable:
+    :return:
+    """
+    sequence = list(iterable)
+    length = max([len(str(item)) for item in sequence])
+    for item in ["{0:<{1}}".format(item, length) for item in sequence]:
+        yield item
+
+
 def base85_encode(strg, encoding="utf-8"):
     return b85encode(strg.encode(encoding=encoding))
 
@@ -1259,11 +1239,15 @@ def base85_decode(bytobj, encoding="utf-8"):
     return b85decode(bytobj).decode(encoding=encoding)
 
 
-# ==========================
-# Jinja2 Customized filters.
-# ==========================
+# ======================
+# Jinja2 Custom filters.
+# ======================
 def integertostring(intg):
     return str(intg)
+
+
+def cjustify(stg, width, char=""):
+    return "{0:{2}^{1}}".format(stg, width, char)
 
 
 def rjustify(stg, width, char=""):

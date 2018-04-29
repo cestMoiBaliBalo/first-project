@@ -22,7 +22,7 @@ __status__ = "Production"
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     dictConfig(yaml.load(fp))
-logger = logging.getLogger("Applications.Database.Tables")
+logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
 # ================
 # Initializations.
@@ -43,7 +43,7 @@ logger.debug(arguments.db)
 logger.debug(arguments.table)
 
 # 2 --> Initializations.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Repository.json")) as fp:
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Tasks.json")) as fp:
     repo = {task.uid: task.description for task in [tasks._make(v) for k, v in json.load(fp).items()]}
 
 # 3 --> Build XML file.

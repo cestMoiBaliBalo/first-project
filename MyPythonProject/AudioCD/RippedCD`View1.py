@@ -6,10 +6,11 @@ import argparse
 import logging.config
 import os
 import sys
+from contextlib import suppress
 
 import yaml
 
-from Applications.Database.AudioCD.shared import selectlogs
+from Applications.Database.AudioCD.shared import selectlogs_fromkeywords
 from Applications.parsers import database_parser, loglevel_parser
 from Applications.shared import UTF8
 
@@ -37,19 +38,15 @@ arguments = parser.parse_args()
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
     config = yaml.load(fp)
 for logger in ["Applications.Database.AudioCD", "Database"]:
-    try:
+    with suppress(KeyError):
         config["loggers"][logger]["level"] = arguments.loglevel.upper()
-    except KeyError:
-        pass
 
 # 2. Set up a specific stream handler if required.
 if arguments.console:
 
     # 2.a. Define `audiocd_console` as second stream handler for `Applications.Database.AudioCD`.
-    try:
+    with suppress(KeyError):
         config["loggers"]["Applications.Database.AudioCD"]["handlers"] = ["file", "audiocd_console"]
-    except KeyError:
-        pass
 
     # 2.b. Set up `audiocd_console` for `Applications.Database.AudioCD`.
     config["handlers"]["audiocd_console"] = {}
@@ -70,7 +67,7 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-logs = list(selectlogs(db=arguments.db, logginglevel="info"))
+logs = list(selectlogs_fromkeywords(db=arguments.db))
 if logs:
     sys.exit(0)
 sys.exit(100)

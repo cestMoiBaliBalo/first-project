@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import argparse
 import json
 import logging.config
@@ -35,7 +36,7 @@ class GetTargets(argparse.Action):
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
         setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), targets.keys())))
 
-        # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme. 
+        # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme.
         if values:
             setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), filter(lambda i: i in targets, values))))
 
@@ -55,7 +56,7 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("Backup.{0}".format(splitext(basename(__file__))[0]))
+logger = logging.getLogger("MyPythonProject.Backup.{0}".format(splitext(basename(__file__))[0]))
 
 # ================
 # Initializations.
@@ -83,7 +84,7 @@ if arguments.targets:
 elif not arguments.targets:
     logger.debug("\tAny coherent target hasn\'t been given: backup can\'t be processed!".expandtabs(4))
 
-#    ------------------
+# ------------------
 # 2. Process arguments.
 #    ------------------
 for target in arguments.targets:
@@ -91,7 +92,7 @@ for target in arguments.targets:
     #  2.a. Get backup configuration file.
     cfgfile = join(expandvars("%_BACKUP%"), "workspace.%s" % (arguments.workspace,), "%s.bcfg" % (target,))
     logger.debug("Configuration file.")
-    logger.debug('\t"%s".'.expandtabs(4) % (cfgfile,))
+    logger.debug('\t"%s".'.expandtabs(4), cfgfile)
     try:
         assert exists(cfgfile) is True
     except AssertionError:
@@ -102,7 +103,7 @@ for target in arguments.targets:
     root = parse(cfgfile).getroot()
     directory = normpath(root.find("medium").get("path"))
     logger.debug("Backup location.")
-    logger.debug('\t"%s".'.expandtabs(4) % (directory,))
+    logger.debug('\t"%s".'.expandtabs(4), directory)
     try:
         assert exists(directory) is True
     except AssertionError:
@@ -117,7 +118,7 @@ for target in arguments.targets:
         command.append("-c")
     command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", '"{0}"'.format(cfgfile)])
     logger.debug("Backup command.")
-    logger.debug('\t%s.'.expandtabs(4) % ("".join(command),))
+    logger.debug('\t%s.'.expandtabs(4), "".join(command))
 
     #  2.d. Run backup command.
     code = 0
@@ -125,11 +126,11 @@ for target in arguments.targets:
         process = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
         code = process.returncode
         if process.returncode:
-            logger.debug('"{0}" was returned by "areca_cl.exe". Backup failed.'.format(process.returncode))
+            logger.debug('"%s" was returned by "areca_cl.exe". Backup failed.', process.returncode)
             continue
         logger.info("Backup log.")
         for line in process.stdout.splitlines():
-            logger.info("\t%s".expandtabs(4) % (line,))
+            logger.info("\t%s".expandtabs(4), line)
     returncode.append(code)
 
 # ===============

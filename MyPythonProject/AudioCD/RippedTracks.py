@@ -3,6 +3,7 @@ import argparse
 import logging.config
 import os
 import sys
+from contextlib import suppress
 from itertools import accumulate
 
 import yaml
@@ -36,10 +37,8 @@ arguments = parser.parse_args()
 # ========
 with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
-try:
+with suppress(KeyError):
     config["loggers"]["Applications.Database.DigitalAudioFiles"]["level"] = MAPPING[arguments.debug].upper()
-except KeyError:
-    pass
 logging.config.dictConfig(config)
 logger = logging.getLogger("Applications.Database.DigitalAudioFiles")
 

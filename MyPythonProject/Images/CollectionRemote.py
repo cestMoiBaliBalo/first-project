@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
-import re
-import yaml
 import ftplib
 import logging
+import os
+import re
 from base64 import b85decode
 from contextlib import ExitStack
 from logging.config import dictConfig
-from Applications.shared import NAS, PASSWORD, ChangeRemoteCurrentDirectory
+
+import yaml
+
+from Applications.shared import ChangeRemoteCurrentDirectory, NAS, PASSWORD
 
 __author__ = 'Xavier ROSSET'
 
@@ -16,7 +18,6 @@ __author__ = 'Xavier ROSSET'
 # Functions.
 # ==========
 def remotedirectorycontent(*extensions, ftpobject, currentdir, logobject=None, excluded=None):
-
     # Define regular expression for folder(s) exclusion.
     regex = None
     if excluded:

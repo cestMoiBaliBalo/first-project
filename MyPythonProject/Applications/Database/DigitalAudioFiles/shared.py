@@ -1,4 +1,5 @@
 # -*- coding: ISO-8859-1 -*-
+# pylint: disable=invalid-name
 import json
 import logging
 import os
@@ -6,17 +7,19 @@ import re
 import sqlite3
 import sys
 from collections import MutableSequence, OrderedDict, namedtuple
+from contextlib import suppress
 from datetime import datetime
 from functools import partial
 from itertools import accumulate, chain, groupby, repeat
 from operator import itemgetter
 from string import Template
+from subprocess import run
 
 import jinja2
 
 from ..shared import ToBoolean, adapt_booleanvalue, convert_tobooleanvalue
 from ...parsers import subset_parser
-from ...shared import DATABASE, LOCAL, TemplatingEnvironment, UTC, rjustify, validdatetime, validdb, validgenre, validproductcode, validyear
+from ...shared import DATABASE, LOCAL, TemplatingEnvironment, UTC, left_justify, rjustify, validdatetime, validdb, validgenre, validproductcode, validyear
 from ...xml import digitalalbums_in
 
 __author__ = 'Xavier ROSSET'
@@ -63,7 +66,7 @@ SORT = {
 # ====================
 # Regular expressions.
 # ====================
-rex = re.compile(r"^(\w+)(?: (ASC|DESC))?$", re.IGNORECASE)
+REX = re.compile(r"^(\w+)(?: (ASC|DESC))?$", re.IGNORECASE)
 
 
 # ========
@@ -148,44 +151,34 @@ class InsertDigitalAlbum(MutableSequence):
 
             # 9.a. `albums` records.
             album_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
-            try:
+            with suppress(AttributeError):
                 album_created = UTC.localize(datetime.utcfromtimestamp(track.album_created)).astimezone(LOCAL)
-            except AttributeError:
-                pass
 
             # 9.b. `discs` records.
             disc_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
-            try:
+            with suppress(AttributeError):
                 disc_created = UTC.localize(datetime.utcfromtimestamp(track.disc_created)).astimezone(LOCAL)
-            except AttributeError:
-                pass
 
             # 9.c. `tracks` records.
             track_created = UTC.localize(datetime.utcnow()).astimezone(LOCAL)
-            try:
+            with suppress(AttributeError):
                 track_created = UTC.localize(datetime.utcfromtimestamp(track.track_created)).astimezone(LOCAL)
-            except AttributeError:
-                pass
 
             # 10. Set album last played date. Stored into UTC time zone.
             lastplayeddate = None
-            try:
+            with suppress(AttributeError):
                 lastplayeddate = track.lastplayed
-            except AttributeError:
-                pass
             if lastplayeddate:
                 lastplayeddate = datetime.utcfromtimestamp(int(lastplayeddate))
-                self.logger.debug("Last played date: {0}".format(UTC.localize(lastplayeddate).astimezone(LOCAL)))
+                self.logger.debug("Last played date: %s", UTC.localize(lastplayeddate).astimezone(LOCAL))
 
             # 11. Set album played count.
             playedcount = "0"
-            try:
+            with suppress(AttributeError):
                 playedcount = track.playedcount
-            except AttributeError:
-                pass
             if playedcount:
                 playedcount = int(playedcount)
-                self.logger.debug("Played count: {0}".format(playedcount))
+                self.logger.debug("Played count: %s", playedcount)
 
             # 12. Split attributes into three tuples respective to the three focused tables.
 
@@ -209,9 +202,9 @@ class InsertDigitalAlbum(MutableSequence):
     @classmethod
     def fromxml(cls, fil):
         """
-        
-        :param fil: 
-        :return: 
+
+        :param fil:
+        :return:
         """
         return cls(*list(digitalalbums_in(fil)))
 
@@ -319,7 +312,7 @@ def insertfromfile(*files):
                 group = list(group)
                 logger.debug(key)
                 logger.debug(group)
-                for database, album, disc, track in group:
+                for _, album, disc, track in group:
 
                     for item in album:
                         logger.debug(item)
@@ -336,7 +329,7 @@ def insertfromfile(*files):
                         try:
                             conn.execute("INSERT INTO tracks (albumid, discid, trackid, title, created) VALUES (?, ?, ?, ?, ?)", track)
                             tcount = conn.total_changes
-                            logger.debug("Table `tracks`: {0} records inserted.".format(tcount))
+                            logger.debug("Table `tracks`: %s records inserted.", tcount)
                         except sqlite3.IntegrityError:
                             pass
 
@@ -344,7 +337,7 @@ def insertfromfile(*files):
                         try:
                             conn.execute("INSERT INTO discs (albumid, discid, tracks, created) VALUES (?, ?, ?, ?)", disc)
                             dcount = conn.total_changes - tcount
-                            logger.debug("Table `discs`: {0} records inserted.".format(dcount))
+                            logger.debug("Table `discs`: %s records inserted.", dcount)
                         except sqlite3.IntegrityError:
                             pass
 
@@ -353,7 +346,7 @@ def insertfromfile(*files):
                             conn.execute("INSERT INTO albums (albumid, artist, year, album, discs, genre, live, bootleg, incollection, language, upc, utc_created, origyear, utc_played, played) "
                                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", album)
                             acount = conn.total_changes - dcount - tcount
-                            logger.debug("Table `albums`: {0} records inserted.".format(acount))
+                            logger.debug("Table `albums`: %s records inserted.", acount)
                         except sqlite3.IntegrityError:
                             pass
 
@@ -507,7 +500,11 @@ def getalbumheader(db=DATABASE, albumid=None, **kwargs):
     """
     logger = logging.getLogger("{0}.getalbumheader".format(__name__))
     tabsize, rows = 3, []
-    record = namedtuple("record", "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played")
+    # """
+    headers = list(left_justify(["\t{0}".format(item).expandtabs(tabsize) for item in ["Row ID", "Album ID", "Artist", "Origyear", "Year", "Album"]]))
+    # """
+    digitalalbum = namedtuple("digitalalbum", "rowid albumid artist origyear album discs label genre upc year live bootleg incollection language utc_created utc_modified utc_played played")
+    # """
     for row in _getalbumdetail(db, albumid=albumid, **kwargs):
         rows.append((row.rowid,
                      row.albumid,
@@ -527,17 +524,14 @@ def getalbumheader(db=DATABASE, albumid=None, **kwargs):
                      row.utc_modified,
                      row.utc_played,
                      row.played))
+    # """
     for row in OrderedDict.fromkeys(rows).keys():
-        row = record._make(row)
+        row = digitalalbum._make(row)
         logger.debug("----------------")
         logger.debug("Selected record.")
         logger.debug("----------------")
-        logger.debug("\tRow ID\t: {0}".format(row.rowid).expandtabs(tabsize))
-        logger.debug("\tAlbum ID\t: {0}".format(row.albumid).expandtabs(tabsize))
-        logger.debug("\tArtist\t: {0}".format(row.artist).expandtabs(tabsize))
-        logger.debug("\tOrigyear\t: {0}".format(row.origyear).expandtabs(tabsize))
-        logger.debug("\tYear\t\t: {0}".format(row.year).expandtabs(tabsize))
-        logger.debug("\tAlbum\t\t: {0}".format(row.album).expandtabs(tabsize))
+        for key, value in zip(headers, (row.rowid, row.albumid, row.artist, row.origyear, row.year, row.album)):
+            logger.debug("%s: %s", key, value)
         yield row
 
 
@@ -1091,7 +1085,7 @@ def _getalbumdetail(db, **kwargs):
     # 4. ORDER BY clause.
     logger.debug(kwargs.get("orderby"))
     orderby = "ORDER BY a.albumid, b.discid, c.trackid"
-    mylist = list(filter(lambda i: bool(i), map(rex.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
+    mylist = list(filter(None, map(REX.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
     if mylist:
         orderby = "ORDER BY {0}".format(", ".join(mylist))
 
@@ -1158,6 +1152,7 @@ if __name__ == "__main__":
 
     arguments = subset_parser.parse_args()
     filters = {key: value for key, value in vars(arguments).items() if key in ["artistsort", "albumsort", "artist"]}
+    run("CLS", shell=True)
     for directory in sys.path:
         print(directory)
     print(TEMPLATE.environment.get_template("T01").render(content=getgroupedalbums(db=arguments.db, artistsort=filters.get("artistsort"), albumsort=filters.get("albumsort"), artist=filters.get("artist"))))

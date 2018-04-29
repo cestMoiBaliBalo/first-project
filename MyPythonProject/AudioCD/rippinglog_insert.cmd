@@ -1,4 +1,7 @@
-@ECHO off
+REM __author__ = 'Xavier ROSSET'
+REM __maintainer__ = 'Xavier ROSSET'
+REM __email__ = 'xavier.python.computing@protonmail.com'
+REM __status__ = "Production"
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 
@@ -111,7 +114,7 @@ CLS
 ECHO:
 ECHO:
 SET _num=0
-FOR /F "usebackq delims=|" %%G IN ("H:\My Documents\Personnel\genres.txt") DO (
+FOR /F "usebackq delims=" %%G IN ("H:\My Documents\Personnel\genres.txt") DO (
     SET /A "_num+=1"
     SET _genres[!_num!]=%%G
     ECHO: !_num!. %%G
@@ -160,16 +163,16 @@ REM IF ERRORLEVEL 1 (POPD & GOTO RIPPED)
 REM POPD
 
 
-FOR /F "delims=|" %%A IN ("%_artistsort%") DO SET _artistsort="%%~A"
-FOR /F "delims=|" %%A IN ("%_albumsort%") DO SET _albumsort="%%~A"
-FOR /F "delims=|" %%A IN ("%_artist%") DO SET _artist="%%~A"
-FOR /F "delims=|" %%A IN ("%_origyear%") DO SET _origyear="%%~A"
-FOR /F "delims=|" %%A IN ("%_year%") DO SET _year="%%~A"
-FOR /F "delims=|" %%A IN ("%_album%") DO SET _album="%%~A"
-FOR /F "delims=|" %%A IN ("%_genre%") DO SET _genre="%%~A"
-FOR /F "delims=|" %%A IN ("%_label%") DO SET _label="%%~A"
-FOR /F "delims=|" %%A IN ("%_upc%") DO SET _upc="%%~A"
-FOR /F "delims=|" %%A IN ("%_ripped%") DO SET _ripped="%%~A"
+FOR /F "delims=" %%A IN ("%_artistsort%") DO SET _artistsort="%%~A"
+FOR /F "delims=" %%A IN ("%_albumsort%") DO SET _albumsort="%%~A"
+FOR /F "delims=" %%A IN ("%_artist%") DO SET _artist="%%~A"
+FOR /F "delims=" %%A IN ("%_origyear%") DO SET _origyear="%%~A"
+FOR /F "delims=" %%A IN ("%_year%") DO SET _year="%%~A"
+FOR /F "delims=" %%A IN ("%_album%") DO SET _album="%%~A"
+FOR /F "delims=" %%A IN ("%_genre%") DO SET _genre="%%~A"
+FOR /F "delims=" %%A IN ("%_label%") DO SET _label="%%~A"
+FOR /F "delims=" %%A IN ("%_upc%") DO SET _upc="%%~A"
+FOR /F "delims=" %%A IN ("%_ripped%") DO SET _ripped="%%~A"
 SET _command=python tables.py rippinglog insertfromargs %_artistsort% %_albumsort% %_artist% %_origyear% %_year% %_album% %_genre% %_label% %_upc% %_ripped%
 IF %_database% EQU 1 SET _command=%_command% --test
 CLS
