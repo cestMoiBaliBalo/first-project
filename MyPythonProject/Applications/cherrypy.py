@@ -15,9 +15,9 @@ import cherrypy
 import jinja2
 from pytz import timezone
 
-# from .Database.AudioCD.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, validyear
-from .Database.AudioCD.shared import deletelog as deleterippedcd, insertfromargs, updatelog, validyear
-from .Database.DigitalAudioFiles.shared import getalbumheader, getartist, getlastplayeddate, gettrack, updatelastplayeddate
+from .Tables.Albums.shared import getalbumheader, getartist, getlastplayeddate, gettrack, updatelastplayeddate
+# from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, validyear
+from .Tables.RippedDiscs.shared import validyear
 from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, dateformat, filesinfolder, localize_date, normalize, \
     normalize2, now
 
@@ -163,6 +163,10 @@ class DigitalAudioCollection(object):
         self.digitalalbums_mapping = db
         self.lastplayedalbums = db
 
+    @cherrypy.expose
+    def shutdown(self):
+        cherrypy.engine.exit()
+
     # -------------------------------------------
     # Getter and setter for "database" attribute.
     # -------------------------------------------
@@ -247,7 +251,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums.setter
     def digitalalbums(self, arg):
-        self._digitalalbums = sorted(sorted(getalbumheader(db=arg), key=lambda album: album.albumid), key=lambda album: album.albumid[2:-13])
+        self._digitalalbums = sorted(getalbumheader(db=arg), key=lambda album: album.albumid)
 
     # --------------------------------------------------------
     # Getter and setter for "digitalalbums_mapping" attribute.
@@ -258,8 +262,9 @@ class DigitalAudioCollection(object):
 
     @digitalalbums_mapping.setter
     def digitalalbums_mapping(self, arg):
-        reflist = [(row.albumid, row.album, row.artist, row.year) for row in getalbumheader(db=arg)]
-        self._digitalalbums_mapping = {albumid: (album, artist, year) for albumid, album, artist, year in reflist}
+        # reflist = [(row.albumid, row.album, row.artist, row.year) for row in getalbumheader(db=arg)]
+        # self._digitalalbums_mapping = {albumid: (album, artist, year) for albumid, album, artist, year in reflist}
+        self._digitalalbums_mapping = {}
 
     # ---------------------------------------------------
     # Getter and setter for "lastplayedalbums" attribute.
@@ -345,6 +350,7 @@ class DigitalAudioCollection(object):
     # ----------
     @cherrypy.expose
     def index(self, view="default", coversperpage="32", start="0"):
+
         """
         Render digital audio albums covers into a tiles view.
 
@@ -354,7 +360,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         albums = None
-        mapping = dict([(dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums])
+        mapping = dict(set([(dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums]))
 
         # 1. Covers view.
         if view == "default":
@@ -364,7 +370,7 @@ class DigitalAudioCollection(object):
 
         # 2. Covers grouped by artist.
         elif view == "artists":
-            albums = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=lambda album: album.albumid[2:-13])]
+            albums = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=lambda album: album.artistsort)]
 
         # 3. Covers grouped by month.
         elif view == "months":
@@ -695,27 +701,27 @@ class DigitalAudioCollection(object):
         return template
 
     # 4. Store ripped CD log.
-    @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def storerippedcdlog(self, action, rowid=None, **tags):
-
-        #  A. Update log.
-        if action.lower() == "update":
-            new_tags = dict(tags)
-            new_tags["genre"] = self.genres_mapping[tags["genre"]]
-            new_tags["year"] = int(tags["year"])
-            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(updatelog(int(rowid), db=self.database, **new_tags))})}
-
-        # B. Delete log.
-        if action.lower() == "delete":
-            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Delete log", "body": "{0:>2d} record(s) successfully deleted.".format(deleterippedcd(int(rowid), db=self.database))})}
-
-        # C. Create log.
-        if action.lower() == "create":
-            new_tags = dict(tags)
-            new_tags["genre"] = self.genres_mapping[tags["genre"]]
-            new_tags["year"] = int(tags["year"])
-            return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Create log", "body": "{0:>2d} record(s) successfully created.".format(insertfromargs(db=self.database, **new_tags))})}
+    # @cherrypy.expose
+    # @cherrypy.tools.json_out()
+    # def storerippedcdlog(self, action, rowid=None, **tags):
+    #
+    #     #  A. Update log.
+    #     if action.lower() == "update":
+    #         new_tags = dict(tags)
+    #         new_tags["genre"] = self.genres_mapping[tags["genre"]]
+    #         new_tags["year"] = int(tags["year"])
+    #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(updatelog(int(rowid), db=self.database, **new_tags))})}
+    #
+    #     # B. Delete log.
+    #     if action.lower() == "delete":
+    #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Delete log", "body": "{0:>2d} record(s) successfully deleted.".format(deleterippedcd(int(rowid), db=self.database))})}
+    #
+    #     # C. Create log.
+    #     if action.lower() == "create":
+    #         new_tags = dict(tags)
+    #         new_tags["genre"] = self.genres_mapping[tags["genre"]]
+    #         new_tags["year"] = int(tags["year"])
+    #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Create log", "body": "{0:>2d} record(s) successfully created.".format(insertfromargs(db=self.database, **new_tags))})}
 
     @cherrypy.expose
     @cherrypy.tools.json_out()

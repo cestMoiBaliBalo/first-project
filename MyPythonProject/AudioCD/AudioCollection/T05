@@ -51,7 +51,7 @@
             {%- for digitalalbum in content["albums"] %}
             <div class="cover">
                 <div class="innercover">
-                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.albumid[-12:]|getcover(digitalalbum.albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.cover|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
                     <div class="album">{{ digitalalbum.album|e }}</div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                 {% for digitalalbum in group %}
                     <div class="cover">
                         <div class="innercover">
-                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.albumid[-12:]|getcover(digitalalbum.albumid[2:-13])|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.cover|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
                             <div class="album">{{ digitalalbum.album|e }}</div>
                         </div>
                     </div>

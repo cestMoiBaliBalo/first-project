@@ -1,0 +1,18 @@
+{
+  "task01": [
+    "Delete GNUCash sandbox content",
+    123456798
+  ],
+  "task02": [
+    "Backup both passwords database and master key",
+    123456799
+  ],
+  "task03": [
+    "Backup documents to USB drive",
+    123456802
+  ],
+  "task04": [
+    "Move video files to local CloudStation",
+    123456801
+  ]
+}

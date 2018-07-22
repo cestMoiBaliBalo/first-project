@@ -10,7 +10,7 @@ import jinja2
 import yaml
 
 import shared
-from Applications.Database.AudioCD.shared import deletelog, selectlogs_fromuid
+from Applications.Tables.RippedDiscs.shared import deletelog, selectlogs_fromuid
 from Applications.shared import ACCEPTEDANSWERS, TemplatingEnvironment, grouper, rjustify
 
 __author__ = 'Xavier ROSSET'

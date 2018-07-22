@@ -1,305 +1,401 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import argparse
-import glob
-import logging
+import fnmatch
+import json
+import logging.config
 import os
 import re
-import sys
-from collections import MutableSequence, namedtuple
-from contextlib import contextmanager
-from itertools import accumulate, repeat
-from logging.config import dictConfig
+from collections import MutableSequence
+from contextlib import suppress
+from itertools import filterfalse, groupby, repeat, tee
 from operator import itemgetter
+from shutil import move
+from subprocess import PIPE, run
+from tempfile import TemporaryFile
 
 import yaml
 
-from Applications import shared
-from Applications.descriptors import Answers, Year
+from Applications.shared import DFTMONTHREGEX, DFTYEARREGEX, IMAGES
 
 __author__ = 'Xavier ROSSET'
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
+
+# ======================
+# Functions local names.
+# ======================
+basename, dirname, exists, expandvars, join, listdir, normpath, rename, splitext = os.path.basename, os.path.dirname, os.path.exists, os.path.expandvars, os.path.join, os.listdir, os.path.normpath, \
+                                                                                   os.rename, os.path.splitext
 
 
-# ========
-# Classes.
-# ========
-class LocalInterface(shared.GlobalInterface):
-    # Data descriptor(s).
-    year = Year()
-    test = Answers("N", "Y", default="Y")
-
-    # Instance method(s).
-    def __init__(self, *args):
-        super(LocalInterface, self).__init__(*args)
-
-
+# ===============
+# Global classes.
+# ===============
 class ImagesCollection(MutableSequence):
-    def __init__(self, year):
-        self._collection = None
-        self.collection = year
-
-    def __getitem__(self, item):
-        return self.collection[item]
-
-    def __setitem__(self, key, value):
-        self.collection[key] = value
+    """
+    Class used to work with a local images collection.
+    Main purposes are:
+        - detect if some images aren't compliant with the storing convention.
+        - detect if some images aren't compliant with the naming convention.
+        - Move images.
+        - Rename images.
+    """
+    logger = logging.getLogger("MyPythonProject.Images.{0}.ImagesCollection".format(splitext(basename(__file__))[0]))
 
     def __delitem__(self, key):
-        del self.collection[key]
+        del self._collection[key]
+
+    def __getitem__(self, item):
+        return self._collection[item]
+
+    def __init__(self, *directories):
+        self._collection, self._directories = [], ()
+        self.directories = directories
+        self.load()
+
+        # Log processed directories.
+        if self._directories:
+            self.logger.debug(" ---------------------- ")
+            self.logger.debug(" Processed directories. ")
+            self.logger.debug(" ---------------------- ")
+            for directory in self._directories:
+                self.logger.debug("\t%s.".expandtabs(3), directory)
+
+        # Log collected files.
+        if self._collection:
+            self.logger.debug(" ---------------- ")
+            self.logger.debug(" Collected files. ")
+            self.logger.debug(" ---------------- ")
+            for path, _ in sorted(self._collection, key=itemgetter(0)):
+                self.logger.debug("\t%s".expandtabs(3), normpath(path))
+            with open(join(expandvars("%TEMP%"), "images.yml"), mode="w", encoding="UTF_8") as stream:
+                yaml.dump(self._collection, stream, indent=4, default_flow_style=False)
 
     def __len__(self):
-        return len(self.collection)
+        return len(self._collection)
+
+    def __setitem__(self, key, value):
+        self._collection[key] = value
+
+    def display(self):
+        """
+        Log images collection. Images are grouped by image original month and sorted by image path.
+
+        :return: None.
+        """
+        for month, images in groupby(sorted(sorted(self._collection, key=itemgetter(0)), key=itemgetter(1)), key=itemgetter(1)):
+            self.logger.info("------")
+            self.logger.info("%s", month)
+            self.logger.info("------")
+            for image in images:
+                path, _ = image
+                self.logger.info("\t%s".expandtabs(3), path)
 
     def insert(self, index, value):
-        self.collection.insert(index, value)
+        self._collection.insert(index, value)
+
+    def load(self):
+        """
+        Load the images collection into a list object stored into the inner attribute `_collection`.
+
+        :return: None.
+        """
+        self._collection = list(self.get_images(*self._directories))
+
+    def move(self, test=True, load=True):
+        """
+        Move an image to the right directory in order to be compliant with the storing convention.
+        Image original month is used to compute the right directory.
+
+        :param test: test mode. Log a list of all moving commands but doesn't run them.
+        :param load: load images collection again in order to have an up-to-date collection.
+        :return: number of moved images as an integer object.
+        """
+        images = 0
+        for path, datetimeoriginal in filter(self.filter, self._collection):
+            path = normpath(path)
+            dst = normpath(join(IMAGES, datetimeoriginal))
+            os.makedirs(dst, exist_ok=True)
+            self.logger.debug(" ----------- ")
+            self.logger.debug(" Move image. ")
+            self.logger.debug(" ----------- ")
+            self.logger.debug("\tSource     : %s".expandtabs(5), path)
+            self.logger.debug("\tDestination: %s".expandtabs(5), dst)
+            if not test:
+                move(src=path, dst=dst)
+                self.logger.info("Image moved.")
+                images += 1
+
+        self.logger.info("%s images moved.", images)
+        if load:
+            self.load()
+        return images
+
+    def rename(self, test=True):
+        """
+        Rename an image in order to be compliant with the naming convention.
+
+        :param test: test mode. Log a list of all renaming commands but doesn't run them.
+        :return: number of renamed images as an integer object.
+        """
+        images = 0
+        coll_true, coll_false = self.partition(self._collection, self.predicate)
+
+        # Extract the five digits unique number from all images compliant with the naming convention.
+        numbers = sorted(map(self.get_numbers, coll_true))
+
+        # Extract all images non-compliant with the naming convention.
+        coll_false = sorted(coll_false)
+
+        # Compute expected numbers.
+        template = range(1, 1 + len(coll_false))
+        end = 0
+        if numbers:
+            template = range(1, 1 + len(numbers))
+            end = numbers[-1]
+        self.logger.debug(list(template))
+        self.logger.debug(end)
+        for (path, datetimeoriginal), number in zip(coll_false, self.adjust_numbers(self.set_numbers(numbers, template), len(coll_false), start=end + 1)):
+            path = normpath(path)
+            dst = normpath(join(IMAGES, str(datetimeoriginal), "{0}_{1:>05d}{2}".format(str(datetimeoriginal), number, splitext(path)[1])))
+            self.logger.info(" ------------- ")
+            self.logger.info(" Rename image. ")
+            self.logger.info(" ------------- ")
+            self.logger.info("\tSource     : %s.".expandtabs(5), path)
+            self.logger.info("\tDestination: %s.".expandtabs(5), dst)
+            if not test:
+                rename(src=path, dst=dst)
+                self.logger.info("Image renamed.")
+                images += 1
+
+        self.logger.info("%s images renamed.", images)
+        return images
 
     @property
-    def collection(self):
-        return self._collection
+    def directories(self):
+        return self._directories
 
-    @collection.setter
-    def collection(self, val):
-
-        # Argument must be a coherent year.
-        if not re.match(r"^(?=\d{4})20[0-2]\d$", str(val)):
-            raise ValueError('"{0}" is not a valid year'.format(val))
-
-        # Dictionary of images grouped by month.
-        # Example: {"201001": ["file", "file2", "file3"], "201002": ["file", "file2", "file3"]}
-        images = {k: v for k, v in dict(self.func3(val)).items() if v}
-
-        # List of found months.
-        # Example: ["201001", "201002"]
-        months = sorted(images, key=int)
-
-        # List of accumulated counts.
-        # Example: [100", 145]
-        counts = [1]
-        counts.extend(sorted(accumulate(self.func1(self.func2(images)))))
-
-        # List of accumulated counts grouped by months.
-        # Example: [("201001", 100), ("201002", 145)]
-        self._collection = list(zip(months, map(list, self.func0(counts))))
-
-    @staticmethod
-    def func3(m):
-        """
-        Return [("201001", ["file", "file2", "file3"]), ("201002", ["file", "file2", "file3"])]
-        :param m: month.
-        :return: files grouped by month.
-        """
-        return [(month, list(glob.iglob(os.path.normpath(os.path.join(shared.IMAGES, month, r"*.jpg"))))) for month in ("{0}{1:0>2}".format(m, i) for i in range(1, 13))]
-
-    @staticmethod
-    def func2(d):
-        """
-        Return {"201001": 100, "201002": 200}.
-        :param d: dictionnary of files grouped by month.
-        :return: counts by month.
-        """
-        return {k: len(v) for k, v in d.items()}
-
-    @staticmethod
-    def func1(d):
-        """
-        Return [1, 100, 200].
-        :param d: dictionnary of files grouped by month.
-        :return: counts list.
-        """
-        return [d[k] for k in sorted(d, key=int)]
-
-    @staticmethod
-    def func0(l):
-        it = iter(l)
-        i = next(it, False)
-        while i:
-            j = next(it, False)
-            if not j:
-                break
-            yield range(i, j + 1)
-            i = j + 1
-
-
-class Log(object):
-    def __init__(self, index=0):
-        self._index = 0
-        self.index = index
+    @directories.setter
+    def directories(self, arg):
+        self._directories = list(filter(exists, arg))
 
     @property
-    def index(self):
-        return self._index
+    def filestomove(self):
+        """
+        Return a list object composed of the images non-compliant with the storing convention.
+        Those images are supposed to be moved to the right directory.
 
-    @index.setter
-    def index(self, val):
-        self._index = val
+        :return: list object.
+        """
+        return list(filter(self.filter, self._collection))
 
-    def __call__(self, *vals):
-        self.index += 1
-        return '{index:>4d}. Rename "{src}" to "{dst}".'.format(index=self.index, src=vals[0], dst=vals[1])
+    @classmethod
+    def fromyear(cls, year):
+        """
+        Return an images collection from an input year.
+
+        :param year: year as a four digits number. Integer or string object allowed.
+        :return: ImagesCollection object.
+        """
+        return cls(*fnmatch.filter(map(join, repeat(IMAGES), listdir(IMAGES)), "{0}*".format(join(IMAGES, str(year)))))
+
+    @staticmethod
+    def adjust_numbers(numbers, items, *, start=1):
+        """
+
+        :param numbers:
+        :param items:
+        :param start:
+        :return: iterator object.
+        """
+        out = []
+        numbers = list(numbers)
+        length_numbers = len(numbers)
+        if numbers:
+            if items <= length_numbers:
+                out = numbers[:items]
+            elif items > length_numbers:
+                out = numbers
+                out.extend(range(start, start + items - length_numbers))
+        elif not numbers:
+            out = range(start, start + items)
+        for number in out:
+            yield number
+
+    @staticmethod
+    def filter(item):
+        """
+        Return a boolean value informing that the image dirname is compliant with the storing convention.
+        Useful for detecting images stored into a wrong directory.
+
+        :param item: tuple composed of both the image name and the image original month.
+        :return: boolean value.
+        """
+        path, datetimeoriginal = item
+        return not re.match(normpath(join(IMAGES, str(datetimeoriginal))).replace("\\", "\\\\"), normpath(dirname(path)), re.IGNORECASE)
+
+    @staticmethod
+    def get_images(*directories):
+        """
+        Return an iterator object yielding an images collection taken from directories composing the `directories` argument.
+        Exiftool application is run to get both image name and image original month.
+
+        :param directories: list of directories scanned by Exiftool application.
+        :return: iterator object.
+        """
+        in_logger = logging.getLogger("MyPythonProject.Images.{0}.get_images".format(splitext(basename(__file__))[0]))
+        args, collection = [r"G:\Computing\Resources\exiftool.exe", "-r", "-d", "%Y%m", "-j", "-charset", "Latin1", "-DateTimeOriginal", "-fileOrder", "DateTimeOriginal", "-ext", "jpg"], {}
+        if directories:
+            args.extend(sorted(directories))
+            with TemporaryFile(mode="r+", encoding="UTF_8") as stream:
+                process = run(args, stdout=stream, stderr=PIPE, universal_newlines=True)
+                in_logger.debug("Command    : %s.", process.args)
+                in_logger.debug("Return code: %s.", process.returncode)
+                if not process.returncode:
+                    for line in process.stderr.splitlines():
+                        in_logger.debug("%s.", line.lstrip())
+                    stream.seek(0)
+                    for item in json.load(stream):
+                        with suppress(KeyError):
+                            key = item["SourceFile"]
+                            value = item["DateTimeOriginal"]
+                            collection[key] = value
+        for item in collection.items():
+            yield item
+
+    @staticmethod
+    def get_numbers(item):
+        """
+        Return the five digits unique number composing an image name.
+
+        :param item: tuple composed of both the image name and the image original month.
+        :return: five digits unique number as an integer object.
+        """
+        path, _ = item
+        return int(splitext(basename(path))[0].split("_")[1])
+
+    @staticmethod
+    def set_numbers(collection, template):
+        """
+        Return an iterator object yielding digits numbers present into `template` and absent from `collection`.
+        Used to return available digits numbers when renaming images.
+
+        :param collection:
+        :param template:
+        :return: iterator object.
+        """
+        col = set(collection)
+        tmp = set(template)
+        for number in sorted(tmp.difference(col)):
+            yield number
+
+    @staticmethod
+    def partition(collection, predicate):
+        """
+        Return two iterator objects used to split `collection` depending on `predicate`.
+        Useful to split the collection between images with a name compliant with the naming convention and images with a name non-compliant with the naming convention.
+
+        :param collection: images collection.
+        :param predicate: predicate used to filter images.
+        :return: iterator objects gathered together into a tuple object.
+        """
+        it1, it2 = tee(collection)
+        return filter(predicate, it1), filterfalse(predicate, it2)
+
+    @staticmethod
+    def predicate(item):
+        """
+        Return a boolean value informing that the image name is compliant with the naming convention.
+
+        :param item: tuple composed of both the image name and the image original month.
+        :return: boolean value.
+        """
+        path, _ = item
+        return re.match(r"^(?:{0})(?:{1})_(\d{{5}})\.jpg$".format(DFTYEARREGEX, DFTMONTHREGEX), basename(path), re.IGNORECASE)
 
 
-# ==========
-# Functions.
-# ==========
-@contextmanager
-def decorator(obj, s):
-    sep = "".join(list(repeat("-", len(s))))
-    obj.info(sep)
-    yield
-    obj.info(sep)
+# =================
+# Global functions.
+# =================
+def validyear(yea):
+    """
+    Check if a year is valid.
 
-
-@contextmanager
-def rename(src, dst, test=True, obj=None, message=None):
-    failed, res = False, {True: "Failed", False: "Succeeded"}
-    if not test:
-        try:
-            os.rename(src=src, dst=dst)
-        except OSError as err:
-            failed = True
-            if obj:
-                obj.exception(err)
-    yield failed
-    if message and obj:
-        obj.info("{log} {result}.".format(log=message, result=res[failed]))
-
-
-def validyear(y):
-    import re
+    :param yea: year as a four digits number. Must be a string object.
+    :return: year as an integer object if argument is valid. Raise an argparse.ArgumentTypeError if argument isn't valid.
+    """
     regex = re.compile(r"^(?=\d{4})20[0-2]\d$")
-    if not regex.match(y):
-        raise argparse.ArgumentTypeError('"{0}" is not a valid year'.format(y))
-    return y
+    if not regex.match(yea):
+        raise argparse.ArgumentTypeError('"{0}" is not a valid year'.format(yea))
+    return int(yea)
 
 
-def func1(s):
-    match = re.match(r"(?i)^\d{6}\B_\B(\d{5})\.jpg", s)
-    if match:
-        return nt(True, match.group(1))
-    return nt(False, None)
-
-
-def func2(s):
-    return "ren_{0}".format(os.path.basename(s))
-
-
-def func3(s, i):
-    return "{0}_{1:0>5d}.jpg".format(s, i)
-
-
-# =================
-# Arguments parser.
-# =================
-parser = argparse.ArgumentParser()
-parser.add_argument("year", type=validyear, nargs="+")
-parser.add_argument("-t", "--test", action="store_true")
-
-# ===============
-# Main algorithm.
-# ===============
+# ============
+# Main script.
+# ============
 if __name__ == "__main__":
 
-    # --> Constants.
-    MODES = {True: "test mode.", False: "rename mode."}
+    # Local constants.
+    LOGGERS = ["MyPythonProject"]
+    MAPPING = {True: "debug", False: "info"}
 
-    # --> Initializations.
-    status, nt, results, arguments, log = 99, namedtuple("nt", "match sequence"), [], [], Log()
+    # Parse arguments.
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser.set_defaults(console=True)
+    parser.add_argument("year", type=validyear)
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--test", action="store_true")
+    arguments = parser.parse_args()
 
-    # --> Logging interface.
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-        dictConfig(yaml.load(fp))
-    logger = logging.getLogger("Images.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
+    # Get debug mode.
+    l_debug = False
+    with suppress(AttributeError):
+        l_debug = arguments.debug
 
-    # --> User interface.
-    gui = shared.interface(LocalInterface([("Would you like to run test Mode? [Y/N]", "test"), ("Please enter year", "year")]))
+    # Get console mode.
+    l_console = False
+    with suppress(AttributeError):
+        l_console = arguments.console
 
-    # --> Parse arguments.
-    arguments.extend(gui.year)
-    if gui.test == "Y":
-        arguments.append("--test")
-    arguments = parser.parse_args(arguments)
+    # Get test mode.
+    l_test = False
+    with suppress(AttributeError):
+        l_test = arguments.test
 
-    # --> Log arguments.
-    logger.debug(sorted(arguments.year, key=int))
-    logger.debug(arguments.test)
+    # Logging.
+    with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+        config = yaml.load(fp)
 
-    # --> Main algorithm.
-    for year in sorted(arguments.year, key=int):
-        try:
-            collection = ImagesCollection(year)
-        except ValueError as exception:
-            logger.exception(exception)
-        else:
-            for keys, values in collection:
-                curdir = os.path.normpath(os.path.join(shared.IMAGES, keys))
-                files = sorted(glob.glob(os.path.normpath(os.path.join(shared.IMAGES, keys, r"*.jpg"))))
-                args = zip(map(os.path.basename, files), map(func2, files), map(func3, repeat(keys), values))
+    # -----
+    for logger in LOGGERS:
+        with suppress(KeyError):
+            config["loggers"][logger]["level"] = MAPPING[l_debug].upper()
 
-                #    -------------------------------------------------------------------
-                # 1. Tous les fichiers du répertoire répondent au masque "CCYYMM_xxxxx".
-                #    -------------------------------------------------------------------
-                if all(i.match for i in map(func1, map(os.path.basename, files))):
-                    try:
-                        assert [int(i.sequence) for i in map(func1, map(os.path.basename, files))] == values
-                    except AssertionError:
-                        msg = '"{0}": renaming needed.'.format(curdir)
-                        with decorator(logger, msg):
-                            logger.info(msg)
-                        with shared.ChangeLocalCurrentDirectory(curdir):
+    # -----
+    if l_console:
 
-                            log.index = 0
-                            for arg in args:
-                                with rename(itemgetter(0)(arg), itemgetter(1)(arg), obj=logger, message=log(itemgetter(0)(arg), itemgetter(1)(arg)), test=arguments.test) as result:
-                                    results.append(result)
+        # Set up a specific stream handler.
+        for logger in LOGGERS:
+            with suppress(KeyError):
+                config["loggers"][logger]["handlers"] = ["file", "console"]
+        with suppress(KeyError):
+            config["handlers"]["console"]["level"] = "DEBUG"
 
-                            log.index = 0
-                            for arg in args:
-                                with rename(itemgetter(1)(arg), itemgetter(2)(arg), obj=logger, message=log(itemgetter(1)(arg), itemgetter(2)(arg)), test=arguments.test) as result:
-                                    results.append(result)
+        # Set up a specific filter for logging from "MyPythonProject.Images" only.
+        localfilter = {"class": "logging.Filter", "name": "MyPythonProject.Images"}
+        config["filters"]["localfilter"] = localfilter
+        config["handlers"]["console"]["filters"] = ["localfilter"]
 
-                        continue
+    # -----
+    logging.config.dictConfig(config)
 
-                    msg = '"{0}": no renaming needed.'.format(curdir)
-                    with decorator(logger, msg):
-                        logger.info(msg)
-                    continue
-
-                # ---------------------------------------------------------------
-                # 2. Aucun fichier du répertoire ne répond au masque "CCYYMM_xxxxx".
-                #    ---------------------------------------------------------------
-                if all(not i.match for i in map(func1, map(os.path.basename, files))):
-                    msg = '"{0}": renaming needed.'.format(curdir)
-                    with decorator(logger, msg):
-                        logger.info(msg)
-                    with shared.ChangeLocalCurrentDirectory(curdir):
-                        log.index = 0
-                        for arg in args:
-                            with rename(itemgetter(0)(arg), itemgetter(2)(arg), obj=logger, message=log(itemgetter(0)(arg), itemgetter(2)(arg)), test=arguments.test) as result:
-                                results.append(result)
-                    continue
-
-                # ------------------------------------------------------------------
-                # 3. Au moins un fichier du répertoire répond au masque "CCYYMM_xxxxx".
-                #    ------------------------------------------------------------------
-                msg = '"{0}": renaming needed.'.format(curdir)
-                with decorator(logger, msg):
-                    logger.info(msg)
-                with shared.ChangeLocalCurrentDirectory(curdir):
-
-                    log.index = 0
-                    for arg in args:
-                        with rename(itemgetter(0)(arg), itemgetter(1)(arg), obj=logger, message=log(itemgetter(0)(arg), itemgetter(1)(arg)), test=arguments.test) as result:
-                            results.append(result)
-
-                    log.index = 0
-                    for arg in args:
-                        with rename(itemgetter(1)(arg), itemgetter(2)(arg), obj=logger, message=log(itemgetter(1)(arg), itemgetter(2)(arg)), test=arguments.test) as result:
-                            results.append(result)
-
-                continue
-
-    # --> Exit algorithm.
-    if not arguments.test:
-        if all(results):
-            status = 0
-        sys.exit(status)
-    sys.exit(0)
+    # -----
+    run("CLS", shell=True)
+    mycollection = ImagesCollection.fromyear(arguments.year)
+    if mycollection.filestomove:
+        mycollection.move(test=l_test)
+    mycollection.rename(test=l_test)
+    mycollection.load()
+    mycollection.display()
