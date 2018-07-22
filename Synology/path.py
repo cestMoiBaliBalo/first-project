@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import sys
 
 from Applications.shared import TEMPLATE4

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 
 # /volume1/@appstore/py3k/usr/local/bin/python3 /volume1/scripts/myscript.py --test --run
 # /volume1/@appstore/py3k/usr/local/bin/python3 /volume1/scripts/myscript.py --run

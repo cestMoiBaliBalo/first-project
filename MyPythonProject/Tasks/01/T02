@@ -7,7 +7,7 @@ FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
     {% if loop.first %}
         {% set switch = "EC" %}
     {% endif %}
-XXCOPY.EXE /{{ switch }} "{{ src }}" "{{ dst }}" /Y /oA:%_XXCOPYLOG%
+XXCOPY.EXE /{{ switch }} "{{ src }}" "{{ dst }}" /I /Y /oA:%_XXCOPYLOG%
 {% endfor %}
 ENDLOCAL
 EXIT /B 0

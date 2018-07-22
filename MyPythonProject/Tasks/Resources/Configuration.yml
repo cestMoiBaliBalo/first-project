@@ -1,0 +1,27 @@
+repositories:
+  "Lossless audio files 1": "G:\\Music\\Lossless1"
+  "Lossless audio files 2": "G:\\Music\\Lossless2"
+  "Lossy audio files": "G:\\Music\\Lossy"
+
+compression:
+  "G:\\Music\\Lossless1": lossless
+  "G:\\Music\\Lossless2": lossless
+  "G:\\Music\\Lossy": lossy
+
+patterns:
+  lossless:
+    - "*\\?*\\*.dsf"
+    - "*\\?*\\*.flac"
+  lossy:
+    - "*\\?*\\*.mp3"
+
+extra_patterns:
+  lossy:
+    - "*\\?*\\*.m4a"
+
+extensions:
+  lossless:
+    - dsf
+    - flac
+  lossy:
+    - mp3

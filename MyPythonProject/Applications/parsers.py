@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+from contextlib import suppress
 
 from . import shared
 
@@ -9,7 +10,23 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-#  ==========
+#  ========
+#  Classes.
+#  ========
+class SetDatabase(argparse.Action):
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if values:
+            database = shared.DATABASE
+            with suppress(AttributeError):
+                database = getattr(namespace, "db")
+            setattr(namespace, "db", database)
+
+
+# ==========
 #  Functions.
 #  ==========
 def unixepochtime(time):
@@ -100,15 +117,16 @@ subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by
 #  7. PARSER 7.
 #     =========
 tasks_parser = argparse.ArgumentParser()
-tasks_parser.add_argument("-t", "--table", default="tasks", choices=["tasks"])
+tasks_parser.set_defaults(table="tasks")
 subparser = tasks_parser.add_subparsers(dest="action")
-parser_select = subparser.add_parser("select", argument_default=argparse.SUPPRESS, parents=[loglevel_parser, database_parser])
+parser_select = subparser.add_parser("select", argument_default=argparse.SUPPRESS, parents=[database_parser])
 parser_select.add_argument("taskid", type=int)
 parser_select.add_argument("--days", default=10, type=int)
+parser_select.add_argument("--debug", action="store_true")
 parser_select.add_argument("--dontcreate", action="store_true")
-parser_select.add_argument("--forced", action="store_true")
-parser_update = subparser.add_parser("update", argument_default=argparse.SUPPRESS, parents=[loglevel_parser, database_parser])
+parser_update = subparser.add_parser("update", argument_default=argparse.SUPPRESS, parents=[database_parser])
 parser_update.add_argument("taskid", type=int)
+parser_update.add_argument("--debug", action="store_true")
 
 #     =========
 #  8. PARSER 8.
@@ -163,3 +181,18 @@ parser2.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.In
 # -----
 parser3 = subparser.add_parser("3")
 parser3.add_argument("extensions", nargs="+", help="excluded extensions. Mandatory.")
+
+#     ==========
+# 10. PARSER 10.
+#     ==========
+tags_grabber = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+group = tags_grabber.add_mutually_exclusive_group()
+tags_grabber.add_argument("source", help="UTF-16-LE encoded TXT tags file", type=argparse.FileType(mode="r+", encoding="UTF_16LE"))
+tags_grabber.add_argument("profile", help="ripping profile")
+tags_grabber.add_argument("decorators", nargs="*", help="decorating profile(s)")
+group.add_argument("--albums", nargs="?", const=True, default=False, action=SetDatabase, help="prepare an UTF-8 encoded JSON file for inserting data into defaultalbums table")
+group.add_argument("--bootlegs", nargs="?", const=True, default=False, action=SetDatabase, help="prepare an UTF-8 encoded JSON file for inserting data into bootlegalbums table")
+tags_grabber.add_argument("--test", action="store_true", help="insert a tags sample into an UTF-8 encoded JSON file")
+tags_grabber.add_argument("--debug", action="store_true")
+tags_grabber.add_argument("--database", dest="db")
+tags_grabber.add_argument("--store_tags", action="store_true")

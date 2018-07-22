@@ -398,7 +398,6 @@ class Test11(unittest.TestCase):
         self.assertEqual(arguments.table, "tasks")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 10)
-        # self.assertFalse(arguments.dontcreate)
         self.assertEqual(arguments.loglevel, "INFO")
 
     def test_02second(self):
@@ -414,7 +413,6 @@ class Test11(unittest.TestCase):
         self.assertEqual(arguments.table, "tasks")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 20)
-        # self.assertFalse(arguments.dontcreate)
         self.assertEqual(arguments.loglevel, "DEBUG")
 
     @unittest.skip
@@ -424,5 +422,4 @@ class Test11(unittest.TestCase):
         self.assertEqual(arguments.table, "sometable")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 20)
-        # self.assertFalse(arguments.dontcreate)
         self.assertEqual(arguments.loglevel, "DEBUG")

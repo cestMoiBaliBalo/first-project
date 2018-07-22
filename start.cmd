@@ -43,7 +43,10 @@ REM     ------
 REM  2. Tasks.
 REM     ------
 :MAIN
-IF "%~1" EQU "" EXIT /B %ERRORLEVEL%
+IF "%~1" EQU "" (
+    PAUSE
+    EXIT /B %ERRORLEVEL%
+)
 IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
@@ -184,10 +187,10 @@ REM 12. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
 SET _taskid=123456798
-python -m Applications.Database.Tables.shared select %_taskid%
+python -m Applications.Tables.Tasks.shared select %_taskid%
 IF %ERRORLEVEL% EQU 0 (
     "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent
-    python -m Applications.Database.Tables.shared update %_taskid%
+    python -m Applications.Tables.Tasks.shared update %_taskid%
 )
 SHIFT
 GOTO MAIN
@@ -235,10 +238,10 @@ REM Target : "Documents (USB Drive)".
 IF EXIST "y:" (
     SET _taskid=123456802
     "%_areca%" backup -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
-    python -m Applications.Database.Tables.shared select !_taskid! --days 20
+    python -m Applications.Tables.Tasks.shared select !_taskid! --days 20
     IF !ERRORLEVEL! EQU 0 (
-        "%_areca%" merge -c -k -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg" -from 0 -to 0
-        python -m Applications.Database.Tables.shared update !_taskid!
+       "%_areca%" merge -c -k -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg" -from 0 -to 0
+        python -m Applications.Tables.Tasks.shared update !_taskid!
     )
 )
 IF [%2] EQU [] (
@@ -255,11 +258,11 @@ REM 15. Move videos to local CloudStation.
 REM     ----------------------------------
 :STEP19
 SET _taskid=123456801
-python -m Applications.Database.Tables.shared select %_taskid% --days 5
+python -m Applications.Tables.Tasks.shared select %_taskid% --days 5
 IF %ERRORLEVEL% EQU 0 (
     PUSHD "%_PYTHONPROJECT%\Tasks\04"
     python main.py
-    IF !ERRORLEVEL! EQU 0 python -m Applications.Database.Tables.shared update %_taskid%
+    IF !ERRORLEVEL! EQU 0 python -m Applications.Tables.Tasks.shared update %_taskid%
     POPD
 )
 SHIFT

@@ -82,9 +82,9 @@ REM -----------------------------------
 REM Delete log from `rippinglog` table.
 REM -----------------------------------
 IF ERRORLEVEL 35 (
-    PUSHD "%_PYTHONPROJECT%\Tasks\05"
-    python delete.py
-    POPD
+    REM PUSHD "%_PYTHONPROJECT%\Tasks\05"
+    REM python delete.py
+    REM POPD
     GOTO MENU
 )
 
@@ -97,18 +97,32 @@ IF ERRORLEVEL 33 (
 )
 
 
-REM -------------------------------
-REM Default Audio CD ripper tester.
-REM -------------------------------
+REM --------------------------------
+REM Display "albums" table into XML.
+REM --------------------------------
 IF ERRORLEVEL 32 (
+    CLS
+    ECHO:
+    ECHO:
+    python %_PYTHONPROJECT%\AudioCD\Views\AlbumsView1.py
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
 
-REM ---------------
-REM Parsers tester.
-REM ---------------
+REM ------------------------------
+REM Display "albums" table detail.
+REM ------------------------------
 IF ERRORLEVEL 31 (
+    CLS
+    ECHO:
+    ECHO:
+    python %_PYTHONPROJECT%\AudioCD\Views\AlbumsView2.py --debug --console
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
@@ -117,9 +131,9 @@ REM -----------------------------------
 REM Update log from `rippinglog` table.
 REM -----------------------------------
 IF ERRORLEVEL 30 (
-    PUSHD "%_PYTHONPROJECT%\Tasks\05"
-    python update.py
-    POPD
+    REM PUSHD "%_PYTHONPROJECT%\Tasks\05"
+    REM python update.py
+    REM POPD
     GOTO MENU
 )
 
@@ -328,10 +342,19 @@ REM -----------------
 IF ERRORLEVEL 20 GOTO MENU
 
 
-REM -----------------
-REM Not used anymore.
-REM -----------------
-IF ERRORLEVEL 19 GOTO MENU
+REM ------------------------------------
+REM Display "rippeddiscs" table summary.
+REM ------------------------------------
+IF ERRORLEVEL 19 (
+    CLS
+    ECHO:
+    ECHO:
+    python %_PYTHONPROJECT%\AudioCD\Views\RippedDiscsView4.py
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
 
 
 REM ------------------------
@@ -371,7 +394,7 @@ IF ERRORLEVEL 17 (
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy local FLAC audio files to MyCloud." _answer
     IF [!_answer!] EQU [N] GOTO FIN18
     CLS
-    XXCOPY "F:\*\?*\*.flac" "\\DISKSTATION\music\" /EX:"%_exclusions%" /CLONE /PZ0 /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+    XXCOPY "F:\*\?*\*.flac" "\\DISKSTATION\music\" /EX:"%_exclusions%" /CLONE /PZ0 /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$.lst" /FM:L /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -404,14 +427,15 @@ IF ERRORLEVEL 16 (
 )
 
 
-REM --------------------------
-REM Edit "rippinglog" content.
-REM --------------------------
+REM ------------------------------------
+REM Display "rippeddiscs" table details.
+REM ------------------------------------
 IF ERRORLEVEL 15 (
     CLS
     ECHO:
     ECHO:
-    python %_PYTHONPROJECT%\Tasks\tables.py rippinglog select
+    python %_PYTHONPROJECT%\AudioCD\Views\RippedDiscsView1.py --debug --console
+    ECHO:
     ECHO:
     PAUSE
     GOTO MENU
@@ -454,16 +478,10 @@ REM )
 REM GOTO MENU
 
 
-REM ---------------------
-REM Edit "tasks" content.
-REM ---------------------
+REM ----------
+REM Available.
+REM ----------
 IF ERRORLEVEL 12 (
-    CLS
-    ECHO:
-    ECHO:
-    python %_PYTHONPROJECT%\Tasks\tables.py tasks select
-    ECHO:
-    PAUSE
     GOTO MENU
 )
 
@@ -472,7 +490,7 @@ REM ---------------------
 REM Images renaming task.
 REM ---------------------
 IF ERRORLEVEL 11 (
-    CALL "G:\Computing\images.cmd"
+    REM CALL "G:\Computing\images.cmd"
     GOTO MENU
 )
 
@@ -758,7 +776,7 @@ CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application w
 IF [%_answer%] EQU [N] GOTO END_P4
 CLS
 ECHO:
-XXCOPY /EC %_src% %_dst% /EX:"%_exclusions%" /BI /FF /Y /KS /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$_lst" /FM:L /oA:%_XXCOPYLOG%
+XXCOPY /EC %_src% %_dst% /EX:"%_exclusions%" /BI /FF /Y /KS /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$.lst" /FM:L /oA:%_XXCOPYLOG%
 XXCOPY /CE "\\DISKSTATION\music\" "F:\" /X:*recycle\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 
 ECHO:

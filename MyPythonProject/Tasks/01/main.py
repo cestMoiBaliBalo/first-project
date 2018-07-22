@@ -6,7 +6,6 @@ Called from tasks manager "tasks.cmd". Option "31".
 # pylint: disable=invalid-name
 import argparse
 import itertools
-import json
 import logging.config
 import os
 import re
@@ -129,8 +128,8 @@ REGEX5 = re.compile(r"\b\\([12])\\({0})\\\b({1})\.({2})(?:\.(\d))?\b\s-\s\b(?:.+
 # =========================
 # Load audio configuration.
 # =========================
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.json")) as fr:
-    configuration = json.load(fr)
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.yml")) as stream:
+    configuration = yaml.load(stream)
 
 # ==========
 # Templates.
@@ -329,4 +328,4 @@ if copy:
 # Exit script.
 # ============
 run("CLS", shell=True)
-sys.exit(100)
+sys.exit(level)

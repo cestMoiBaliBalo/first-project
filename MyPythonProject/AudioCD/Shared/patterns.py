@@ -6,8 +6,10 @@ from contextlib import suppress
 from datetime import datetime
 
 from pytz import timezone
+from sortedcontainers import SortedDict
 
-from Applications.shared import DFTTIMEZONE, TEMPLATE3, dateformat, validalbumsort
+from Applications.AudioCD.shared import DFTPATTERN, filcontents
+from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, dateformat, validalbumsort
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -72,9 +74,19 @@ class AudioTagsInterface(MutableMapping):
     def __iter__(self):
         return iter(self._tags)
 
-    @property
-    def tags(self):
-        return self._tags
+    # @property
+    # def tags(self):
+    #     return self._tags
+
+    @classmethod
+    def fromfile(cls, fil, enc=UTF16):
+        regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
+        with open(fil, encoding=enc) as fr:
+            for line in filcontents(fr):
+                match = regex.match(line)
+                if match:
+                    mapping[match.group(1).rstrip().lower()] = match.group(2)
+        return cls(**SortedDict(**mapping))
 
 
 class AudioTags(AudioTagsInterface):
@@ -83,13 +95,13 @@ class AudioTags(AudioTagsInterface):
         self._tags = tags
 
 
-class TagsModifier(AudioTagsInterface):
+class TagsDecorator(AudioTagsInterface):
     def __init__(self, obj):
-        super(TagsModifier, self).__init__()
+        super(TagsDecorator, self).__init__()
         self._tags = obj.tags
 
 
-class DefaultTags(TagsModifier):
+class DefaultTags(TagsDecorator):
     def __init__(self, obj):
         super(DefaultTags, self).__init__(obj)
         self._tags["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
@@ -100,25 +112,25 @@ class DefaultTags(TagsModifier):
                 del self._tags[tag]
 
 
-class EncodedFromLegalFLAC(TagsModifier):
+class EncodedFromLegalFLACFile(TagsDecorator):
     def __init__(self, obj):
-        super(EncodedFromLegalFLAC, self).__init__(obj)
+        super(EncodedFromLegalFLACFile, self).__init__(obj)
         self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(dateformat(datetime.now(tz=timezone(DFTTIMEZONE)), TEMPLATE3))
 
 
-class EncodedFromLegalDSD(TagsModifier):
+class EncodedFromLegalDSDFile(TagsDecorator):
     def __init__(self, obj):
-        super(EncodedFromLegalDSD, self).__init__(obj)
+        super(EncodedFromLegalDSDFile, self).__init__(obj)
         self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(dateformat(datetime.now(tz=timezone(DFTTIMEZONE)), TEMPLATE3))
 
 
-class AlbumSort(TagsModifier):
+class AlbumSort(TagsDecorator):
     CODECS = {"AAC": "02",
               "LAME": "01"}
 
     def __init__(self, obj, codec):
         super(AlbumSort, self).__init__(obj)
-        albumsort = self.tags.get("albumsort")
+        albumsort = self.get("albumsort")
         if albumsort:
             try:
                 albumsort = validalbumsort(albumsort[:-3])

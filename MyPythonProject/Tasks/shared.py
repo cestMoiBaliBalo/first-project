@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import logging.config
 import os
 import re
@@ -127,7 +128,7 @@ def set_prompt2(requested_page, total_pages, promptu):
 
     :param requested_page:
     :param total_pages:
-    :param promptd:
+    :param promptu:
     :return:
     """
     _prompt, _promptN, _promptP, _promptU, _promptQ = "Please choose log", "", "", ", press [U] to update the chosen log(s)", " or press [Q] to quit: "
@@ -152,6 +153,9 @@ def set_prompt2(requested_page, total_pages, promptu):
 def check_input(tag, value):
     """
 
+    :param tag:
+    :param value:
+    :return:
     """
     error = False
 
@@ -173,6 +177,10 @@ def check_input(tag, value):
 
 
 def get_drives():
+    """
+
+    :return:
+    """
     regex = re.compile(r"^[I-R]:$")
     process = run("wmic logicaldisk get name", shell=True, universal_newlines=True, stdout=PIPE)
     for drive in [drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())]:

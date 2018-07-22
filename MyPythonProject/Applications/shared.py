@@ -1,27 +1,23 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
-import io
 import locale
 import os
 import re
 import subprocess
 import zipfile
 from base64 import b85decode, b85encode
-from collections import MutableMapping, OrderedDict
+from collections import OrderedDict
 from contextlib import ContextDecorator
 from datetime import datetime
 from itertools import dropwhile, filterfalse, islice, repeat, tee, zip_longest
-from logging import Formatter, getLogger
+from logging import Filter, Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 from string import Template
 
 import jinja2
 import yaml
-from PIL import Image, TiffImagePlugin
-from dateutil.parser import parse
 from dateutil.parser import parserinfo
-from dateutil.tz import gettz
 from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
@@ -102,231 +98,232 @@ ZONES = ["UTC",
 # ========
 # Classes.
 # ========
-class ImageError(OSError):
-    def __init__(self, file, error):
-        self.file = file
-        self.error = error
-
-
-class ExifError(ImageError):
-    def __init__(self, file, error):
-        super(ExifError, self).__init__(file, error)
-
-
-class Files(MutableMapping):
-    def __init__(self, fil):
-        self._fil = None
-        self.fil = fil
-        self._metadata = {i: getattr(self, i) for i in ["ctime", "mtime", "dirname", "basename", "extension", "parts"]}
-
-    def __getitem__(self, item):
-        return self._metadata[item]
-
-    def __setitem__(self, key, value):
-        self._metadata[key] = value
-
-    def __delitem__(self, key):
-        del self._metadata[key]
-
-    def __len__(self):
-        return len(self._metadata)
-
-    def __iter__(self):
-        return iter(self._metadata)
-
-    @property
-    def fil(self):
-        return self._fil
-
-    @fil.setter
-    def fil(self, value):
-        if not os.path.exists(value):
-            raise FileNotFoundError('Can\'t find "{0}". Please check both dirname and basename.'.format(value))
-        self._fil = value
-
-    @property
-    def dirname(self):
-        return os.path.dirname(self.fil)
-
-    @property
-    def basename(self):
-        return os.path.splitext(os.path.basename(self.fil))[0]
-
-    @property
-    def extension(self):
-        return os.path.splitext(self.fil)[1].strip(".")
-
-    @property
-    def parts(self):
-        return os.path.dirname(self.fil).split("\\")
-
-    @property
-    def ctime(self):
-        return int(os.path.getctime(self.fil))
-
-    @property
-    def mtime(self):
-        return int(os.path.getmtime(self.fil))
-
-
-class Images(Files):
-    tzinfos = {"CEST": gettz("Europe/Paris"), "CET": gettz("Europe/Paris")}
-
-    def __init__(self, img):
-        super(Images, self).__init__(img)
-        self._exif = None
-        self.exif = img
-        for i in ["localtimestamp", "originaldatetime", "originalyear", "originalmonth", "originalday", "originalhours", "originalminutes", "originalseconds", "dayoftheyear", "dayoftheweek", "defaultlocation",
-                  "defaultprefix", "originalsubseconds"]:
-            self._metadata[i] = getattr(self, i)
-
-    @property
-    def exif(self):
-        return self._exif
-
-    @exif.setter
-    def exif(self, value):
-        try:
-            self._exif = self.getexif(Image.open(value))
-        except ExifError:
-            raise ExifError(value, "Can\'t grab exif tags from")
-        except OSError:
-            raise OSError('Can\'t identify "{0}" as an image file.'.format(value))
-        else:
-            if not self._exif:
-                raise ExifError(value, "Can\'t grab metadata from")
-            if 36867 not in self._exif:
-                raise ExifError(value, "Can\'t grab timestamp from")
-
-    @property
-    def datetime(self):
-        return parse("{0} CET".format(self.exif[36867].replace(":", "-", 2)), tzinfos=self.tzinfos)
-
-    @property
-    def localtimestamp(self):
-        return int(self.datetime.timestamp())
-
-    @property
-    def originaldatetime(self):
-        return self.datetime.strftime("%d/%m/%Y %H:%M:%S %Z%z")
-
-    @property
-    def originalyear(self):
-        return self.datetime.strftime("%Y")
-
-    @property
-    def originalmonth(self):
-        return self.datetime.strftime("%m")
-
-    @property
-    def originalday(self):
-        return self.datetime.strftime("%d")
-
-    @property
-    def originalhours(self):
-        return self.datetime.strftime("%H")
-
-    @property
-    def originalminutes(self):
-        return self.datetime.strftime("%M")
-
-    @property
-    def originalseconds(self):
-        return self.datetime.strftime("%S")
-
-    @property
-    def originalsubseconds(self):
-        return self.exif.get(37521, 0)
-
-    @property
-    def dayoftheyear(self):
-        return self.datetime.strftime("%j")
-
-    @property
-    def dayoftheweek(self):
-        return self.datetime.strftime("%w")
-
-    @property
-    def defaultlocation(self):
-        return self.defaultlocation(self.originalyear, self.originalmonth, self.originalday)
-
-    @property
-    def defaultprefix(self):
-        return "{0}{1}".format(self.originalyear, str(self.originalmonth).zfill(2))
-
-    @property
-    def make(self):
-        return self.exif.get(271, "")
-
-    @property
-    def model(self):
-        return self.exif.get(272, "")
-
-    @property
-    def width(self):
-        return self.exif.get(40962, 0)
-
-    @property
-    def height(self):
-        return self.exif.get(40963, 0)
-
-    @property
-    def copyright(self):
-        return self.exif.get(33432, "")
-
-    @classmethod
-    def getexif(cls, o):
-        """
-        :param o: image object.
-        :return: metadata dictionary
-        """
-        d = {}
-        try:
-            data = o.info["exif"]
-        except KeyError:
-            raise ExifError
-        file = io.BytesIO(data[6:])
-        head = file.read(8)
-        info = TiffImagePlugin.ImageFileDirectory(head)
-        info.load(file)
-        for key, value in info.items():
-            d[key] = cls.fixup(value)
-        try:
-            file.seek(d[0x8769])
-        except KeyError:
-            pass
-        else:
-            info = TiffImagePlugin.ImageFileDirectory(head)
-            info.load(file)
-            for key, value in info.items():
-                d[key] = cls.fixup(value)
-        return d
-
-    @staticmethod
-    def fixup(v):
-        if len(v) == 1:
-            return v[0]
-        return v
-
-    @staticmethod
-    def defaultlocation(year, month, day, drive=IMAGES):
-
-        # Cas 1 : "H:\CCYY\MM\DD".
-        if year in [2011, 2012]:
-            return os.path.normpath(os.path.join(drive, str(year), str(month).zfill(2), str(day).zfill(2)))
-
-        # Cas 2 : "H:\CCYY\MM.DD".
-        if year == 2014:
-            return os.path.normpath(os.path.join(drive, str(year), "{0}.{1}".format(str(month).zfill(2), str(day).zfill(2))))
-
-        # Cas 3 : "H:\CCYYMM".
-        return os.path.normpath(os.path.join(drive, "{0}{1}".format(year, str(month).zfill(2))))
+# class ImageError(OSError):
+#     def __init__(self, file, error):
+#         self.file = file
+#         self.error = error
+#
+#
+# class ExifError(ImageError):
+#     def __init__(self, file, error):
+#         super(ExifError, self).__init__(file, error)
+#
+#
+# class Files(MutableMapping):
+#     def __init__(self, fil):
+#         self._fil = None
+#         self.fil = fil
+#         self._metadata = {i: getattr(self, i) for i in ["ctime", "mtime", "dirname", "basename", "extension", "parts"]}
+#
+#     def __getitem__(self, item):
+#         return self._metadata[item]
+#
+#     def __setitem__(self, key, value):
+#         self._metadata[key] = value
+#
+#     def __delitem__(self, key):
+#         del self._metadata[key]
+#
+#     def __len__(self):
+#         return len(self._metadata)
+#
+#     def __iter__(self):
+#         return iter(self._metadata)
+#
+#     @property
+#     def fil(self):
+#         return self._fil
+#
+#     @fil.setter
+#     def fil(self, value):
+#         if not os.path.exists(value):
+#             raise FileNotFoundError('Can\'t find "{0}". Please check both dirname and basename.'.format(value))
+#         self._fil = value
+#
+#     @property
+#     def dirname(self):
+#         return os.path.dirname(self.fil)
+#
+#     @property
+#     def basename(self):
+#         return os.path.splitext(os.path.basename(self.fil))[0]
+#
+#     @property
+#     def extension(self):
+#         return os.path.splitext(self.fil)[1].strip(".")
+#
+#     @property
+#     def parts(self):
+#         return os.path.dirname(self.fil).split("\\")
+#
+#     @property
+#     def ctime(self):
+#         return int(os.path.getctime(self.fil))
+#
+#     @property
+#     def mtime(self):
+#         return int(os.path.getmtime(self.fil))
+#
+#
+# class Images(Files):
+#     tzinfos = {"CEST": gettz("Europe/Paris"), "CET": gettz("Europe/Paris")}
+#
+#     def __init__(self, img):
+#         super(Images, self).__init__(img)
+#         self._exif = None
+#         self.exif = img
+#         for i in ["localtimestamp", "originaldatetime", "originalyear", "originalmonth", "originalday", "originalhours", "originalminutes", "originalseconds", "dayoftheyear", "dayoftheweek",
+# "defaultlocation",
+#                   "defaultprefix", "originalsubseconds"]:
+#             self._metadata[i] = getattr(self, i)
+#
+#     @property
+#     def exif(self):
+#         return self._exif
+#
+#     @exif.setter
+#     def exif(self, value):
+#         try:
+#             self._exif = self.getexif(Image.open(value))
+#         except ExifError:
+#             raise ExifError(value, "Can\'t grab exif tags from")
+#         except OSError:
+#             raise OSError('Can\'t identify "{0}" as an image file.'.format(value))
+#         else:
+#             if not self._exif:
+#                 raise ExifError(value, "Can\'t grab metadata from")
+#             if 36867 not in self._exif:
+#                 raise ExifError(value, "Can\'t grab timestamp from")
+#
+#     @property
+#     def datetime(self):
+#         return parse("{0} CET".format(self.exif[36867].replace(":", "-", 2)), tzinfos=self.tzinfos)
+#
+#     @property
+#     def localtimestamp(self):
+#         return int(self.datetime.timestamp())
+#
+#     @property
+#     def originaldatetime(self):
+#         return self.datetime.strftime("%d/%m/%Y %H:%M:%S %Z%z")
+#
+#     @property
+#     def originalyear(self):
+#         return self.datetime.strftime("%Y")
+#
+#     @property
+#     def originalmonth(self):
+#         return self.datetime.strftime("%m")
+#
+#     @property
+#     def originalday(self):
+#         return self.datetime.strftime("%d")
+#
+#     @property
+#     def originalhours(self):
+#         return self.datetime.strftime("%H")
+#
+#     @property
+#     def originalminutes(self):
+#         return self.datetime.strftime("%M")
+#
+#     @property
+#     def originalseconds(self):
+#         return self.datetime.strftime("%S")
+#
+#     @property
+#     def originalsubseconds(self):
+#         return self.exif.get(37521, 0)
+#
+#     @property
+#     def dayoftheyear(self):
+#         return self.datetime.strftime("%j")
+#
+#     @property
+#     def dayoftheweek(self):
+#         return self.datetime.strftime("%w")
+#
+#     @property
+#     def defaultlocation(self):
+#         return self.defaultlocation(self.originalyear, self.originalmonth, self.originalday)
+#
+#     @property
+#     def defaultprefix(self):
+#         return "{0}{1}".format(self.originalyear, str(self.originalmonth).zfill(2))
+#
+#     @property
+#     def make(self):
+#         return self.exif.get(271, "")
+#
+#     @property
+#     def model(self):
+#         return self.exif.get(272, "")
+#
+#     @property
+#     def width(self):
+#         return self.exif.get(40962, 0)
+#
+#     @property
+#     def height(self):
+#         return self.exif.get(40963, 0)
+#
+#     @property
+#     def copyright(self):
+#         return self.exif.get(33432, "")
+#
+#     @classmethod
+#     def getexif(cls, o):
+#         """
+#         :param o: image object.
+#         :return: metadata dictionary
+#         """
+#         d = {}
+#         try:
+#             data = o.info["exif"]
+#         except KeyError:
+#             raise ExifError
+#         file = io.BytesIO(data[6:])
+#         head = file.read(8)
+#         info = TiffImagePlugin.ImageFileDirectory(head)
+#         info.load(file)
+#         for key, value in info.items():
+#             d[key] = cls.fixup(value)
+#         try:
+#             file.seek(d[0x8769])
+#         except KeyError:
+#             pass
+#         else:
+#             info = TiffImagePlugin.ImageFileDirectory(head)
+#             info.load(file)
+#             for key, value in info.items():
+#                 d[key] = cls.fixup(value)
+#         return d
+#
+#     @staticmethod
+#     def fixup(v):
+#         if len(v) == 1:
+#             return v[0]
+#         return v
+#
+#     @staticmethod
+#     def defaultlocation(year, month, day, drive=IMAGES):
+#
+#         # Cas 1 : "H:\CCYY\MM\DD".
+#         if year in [2011, 2012]:
+#             return os.path.normpath(os.path.join(drive, str(year), str(month).zfill(2), str(day).zfill(2)))
+#
+#         # Cas 2 : "H:\CCYY\MM.DD".
+#         if year == 2014:
+#             return os.path.normpath(os.path.join(drive, str(year), "{0}.{1}".format(str(month).zfill(2), str(day).zfill(2))))
+#
+#         # Cas 3 : "H:\CCYYMM".
+#         return os.path.normpath(os.path.join(drive, "{0}{1}".format(year, str(month).zfill(2))))
 
 
 class CustomFormatter(Formatter):
     converter = datetime.fromtimestamp
     default_time_format = "%d/%m/%Y %H:%M:%S"
-    default_localizedtime_format = "%Z%z"
+    default_localizedtime_format = "%Z (UTC%z)"
     default_format = "%s %s,%03d %s"
 
     def formatTime(self, record, datefmt=None):
@@ -335,6 +332,17 @@ class CustomFormatter(Formatter):
         if datefmt:
             s = ct.strftime(datefmt)
         return s
+
+
+# class CustomFilter(Filter):
+#     def filter(self, record):
+#         # print(record.pathname)
+#         # print(record.filename)
+#         # print(record.module)
+#         # print(record.funcName)
+#         # if record.funcName.lower() in ["_selectlogs", "getalbumheader", "rippeddiscsview1"]:
+#         #     return True
+#         return False
 
 
 class ChangeRemoteCurrentDirectory(ContextDecorator):
@@ -392,49 +400,49 @@ class ChangeLocalCurrentDirectory(ContextDecorator):
         os.chdir(self._cwd)
 
 
-class GlobalInterface(object):
-    def __init__(self, *inputs):
-        self._answer = None
-        self._inputs = inputs
-        self._levels = len(inputs)
-        self._input = inputs[0]
-        self._level = 1
-        self._index = 0
-        self._step = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-
-        # Stop iteration once last level is exhausted.
-        if self._level >= self._levels and self._index >= len(self._input):
-            raise StopIteration
-
-        # Load next level once previous level is exhausted.
-        if self._level > 0 and self._index >= len(self._input):
-            self._input = self._inputs[self._level].get(self._answer)
-            if not self._input:
-                raise StopIteration
-            self._level += 1
-            self._index = 0
-
-        # Return expected input.
-        self._index += 1
-        self._step += 1
-        return self._input[self._index - 1]
-
-    @property
-    def step(self):
-        return self._step
-
-    @property
-    def answer(self):
-        return self._answer
-
-    @answer.setter
-    def answer(self, value):
-        self._answer = value
+# class GlobalInterface(object):
+#     def __init__(self, *inputs):
+#         self._answer = None
+#         self._inputs = inputs
+#         self._levels = len(inputs)
+#         self._input = inputs[0]
+#         self._level = 1
+#         self._index = 0
+#         self._step = 0
+#
+#     def __iter__(self):
+#         return self
+#
+#     def __next__(self):
+#
+#         # Stop iteration once last level is exhausted.
+#         if self._level >= self._levels and self._index >= len(self._input):
+#             raise StopIteration
+#
+#         # Load next level once previous level is exhausted.
+#         if self._level > 0 and self._index >= len(self._input):
+#             self._input = self._inputs[self._level].get(self._answer)
+#             if not self._input:
+#                 raise StopIteration
+#             self._level += 1
+#             self._index = 0
+#
+#         # Return expected input.
+#         self._index += 1
+#         self._step += 1
+#         return self._input[self._index - 1]
+#
+#     @property
+#     def step(self):
+#         return self._step
+#
+#     @property
+#     def answer(self):
+#         return self._answer
+#
+#     @answer.setter
+#     def answer(self, value):
+#         self._answer = value
 
 
 class StringFormatter(object):
@@ -1020,7 +1028,7 @@ def dateformat(dt, template):
                                          Z=dt.strftime("%Z"))
 
 
-def gettabs(length, *, tabsize=3):
+def get_tabs(length, *, tabsize=3):
     x = int(length / tabsize)
     y = length % tabsize
     if y:
@@ -1028,7 +1036,7 @@ def gettabs(length, *, tabsize=3):
     return x * "\t"
 
 
-def getnearestmultiple(length, *, multiple=3):
+def get_nearestmultiple(length, *, multiple=3):
     x = int(length / multiple)
     y = length % multiple
     if y:
@@ -1036,7 +1044,7 @@ def getnearestmultiple(length, *, multiple=3):
     return x * multiple
 
 
-def getrippingapplication(*, timestamp=None):
+def get_rippingapplication(*, timestamp=None):
     """
     Get ripping application respective to the facultative input local timestamp.
 
@@ -1049,40 +1057,27 @@ def getrippingapplication(*, timestamp=None):
     return list(islice(dropwhile(lambda i: int(i[0]) > timestamp, sorted(application.items(), key=lambda i: int(i[0]), reverse=True)), 1))[0][1]
 
 
-def filesinfolder(*extensions, folder, excluded=None):
+def find_files(directory, *, excluded=None):
     """
-    Return a generator object yielding files stored in "folder" having extension enumerated in "extensions".
-    :param extensions: not mandatory list of extension(s) to filter files.
-    :param folder: folder to walk through.
-    :param excluded: list of folder(s) to exclude.
+    Return a generator object yielding files stored in `directory`.
+    :param directory: directory to walk through.
+    :param excluded: callable returning a list composed of files to exclude as returned by os.listdir.
+                     Callable input arguments must be:
+                        :The root directory returned by os.walk.
+                        :The list of files present into the root directory.
     :return: generator object.
     """
-    # logger = getLogger("Default.{0}.filesinfolder".format(__name__))
-
-    # --> Regular expression for folder(s) exclusion.
-    regex1 = None
-    if excluded:
-        regex1 = re.compile(r"(?:{0})".format("|".join(map(os.path.normpath, map(os.path.join, repeat(folder), excluded))).replace("\\", r"\\").replace("$", r"\$")), re.IGNORECASE)
-
-    # --> Walk through folder.
-    for root, _, files in os.walk(folder):
-
-        # Regular expression for extension(s) inclusion.
-        rex2 = r"\.[a-z0-9]{3,}$"
-        if extensions:
-            rex2 = r"\.(?:{0})$".format("|".join(extensions))
-        regex2 = re.compile(rex2, re.IGNORECASE)
-
-        # Yield file(s) if not excluded.
-        for file in files:
-            if regex1 and regex1.match(root):
-                continue
-            if not regex2.match(os.path.splitext(file)[1]):
-                continue
-            yield os.path.join(root, file)
+    collection = []
+    for root, _, files in os.walk(directory):
+        if not excluded:
+            collection.extend(map(os.path.join, repeat(root), files))
+        else:
+            collection.extend(map(os.path.join, repeat(root), set(files) - excluded(root, *files)))
+    for file in sorted(collection):
+        yield file
 
 
-def getdatefromseconds(beg, end, zone=DFTTIMEZONE):
+def get_datefromseconds(beg, end, zone=DFTTIMEZONE):
     """
     Return a map object yielding human readable dates corresponding to a range of seconds since the epoch.
     :param beg: range start seconds.
@@ -1120,31 +1115,31 @@ def getdatefromseconds(beg, end, zone=DFTTIMEZONE):
         yield ts, z1, z2, z3, z4, z5, z6, z7
 
 
-def interface(obj):
-    for inp, dest in obj:
-        while True:
-            value = input("{0}. {1}: ".format(obj.step, inp))
-            try:
-                setattr(obj, dest, value)
-                setattr(obj, "answer", value)
-            except ValueError:
-                continue
-            break
-    return obj
+# def interface(obj):
+#     for inp, dest in obj:
+#         while True:
+#             value = input("{0}. {1}: ".format(obj.step, inp))
+#             try:
+#                 setattr(obj, dest, value)
+#                 setattr(obj, "answer", value)
+#             except ValueError:
+#                 continue
+#             break
+#     return obj
 
 
-def zipfiles(archive, *files):
-    logger = getLogger("{0}.zipfiles".format(__name__))
-    if not os.path.exists(os.path.dirname(archive)):
-        raise OSError('"{0}" doesn\'t exist. Please enter an existing directory.'.format(os.path.dirname(archive)))
-    with zipfile.ZipFile(archive, "w") as thatzip:
-        logger.info('"%s" used as ZIP file.', archive)
-        for file in files:
-            if os.path.exists(file):
-                thatzip.write(file, arcname=os.path.basename(file))
-                logger.info('"%s" successfully written.', file)
-                continue
-            logger.info('Failed to write "%s".', file)
+# def zipfiles(archive, *files):
+#     logger = getLogger("{0}.zipfiles".format(__name__))
+#     if not os.path.exists(os.path.dirname(archive)):
+#         raise OSError('"{0}" doesn\'t exist. Please enter an existing directory.'.format(os.path.dirname(archive)))
+#     with zipfile.ZipFile(archive, "w") as thatzip:
+#         logger.info('"%s" used as ZIP file.', archive)
+#         for file in files:
+#             if os.path.exists(file):
+#                 thatzip.write(file, arcname=os.path.basename(file))
+#                 logger.info('"%s" successfully written.', file)
+#                 continue
+#             logger.info('Failed to write "%s".', file)
 
 
 def mainscript(stg, align="^", fill="=", length=140):
@@ -1193,22 +1188,22 @@ def prettyprint(*iterable, headers=(), char="=", tabsize=3, gap=3):
             if len(k) > x:
                 x = len(k)
         max_length[k] = x
-        max_width[k] = getnearestmultiple(x, multiple=tabsize) + gap
+        max_width[k] = get_nearestmultiple(x, multiple=tabsize) + gap
 
     # 5. Justify data.
     for k, v in input_data.items():
         y = []
         for item in v:
-            x = "{0}".format(gettabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
+            x = "{0}".format(get_tabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
             if item:
-                x = "{0}{1}".format(item, gettabs(max_width[k] - len(str(item)), tabsize=tabsize)).expandtabs(tabsize)
+                x = "{0}{1}".format(item, get_tabs(max_width[k] - len(str(item)), tabsize=tabsize)).expandtabs(tabsize)
             y.append(x)
         out_data[k] = y
 
     # 6. Set output headers.
     if headers:
-        out_headers = tuple(["{0}{1}".format(header.upper(), gettabs(max_width[header] - len(header), tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
-        separators = tuple(["{0}{1}".format(char * max_length[header], gettabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+        out_headers = tuple(["{0}{1}".format(header.upper(), get_tabs(max_width[header] - len(header), tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+        separators = tuple(["{0}{1}".format(char * max_length[header], get_tabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
 
     # 7. Set output data.
     out_data = zip(*[v for k, v in out_data.items()])

@@ -1,58 +1,49 @@
 # -*- coding: utf-8 -*-
 import argparse
-import sqlite3
 import json
 import os
+import sqlite3
 from datetime import datetime
 from pprint import PrettyPrinter
-from Applications.shared import dateformat, TEMPLATE2, UTC, LOCAL, WRITE
+
+from Applications.parsers import database_parser
+from Applications.shared import LOCAL, TEMPLATE2, UTC, WRITE, dateformat
 
 __author__ = 'Xavier ROSSET'
-
-
-# ==========
-# Functions.
-# ==========
-def validdb(arg):
-    if not os.path.exists(arg):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(arg))
-    return arg
-
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
 
 # =================
 # Arguments parser.
 # =================
-parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--db", dest="database", default=os.path.join(os.path.expandvars("%_COMPUTING%"), "database.db"), type=validdb)
-parser.add_argument("-t", "--table", default="sqlite_master")
-parser.add_argument("-p", "--print", action="store_true")
-
+parser = argparse.ArgumentParser(parents=[database_parser])
+parser.add_argument("--table", default="sqlite_master")
+parser.add_argument("--print", action="store_true")
 
 # ==========
 # Constants.
 # ==========
 OUTFILE = os.path.join(os.path.expandvars("%TEMP%"), "sqlite_master.json")
 
-
 # ================
 # Initializations.
 # ================
 pp, arguments = PrettyPrinter(indent=4, width=160), parser.parse_args()
 
-
 # ===============
 # Main algorithm.
 # ===============
 
-#  1. Ouverture de la connexion à la base de données.
-conn = sqlite3.connect(arguments.database)
+# 1. Ouverture de la connexion à la base de données.
+conn = sqlite3.connect(arguments.db)
 
-#  2. Restitution des tables.
+# 2. Restitution des tables.
 r = [dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), TEMPLATE2), list(conn.execute("SELECT * FROM {table} ORDER BY rowid".format(table=arguments.table)))]
 if arguments.print:
     pp.pprint(r)
 with open(OUTFILE, mode=WRITE) as fp:
     json.dump(r, fp, indent=4, ensure_ascii=False)
 
-#  3. Fermeture de la connexion à la base de données.
+# 3. Fermeture de la connexion à la base de données.
 conn.close()
