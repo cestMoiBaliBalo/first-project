@@ -9,7 +9,7 @@ from string import Template
 
 import yaml
 
-from Applications.AudioCD.shared import RippedCD, albums, bootlegs
+from Applications.AudioCD.shared import RippedDisc, albums, bootlegs
 from Applications.parsers import tags_grabber
 from Applications.shared import MUSIC, UTF8, mainscript
 
@@ -41,7 +41,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
     in_logger.debug(profile)
     in_logger.debug(source.name)
     try:
-        track = stack.enter_context(RippedCD(profile, source, *decorators))
+        track = stack.enter_context(RippedDisc(profile, source, *decorators))
     except ValueError as err:
         in_logger.debug(err)
         value = 100

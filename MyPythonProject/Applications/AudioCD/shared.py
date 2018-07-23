@@ -64,6 +64,10 @@ class AudioCDTags(MutableMapping):
         return self._otags["album"]
 
     @property
+    def albumartist(self):
+        return self._otags["albumartist"]
+
+    @property
     def albumid(self):
         return "{0}.{1}.{2}".format(self._otags["artistsort"][0], self._otags["artistsort"], self._otags["albumsort"][:-3])
 
@@ -566,7 +570,7 @@ class ChangeEncodedBy(TagsModifier):
         self._otags["encodedby"] = "dBpoweramp 15.1 on {0} from nugs.net bootleg Audio CD".format(shared.dateformat(datetime.now(tz=timezone(shared.DFTTIMEZONE)), shared.TEMPLATE4))
 
 
-class RippedCD(ContextDecorator):
+class RippedDisc(ContextDecorator):
     _environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Grabber")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4

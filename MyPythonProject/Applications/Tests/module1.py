@@ -8,7 +8,6 @@ from operator import eq, gt, lt
 
 import yaml
 
-from Interface_Tables import validmonth
 from .. import shared
 
 __author__ = 'Xavier ROSSET'
@@ -131,19 +130,6 @@ class Test03(unittest.TestCase):
 
     def test_04fourth(self):
         self.assertListEqual(sorted(sorted(self.x, key=lambda i: int(i.split("_")[1])), key=lambda i: int(i.split("_")[0])), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
-
-
-@unittest.skip
-class Test04(unittest.TestCase):
-    def test_01first(self):
-        myimg = shared.Images(r"H:\201601\201601_00001.JPG")
-        self.assertEqual(myimg.originaldatetime, "22/01/2016 10:03:26 CET+0100")
-
-    def test_02second(self):
-        self.assertRaises(FileNotFoundError, shared.Images, r"H:\201701\201701_00001.JPG")
-
-    def test_03third(self):
-        self.assertRaises(OSError, shared.Images, r"C:\Users\Xavier\Documents\Music - Regex test files.xav")
 
 
 class Test05(unittest.TestCase):
