@@ -71,7 +71,7 @@ class ImagesCollection(MutableSequence):
             for path, _ in sorted(self._collection, key=itemgetter(0)):
                 self.logger.debug("\t%s".expandtabs(3), normpath(path))
             with open(join(expandvars("%TEMP%"), "images.yml"), mode="w", encoding="UTF_8") as stream:
-                yaml.dump(self._collection, stream, indent=4, default_flow_style=False)
+                yaml.dump(self._collection, stream, indent=2, default_flow_style=False)
 
     def __len__(self):
         return len(self._collection)
@@ -246,7 +246,7 @@ class ImagesCollection(MutableSequence):
         :return: iterator object.
         """
         in_logger = logging.getLogger("MyPythonProject.Images.{0}.get_images".format(splitext(basename(__file__))[0]))
-        args, collection = [r"G:\Computing\Resources\exiftool.exe", "-r", "-d", "%Y%m", "-j", "-charset", "Latin1", "-DateTimeOriginal", "-fileOrder", "DateTimeOriginal", "-ext", "jpg"], {}
+        args, collection = [join(expandvars("%_RESOURCES%"), "exiftool.exe"), "-r", "-d", "%Y%m", "-j", "-charset", "Latin1", "-DateTimeOriginal", "-fileOrder", "DateTimeOriginal", "-ext", "jpg"], {}
         if directories:
             args.extend(sorted(directories))
             with TemporaryFile(mode="r+", encoding="UTF_8") as stream:
@@ -347,22 +347,10 @@ if __name__ == "__main__":
     parser.add_argument("year", type=validyear)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--test", action="store_true")
-    arguments = parser.parse_args()
-
-    # Get debug mode.
-    l_debug = False
-    with suppress(AttributeError):
-        l_debug = arguments.debug
-
-    # Get console mode.
-    l_console = False
-    with suppress(AttributeError):
-        l_console = arguments.console
+    arguments = vars(parser.parse_args())
 
     # Get test mode.
-    l_test = False
-    with suppress(AttributeError):
-        l_test = arguments.test
+    l_test = arguments.get("test", False)
 
     # Logging.
     with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
@@ -371,10 +359,10 @@ if __name__ == "__main__":
     # -----
     for logger in LOGGERS:
         with suppress(KeyError):
-            config["loggers"][logger]["level"] = MAPPING[l_debug].upper()
+            config["loggers"][logger]["level"] = MAPPING[arguments.get("debug", False)].upper()
 
     # -----
-    if l_console:
+    if arguments.get("console", False):
 
         # Set up a specific stream handler.
         for logger in LOGGERS:
@@ -393,7 +381,7 @@ if __name__ == "__main__":
 
     # -----
     run("CLS", shell=True)
-    mycollection = ImagesCollection.fromyear(arguments.year)
+    mycollection = ImagesCollection.fromyear(arguments.get("year"))
     if mycollection.filestomove:
         mycollection.move(test=l_test)
     mycollection.rename(test=l_test)

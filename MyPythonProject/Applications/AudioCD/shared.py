@@ -25,6 +25,7 @@ from sortedcontainers import SortedDict
 
 from .. import shared
 from ..Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers
+from ..callables import exclude_allbutlosslessaudiofiles
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -239,9 +240,9 @@ class AudioCDTags(MutableMapping):
     def fromfile(cls, fil):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
         for line in filcontents(fil):
-            match = regex.match(line)
-            if match:
-                mapping[match.group(1).rstrip().lower()] = match.group(2)
+            _match = regex.match(line)
+            if _match:
+                mapping[_match.group(1).rstrip().lower()] = _match.group(2)
         return cls(**SortedDict(**mapping))
 
     @staticmethod
@@ -1023,14 +1024,13 @@ def getmetadata(audiofil):
     return result(audiofil, True, tags, audioobj)
 
 
-def get_audiofiles(*extensions, folder):
+def get_audiofiles(folder):
     """
     Return a generator object yielding both FLAC and Monkey's Audio files stored in "folder" having extension enumerated in "extensions".
-    :param extensions: not mandatory list of extension(s) to filter files.
     :param folder: folder to walk through.
     :return: generator object.
     """
-    for audiofil, audioobj, tags in ((result.file, result.object, result.tags) for result in map(getmetadata, shared.filesinfolder(*extensions, folder=folder)) if result.found):
+    for audiofil, audioobj, tags in ((result.file, result.object, result.tags) for result in map(getmetadata, shared.find_files(folder, excluded=exclude_allbutlosslessaudiofiles)) if result.found):
         yield audiofil, audioobj, tags
 
 

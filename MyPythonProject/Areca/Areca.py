@@ -56,7 +56,12 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("MyPythonProject.Backup.{0}".format(splitext(basename(__file__))[0]))
+logger = logging.getLogger("MyPythonProject.Areca.{0}".format(splitext(basename(__file__))[0]))
+
+# ==========
+# Constants.
+# ==========
+TABS = 4
 
 # ================
 # Initializations.
@@ -74,17 +79,17 @@ status, returncode, arguments = 100, [], parser.parse_args()
 # 1.a. Targets available in JSON reference file.
 logger.debug("Configured targets.")
 for target, workspace in sorted(sorted(targets.items(), key=lambda i: int(i[0])), key=operator.itemgetter(1)):
-    logger.debug("\t{0}: {1}.".format(target, workspace).expandtabs(4))
+    logger.debug("\t%s: %s.".expandtabs(TABS), target, workspace)
 
 # 1.b. Targets given by parser.
 logger.debug("Processed targets.")
 if arguments.targets:
     for target in sorted(arguments.targets, key=int):
-        logger.debug("\t{0}.".format(target).expandtabs(4))
+        logger.debug("\t%s.".expandtabs(TABS), target)
 elif not arguments.targets:
-    logger.debug("\tAny coherent target hasn\'t been given: backup can\'t be processed!".expandtabs(4))
+    logger.debug("\tAny coherent target hasn\'t been given: backup can\'t be processed!".expandtabs(TABS))
 
-# ------------------
+#    ------------------
 # 2. Process arguments.
 #    ------------------
 for target in arguments.targets:
@@ -92,33 +97,33 @@ for target in arguments.targets:
     #  2.a. Get backup configuration file.
     cfgfile = join(expandvars("%_BACKUP%"), "workspace.%s" % (arguments.workspace,), "%s.bcfg" % (target,))
     logger.debug("Configuration file.")
-    logger.debug('\t"%s".'.expandtabs(4), cfgfile)
+    logger.debug('\t"%s".'.expandtabs(TABS), cfgfile)
     try:
         assert exists(cfgfile) is True
     except AssertionError:
-        logger.debug('\t"{0}" doesn\'t exist: backup can\'t be processed!'.format(cfgfile).expandtabs(4))
+        logger.debug('\t"%s" doesn\'t exist: backup can\'t be processed!'.expandtabs(TABS), cfgfile)
         continue
 
     # 2.b. Get backup location.
     root = parse(cfgfile).getroot()
     directory = normpath(root.find("medium").get("path"))
     logger.debug("Backup location.")
-    logger.debug('\t"%s".'.expandtabs(4), directory)
+    logger.debug('\t"%s".'.expandtabs(TABS), directory)
     try:
         assert exists(directory) is True
     except AssertionError:
-        logger.debug('\t"{0}" doesn\'t exist: backup can\'t be processed!'.format(directory).expandtabs(4))
+        logger.debug('\t"%s" doesn\'t exist: backup can\'t be processed!'.expandtabs(TABS), directory)
         continue
 
     # 2.c. Build backup command.
-    command = [ARECA, " backup"]
+    command = ['"{0}"'.format(ARECA), "backup"]
     if arguments.full:
         command.append("-f")
     if arguments.check:
         command.append("-c")
     command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", '"{0}"'.format(cfgfile)])
     logger.debug("Backup command.")
-    logger.debug('\t%s.'.expandtabs(4), "".join(command))
+    logger.debug('\t%s.'.expandtabs(TABS), " ".join(command))
 
     #  2.d. Run backup command.
     code = 0
@@ -130,7 +135,7 @@ for target in arguments.targets:
             continue
         logger.info("Backup log.")
         for line in process.stdout.splitlines():
-            logger.info("\t%s".expandtabs(4), line)
+            logger.info("\t%s".expandtabs(TABS), line)
     returncode.append(code)
 
 # ===============

@@ -102,7 +102,7 @@ def has_extension(directory, *extensions):
 
 
 def init():
-    return "", "", 1
+    return "", "", 1, None, None, None, None, None
 
 
 # ================
@@ -151,7 +151,7 @@ level = 0
 # ============
 # Main script.
 # ============
-source, destination, step = init()
+source, destination, step, repository, artists, artist, albums, menu = init()
 while not q_pressed:
 
     #    -------------------
@@ -224,9 +224,9 @@ while not q_pressed:
                     step += 1
                     break
 
-    #     ------------------
+    #     --------------
     #  C. Pick up album.
-    #     ------------------
+    #     --------------
     elif step == 3:
         if not artist:
             run("CLS", shell=True)
@@ -270,7 +270,7 @@ while not q_pressed:
                         step += 1
                         break
 
-    #    ----------------
+    #    -----------------
     # F. Add other albums.
     #    -----------------
     elif step == 4:
@@ -294,7 +294,7 @@ while not q_pressed:
                 if answer.upper() == "N":
                     step += 1
                 elif answer.upper() == "Y":
-                    source, destination, step = init()
+                    source, destination, step, repository, artists, artist, albums, menu = init()
                 break
 
     #    ---------------

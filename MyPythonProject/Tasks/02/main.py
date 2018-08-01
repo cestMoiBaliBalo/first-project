@@ -55,7 +55,7 @@ T2 = template.environment.get_template("T02")
 # ================
 # Initializations.
 # ================
-extra_patterns, command1, command2, compression, copy, level, patterns, step, q_pressed = [], [], [], "", False, 0, [], 1, False
+drives, repository, extra_patterns, command1, command2, compression, copy, level, patterns, step, q_pressed = [], None, [], [], [], "", False, 0, [], 1, False
 
 # =========================
 # Load audio configuration.
@@ -69,9 +69,9 @@ repositories = sorted(configuration.get("repositories"))
 # ============
 while not q_pressed:
 
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°
+    #    -------------------------
     # A. Choose source repository.
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°
+    #    -------------------------
     if step == 1:
         while True:
             run("CLS", shell=True)
@@ -97,9 +97,9 @@ while not q_pressed:
             drives = list(get_drives())
             step += 1
 
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+    #    ----------------------------------------------------
     # B. Add extra files if lossy repository has been chosen.
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+    #    ----------------------------------------------------
     elif step == 2:
         while True:
             run("CLS", shell=True)
@@ -113,9 +113,9 @@ while not q_pressed:
             step += 1
             break
 
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°
+    #    -------------------------
     # C. Choose destination drive.
-    #    °°°°°°°°°°°°°°°°°°°°°°°°°
+    #    -------------------------
     elif step == 3:
         while True:
             run("CLS", shell=True)
@@ -136,9 +136,9 @@ while not q_pressed:
                 step += 1
                 break
 
-    #    °°°°°°°°°°°°°°°°°°°°
+    #    --------------------
     # D. Sync another device.
-    #    °°°°°°°°°°°°°°°°°°°°
+    #    --------------------
     elif step == 4:
         while True:
             run("CLS", shell=True)
@@ -152,9 +152,9 @@ while not q_pressed:
                 step = 1
             break
 
-    #    °°°°°°°°°°°°°°
+    #    --------------
     # E. Confirm copies.
-    #    °°°°°°°°°°°°°°°
+    #    ---------------
     elif step == 5:
         while True:
             run("CLS", shell=True)

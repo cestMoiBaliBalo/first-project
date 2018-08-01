@@ -38,6 +38,18 @@ def exclude_pythonexecutablebytecode(curdir, *files):
         return set(files)
     return set(fnmatch.filter(files, "*.pyc"))
 
+
+def exclude_allbutlosslessaudiofiles(curdir, *files):
+    """
+
+    :param curdir:
+    :param files:
+    :return:
+    """
+    ape = fnmatch.filter(files, "*.ape")
+    flac = fnmatch.filter(files, "*.flac")
+    return set(files) - (set(ape) | set(flac))
+
 # def exclude_allbutimagefiles(curdir, *files):
 #     """
 #

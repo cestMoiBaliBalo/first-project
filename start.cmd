@@ -146,11 +146,11 @@ REM    --------------------
 :STEP9
 IF EXIST "z:\Z123456789" XXCOPY "%_MYDOCUMENTS%\Administratif\*\*.pdf" "z:\Z123456789\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
 IF EXIST "%_CLOUDSTATION%\Documents\Administratif" XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "%_CLOUDSTATION%\Documents\Administratif\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
-IF [%2] EQU [] (
-    ECHO:
-    ECHO:
-    PAUSE
-)
+REM IF [%2] EQU [] (
+REM     ECHO:
+REM     ECHO:
+REM     PAUSE
+REM )
 SHIFT
 GOTO MAIN
 

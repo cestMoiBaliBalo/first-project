@@ -22,7 +22,7 @@ __status__ = "Production"
 # =================
 # Global functions.
 # =================
-def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs=False, store_tags=False, test=False):
+def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs=False, store_tags=False, test=False, dbjsonfile=None):
     """
 
     :param profile:
@@ -33,6 +33,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
     :param db_bootlegs:
     :param store_tags:
     :param test:
+    :param dbjsonfile:
     :return:
     """
     in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.tags_grabber".format(os.path.splitext(os.path.basename(__file__))[0]))
@@ -51,12 +52,18 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
             # 1. Insert data into albums tables.
             if db_albums and db:
                 in_logger.debug("Process default album.")
-                albums(track.audiotrack, db=db)
+                if dbjsonfile is None:
+                    albums(track.audiotrack, db=db)
+                else:
+                    albums(track.audiotrack, db=db, fil=dbjsonfile)
 
             # 2. Insert data into bootlegs tables.
             if db_bootlegs and db:
                 in_logger.debug("Process bootleg album.")
-                bootlegs(track.audiotrack, db=db)
+                if dbjsonfile is None:
+                    bootlegs(track.audiotrack, db=db)
+                else:
+                    bootlegs(track.audiotrack, db=db, fil=dbjsonfile)
 
             # 3. Store both input and output tags into permanent files.
             if store_tags:

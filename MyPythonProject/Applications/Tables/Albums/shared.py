@@ -109,43 +109,9 @@ def translate_orderfield(match):
 COVER = Template("albumart/$letter/$artistsort/$albumsort/iPod-Front.jpg")
 FUNCTIONS = {"defaultalbums": check_defaultalbum,
              "bootlegalbums": check_bootlegalbum}
-# TABLES = {"defaultalbums": ["artists", "albums", "discs", "tracks", "defaultalbums"],
-#           "bootlegalbums": ["artists", "albums", "discs", "tracks", "bootlegalbums"]}
-# SELECTORS = {"defaultalbums": {"artists": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
-#                                "albums": [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1],
-#                                "discs": [0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-#                                "tracks": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-#                                "rippeddiscs": [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#                                "defaultalbums": [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
-#              "bootlegalbums": {"artists": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
-#                                "albums": [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
-#                                "discs": [0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#                                "tracks": [0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#                                "rippeddiscs": [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#                                "bootlegalbums": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-#                                "bootlegdiscs": [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-#                                "bonuses": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]}}
-# STATEMENTS = {
-#     "default": {
-#         "artists": "INSERT INTO artists (artistsort, artist) VALUES (?, ?)",
-#         "albums": "INSERT INTO albums (albumid, discs, genreid, is_bootleg, is_deluxe, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-#         "discs": "INSERT INTO discs (albumid, discid, tracks, is_live) VALUES (?, ?, ?, ?)",
-#         "tracks": "INSERT INTO tracks (albumid, discid, trackid, is_bonus, is_live, title) VALUES (?, ?, ?, ?, ?, ?)",
-#         "rippeddiscs": "INSERT INTO rippeddiscs (albumid, discid) VALUES (?, ?)",
-#         "bootlegalbums": "INSERT INTO bootlegalbums (albumid, bootleg_date, bootleg_city, bootleg_countryid, bootleg_tour, bootleg_providerid, bootleg_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
-#         "bootlegdiscs": "INSERT INTO bootlegdiscs (albumid, discid, disc_reference) VALUES (?, ?, ?)",
-#         "bonuses": "INSERT INTO bonuses (albumid, discid, trackid, bootleg_date, bootleg_city, bootleg_countryid, bootleg_tour) VALUES (?, ?, ?, ?, ?, ?, ?)",
-#         "defaultalbums": "INSERT INTO defaultalbums (albumid, origyear, year, album, label, upc) VALUES (?, ?, ?, ?, ?, ?)"},
-#     "bootlegalbums": {
-#         "albums": "INSERT INTO albums (albumid, discs, genreid, is_bootleg, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?)"}}
 SORT = {"rowid": "album_rowid",
         "created": "utc_created",
         "modified": "utc_modified"}
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tables", "configuration.yml"), encoding="UTF_8") as stream:
-    config = yaml.load(stream)
-statements = config["statements"]
-selectors = config["selectors"]
-tables = config["tables"]
 
 # ====================
 # Regular expressions.
@@ -357,7 +323,18 @@ def insertfromfile(*files):
     :param files: file-object(s) where the albums are taken from.
     :return: database total changes.
     """
+
+    # -----
     logger = logging.getLogger("{0}.insertfromfile".format(__name__))
+
+    # -----
+    with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tables", "configuration.yml"), encoding="UTF_8") as stream:
+        config = yaml.load(stream)
+    _statements = config["statements"]
+    _selectors = config["selectors"]
+    _tables = config["tables"]
+
+    # -----
     tracks, total_changes = [], 0
     for file in files:
         tracks.extend(json.load(file))
@@ -367,8 +344,8 @@ def insertfromfile(*files):
             with ExitStack() as stack:
                 conn = stack.enter_context(DatabaseConnection(database))
                 stack.enter_context(conn)
-                tracks = list(map(merge, product(TABLES[profile], secondary_group)))
-                statements = STATEMENTS.get(profile, STATEMENTS["default"])
+                tracks = list(map(merge, product(_tables[profile], secondary_group)))
+                statements = _statements.get(profile, _statements["default"])
                 logger.debug(profile)
                 logger.debug(statements)
 
@@ -378,26 +355,26 @@ def insertfromfile(*files):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, STATEMENTS["default"][table]), tuple(compress(track, SELECTORS[profile][table])))
+                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
 
                 # "rippeddiscs" table.
                 table = "rippeddiscs"
                 for track in filter(lambda i: i[0].lower() == "discs", filter(lambda i: i[5] == 1, tracks)):
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, STATEMENTS["default"][table]), tuple(compress(track, SELECTORS[profile][table])))
+                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
 
                 # "bonuses" table.
                 table = "bonuses"
                 for track in filter(lambda i: i[8].bool, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, STATEMENTS["default"][table]), tuple(compress(track, SELECTORS[profile][table])))
+                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
 
                 # "bootlegdiscs" table.
                 table = "bootlegdiscs"
                 for track in filter(lambda i: i[27] is not None, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, STATEMENTS["default"][table]), tuple(compress(track, SELECTORS[profile][table])))
+                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
 
                 total_changes = conn.total_changes
 

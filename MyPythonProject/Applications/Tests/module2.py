@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import argparse
 import logging.config
 import os
@@ -7,7 +8,7 @@ import unittest
 import yaml
 
 from ..parsers import database_parser, epochconverter, loglevel_parser, tasks_parser, zipfile
-from ..shared import validalbumsort, validgenre, validyear
+from ..shared import validalbumsort, validgenre, validyear, GetPath
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -25,21 +26,20 @@ class Test01(unittest.TestCase):
 
     def setUp(self):
 
-        # --> Constants.
+        # # --> Constants.
         destinations = {"documents": os.path.expandvars("%_MYDOCUMENTS%"),
                         "onedrive": os.path.join(os.path.expandvars("%USERPROFILE%"), "OneDrive"),
                         "temp": os.path.expandvars("%TEMP%"),
-                        "backup": os.path.expandvars("%_BACKUP%")
-                        }
-
-        # --> Classes.
-        class GetPath(argparse.Action):
-
-            def __init__(self, option_strings, dest, **kwargs):
-                super(GetPath, self).__init__(option_strings, dest, **kwargs)
-
-            def __call__(self, parsobj, namespace, values, option_string=None):
-                setattr(namespace, self.dest, destinations[values])
+                        "backup": os.path.expandvars("%_BACKUP%")}
+        #
+        # # --> Classes.
+        # class GetPath(argparse.Action):
+        #
+        #     def __init__(self, option_strings, dest, **kwargs):
+        #         super(GetPath, self).__init__(option_strings, dest, **kwargs)
+        #
+        #     def __call__(self, parsobj, namespace, values, option_string=None):
+        #         setattr(namespace, self.dest, destinations[values])
 
         # --> Functions.
         def validdirectory(d):
@@ -154,136 +154,6 @@ class Test03(unittest.TestCase):
         self.assertEqual(arguments.zone, "US/Eastern")
 
 
-# class Test04(unittest.TestCase):
-#     """
-#
-#     """
-#
-#     def test_01first(self):
-#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
-#         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
-#
-#     def test_02second(self):
-#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5"])
-#         self.assertListEqual(arguments.extensions, [])
-#
-#     def test_03third(self):
-#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4"])
-#         self.assertListEqual(arguments.extensions, ["jpg", "mp4"])
-#
-#     def test_04fourth(self):
-#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "txt"])
-#         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "txt"])
-#
-#     def test_05fifth(self):
-#         arguments = foldercontent.parse_args([r"G:\Videos\Samsung S5", "jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
-#         self.assertListEqual(arguments.extensions, ["jpg", "mp4", "aaa", "bbb", "txt", "xxx"])
-
-
-# class Test05(unittest.TestCase):
-#     """
-#
-#     """
-#
-#     def test_01first(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-#         self.assertListEqual(arguments.extensions, ["jpg"])
-#
-#     def test_02second(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-#         self.assertListEqual(arguments.excluded, ["iPhone", "Recover"])
-#
-#     def test_03third_1(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-#         rex = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\")
-#
-#     def test_03third_2(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-#         rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         self.assertEqual(rex, "^(?:H:\\\\iPhone|H:\\\\Recover)\\\\")
-#
-#     def test_03third_3(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
-#         rex = "^(?:{0})\\\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         self.assertEqual(rex, "^(?:H:\\\\Recover)\\\\")
-#
-#     def test_04fourth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         self.assertEqual(rex, r"^(?:H:\\iPhone|H:\\Recover)\\.+\.(?:jpg)$")
-#
-#     def test_05fifth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg"])
-#         thatfile = r"H:\iPhone\IMG_0390.JPG"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertRegex(thatfile, regex)
-#
-#     def test_06sixth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
-#         thatfile = r"H:\iPhone\IMG_0390.RAW"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertRegex(thatfile, regex)
-#
-#     def test_07seventh(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover", "-e", "jpg", "raw"])
-#         thatfile = r"H:\iPhone\IMG_0390.TXT"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertNotRegex(thatfile, regex)
-#
-#     def test_08eighth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-#         thatfile = r"H:\iPhone\IMG_0390.JPG"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertRegex(thatfile, regex)
-#
-#     def test_09ninth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "iPhone", "Recover"])
-#         thatfile = r"H:\iPhone\IMG_0390.TXT"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertRegex(thatfile, regex)
-#
-#     def test_10tenth(self):
-#         arguments = improvedfoldercontent.parse_args([r"H:\\", "Recover"])
-#         thatfile = r"H:\iPhone\IMG_0390.TXT"
-#         rex1 = r"^(?:{0})\\".format("|".join(map(os.path.normpath, map(os.path.join, repeat(arguments.folder), arguments.excluded))).replace("\\", r"\\"))
-#         rex2 = r".+$"
-#         if arguments.extensions:
-#             rex2 = r".+\.(?:{0})$".format("|".join(arguments.extensions))
-#         rex = "{0}{1}".format(rex1, rex2)
-#         regex = re.compile(rex, re.IGNORECASE)
-#         self.assertNotRegex(thatfile, regex)
-
-
 class Test06(unittest.TestCase):
     """
     Test `validyear` function.
@@ -354,22 +224,22 @@ class Test09(unittest.TestCase):
 
     def test_01first(self):
         arguments = database_parser.parse_args(["--database", r"g:\computing\resources\database.db"])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\resources\database.db")
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_RESOURCES%"), "database.db").lower())
         self.assertFalse(arguments.test)
 
     def test_02second(self):
         arguments = database_parser.parse_args(["--test"])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\mypythonproject\applications\tests\database.db")
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db").lower())
         self.assertTrue(arguments.test)
 
     def test_03third(self):
         arguments = database_parser.parse_args([])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\resources\database.db")
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_RESOURCES%"), "database.db").lower())
         self.assertFalse(arguments.test)
 
     def test_04fourth(self):
-        arguments = database_parser.parse_args(["--database", r"g:\computing\mypythonproject\applications\tests\database.db"])
-        self.assertEqual(arguments.db.lower(), r"g:\computing\mypythonproject\applications\tests\database.db")
+        arguments = database_parser.parse_args(["--database", os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db").lower()])
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db").lower())
         self.assertFalse(arguments.test)
 
 
@@ -398,28 +268,26 @@ class Test11(unittest.TestCase):
         self.assertEqual(arguments.table, "tasks")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 10)
-        self.assertEqual(arguments.loglevel, "INFO")
 
     def test_02second(self):
         arguments = tasks_parser.parse_args(["update", "123456789"])
         self.assertEqual(arguments.action, "update")
         self.assertEqual(arguments.table, "tasks")
         self.assertEqual(arguments.taskid, 123456789)
-        self.assertEqual(arguments.loglevel, "INFO")
 
     def test_03third(self):
-        arguments = tasks_parser.parse_args(["select", "123456789", "--days", "20", "--loglevel", "DEBUG", "--test"])
+        arguments = tasks_parser.parse_args(["select", "123456789", "--days", "20", "--debug"])
         self.assertEqual(arguments.action, "select")
         self.assertEqual(arguments.table, "tasks")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 20)
-        self.assertEqual(arguments.loglevel, "DEBUG")
+        self.assertEqual(arguments.debug, True)
 
     @unittest.skip
     def test_04fourth(self):
-        arguments = tasks_parser.parse_args(["--table", "sometable", "select", "123456789", "--days", "20", "--loglevel", "DEBUG", "--test"])
+        arguments = tasks_parser.parse_args(["--table", "sometable", "select", "123456789", "--days", "20", "--debug"])
         self.assertEqual(arguments.action, "select")
         self.assertEqual(arguments.table, "sometable")
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 20)
-        self.assertEqual(arguments.loglevel, "DEBUG")
+        self.assertEqual(arguments.debug, True)

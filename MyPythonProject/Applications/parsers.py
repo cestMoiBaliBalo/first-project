@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import argparse
-from contextlib import suppress
 
 from . import shared
 
@@ -20,10 +19,7 @@ class SetDatabase(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
         if values:
-            database = shared.DATABASE
-            with suppress(AttributeError):
-                database = getattr(namespace, "db")
-            setattr(namespace, "db", database)
+            setattr(namespace, "db", getattr(namespace, "db", shared.DATABASE))
 
 
 # ==========

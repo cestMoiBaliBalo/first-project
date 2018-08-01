@@ -5,13 +5,12 @@ import locale
 import os
 import re
 import subprocess
-import zipfile
 from base64 import b85decode, b85encode
 from collections import OrderedDict
-from contextlib import ContextDecorator
+from contextlib import ContextDecorator, ExitStack
 from datetime import datetime
 from itertools import dropwhile, filterfalse, islice, repeat, tee, zip_longest
-from logging import Filter, Formatter, getLogger
+from logging import Formatter, getLogger
 from logging.handlers import RotatingFileHandler
 from string import Template
 
@@ -37,7 +36,7 @@ APPEND = "a"
 WRITE = "w"
 DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "database.db")
 TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
-ARECA = os.path.join(os.path.expandvars("%PROGRAMFILES%"), "Areca", "areca_cl.exe")
+ARECA = os.path.join(r"C:\Program Files", "Areca", "areca_cl.exe")
 DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
 UTC = timezone("UTC")
@@ -616,7 +615,10 @@ class GetPath(argparse.Action):
     """
     Set "destination" attribute with the full path corresponding to the "values".
     """
-    destinations = {"documents": os.path.expandvars("%_MYDOCUMENTS%"), "temp": os.path.expandvars("%TEMP%"), "backup": os.path.expandvars("%_BACKUP%")}
+    destinations = {"documents": os.path.expandvars("%_MYDOCUMENTS%"),
+                    "temp": os.path.expandvars("%TEMP%"),
+                    "backup": os.path.expandvars("%_BACKUP%"),
+                    "onedrive": os.path.join(os.path.expandvars("%USERPROFILE%"), "OneDrive")}
 
     def __init__(self, option_strings, dest, **kwargs):
         super(GetPath, self).__init__(option_strings, dest, **kwargs)
@@ -882,7 +884,7 @@ def validyear(year):
     return int(year)
 
 
-def validproductcode(productcode):
+def valid_productcode(productcode):
     """
     Check if string `productcode` is a coherent product code.
 
@@ -948,6 +950,20 @@ def validdatetime(ts):
 # ========================
 # Miscellaneous functions.
 # ========================
+def copy(src, dst, *, size=16 * 1024):
+    if not os.path.isdir(dst):
+        raise ValueError('"%s" is not a directory.' % dst)
+    with ExitStack() as stack:
+        fr = stack.enter_context(open(src, mode="rb"))
+        fw = stack.enter_context(open(os.path.join(dst, os.path.basename(src)), mode="wb"))
+        while True:
+            _bytes = fr.read(size)
+            if not _bytes:
+                break
+            fw.write(_bytes)
+    return os.path.join(dst, os.path.basename(src))
+
+
 def grouper(iterable, n, *, fillvalue=None):
     """
 

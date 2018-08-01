@@ -74,10 +74,6 @@ class AudioTagsInterface(MutableMapping):
     def __iter__(self):
         return iter(self._tags)
 
-    # @property
-    # def tags(self):
-    #     return self._tags
-
     @classmethod
     def fromfile(cls, fil, enc=UTF16):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}

@@ -70,10 +70,12 @@ REM ----------
 IF ERRORLEVEL 99 GOTO EXIT
 
 
-REM -------------------
-REM Numbering pictures.
-REM -------------------
+REM -----------------------------------------
+REM Sync PDF documents to local CloudStation.
+REM -----------------------------------------
 IF ERRORLEVEL 36 (
+    CLS
+    CALL %_COMPUTING%\start.cmd 9
     GOTO MENU
 )
 
@@ -89,10 +91,15 @@ IF ERRORLEVEL 35 (
 )
 
 
-REM ------------------
-REM Sort lists tester.
-REM ------------------
+REM --------------------------
+REM Python parsers unit tests.
+REM --------------------------
 IF ERRORLEVEL 33 (
+    CLS
+    python -m unittest -v Applications.Tests.module2
+    ECHO.
+    ECHO.
+    PAUSE
     GOTO MENU
 )
 
@@ -142,6 +149,11 @@ REM ---------------------------
 REM Regular expressions tester.
 REM ---------------------------
 IF ERRORLEVEL 29 (
+    CLS
+    python -m unittest -v Applications.Tests.module3
+    ECHO.
+    ECHO.
+    PAUSE
     GOTO MENU
 )
 
@@ -524,7 +536,7 @@ REM ----------------------------------------
 REM Springsteen 2017 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 8 (
-    REM python %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 743321650
     GOTO MENU
 )
 
