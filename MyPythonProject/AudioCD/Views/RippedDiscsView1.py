@@ -34,7 +34,7 @@ parser.add_argument("--console", action="store_true")
 parser.add_argument("--debug", action="store_true")
 
 # ================
-# Initializations.
+# Parse arguments.
 # ================
 arguments = vars(parser.parse_args())
 
@@ -83,4 +83,6 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Views.{0}".format(splitext(b
 # ===============
 run("CLS", shell=True)
 for log in selectlogs_fromkeywords(db=arguments["db"]):
-    logger.debug("%s: %s", log.artistsort, log.albumsort)
+    logger.debug("Album.")
+    logger.debug("\t%s".expandtabs(3), log.artistsort)
+    logger.debug("\t%s".expandtabs(3), log.albumsort)
