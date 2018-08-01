@@ -80,13 +80,15 @@ IF ERRORLEVEL 36 (
 )
 
 
-REM -----------------------------------
-REM Delete log from `rippinglog` table.
-REM -----------------------------------
+REM ----------------------------
+REM Display "rippeddiscs" table.
+REM ----------------------------
 IF ERRORLEVEL 35 (
-    REM PUSHD "%_PYTHONPROJECT%\Tasks\05"
-    REM python delete.py
-    REM POPD
+    python %_PYTHONPROJECT%\AudioCD\Views\RippedDiscsView3.py --console
+    ECHO:
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
@@ -97,8 +99,8 @@ REM --------------------------
 IF ERRORLEVEL 33 (
     CLS
     python -m unittest -v Applications.Tests.module2
-    ECHO.
-    ECHO.
+    ECHO:
+    ECHO:
     PAUSE
     GOTO MENU
 )
@@ -151,8 +153,8 @@ REM ---------------------------
 IF ERRORLEVEL 29 (
     CLS
     python -m unittest -v Applications.Tests.module3
-    ECHO.
-    ECHO.
+    ECHO:
+    ECHO:
     PAUSE
     GOTO MENU
 )
@@ -428,8 +430,8 @@ IF ERRORLEVEL 16 (
         PUSHD "%TEMP%"
         IF EXIST "%_xxcopy%" (
             CALL "%_xxcopy%"
-            ECHO.
-            ECHO.
+            ECHO:
+            ECHO:
             PAUSE
         )
         POPD
@@ -471,8 +473,8 @@ IF ERRORLEVEL 13 (
         PUSHD "%TEMP%"
         IF EXIST "%_xxcopy%" (
             CALL "%_xxcopy%"
-            ECHO.
-            ECHO.
+            ECHO:
+            ECHO:
             PAUSE
         )
         POPD

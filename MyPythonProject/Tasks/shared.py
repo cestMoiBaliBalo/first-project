@@ -183,5 +183,5 @@ def get_drives():
     """
     regex = re.compile(r"^[I-R]:$")
     process = run("wmic logicaldisk get name", shell=True, universal_newlines=True, stdout=PIPE)
-    for drive in [drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())]:
+    for drive in (drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())):
         yield drive

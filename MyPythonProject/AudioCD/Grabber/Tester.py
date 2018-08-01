@@ -76,7 +76,7 @@ if arguments.get("console", False):
 
 # Dump logging configuration.
 with open(os.path.join(os.path.expandvars("%TEMP%"), "logging.yml"), mode="w", encoding=UTF8) as stream:
-    yaml.dump(config, stream, indent=4, default_flow_style=False)
+    yaml.dump(config, stream, indent=2, default_flow_style=False)
 
 # -----
 logging.config.dictConfig(config)

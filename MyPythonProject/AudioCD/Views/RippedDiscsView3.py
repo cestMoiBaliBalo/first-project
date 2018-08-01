@@ -27,10 +27,10 @@ __status__ = "Production"
 # ==========
 TABSIZE = 3
 LOGGERS = ["Applications.Tables.RippedDiscs", "MyPythonProject"]
-MAPPING = {True: "debug",
-           False: "info"}
 HEADERS = {False: ["uid", "artistsort", "albumsort", "disc", "artist", "origyear", "year", "album", "ripped"],
            True: ["uid", "artistsort", "albumsort", "disc", "artist", "bootlegdate", "bootlegcity", "bootlegcountry", "bootlegcountry", "ripped"]}
+MAPPING = {True: "debug",
+           False: "info"}
 
 # ================
 # Input arguments.
@@ -61,12 +61,12 @@ line_number, first, header, separator, tags, tags_length, tags_width, headers_le
 # Main algorithm.
 # ===============
 
-# 2. Grab arguments.
+# 1. Grab arguments.
 orderby = arguments.orderby
 if not arguments.orderby:
     orderby = ["rowid"]
 
-# 3. Get ripped discs lists.
+# 2. Get ripped discs lists.
 reflist = list(selectlogs_fromkeywords(db=arguments.db, orderby=orderby))
 defaultalbums, bootlegalbums = partitioner(reflist, predicate=lambda row: not row.bootleg)
 defaultalbums = [tuple(map(stringify, (row.rowid, row.artistsort, row.albumsort, row.disc, row.artist, row.origyear, row.year, row.album, row.ripped))) for row in defaultalbums]
@@ -77,25 +77,21 @@ logger.debug(bootlegalbums)
 
 for albumtype, albumslist, isbootleg in [("defaultalbums", defaultalbums, False), ("bootlegalbums", bootlegalbums, True)]:
 
-    template = ""
-
-    # 4. Gather audio tags together per family into an ordered dictionary to preserve tags sequence.
+    # 3. Gather audio tags together per family into an ordered dictionary to preserve tags sequence.
     tags[albumtype] = OrderedDict(zip(HEADERS[isbootleg], zip(*albumslist)))
 
-    # 5. Store header length into an ordered dictionary to preserve headers sequence.
+    # 4. Store header length into an ordered dictionary to preserve headers sequence.
     headers_length[albumtype] = OrderedDict((header, len(header)) for header in HEADERS[isbootleg])
 
-    # 6. Compute both family maximum length and family maximum allowed width.
-    tags_length[albumtype], tags_width[albumtype] = {}, {}
-    for key in tags[albumtype].keys():
-        tags_length[albumtype][key] = max(len(item) for item in tags[albumtype][key])
-        tags_width[albumtype][key] = get_nearestmultiple(max(len(item) for item in tags[albumtype][key]), multiple=TABSIZE) + TABSIZE
+    # 5. Compute both family maximum length and family maximum allowed width.
+    tags_length[albumtype] = {key: max(len(item) for item in tags[albumtype][key]) for key in tags[albumtype].keys()}
+    tags_width[albumtype] = {key: get_nearestmultiple(max(len(item) for item in tags[albumtype][key]), multiple=TABSIZE) + TABSIZE for key in tags[albumtype].keys()}
 
-    # 7. Apply tabulations to each tag according to its family computed allowed width.
-    for key in tags[albumtype].keys():
-        tags[albumtype][key] = ["{0}{1}".format(item, get_tabs(tags_width[albumtype][key] - len(item))).expandtabs(TABSIZE) for item in tags[albumtype][key]]
+    # 6. Apply tabulations to each tag according to its family computed allowed width.
+    tags[albumtype] = {key: ["{0}{1}".format(item, get_tabs(tags_width[albumtype][key] - len(item))).expandtabs(TABSIZE) for item in tags[albumtype][key]] for key in tags[albumtype].keys()}
 
-    # 8. Prepare file header.
+    # 7. Prepare file header.
+    template = ""
     for key in tags[albumtype].keys():
         template = "{0}{{h[{1}]:<{{w[{1}]}}}}".format(template, key)
     logger.debug(template)
@@ -103,34 +99,36 @@ for albumtype, albumslist, isbootleg in [("defaultalbums", defaultalbums, False)
     header[albumtype] = template.format(h=OrderedDict((item, item.upper()) for item in HEADERS[isbootleg]), w=tags_width[albumtype])
     separator[albumtype] = template.format(h=OrderedDict((key, "-" * max(headers_length[albumtype][key], tags_length[albumtype][key])) for key in tags[albumtype].keys()), w=tags_width[albumtype])
 
-# 9.a. Display ripped CDs into a plain text file. Then exit algorithm.
+# 8.a. Display ripped CDs into a plain text file. Then exit algorithm.
 if not arguments.console:
     with open(os.path.join(os.path.expandvars("%TEMP%"), "rippeddiscs.txt"), "w", encoding=UTF8) as fw:
-        for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags["defaultalbums"].items()]):
-            rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length["defaultalbums"]), w=tags_width["defaultalbums"])
-            if first or line_number == 100:
-                if not first:
-                    fw.write("\n\n")
-                fw.write("{0}\n".format(separator["defaultalbums"]))
-                fw.write("{0}\n".format(header["defaultalbums"]))
-                fw.write("{0}\n".format(separator["defaultalbums"]))
-                line_number = 0
-                first = False
-            fw.write("{0}{1}{2}{3}{4}{5}{6}{7}{8}\n".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
-            line_number += 1
+        for albumtype in ["defaultalbums", "bootlegalbums"]:
+            for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags[albumtype].items()]):
+                rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype])
+                if first or line_number == 100:
+                    if not first:
+                        fw.write("\n\n")
+                    fw.write("{0}\n".format(separator[albumtype]))
+                    fw.write("{0}\n".format(header[albumtype]))
+                    fw.write("{0}\n".format(separator[albumtype]))
+                    line_number = 0
+                    first = False
+                fw.write("{0}{1}{2}{3}{4}{5}{6}{7}{8}\n".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
+                line_number += 1
     sys.exit(0)
 
-# 9.b. Display ripped CDs into console. Then exit algorithm.
+# 8.b. Display ripped CDs into console. Then exit algorithm.
 run("CLS", shell=True)
-for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags["defaultalbums"].items()]):
-    rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length["defaultalbums"]), w=tags_width["defaultalbums"])
-    if first or line_number == 100:
-        print("\n\n")
-        print("{0}".format(separator["defaultalbums"]))
-        print("{0}".format(header["defaultalbums"]))
-        print("{0}".format(separator["defaultalbums"]))
-        line_number = 0
-        first = False
-    print("{0}{1}{2}{3}{4}{5}{6}{7}{8}".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
-    line_number += 1
+for albumtype in ["defaultalbums", "bootlegalbums"]:
+    for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags[albumtype].items()]):
+        rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype])
+        if first or line_number == 100:
+            print("\n\n")
+            print("{0}".format(separator[albumtype]))
+            print("{0}".format(header[albumtype]))
+            print("{0}".format(separator[albumtype]))
+            line_number = 0
+            first = False
+        print("{0}{1}{2}{3}{4}{5}{6}{7}{8}".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
+        line_number += 1
 sys.exit(0)

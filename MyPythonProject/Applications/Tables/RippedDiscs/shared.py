@@ -126,6 +126,15 @@ def deletelog(*uid, db=DATABASE):
     return changes
 
 
+def get_totallogs(db=DATABASE):
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+    curs.execute("SELECT count(*) FROM rippeddiscs")
+    count = curs.fetchone()[0]
+    conn.close()
+    return count
+
+
 def selectlogs_fromuid(*uid, db=DATABASE):
     """
 

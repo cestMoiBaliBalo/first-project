@@ -59,12 +59,12 @@ def get_folders(directory):
 def pprint_extensions(*iterable):
     # Left justify keys.
     keys = list(zip(*iterable))[0]
-    length = max([len(key) for key in keys])
+    length = max(len(key) for key in keys)
     keys = ["{0:<{1}}".format(key, length) for key in keys]
 
     # Right justify pairs.
     pairs = list(zip(*iterable))[1]
-    length = max([len(str(pair)) for pair in pairs])
+    length = max(len(str(pair)) for pair in pairs)
     pairs = ["{0:>{1}}".format(pair, length) for pair in pairs]
 
     for key, pair in zip(keys, pairs):
@@ -75,7 +75,7 @@ def pprint_files(*iterable, length=229):
     keys = list(zip(*iterable))[0]
     pairs = list(zip(*iterable))[1]
     pairs = ["{0:n}".format(int(pair)) for pair in pairs]
-    length2 = max([len(pair) for pair in pairs])
+    length2 = max(len(pair) for pair in pairs)
 
     # Left justify keys.
     keys = ["{0:<{1}}".format(key, length - length2) for key in keys]

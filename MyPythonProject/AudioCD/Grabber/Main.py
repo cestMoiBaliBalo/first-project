@@ -80,7 +80,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
                         json_stream = stack.enter_context(open(collection, mode="w", encoding=UTF8))
                         yaml_stream = stack.enter_context(open("{0}.yml".format(os.path.splitext(collection)[0]), mode="w", encoding=UTF8))
                         json.dump(tags, json_stream, indent=4, ensure_ascii=False, sort_keys=True)
-                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=4)
+                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=2)
 
                 collection = os.path.join(get_tagsfile(track.audiotrack), "output_tags.json")
                 in_logger.debug(collection)
@@ -94,7 +94,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
                         json_stream = stack.enter_context(open(collection, mode="w", encoding=UTF8))
                         yaml_stream = stack.enter_context(open("{0}.yml".format(os.path.splitext(collection)[0]), mode="w", encoding=UTF8))
                         json.dump(tags, json_stream, indent=4, ensure_ascii=False, sort_keys=True)
-                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=4)
+                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=2)
 
             # 4. Store input tags into JSON test configuration.
             if test:
