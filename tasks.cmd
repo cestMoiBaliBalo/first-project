@@ -200,120 +200,124 @@ REM ----------------------------------------
 REM Backup personal files to SD Memory Card.
 REM ----------------------------------------
 IF ERRORLEVEL 24 (
-
-:MENU24
-    SET _answer=
-    SET _first=1
-    SET _temp=%TEMP%\PersonalDocuments
-    DEL %_copied% %_tobearchived% 2> NUL
-
-    REM 1. Set backup destination.
-    REM    %TEMP% is available for test purposes.
-    CALL :HEADER4
-    ECHO:
-    ECHO:
-    ECHO: Available drives:
-    ECHO:
-    SET /A "_num=0"
-    FOR /F "usebackq" %%A IN (`wmic logicaldisk get name ^| find ":"`) DO (
-        SET /A "_num+=1"
-        SET _letter=%%A
-        SET _elem[!_num!]=!_letter!
-        IF !_num! LEQ 9 ECHO:  !_num!. !_letter!
-        IF !_num! GTR 9 ECHO: !_num!. !_letter!
-    )
-    ECHO:
-    ECHO:
-    SET /P _choice=Please choose a drive or press ENTER to quit: || GOTO FIN24
-    python %_AUDIOCD%\Shared\check_choice.py !_choice! !_num!
-    IF ERRORLEVEL 1 GOTO MENU24
-
-    REM 2. Grab backup destination once %_choice% is checked as valid.
-    FOR %%C IN (!_choice!) DO SET _drive=!_elem[%%C]!
-
-    REM 3. Convert backup destination into a valid path.
-    FOR %%D IN (!_drive!) DO SET "_drive=%%~fD"
-
-    REM 4. Set backup type.
-:ARCHIVE_TYPE
-    CALL :HEADER4
-    ECHO:
-    ECHO:
-    ECHO: Backup type:
-    ECHO:
-    ECHO: 1. Differential backup (default^)
-    ECHO: 2. Full backup
-    ECHO:
-    ECHO:
-    SET /P _backuptype=Please choose backup type: || SET _backuptype=1
-    python %_AUDIOCD%\Shared\check_choice.py !_backuptype! "2"
-    IF ERRORLEVEL 1 GOTO ARCHIVE_TYPE
-
-    REM 5. Confirm or abort backup.
-    CALL :HEADER4
-    ECHO:
-    ECHO:
-    SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy important personal files to your local SD Memory Card." _answer
-    IF [!_answer!] EQU [N] GOTO FIN24
-    CLS
-
-    REM 6. Extract content of 7-Zip archive.
-    IF !_backuptype! EQU 1 (
-        IF EXIST "!_drive!Documents.7z" (
-            XXCOPY "!_drive!Documents.7z" "!_temp!\" /Y /oA:%_XXCOPYLOG%
-            IF ERRORLEVEL 1 GOTO FIN24
-            IF ERRORLEVEL 0 (
-                FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO (
-                    SET _password=%%~I
-                    PUSHD !_temp!
-                    "C:\Program Files\7-Zip\7z.exe" x -y -p"!_password!" "Documents.7z"
-                    POPD
-                )
-            )
-        )
-    )
-
-    REM 7. Backup every single files listed into "%_COMPUTING%\SDCard.txt".
-    SET _first=1
-    FOR /F "usebackq tokens=1,2,* delims=|" %%F IN ("%_sdcard%") DO (
-        SET _tokens=%%H
-        (
-            SET _switch=/CE
-            IF !_first! EQU 1 SET _switch=/EC
-        )
-        SET _first=0
-        CALL SET _file=%%~F
-        IF [%%~G] EQU [] (
-            XXCOPY !_switch! "!_file!" "!_temp!\" /KS /Y /BI /FF /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
-            IF !ERRORLEVEL! EQU 0 CALL :TOKENIZE "!_tokens!"
-        )
-        IF [%%~G] NEQ [] (
-            XXCOPY !_switch! "!_file!" "!_temp!\%%~G\" /KS /Y /BI /FF /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
-            IF !ERRORLEVEL! EQU 0 CALL :TOKENIZE "!_tokens!"
-        )
-        ECHO:
-        ECHO:
-    )
-
-    REM 8. Create/Update 7-Zip archive.
-    IF EXIST %_tobearchived% (
-        FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO (
-            SET _password=%%~I
-            CALL "%_COMPUTING%\shared.cmd" "ARCHIVE" "a" "7z" "Documents" "!_password!" "WIN" "!_temp!" "%_tobearchived%"
-            IF !ERRORLEVEL! EQU 0 (
-                XXCOPY /EC "!_temp!\Documents.7z" "!_drive!" /Y /oA:%_XXCOPYLOG%
-                XXCOPY /CE !_temp! /RMDIR /RSY /oA:%_XXCOPYLOG%
-            )
-            GOTO FIN24
-        )
-    )
-    IF NOT EXIST %_tobearchived% IF EXIST "!_temp!" XXCOPY "!_temp!" /RMDIR /RSY /oA:%_XXCOPYLOG%
-
-:FIN24
+    PUSHD %_PYTHON_SECONDPROJECT%
+    python backup.py
+    POPD
     GOTO MENU
-
 )
+rem :MENU24
+rem     SET _answer=
+rem     SET _first=1
+rem     SET _temp=%TEMP%\PersonalDocuments
+rem     DEL %_copied% %_tobearchived% 2> NUL
+
+rem     REM 1. Set backup destination.
+rem     REM    %TEMP% is available for test purposes.
+rem     CALL :HEADER4
+rem     ECHO:
+rem     ECHO:
+rem     ECHO: Available drives:
+rem     ECHO:
+rem     SET /A "_num=0"
+rem     FOR /F "usebackq" %%A IN (`wmic logicaldisk get name ^| find ":"`) DO (
+rem         SET /A "_num+=1"
+rem         SET _letter=%%A
+rem         SET _elem[!_num!]=!_letter!
+rem         IF !_num! LEQ 9 ECHO:  !_num!. !_letter!
+rem         IF !_num! GTR 9 ECHO: !_num!. !_letter!
+rem     )
+rem     ECHO:
+rem     ECHO:
+rem     SET /P _choice=Please choose a drive or press ENTER to quit: || GOTO FIN24
+rem     python %_AUDIOCD%\Shared\check_choice.py !_choice! !_num!
+rem     IF ERRORLEVEL 1 GOTO MENU24
+
+rem     REM 2. Grab backup destination once %_choice% is checked as valid.
+rem     FOR %%C IN (!_choice!) DO SET _drive=!_elem[%%C]!
+
+rem     REM 3. Convert backup destination into a valid path.
+rem     FOR %%D IN (!_drive!) DO SET "_drive=%%~fD"
+
+rem     REM 4. Set backup type.
+rem :ARCHIVE_TYPE
+rem     CALL :HEADER4
+rem     ECHO:
+rem     ECHO:
+rem     ECHO: Backup type:
+rem     ECHO:
+rem     ECHO: 1. Differential backup (default^)
+rem     ECHO: 2. Full backup
+rem     ECHO:
+rem     ECHO:
+rem     SET /P _backuptype=Please choose backup type: || SET _backuptype=1
+rem     python %_AUDIOCD%\Shared\check_choice.py !_backuptype! "2"
+rem     IF ERRORLEVEL 1 GOTO ARCHIVE_TYPE
+
+rem     REM 5. Confirm or abort backup.
+rem     CALL :HEADER4
+rem     ECHO:
+rem     ECHO:
+rem     SET _answer=
+rem     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy important personal files to your local SD Memory Card." _answer
+rem     IF [!_answer!] EQU [N] GOTO FIN24
+rem     CLS
+
+rem     REM 6. Extract content of 7-Zip archive.
+rem     IF !_backuptype! EQU 1 (
+rem         IF EXIST "!_drive!Documents.7z" (
+rem             XXCOPY "!_drive!Documents.7z" "!_temp!\" /Y /oA:%_XXCOPYLOG%
+rem             IF ERRORLEVEL 1 GOTO FIN24
+rem             IF ERRORLEVEL 0 (
+rem                 FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO (
+rem                     SET _password=%%~I
+rem                     PUSHD !_temp!
+rem                     "C:\Program Files\7-Zip\7z.exe" x -y -p"!_password!" "Documents.7z"
+rem                     POPD
+rem                 )
+rem             )
+rem         )
+rem     )
+
+rem     REM 7. Backup every single files listed into "%_COMPUTING%\SDCard.txt".
+rem     SET _first=1
+rem     FOR /F "usebackq tokens=1,2,* delims=|" %%F IN ("%_sdcard%") DO (
+rem         SET _tokens=%%H
+rem         (
+rem             SET _switch=/CE
+rem             IF !_first! EQU 1 SET _switch=/EC
+rem         )
+rem         SET _first=0
+rem         CALL SET _file=%%~F
+rem         IF [%%~G] EQU [] (
+rem             XXCOPY !_switch! "!_file!" "!_temp!\" /KS /Y /BI /FF /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
+rem             IF !ERRORLEVEL! EQU 0 CALL :TOKENIZE "!_tokens!"
+rem         )
+rem         IF [%%~G] NEQ [] (
+rem             XXCOPY !_switch! "!_file!" "!_temp!\%%~G\" /KS /Y /BI /FF /Fo:%_copied% /FM:L /oA:%_XXCOPYLOG%
+rem             IF !ERRORLEVEL! EQU 0 CALL :TOKENIZE "!_tokens!"
+rem         )
+rem         ECHO:
+rem         ECHO:
+rem     )
+
+rem     REM 8. Create/Update 7-Zip archive.
+rem     IF EXIST %_tobearchived% (
+rem         FOR /F "usebackq delims=|" %%I IN ("%_sdcard_password%") DO (
+rem             SET _password=%%~I
+rem             CALL "%_COMPUTING%\shared.cmd" "ARCHIVE" "a" "7z" "Documents" "!_password!" "WIN" "!_temp!" "%_tobearchived%"
+rem             IF !ERRORLEVEL! EQU 0 (
+rem                 XXCOPY /EC "!_temp!\Documents.7z" "!_drive!" /Y /oA:%_XXCOPYLOG%
+rem                 XXCOPY /CE !_temp! /RMDIR /RSY /oA:%_XXCOPYLOG%
+rem             )
+rem             GOTO FIN24
+rem         )
+rem     )
+rem     IF NOT EXIST %_tobearchived% IF EXIST "!_temp!" XXCOPY "!_temp!" /RMDIR /RSY /oA:%_XXCOPYLOG%
+
+rem :FIN24
+rem     GOTO MENU
+
+rem )
 
 
 REM -------------------------------------------------------------------

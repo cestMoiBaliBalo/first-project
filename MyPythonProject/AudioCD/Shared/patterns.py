@@ -9,7 +9,7 @@ from pytz import timezone
 from sortedcontainers import SortedDict
 
 from Applications.AudioCD.shared import DFTPATTERN, filcontents
-from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, dateformat, validalbumsort
+from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, dateformat, valid_albumsort
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -129,7 +129,7 @@ class AlbumSort(TagsDecorator):
         albumsort = self.get("albumsort")
         if albumsort:
             try:
-                albumsort = validalbumsort(albumsort[:-3])
+                albumsort = valid_albumsort(albumsort[:-3])
             except ValueError:
                 pass
             else:

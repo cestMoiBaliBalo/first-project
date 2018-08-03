@@ -11,11 +11,12 @@ from collections import OrderedDict
 from contextlib import suppress
 from subprocess import run
 
+import jinja2
 import yaml
 
 from Applications.Tables.RippedDiscs.shared import selectlogs_fromkeywords, stringify
 from Applications.parsers import database_parser
-from Applications.shared import UTF8, get_nearestmultiple, get_tabs, partitioner
+from Applications.shared import TemplatingEnvironment, UTF8, get_nearestmultiple, get_tabs, grouper, partitioner
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -28,7 +29,7 @@ __status__ = "Production"
 TABSIZE = 3
 LOGGERS = ["Applications.Tables.RippedDiscs", "MyPythonProject"]
 HEADERS = {False: ["uid", "artistsort", "albumsort", "disc", "artist", "origyear", "year", "album", "ripped"],
-           True: ["uid", "artistsort", "albumsort", "disc", "artist", "bootlegdate", "bootlegcity", "bootlegcountry", "bootlegcountry", "ripped"]}
+           True: ["uid", "artistsort", "albumsort", "disc", "artist", "bootlegdate", "bootlegcity", "bootlegcountry", "bootlegtour", "ripped"]}
 MAPPING = {True: "debug",
            False: "info"}
 
@@ -53,9 +54,14 @@ logging.config.dictConfig(config)
 logger = logging.getLogger("MyPythonProject.AudioCD.Views.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
 
 # ================
+# Jinja2 template.
+# ================
+TEMPLATE = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Templates")))
+
+# ================
 # Initializations.
 # ================
-line_number, first, header, separator, tags, tags_length, tags_width, headers_length = 0, True, {}, {}, {}, {}, {}, {}
+line_number, header, separator, tags, tags_length, tags_width, headers_length, content = 0, {}, {}, {}, {}, {}, {}, {}
 
 # ===============
 # Main algorithm.
@@ -70,7 +76,7 @@ if not arguments.orderby:
 reflist = list(selectlogs_fromkeywords(db=arguments.db, orderby=orderby))
 defaultalbums, bootlegalbums = partitioner(reflist, predicate=lambda row: not row.bootleg)
 defaultalbums = [tuple(map(stringify, (row.rowid, row.artistsort, row.albumsort, row.disc, row.artist, row.origyear, row.year, row.album, row.ripped))) for row in defaultalbums]
-bootlegalbums = [tuple(map(stringify, (row.rowid, row.artistsort, row.albumsort, row.disc, row.artist, row.bootleg_date, row.bootleg_city, row.bootleg_country, row.bootleg_country, row.ripped))) for row in
+bootlegalbums = [tuple(map(stringify, (row.rowid, row.artistsort, row.albumsort, row.disc, row.artist, row.bootleg_date, row.bootleg_city, row.bootleg_country, row.bootleg_tour, row.ripped))) for row in
                  bootlegalbums]
 logger.debug(defaultalbums)
 logger.debug(bootlegalbums)
@@ -99,36 +105,27 @@ for albumtype, albumslist, isbootleg in [("defaultalbums", defaultalbums, False)
     header[albumtype] = template.format(h=OrderedDict((item, item.upper()) for item in HEADERS[isbootleg]), w=tags_width[albumtype])
     separator[albumtype] = template.format(h=OrderedDict((key, "-" * max(headers_length[albumtype][key], tags_length[albumtype][key])) for key in tags[albumtype].keys()), w=tags_width[albumtype])
 
-# 8.a. Display ripped CDs into a plain text file. Then exit algorithm.
+for albumtype in ["defaultalbums", "bootlegalbums"]:
+    try:
+        content[albumtype] = [
+            ("{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype]), artistsort, albumsort, disc, artist, field1, field2, field3, field4, ripped)
+            for rowid, artistsort, albumsort, disc, artist, field1, field2, field3, field4, ripped in zip(*[value for _, value in tags[albumtype].items()])
+        ]
+    except ValueError:
+        content[albumtype] = [
+            ("{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype]), artistsort, albumsort, disc, artist, field1, field2, field3, ripped)
+            for rowid, artistsort, albumsort, disc, artist, field1, field2, field3, ripped in zip(*[value for _, value in tags[albumtype].items()])
+        ]
+
+# 8.a. Write ripped discs into a plain text file. Then exit algorithm.
 if not arguments.console:
     with open(os.path.join(os.path.expandvars("%TEMP%"), "rippeddiscs.txt"), "w", encoding=UTF8) as fw:
         for albumtype in ["defaultalbums", "bootlegalbums"]:
-            for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags[albumtype].items()]):
-                rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype])
-                if first or line_number == 100:
-                    if not first:
-                        fw.write("\n\n")
-                    fw.write("{0}\n".format(separator[albumtype]))
-                    fw.write("{0}\n".format(header[albumtype]))
-                    fw.write("{0}\n".format(separator[albumtype]))
-                    line_number = 0
-                    first = False
-                fw.write("{0}{1}{2}{3}{4}{5}{6}{7}{8}\n".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
-                line_number += 1
+            fw.write(TEMPLATE.environment.get_template("T01").render(content=grouper(["".join(items) for items in content[albumtype]], 100), separator=separator[albumtype], header=header[albumtype]))
     sys.exit(0)
 
-# 8.b. Display ripped CDs into console. Then exit algorithm.
+# 8.b. Print ripped discs into console. Then exit algorithm.
 run("CLS", shell=True)
 for albumtype in ["defaultalbums", "bootlegalbums"]:
-    for rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped in zip(*[item[1] for item in tags[albumtype].items()]):
-        rowid = "{0:<{w[uid]}}".format("{0:>{w[uid]}}".format(rowid.strip(), w=tags_length[albumtype]), w=tags_width[albumtype])
-        if first or line_number == 100:
-            print("\n\n")
-            print("{0}".format(separator[albumtype]))
-            print("{0}".format(header[albumtype]))
-            print("{0}".format(separator[albumtype]))
-            line_number = 0
-            first = False
-        print("{0}{1}{2}{3}{4}{5}{6}{7}{8}".format(rowid, artistsort, albumsort, disc, artist, origyear, year, album, ripped))
-        line_number += 1
+    print(TEMPLATE.environment.get_template("T01").render(content=grouper(["".join(items) for items in content[albumtype]], 100), separator=separator[albumtype], header=header[albumtype]))
 sys.exit(0)

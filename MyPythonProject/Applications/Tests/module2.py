@@ -8,7 +8,7 @@ import unittest
 import yaml
 
 from ..parsers import database_parser, epochconverter, loglevel_parser, tasks_parser, zipfile
-from ..shared import validalbumsort, validgenre, validyear, GetPath
+from ..shared import valid_albumsort, valid_genre, valid_year, GetPath
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -156,64 +156,64 @@ class Test03(unittest.TestCase):
 
 class Test06(unittest.TestCase):
     """
-    Test `validyear` function.
+    Test `valid_year` function.
     """
 
     def test_01first(self):
         for argument in ["2017", 2017]:
             with self.subTest(year=argument):
-                self.assertEqual(validyear(argument), 2017)
+                self.assertEqual(valid_year(argument), 2017)
 
     def test_02second(self):
         for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, 10.5]:
             with self.subTest(year=argument):
-                self.assertRaises(ValueError, validyear, argument)
+                self.assertRaises(ValueError, valid_year, argument)
 
     def test_03third(self):
         with self.assertRaises(ValueError) as cm:
-            validyear("abcdefghijklmnopqrstuvwxyz")
+            valid_year("abcdefghijklmnopqrstuvwxyz")
         self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid year.')
 
 
 class Test07(unittest.TestCase):
     """
-    Test `validalbumsort` function.
+    Test `valid_albumsort` function.
     """
 
     def test_01first(self):
         for argument in ["1.20170000.1", "1.20170000.2", "2.20171019.1"]:
             with self.subTest(albumsort=argument):
-                self.assertEqual(validalbumsort(argument), argument)
+                self.assertEqual(valid_albumsort(argument), argument)
 
     def test_02second(self):
         for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", 10.5]:
             with self.subTest(year=argument):
-                self.assertRaises(ValueError, validalbumsort, argument)
+                self.assertRaises(ValueError, valid_albumsort, argument)
 
     def test_03third(self):
         with self.assertRaises(ValueError) as cm:
-            validalbumsort("abcdefghijklmnopqrstuvwxyz")
+            valid_albumsort("abcdefghijklmnopqrstuvwxyz")
         self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid albumsort.')
 
 
 class Test08(unittest.TestCase):
     """
-    Test `validgenre` function.
+    Test `valid_genre` function.
     """
 
     def test_01first(self):
         for argument in ["Rock", "Hard Rock", "black metal"]:
             with self.subTest(genre=argument):
-                self.assertEqual(validgenre(argument), argument)
+                self.assertEqual(valid_genre(argument), argument)
 
     def test_02second(self):
         for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", "some genre", 10.5]:
             with self.subTest(genre=argument):
-                self.assertRaises(ValueError, validgenre, argument)
+                self.assertRaises(ValueError, valid_genre, argument)
 
     def test_03third(self):
         with self.assertRaises(ValueError) as cm:
-            validgenre("abcdefghijklmnopqrstuvwxyz")
+            valid_genre("abcdefghijklmnopqrstuvwxyz")
         self.assertEqual(cm.exception.args[0], '"abcdefghijklmnopqrstuvwxyz" is not a valid genre.')
 
 

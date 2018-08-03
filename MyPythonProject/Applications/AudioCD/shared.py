@@ -572,7 +572,7 @@ class ChangeEncodedBy(TagsModifier):
 
 
 class RippedDisc(ContextDecorator):
-    _environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Grabber")), trim_blocks=True, lstrip_blocks=True)
+    _environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Template")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
     logger = logging.getLogger("{0}.RippedCD".format(__name__))
@@ -982,7 +982,7 @@ def getmetadata(audiofil):
         except AssertionError:
             pass
         else:
-            tags = dict([(k.lower(), v) for k, v in audioobj.tags])
+            tags = dict((k.lower(), v) for k, v in audioobj.tags)
 
         # --> Monkey's audio.
         try:

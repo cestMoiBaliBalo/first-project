@@ -29,14 +29,19 @@ __status__ = "Production"
 # ==========================
 locale.setlocale(locale.LC_ALL, "")
 
+# ==================
+# Functions aliases.
+# ==================
+basename, exists, expandvars, isdir, join = os.path.basename, os.path.exists, os.path.expandvars, os.path.isdir, os.path.join
+
 # ==========
 # Constants.
 # ==========
 APPEND = "a"
 WRITE = "w"
-DATABASE = os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "database.db")
-TESTDATABASE = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
-ARECA = os.path.join(r"C:\Program Files", "Areca", "areca_cl.exe")
+DATABASE = join(expandvars("%_COMPUTING%"), "Resources", "database.db")
+TESTDATABASE = join(expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
+ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
 DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
 UTC = timezone("UTC")
@@ -97,226 +102,15 @@ ZONES = ["UTC",
 # ========
 # Classes.
 # ========
-# class ImageError(OSError):
-#     def __init__(self, file, error):
-#         self.file = file
-#         self.error = error
-#
-#
-# class ExifError(ImageError):
-#     def __init__(self, file, error):
-#         super(ExifError, self).__init__(file, error)
-#
-#
-# class Files(MutableMapping):
-#     def __init__(self, fil):
-#         self._fil = None
-#         self.fil = fil
-#         self._metadata = {i: getattr(self, i) for i in ["ctime", "mtime", "dirname", "basename", "extension", "parts"]}
-#
-#     def __getitem__(self, item):
-#         return self._metadata[item]
-#
-#     def __setitem__(self, key, value):
-#         self._metadata[key] = value
-#
-#     def __delitem__(self, key):
-#         del self._metadata[key]
-#
-#     def __len__(self):
-#         return len(self._metadata)
-#
-#     def __iter__(self):
-#         return iter(self._metadata)
-#
-#     @property
-#     def fil(self):
-#         return self._fil
-#
-#     @fil.setter
-#     def fil(self, value):
-#         if not os.path.exists(value):
-#             raise FileNotFoundError('Can\'t find "{0}". Please check both dirname and basename.'.format(value))
-#         self._fil = value
-#
-#     @property
-#     def dirname(self):
-#         return os.path.dirname(self.fil)
-#
-#     @property
-#     def basename(self):
-#         return os.path.splitext(os.path.basename(self.fil))[0]
-#
-#     @property
-#     def extension(self):
-#         return os.path.splitext(self.fil)[1].strip(".")
-#
-#     @property
-#     def parts(self):
-#         return os.path.dirname(self.fil).split("\\")
-#
-#     @property
-#     def ctime(self):
-#         return int(os.path.getctime(self.fil))
-#
-#     @property
-#     def mtime(self):
-#         return int(os.path.getmtime(self.fil))
-#
-#
-# class Images(Files):
-#     tzinfos = {"CEST": gettz("Europe/Paris"), "CET": gettz("Europe/Paris")}
-#
-#     def __init__(self, img):
-#         super(Images, self).__init__(img)
-#         self._exif = None
-#         self.exif = img
-#         for i in ["localtimestamp", "originaldatetime", "originalyear", "originalmonth", "originalday", "originalhours", "originalminutes", "originalseconds", "dayoftheyear", "dayoftheweek",
-# "defaultlocation",
-#                   "defaultprefix", "originalsubseconds"]:
-#             self._metadata[i] = getattr(self, i)
-#
-#     @property
-#     def exif(self):
-#         return self._exif
-#
-#     @exif.setter
-#     def exif(self, value):
-#         try:
-#             self._exif = self.getexif(Image.open(value))
-#         except ExifError:
-#             raise ExifError(value, "Can\'t grab exif tags from")
-#         except OSError:
-#             raise OSError('Can\'t identify "{0}" as an image file.'.format(value))
-#         else:
-#             if not self._exif:
-#                 raise ExifError(value, "Can\'t grab metadata from")
-#             if 36867 not in self._exif:
-#                 raise ExifError(value, "Can\'t grab timestamp from")
-#
-#     @property
-#     def datetime(self):
-#         return parse("{0} CET".format(self.exif[36867].replace(":", "-", 2)), tzinfos=self.tzinfos)
-#
-#     @property
-#     def localtimestamp(self):
-#         return int(self.datetime.timestamp())
-#
-#     @property
-#     def originaldatetime(self):
-#         return self.datetime.strftime("%d/%m/%Y %H:%M:%S %Z%z")
-#
-#     @property
-#     def originalyear(self):
-#         return self.datetime.strftime("%Y")
-#
-#     @property
-#     def originalmonth(self):
-#         return self.datetime.strftime("%m")
-#
-#     @property
-#     def originalday(self):
-#         return self.datetime.strftime("%d")
-#
-#     @property
-#     def originalhours(self):
-#         return self.datetime.strftime("%H")
-#
-#     @property
-#     def originalminutes(self):
-#         return self.datetime.strftime("%M")
-#
-#     @property
-#     def originalseconds(self):
-#         return self.datetime.strftime("%S")
-#
-#     @property
-#     def originalsubseconds(self):
-#         return self.exif.get(37521, 0)
-#
-#     @property
-#     def dayoftheyear(self):
-#         return self.datetime.strftime("%j")
-#
-#     @property
-#     def dayoftheweek(self):
-#         return self.datetime.strftime("%w")
-#
-#     @property
-#     def defaultlocation(self):
-#         return self.defaultlocation(self.originalyear, self.originalmonth, self.originalday)
-#
-#     @property
-#     def defaultprefix(self):
-#         return "{0}{1}".format(self.originalyear, str(self.originalmonth).zfill(2))
-#
-#     @property
-#     def make(self):
-#         return self.exif.get(271, "")
-#
-#     @property
-#     def model(self):
-#         return self.exif.get(272, "")
-#
-#     @property
-#     def width(self):
-#         return self.exif.get(40962, 0)
-#
-#     @property
-#     def height(self):
-#         return self.exif.get(40963, 0)
-#
-#     @property
-#     def copyright(self):
-#         return self.exif.get(33432, "")
-#
-#     @classmethod
-#     def getexif(cls, o):
-#         """
-#         :param o: image object.
-#         :return: metadata dictionary
-#         """
-#         d = {}
-#         try:
-#             data = o.info["exif"]
-#         except KeyError:
-#             raise ExifError
-#         file = io.BytesIO(data[6:])
-#         head = file.read(8)
-#         info = TiffImagePlugin.ImageFileDirectory(head)
-#         info.load(file)
-#         for key, value in info.items():
-#             d[key] = cls.fixup(value)
-#         try:
-#             file.seek(d[0x8769])
-#         except KeyError:
-#             pass
-#         else:
-#             info = TiffImagePlugin.ImageFileDirectory(head)
-#             info.load(file)
-#             for key, value in info.items():
-#                 d[key] = cls.fixup(value)
-#         return d
-#
-#     @staticmethod
-#     def fixup(v):
-#         if len(v) == 1:
-#             return v[0]
-#         return v
-#
-#     @staticmethod
-#     def defaultlocation(year, month, day, drive=IMAGES):
-#
-#         # Cas 1 : "H:\CCYY\MM\DD".
-#         if year in [2011, 2012]:
-#             return os.path.normpath(os.path.join(drive, str(year), str(month).zfill(2), str(day).zfill(2)))
-#
-#         # Cas 2 : "H:\CCYY\MM.DD".
-#         if year == 2014:
-#             return os.path.normpath(os.path.join(drive, str(year), "{0}.{1}".format(str(month).zfill(2), str(day).zfill(2))))
-#
-#         # Cas 3 : "H:\CCYYMM".
-#         return os.path.normpath(os.path.join(drive, "{0}{1}".format(year, str(month).zfill(2))))
+# class CustomFilter(Filter):
+#     def filter(self, record):
+#         # print(record.pathname)
+#         # print(record.filename)
+#         # print(record.module)
+#         # print(record.funcName)
+#         # if record.funcName.lower() in ["_selectlogs", "getalbumheader", "rippeddiscsview1"]:
+#         #     return True
+#         return False
 
 
 class CustomFormatter(Formatter):
@@ -331,17 +125,6 @@ class CustomFormatter(Formatter):
         if datefmt:
             s = ct.strftime(datefmt)
         return s
-
-
-# class CustomFilter(Filter):
-#     def filter(self, record):
-#         # print(record.pathname)
-#         # print(record.filename)
-#         # print(record.module)
-#         # print(record.funcName)
-#         # if record.funcName.lower() in ["_selectlogs", "getalbumheader", "rippeddiscsview1"]:
-#         #     return True
-#         return False
 
 
 class ChangeRemoteCurrentDirectory(ContextDecorator):
@@ -399,59 +182,12 @@ class ChangeLocalCurrentDirectory(ContextDecorator):
         os.chdir(self._cwd)
 
 
-# class GlobalInterface(object):
-#     def __init__(self, *inputs):
-#         self._answer = None
-#         self._inputs = inputs
-#         self._levels = len(inputs)
-#         self._input = inputs[0]
-#         self._level = 1
-#         self._index = 0
-#         self._step = 0
-#
-#     def __iter__(self):
-#         return self
-#
-#     def __next__(self):
-#
-#         # Stop iteration once last level is exhausted.
-#         if self._level >= self._levels and self._index >= len(self._input):
-#             raise StopIteration
-#
-#         # Load next level once previous level is exhausted.
-#         if self._level > 0 and self._index >= len(self._input):
-#             self._input = self._inputs[self._level].get(self._answer)
-#             if not self._input:
-#                 raise StopIteration
-#             self._level += 1
-#             self._index = 0
-#
-#         # Return expected input.
-#         self._index += 1
-#         self._step += 1
-#         return self._input[self._index - 1]
-#
-#     @property
-#     def step(self):
-#         return self._step
-#
-#     @property
-#     def answer(self):
-#         return self._answer
-#
-#     @answer.setter
-#     def answer(self, value):
-#         self._answer = value
-
-
 class StringFormatter(object):
     """
 
     """
 
-    # --------------------
-    # Regular expressions.
-    # --------------------
+    # 1. Class level regular expressions.
     _REX01 = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
     _REX02 = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?))\b", re.IGNORECASE)
     _REX04 = re.compile(r"(\B\()([a-z]+)\b", re.IGNORECASE)  # Not used anymore!
@@ -464,15 +200,11 @@ class StringFormatter(object):
     _REX05g = re.compile(r"\b'n'\b", re.IGNORECASE)
     _REX06 = re.compile(r"^(\([^)]+\) )\b([a-z]+)\b", re.IGNORECASE)
 
-    # -------
-    # Logger.
-    # -------
+    # 2. Class level logger.
     _logger = getLogger("{0}.StringFormatter".format(__name__))
 
-    # --------------------
-    # Initialize instance.
-    # --------------------
-    def __init__(self, somestring=None, config=os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "stringformatter.yml")):
+    # 3. Initialize instance.
+    def __init__(self, somestring=None, config=join(expandvars("%_COMPUTING%"), "Resources", "stringformatter.yml")):
 
         # Initializations.
         self._inp_string, self._out_string = "", ""
@@ -529,7 +261,7 @@ class StringFormatter(object):
         if self._rex09:
             self._out_string = self._rex09.sub(lambda match: match.group(1).lower(), self._out_string)
         if self._rex11:
-            self._out_string = self._rex11.sub(lambda match: " ".join([word.capitalize() for word in match.group(1).split()]), self._out_string)
+            self._out_string = self._rex11.sub(lambda match: " ".join(word.capitalize() for word in match.group(1).split()), self._out_string)
         if self._rex12:
             self._out_string = self._rex12.sub(lambda match: match.group(1).capitalize(), self._out_string)
         if self._rex13:
@@ -615,10 +347,10 @@ class GetPath(argparse.Action):
     """
     Set "destination" attribute with the full path corresponding to the "values".
     """
-    destinations = {"documents": os.path.expandvars("%_MYDOCUMENTS%"),
-                    "temp": os.path.expandvars("%TEMP%"),
-                    "backup": os.path.expandvars("%_BACKUP%"),
-                    "onedrive": os.path.join(os.path.expandvars("%USERPROFILE%"), "OneDrive")}
+    destinations = {"documents": expandvars("%_MYDOCUMENTS%"),
+                    "temp": expandvars("%TEMP%"),
+                    "backup": expandvars("%_BACKUP%"),
+                    "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
 
     def __init__(self, option_strings, dest, **kwargs):
         super(GetPath, self).__init__(option_strings, dest, **kwargs)
@@ -742,36 +474,36 @@ class TemplatingEnvironment(object):
 # ==========================
 # Data validation functions.
 # ==========================
-def validpath(path):
+def valid_path(path):
     """
 
     :param path:
     :return:
     """
-    if not os.path.exists(path):
+    if not exists(path):
         raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(path))
-    if not os.path.isdir(path):
+    if not isdir(path):
         raise argparse.ArgumentTypeError('"{0}" is not a directory.'.format(path))
     if not os.access(path, os.R_OK):
         raise argparse.ArgumentTypeError('"{0}" is not a readable directory.'.format(path))
     return path
 
 
-def validdb(db):
+def valid_database(database):
     """
 
-    :param db:
+    :param database:
     :return:
     """
     try:
-        if not os.path.exists(db):
-            raise ValueError('"{0}" doesn\'t exist.'.format(db))
+        if not exists(database):
+            raise ValueError('"{0}" doesn\'t exist.'.format(database))
     except TypeError:
-        raise ValueError('"{0}" doesn\'t exist.'.format(db))
-    return db
+        raise ValueError('"{0}" doesn\'t exist.'.format(database))
+    return database
 
 
-def validdiscnumber(discnumber):
+def valid_discnumber(discnumber):
     """
     Check if string `discnumber` is a coherent disc number
 
@@ -788,7 +520,7 @@ def validdiscnumber(discnumber):
     return _discnumber
 
 
-def validtracks(tracks):
+def valid_tracks(tracks):
     """
     Check if string `tracks` is a coherent track number.
 
@@ -805,7 +537,7 @@ def validtracks(tracks):
     return _tracks
 
 
-def validalbumid(albumid):
+def valid_albumid(albumid):
     """
     Check if string `albumid` is a coherent unique album ID.
 
@@ -825,7 +557,7 @@ def validalbumid(albumid):
         selectors[0] = False
 
     try:
-        _albumsort = validalbumsort(_albumsort)
+        _albumsort = valid_albumsort(_albumsort)
     except TypeError:
         selectors[1] = False
 
@@ -837,7 +569,7 @@ def validalbumid(albumid):
     return "{0}{1}".format(_artistsort, _albumsort)
 
 
-def validalbumsort(albumsort):
+def valid_albumsort(albumsort):
     """
     Check if string `albumsort` is a coherent `albumsort` tag.
 
@@ -858,7 +590,7 @@ def validalbumsort(albumsort):
     return albumsort
 
 
-def validyear(year):
+def valid_year(year):
     """
     Check if string `year` is a coherent year.
 
@@ -902,7 +634,7 @@ def valid_productcode(productcode):
     return productcode
 
 
-def validgenre(genre):
+def valid_genre(genre):
     """
     Check if string `genre` is a coherent audio genre.
 
@@ -918,50 +650,50 @@ def validgenre(genre):
     return genre
 
 
-def validdatetime(ts):
+def valid_datetime(timestamp):
     """
-    Check if string `ts` is a coherent Unix time or a coherent python datetime object.
+    Check if string `timestamp` is a coherent Unix time or a coherent python datetime object.
 
-    :param ts: Unix time or python datetime object.
+    :param timestamp: Unix time or python datetime object.
     :return: (Unix time converted to a) python datetime naive object respective to the local system time zone.
     """
     error, msg = False, r"is not a valid Unix time."
     try:
-        ts = int(ts)
+        timestamp = int(timestamp)
     except (ValueError, TypeError):
         error = True
 
     if error:
         try:
-            _struct = ts.timetuple()
+            _struct = timestamp.timetuple()
         except (TypeError, AttributeError):
-            raise ValueError('"{0}" {1}'.format(ts, msg))
-        return int(ts.timestamp()), ts, _struct
+            raise ValueError('"{0}" {1}'.format(timestamp, msg))
+        return int(timestamp.timestamp()), timestamp, _struct
 
     try:
-        datobj = datetime.fromtimestamp(ts)
+        datobj = datetime.fromtimestamp(timestamp)
     except OSError:
-        raise ValueError('"{0}" {1}'.format(ts, msg))
+        raise ValueError('"{0}" {1}'.format(timestamp, msg))
     else:
         _struct = datobj.timetuple()
-    return ts, datobj, _struct
+    return timestamp, datobj, _struct
 
 
 # ========================
 # Miscellaneous functions.
 # ========================
 def copy(src, dst, *, size=16 * 1024):
-    if not os.path.isdir(dst):
+    if not isdir(dst):
         raise ValueError('"%s" is not a directory.' % dst)
     with ExitStack() as stack:
         fr = stack.enter_context(open(src, mode="rb"))
-        fw = stack.enter_context(open(os.path.join(dst, os.path.basename(src)), mode="wb"))
+        fw = stack.enter_context(open(join(dst, basename(src)), mode="wb"))
         while True:
             _bytes = fr.read(size)
             if not _bytes:
                 break
             fw.write(_bytes)
-    return os.path.join(dst, os.path.basename(src))
+    return join(dst, basename(src))
 
 
 def grouper(iterable, n, *, fillvalue=None):
@@ -994,12 +726,12 @@ def customformatterfactory(pattern=LOGPATTERN):
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(os.path.join(os.path.expandvars("%_COMPUTING%"), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return RotatingFileHandler(join(expandvars("%_COMPUTING%"), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
-def readable(dt, template, tz=None):
+def get_readabledate(dt, template, tz=None):
     """
-    Return a human readable (naive or aware) datetime object respective to the local system time zone.
+    Return a local human readable (naive or aware) datetime object respective to the local system time zone.
 
     :param dt: datetime object. Naive or aware.
     :param template: template to make the object human readable.
@@ -1086,9 +818,9 @@ def find_files(directory, *, excluded=None):
     collection = []
     for root, _, files in os.walk(directory):
         if not excluded:
-            collection.extend(map(os.path.join, repeat(root), files))
+            collection.extend(map(join, repeat(root), files))
         else:
-            collection.extend(map(os.path.join, repeat(root), set(files) - excluded(root, *files)))
+            collection.extend(map(join, repeat(root), set(files) - excluded(root, *files)))
     for file in sorted(collection):
         yield file
 
@@ -1122,7 +854,7 @@ def get_datefromseconds(beg, end, zone=DFTTIMEZONE):
     # Justifier à gauche les heures en tenant compte de la longueur maximale respective à chaque fuseau.
     # La longueur maximale respective à chaque fuseau est tout d'abord stockée dans un dictionnaire.
     for tz in thatdict.keys():
-        width[tz] = max([len(item) for item in thatdict[tz]]) + gap
+        width[tz] = max(len(item) for item in thatdict[tz]) + gap
     for tz in thatdict.keys():
         thatdict[tz] = ["{:<{w}}".format(item, w=width[tz]) for item in thatdict[tz]]
 
@@ -1131,39 +863,12 @@ def get_datefromseconds(beg, end, zone=DFTTIMEZONE):
         yield ts, z1, z2, z3, z4, z5, z6, z7
 
 
-# def interface(obj):
-#     for inp, dest in obj:
-#         while True:
-#             value = input("{0}. {1}: ".format(obj.step, inp))
-#             try:
-#                 setattr(obj, dest, value)
-#                 setattr(obj, "answer", value)
-#             except ValueError:
-#                 continue
-#             break
-#     return obj
-
-
-# def zipfiles(archive, *files):
-#     logger = getLogger("{0}.zipfiles".format(__name__))
-#     if not os.path.exists(os.path.dirname(archive)):
-#         raise OSError('"{0}" doesn\'t exist. Please enter an existing directory.'.format(os.path.dirname(archive)))
-#     with zipfile.ZipFile(archive, "w") as thatzip:
-#         logger.info('"%s" used as ZIP file.', archive)
-#         for file in files:
-#             if os.path.exists(file):
-#                 thatzip.write(file, arcname=os.path.basename(file))
-#                 logger.info('"%s" successfully written.', file)
-#                 continue
-#             logger.info('Failed to write "%s".', file)
-
-
 def mainscript(stg, align="^", fill="=", length=140):
     return "{0:{fill}{align}{length}}".format(" {0} ".format(stg), align=align, fill=fill, length=length)
 
 
 def xsltransform(xml, xsl, html):
-    process = subprocess.run(["java", "-cp", os.path.expandvars("%_SAXON%"), "net.sf.saxon.Transform",
+    process = subprocess.run(["java", "-cp", expandvars("%_SAXON%"), "net.sf.saxon.Transform",
                               "-s:{0}".format(xml),
                               "-xsl:{0}".format(xsl),
                               "-o:{0}".format(html)])
@@ -1198,8 +903,8 @@ def prettyprint(*iterable, headers=(), char="=", tabsize=3, gap=3):
         x = 0
         if headers:
             x = len(k)
-        if any([bool(item) for item in v]):
-            x = max([len(str(item)) for item in v if item])
+        if any(bool(item) for item in v):
+            x = max(len(str(item)) for item in v if item)
         if headers:
             if len(k) > x:
                 x = len(k)
@@ -1237,16 +942,16 @@ def left_justify(iterable):
     :return:
     """
     sequence = list(iterable)
-    length = max([len(str(item)) for item in sequence])
+    length = max(len(str(item)) for item in sequence)
     for item in ["{0:<{1}}".format(item, length) for item in sequence]:
         yield item
 
 
-def base85_encode(strg, encoding="utf-8"):
-    return b85encode(strg.encode(encoding=encoding))
+def base85_encode(stg, encoding="UTF-8"):
+    return b85encode(stg.encode(encoding=encoding))
 
 
-def base85_decode(bytobj, encoding="utf-8"):
+def base85_decode(bytobj, encoding="UTF-8"):
     return b85decode(bytobj).decode(encoding=encoding)
 
 
@@ -1283,6 +988,12 @@ def normalize2(stg):
 
 
 def localize_date(dt, tz=None):
+    """
+    
+    :param dt: 
+    :param tz: 
+    :return: 
+    """
     datobj = dt
     if tz:
         datobj = tz.localize(dt).astimezone(LOCAL)

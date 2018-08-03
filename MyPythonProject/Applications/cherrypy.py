@@ -16,7 +16,7 @@ import jinja2
 from pytz import timezone
 
 from .Tables.Albums.shared import getalbumheader, getartist, getlastplayeddate, gettrack, updatelastplayeddate
-# from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, validyear
+# from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 from .Tables.RippedDiscs.shared import validyear
 from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, dateformat, filesinfolder, localize_date, normalize, \
     normalize2, now
@@ -360,7 +360,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         albums = None
-        mapping = dict(set([(dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums]))
+        mapping = dict(set((dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums))
 
         # 1. Covers view.
         if view == "default":

@@ -1,0 +1,21 @@
+{% for item in content %}
+
+{%- if not loop.first %}
+
+
+{% endif %}
+{{ separator }}
+{{ header }}
+{{ separator }}
+    {% for subitem in item %}
+        {% if subitem %}
+{{ subitem }}
+        {% endif %}
+    {% endfor %}
+
+{%- if loop.last %}
+
+
+{% endif -%}
+
+{% endfor %}

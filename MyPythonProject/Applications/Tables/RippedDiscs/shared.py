@@ -191,14 +191,14 @@ def selectlogs_fromyear(*year, db=DATABASE):
 # status, query, args = 0, "", []
 
 # # 1. Map validation functions to table fields.
-# functions = {"albumsort": validalbumsort,
-# "disc": validdiscnumber,
-# "genre": validgenre,
-# "ripped": validrippeddate(validdatetime),
-# "origyear": validyear,
-# "tracks": validtracks,
+# functions = {"albumsort": valid_albumsort,
+# "disc": valid_discnumber,
+# "genre": valid_genre,
+# "ripped": validrippeddate(valid_datetime),
+# "origyear": valid_year,
+# "tracks": valid_tracks,
 # "upc": validproductcode,
-# "year": validyear}
+# "year": valid_year}
 
 # # 2. Validate input pairs.
 # #    Change `selectors` values to accept/reject pairs:

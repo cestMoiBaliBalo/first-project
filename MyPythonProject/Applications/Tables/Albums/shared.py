@@ -21,7 +21,7 @@ import yaml
 
 from ..shared import ToBoolean, adapt_booleanvalue, convert_tobooleanvalue
 from ...parsers import subset_parser
-from ...shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, dateformat, left_justify, rjustify, validdatetime
+from ...shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, dateformat, left_justify, rjustify, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -164,21 +164,21 @@ class DatabaseConnection(ContextDecorator):
 
 # 0. Check if `database` is valid.
 # try:
-#     database = validdb(track.database)
+#     database = valid_database(track.database)
 # except ValueError as err:
 #     self.logger.debug(err)
 #     continue
 
 # 1. Check if `year` is valid.
 # try:
-#     year = validyear(track.year)
+#     year = valid_year(track.year)
 # except ValueError as err:
 #     self.logger.debug(err)
 #     continue
 
 # 2. Check if `genre` is valid.
 # try:
-#     genre = validgenre(track.genre)
+#     genre = valid_genre(track.genre)
 # except ValueError as err:
 #     self.logger.debug(err)
 #     continue
@@ -222,7 +222,7 @@ class DatabaseConnection(ContextDecorator):
 
 # 8. Check `origyear`.
 # try:
-#     origyear = validyear(track.origyear)
+#     origyear = valid_year(track.origyear)
 # except ValueError as err:
 #     self.logger.debug(err)
 #     origyear = 0
@@ -386,7 +386,7 @@ def getalbumdetail(db=DATABASE, **kwargs):
         yield row
 
 
-def getgroupedalbums(db=DATABASE, **kwargs):
+def get_groupedalbums(db=DATABASE, **kwargs):
     """
 
     :param db:
@@ -416,12 +416,10 @@ def getgroupedalbums(db=DATABASE, **kwargs):
         logger.debug("\tArtistsort\t: %s".expandtabs(tabsize), album[0])
         logger.debug("\tAlbumsort\t: %s".expandtabs(tabsize), album[2])
         logger.debug("\tTitle\t\t\t: %s".expandtabs(tabsize), album[5])
-    for artistsort, artist, albums in ((artistsort, artist,
-                                        [(albumid,
-                                          [(discid,
-                                            [(trackid, list(sssgroup)) for trackid, sssgroup in groupby(ssgroup, key=itemgetter(4))]) for discid, ssgroup in groupby(subgroup, key=itemgetter(3))]) for
-                                         albumid, subgroup in
-                                         groupby(group, key=itemgetter(2))]) for (artistsort, artist), group in groupby(albumslist, key=lambda i: (i[0], i[1]))):
+    for artistsort, artist, albums in ((artistsort, artist, [(albumid, [(discid, [(trackid, list(sssgroup)) for trackid, sssgroup in groupby(ssgroup, key=itemgetter(4))])
+                                                                        for discid, ssgroup in groupby(subgroup, key=itemgetter(3))])
+                                                             for albumid, subgroup in groupby(group, key=itemgetter(2))])
+                                       for (artistsort, artist), group in groupby(albumslist, key=lambda i: (i[0], i[1]))):
         yield artistsort, artist, albums
 
 
@@ -816,7 +814,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     # 6. Convert last played Unix epoch time into python datetime object.
     if "utc_played" in kwargs:
         try:
-            kwargs["utc_played"] = LOCAL.localize(validdatetime(kwargs["utc_played"])[1]).astimezone(UTC).replace(tzinfo=None)
+            kwargs["utc_played"] = LOCAL.localize(valid_datetime(kwargs["utc_played"])[1]).astimezone(UTC).replace(tzinfo=None)
         except ValueError:
             del kwargs["utc_played"]
 
@@ -1295,5 +1293,5 @@ if __name__ == "__main__":
     run("CLS", shell=True)
     for directory in sys.path:
         print(directory)
-    print(TEMPLATE.environment.get_template("T01").render(content=getgroupedalbums(db=arguments.db, artistsort=filters.get("artistsort"), albumsort=filters.get("albumsort"))))
+    print(TEMPLATE.environment.get_template("T01").render(content=get_groupedalbums(db=arguments.db, artistsort=filters.get("artistsort"), albumsort=filters.get("albumsort"))))
     sys.exit(0)

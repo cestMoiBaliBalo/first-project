@@ -32,7 +32,7 @@ def unixepochtime(time):
     :return:
     """
     try:
-        _unixepochtime = shared.validdatetime(time)
+        _unixepochtime = shared.valid_datetime(time)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
     else:
@@ -47,7 +47,7 @@ def database(db):
     :return:
     """
     try:
-        _database = shared.validdb(db)
+        _database = shared.valid_database(db)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
     return _database
@@ -57,7 +57,7 @@ def database(db):
 #  1. PARSER 1.
 #     =========
 zipfile = argparse.ArgumentParser()
-zipfile.add_argument("source", type=shared.validpath)
+zipfile.add_argument("source", type=shared.valid_path)
 zipfile.add_argument("destination", choices=["documents", "backup", "temp", "onedrive"], action=shared.GetPath)
 subparsers = zipfile.add_subparsers()
 

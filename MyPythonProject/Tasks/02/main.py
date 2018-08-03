@@ -60,8 +60,8 @@ drives, repository, extra_patterns, command1, command2, compression, copy, level
 # =========================
 # Load audio configuration.
 # =========================
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.json")) as fr:
-    configuration = json.load(fr)
+with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.yml")) as fr:
+    configuration = yaml.load(fr)
 repositories = sorted(configuration.get("repositories"))
 
 # ============

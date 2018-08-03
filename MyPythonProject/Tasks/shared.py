@@ -7,7 +7,7 @@ from subprocess import PIPE, run
 
 import yaml
 
-from Applications.shared import DATABASE, TESTDATABASE, prettyprint, validalbumsort, validyear
+from Applications.shared import DATABASE, TESTDATABASE, prettyprint, valid_albumsort, valid_year
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -161,13 +161,13 @@ def check_input(tag, value):
 
     if tag.lower() == "year":
         try:
-            value = validyear(value)
+            value = valid_year(value)
         except ValueError:
             error = True
 
     elif tag.lower() == "albumsort":
         try:
-            value = validalbumsort(value)
+            value = valid_albumsort(value)
         except ValueError:
             error = True
 
@@ -181,7 +181,7 @@ def get_drives():
 
     :return:
     """
-    regex = re.compile(r"^[I-R]:$")
+    regex = re.compile(r"^(E|[I-R]):$")
     process = run("wmic logicaldisk get name", shell=True, universal_newlines=True, stdout=PIPE)
     for drive in (drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())):
         yield drive
