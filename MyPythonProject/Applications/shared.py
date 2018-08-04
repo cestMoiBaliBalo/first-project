@@ -108,7 +108,7 @@ ZONES = ["UTC",
 #         # print(record.filename)
 #         # print(record.module)
 #         # print(record.funcName)
-#         # if record.funcName.lower() in ["_selectlogs", "getalbumheader", "rippeddiscsview1"]:
+#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
 #         #     return True
 #         return False
 

@@ -10,7 +10,6 @@ from collections import namedtuple
 from contextlib import ContextDecorator, ExitStack
 from contextlib import suppress
 from datetime import datetime
-from functools import partial
 from itertools import compress, groupby, product, repeat, starmap
 from operator import itemgetter
 from string import Template
@@ -299,20 +298,20 @@ class DatabaseConnection(ContextDecorator):
 # =======================================
 # Main functions for working with tables.
 # =======================================
-def filterfunc(item, artistsort=None, albumsort=None):
-    """
-
-    :param item:
-    :param artistsort:
-    :param albumsort:
-    :return:
-    """
-    if any([artistsort, albumsort]):
-        if artistsort and item.albumid[2:-13] not in artistsort:
-            return False
-        if albumsort and item.albumid[-12:] not in albumsort:
-            return False
-    return True
+# def filterfunc(item, artistsort=None, albumsort=None):
+#     """
+#
+#     :param item:
+#     :param artistsort:
+#     :param albumsort:
+#     :return:
+#     """
+#     if any([artistsort, albumsort]):
+#         if artistsort and item.albumid[2:-13] not in artistsort:
+#             return False
+#         if albumsort and item.albumid[-12:] not in albumsort:
+#             return False
+#     return True
 
 
 def insertfromfile(*files):
@@ -381,7 +380,7 @@ def insertfromfile(*files):
     return total_changes
 
 
-def getalbumdetail(db=DATABASE, **kwargs):
+def get_albumdetail(db=DATABASE, **kwargs):
     for row in _getalbumdetail(db, **kwargs):
         yield row
 
@@ -393,37 +392,36 @@ def get_groupedalbums(db=DATABASE, **kwargs):
     :param kwargs:
     :return:
     """
-    logger = logging.getLogger("{0}.getgroupedalbums".format(__name__))
+    logger = logging.getLogger("{0}.get_groupedalbums".format(__name__))
     tabsize = 3
-    func = partial(filterfunc, artistsort=kwargs.get("artistsort"), albumsort=kwargs.get("albumsort"))
-    albumslist = ((item.albumid[2:-13],
-                   item.artist,
-                   item.albumid[-12:],
-                   item.discid,
-                   item.trackid,
-                   item.title,
-                   item.genre,
-                   item.live,
-                   item.bootleg,
-                   item.incollection,
-                   UTC.localize(item.utc_created).astimezone(LOCAL).strftime("%d/%m/%Y %H:%M:%S %Z (UTC%z)"),
-                   item.album) for item in filter(func, _getalbumdetail(db)))
+    albumslist = ((row.albumid[2:-13],
+                   row.artist,
+                   row.albumid[-12:],
+                   row.discid,
+                   row.trackid,
+                   row.title,
+                   row.genre,
+                   row.live,
+                   row.bootleg,
+                   row.incollection,
+                   UTC.localize(row.utc_created).astimezone(LOCAL).strftime("%d/%m/%Y %H:%M:%S %Z (UTC%z)"),
+                   row.album) for row in _getalbumdetail(db, **kwargs))
     albumslist = sorted(sorted(sorted(sorted(albumslist, key=itemgetter(4)), key=itemgetter(3)), key=itemgetter(2)), key=lambda i: (i[0], i[1]))
     for album in albumslist:
-        logger.debug("----------------")
+        logger.debug("================")
         logger.debug("Selected record.")
-        logger.debug("----------------")
+        logger.debug("================")
         logger.debug("\tArtistsort\t: %s".expandtabs(tabsize), album[0])
         logger.debug("\tAlbumsort\t: %s".expandtabs(tabsize), album[2])
         logger.debug("\tTitle\t\t\t: %s".expandtabs(tabsize), album[5])
     for artistsort, artist, albums in ((artistsort, artist, [(albumid, [(discid, [(trackid, list(sssgroup)) for trackid, sssgroup in groupby(ssgroup, key=itemgetter(4))])
-                                                                        for discid, ssgroup in groupby(subgroup, key=itemgetter(3))])
-                                                             for albumid, subgroup in groupby(group, key=itemgetter(2))])
+                                                                        for discid, ssgroup in groupby(sgroup, key=itemgetter(3))])
+                                                             for albumid, sgroup in groupby(group, key=itemgetter(2))])
                                        for (artistsort, artist), group in groupby(albumslist, key=lambda i: (i[0], i[1]))):
         yield artistsort, artist, albums
 
 
-def getalbumidfromartist(arg=None, db=DATABASE):
+def get_albumidfromartist(arg=None, db=DATABASE):
     """
     Get album(s) ID matching the input artist.
 
@@ -438,7 +436,7 @@ def getalbumidfromartist(arg=None, db=DATABASE):
         yield row
 
 
-def getalbumidfromgenre(arg=None, db=DATABASE):
+def get_albumidfromgenre(arg=None, db=DATABASE):
     """
     Get album(s) ID matching the input genre.
 
@@ -453,7 +451,7 @@ def getalbumidfromgenre(arg=None, db=DATABASE):
         yield row
 
 
-def getalbumidfromalbumsort(arg=None, db=DATABASE):
+def get_albumidfromalbumsort(arg=None, db=DATABASE):
     """
     Get album(s) ID matching the input albumsort.
 
@@ -468,7 +466,7 @@ def getalbumidfromalbumsort(arg=None, db=DATABASE):
         yield row
 
 
-def checkalbumid(albumid, *, db=DATABASE):
+def check_albumid(albumid, *, db=DATABASE):
     conn = sqlite3.connect(db)
     curs = conn.cursor()
     curs.execute("SELECT count(*) FROM albums WHERE albumid=?", (albumid,))
@@ -477,7 +475,7 @@ def checkalbumid(albumid, *, db=DATABASE):
     return bool(count)
 
 
-def getalbumid(uid, *, db=DATABASE):
+def get_albumid(uid, *, db=DATABASE):
     """
     Get album ID matching the input unique ROWID.
 
@@ -489,7 +487,7 @@ def getalbumid(uid, *, db=DATABASE):
         yield row
 
 
-def getrowid(*albumid, db=DATABASE):
+def get_rowid(*albumid, db=DATABASE):
     """
     Get `albums` ROWID matching the input primary keys.
 
@@ -509,7 +507,7 @@ def getrowid(*albumid, db=DATABASE):
             yield rowid, albumid
 
 
-def getalbumheader(db=DATABASE, **kwargs):
+def get_albumheader(db=DATABASE, **kwargs):
     """
     Get album detail matching the input primary key.
 
@@ -517,14 +515,17 @@ def getalbumheader(db=DATABASE, **kwargs):
     :param kwargs:
     :return: Album detail gathered into a namedtuple.
     """
-    logger = logging.getLogger("{0}.getalbumheader".format(__name__))
+    logger = logging.getLogger("{0}.get_albumheader".format(__name__))
     tabsize = 3
-    # """
-    headers = list(left_justify(["\t{0}".format(item).expandtabs(tabsize) for item in ["Row ID", "Album ID", "ArtistSort", "AlbumSort", "Artist", "Album", "Cover", "Genre", "Created"]]))
-    # """
+
+    # -----
+    headers = list(left_justify(("\t{0}".format(item).expandtabs(tabsize) for item in ["Row ID", "Album ID", "ArtistSort", "AlbumSort", "Artist", "Album", "Cover", "Genre", "Created"])))
+
+    # -----
     Album = namedtuple("Album", "rowid albumid artistsort albumsort artist discs genre bootleg incollection language utc_created utc_modified album cover")
-    # """
-    albums = [(row.rowid,
+
+    # -----
+    albums = ((row.rowid,
                row.albumid,
                row.artistsort,
                row.albumsort,
@@ -538,9 +539,10 @@ def getalbumheader(db=DATABASE, **kwargs):
                row.utc_modified,
                row.album,
                COVER.substitute(path=os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art"), letter=row.artistsort[0], artistsort=row.artistsort, albumsort=row.albumsort))
-              for row in _getalbumdetail(db, **kwargs)]
+              for row in _getalbumdetail(db, **kwargs))
     albums = sorted(set(albums), key=itemgetter(1))
-    # """
+
+    # -----
     for album in albums:
         row = Album._make(album)
         logger.debug("================")
@@ -552,7 +554,7 @@ def getalbumheader(db=DATABASE, **kwargs):
         yield row
 
 
-def getdischeader(db=DATABASE, albumid=None, discid=None):
+def get_discheader(db=DATABASE, albumid=None, discid=None):
     """
     Get disc detail matching primary keys.
 
@@ -589,7 +591,7 @@ def getdischeader(db=DATABASE, albumid=None, discid=None):
         yield row
 
 
-def getplayedcount(albumid, *, db=DATABASE):
+def get_playedcount(albumid, *, db=DATABASE):
     conn = sqlite3.connect(db)
     curs = conn.cursor()
     curs.execute("SELECT rowid, played FROM albums WHERE albumid=?", (albumid,))
@@ -602,7 +604,7 @@ def getplayedcount(albumid, *, db=DATABASE):
     return rowid, played
 
 
-def gettrack(db=DATABASE, albumid=None, discid=None, trackid=None):
+def get_track(db=DATABASE, albumid=None, discid=None, trackid=None):
     """
     Get track(s) detail matching both the input unique album ID, the disc unique ID and the track unique ID.
 
@@ -645,7 +647,7 @@ def gettrack(db=DATABASE, albumid=None, discid=None, trackid=None):
         yield row
 
 
-def deletealbum(db=DATABASE, uid=None, albumid=None):
+def delete_album(db=DATABASE, uid=None, albumid=None):
     """
     Delete a digital album.
 
@@ -656,7 +658,7 @@ def deletealbum(db=DATABASE, uid=None, albumid=None):
     """
 
     # 1.Define logger.
-    logger = logging.getLogger("{0}.deletealbum".format(__name__))
+    logger = logging.getLogger("{0}.delete_album".format(__name__))
 
     # 1. Initialize variables.
     acount, dcount, tcount, discs, tracks, inp_uid, inp_albumid = 0, 0, 0, [], [], uid, albumid
@@ -710,7 +712,7 @@ def deletealbum(db=DATABASE, uid=None, albumid=None):
     return inp_albumid, acount, dcount, tcount
 
 
-def deletealbumheader(*uid, db=DATABASE):
+def delete_albumheader(*uid, db=DATABASE):
     """
     Delete album(s) from `albums` table.
 
@@ -729,7 +731,7 @@ def deletealbumheader(*uid, db=DATABASE):
     return changes
 
 
-def deletedischeader(*uid, db=DATABASE):
+def delete_discheader(*uid, db=DATABASE):
     """
     Delete disc(s) from `discs` table.
 
@@ -748,7 +750,7 @@ def deletedischeader(*uid, db=DATABASE):
     return changes
 
 
-def deletetrack(*uid, db=DATABASE):
+def delete_track(*uid, db=DATABASE):
     """
     Delete track(s) from `tracks` table.
 
@@ -764,7 +766,7 @@ def deletetrack(*uid, db=DATABASE):
     return changes
 
 
-def updatealbum(uid, db=DATABASE, **kwargs):
+def update_album(uid, db=DATABASE, **kwargs):
     """
     Update record from `albums` table.
 
@@ -777,7 +779,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     d = {False: 0, True: 1}
 
     # 1.Define logger.
-    logger = logging.getLogger("{0}.updatealbum".format(__name__))
+    logger = logging.getLogger("{0}.update_album".format(__name__))
 
     # 2. Initialize variables.
     albcount, dsccount, trkcount, query, args, discs, tracks = 0, 0, 0, "", [], [], []
@@ -893,7 +895,7 @@ def updatealbum(uid, db=DATABASE, **kwargs):
     return inp_albumid, albcount, dsccount, trkcount
 
 
-def updatetrack(uid, db=DATABASE, **kwargs):
+def update_track(uid, db=DATABASE, **kwargs):
     """
     Update record from `tracks` table.
 
@@ -904,7 +906,7 @@ def updatetrack(uid, db=DATABASE, **kwargs):
     """
 
     # 1.Define logger.
-    logger = logging.getLogger("{0}.updatetrack".format(__name__))
+    logger = logging.getLogger("{0}.update_track".format(__name__))
 
     # 2. Initialize variables.
     changes, query, args = 0, "", []

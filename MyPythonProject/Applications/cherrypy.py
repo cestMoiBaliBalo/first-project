@@ -15,7 +15,7 @@ import cherrypy
 import jinja2
 from pytz import timezone
 
-from .Tables.Albums.shared import getalbumheader, getartist, getlastplayeddate, gettrack, updatelastplayeddate
+from .Tables.Albums.shared import get_albumheader, getartist, getlastplayeddate, get_track, updatelastplayeddate
 # from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 from .Tables.RippedDiscs.shared import validyear
 from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, dateformat, filesinfolder, localize_date, normalize, \
@@ -125,7 +125,7 @@ class DigitalAudioCollection(object):
                                          "utcnow": datetime.datetime.utcnow()},
                              filters={"normalize": normalize,
                                       "normalize2": normalize2,
-                                      "getalbumid": getalbumid,
+                                      "getalbumid": get_albumid,
                                       "getcover": getcover,
                                       "getvalue": getvalue,
                                       "localize": localize_date,
@@ -251,7 +251,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums.setter
     def digitalalbums(self, arg):
-        self._digitalalbums = sorted(getalbumheader(db=arg), key=lambda album: album.albumid)
+        self._digitalalbums = sorted(get_albumheader(db=arg), key=lambda album: album.albumid)
 
     # --------------------------------------------------------
     # Getter and setter for "digitalalbums_mapping" attribute.
@@ -262,7 +262,7 @@ class DigitalAudioCollection(object):
 
     @digitalalbums_mapping.setter
     def digitalalbums_mapping(self, arg):
-        # reflist = [(row.albumid, row.album, row.artist, row.year) for row in getalbumheader(db=arg)]
+        # reflist = [(row.albumid, row.album, row.artist, row.year) for row in get_albumheader(db=arg)]
         # self._digitalalbums_mapping = {albumid: (album, artist, year) for albumid, album, artist, year in reflist}
         self._digitalalbums_mapping = {}
 
@@ -839,7 +839,7 @@ class DigitalAudioCollection(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def get_digitalalbums_playedcount(self, albumid):
-        return {"count": list(getalbumheader(self.database, albumid))[0].count}
+        return {"count": list(get_albumheader(self.database, albumid))[0].count}
 
     # -----------------------------------------------
     # Display played digital audio albums statistics.
@@ -1077,7 +1077,7 @@ class DigitalAudioCollection(object):
         reflist = chain.from_iterable([[(row.albumid,
                                          row.discid,
                                          row.trackid,
-                                         row.title) for row in genobj if row] for genobj in map(gettrack, repeat(db), albumid)])
+                                         row.title) for row in genobj if row] for genobj in map(get_track, repeat(db), albumid)])
 
         #  2. Sort digital albums by "artistsort", "albumid", "discid", "trackid".
         reflist = sorted(sorted(sorted(sorted(reflist, key=itemgetter(2)), key=itemgetter(1)), key=lambda i: i[0]), key=lambda i: i[0][2:-13])

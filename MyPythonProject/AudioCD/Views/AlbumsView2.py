@@ -12,7 +12,7 @@ from subprocess import run
 
 import yaml
 
-from Applications.Tables.Albums.shared import getalbumheader
+from Applications.Tables.Albums.shared import get_albumheader
 from Applications.parsers import database_parser
 from Applications.shared import DATABASE, UTF8
 
@@ -59,8 +59,8 @@ if arguments.get("console", False):
     with suppress(KeyError):
         config["handlers"]["console"]["level"] = MAPPING[arguments.get("debug", False)].upper()
 
-    # 3. Set up a specific filter for logging from "Applications.Tables.Albums.shared.getalbumheader" only.
-    localfilter = {"localfilter": {"class": "logging.Filter", "name": "Applications.Tables.Albums.shared.getalbumheader"}}
+    # 3. Set up a specific filter for logging from "Applications.Tables.Albums.shared.get_albumheader" only.
+    localfilter = {"localfilter": {"class": "logging.Filter", "name": "Applications.Tables.Albums.shared.get_albumheader"}}
     config["filters"] = localfilter
     config["handlers"]["console"]["filters"] = ["localfilter"]
 
@@ -75,7 +75,7 @@ logging.config.dictConfig(config)
 # Main algorithm.
 # ===============
 run("CLS", shell=True)
-albums = list(getalbumheader(arguments.get("db", DATABASE)))
+albums = list(get_albumheader(arguments.get("db", DATABASE)))
 if albums:
     sys.exit(0)
 sys.exit(100)
