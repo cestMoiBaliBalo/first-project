@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from Applications.shared import DATABASE, DFTYEARREGEX, LOCAL, dateformat
-from weakref import WeakKeyDictionary
 import datetime
 import os
 import re
+from weakref import WeakKeyDictionary
+
+from Applications.shared import DATABASE, DFTYEARREGEX, LOCAL, format_date
 
 __author__ = 'Xavier ROSSET'
 
@@ -21,7 +22,7 @@ class Database(object):
         argument = value
         if argument:
             argument = argument.replace('"', '')
-        if argument and not(os.path.exists(argument) and os.path.isfile(argument)):
+        if argument and not (os.path.exists(argument) and os.path.isfile(argument)):
             raise ValueError('"{0}" isn\'t a valid database.'.format(argument))
         database = self._default
         if argument:
@@ -30,7 +31,6 @@ class Database(object):
 
 
 class Integer(object):
-
     _regex = re.compile(r"\d+")
 
     def __init__(self, mandatory=True, default="0"):
@@ -54,12 +54,11 @@ class Integer(object):
 
 
 class Year(object):
-
     _regex = re.compile(r"(?:{0})".format(DFTYEARREGEX))
 
     def __init__(self, mandatory=True):
         self._mandatory = mandatory
-        self._default = dateformat(LOCAL.localize(datetime.datetime.utcnow()), "$Y")
+        self._default = format_date(LOCAL.localize(datetime.datetime.utcnow()), template="$Y")
         self._data = WeakKeyDictionary()
 
     def __get__(self, instance, owner):
@@ -143,7 +142,6 @@ class File(object):
 
 
 class Extensions(object):
-
     _regex = re.compile(r"\w+")
 
     def __init__(self, mandatory=False):

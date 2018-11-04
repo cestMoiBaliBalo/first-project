@@ -1,0 +1,111 @@
+lowercases:
+    - a
+    - an
+    - and
+    - as
+    - at
+    - but
+    - by
+    - for
+    - from
+    - if
+    - in
+    - into
+    - nor
+    - of
+    - "off"
+    - "on"
+    - onto
+    - or
+    - out
+    - over
+    - per
+    - so
+    - the
+    - to
+    - up
+    - with
+    - yet
+uppercases:
+    - mtv
+    - uk
+    - usa
+capitalized:
+    - Beat Up
+    - Blow Out
+    - Break Down
+    - Break Into
+    - Break Up
+    - Bring Up
+    - Call Off
+    - Call On
+    - Call Up
+    - Carry On
+    - Come Back
+    - Come Down
+    - Come On
+    - Come Out
+    - Come Over
+    - Do Over
+    - Fill In
+    - Fill Out
+    - Find Out
+    - Get Along
+    - Get Around
+    - Get By
+    - Get Over
+    - Get Through
+    - Get Up
+    - Give Back
+    - Give Up
+    - Go Along
+    - Go Away
+    - Go On
+    - Go Over
+    - Hand In
+    - Hang Up
+    - Hold On
+    - Keep On
+    - Keep Up
+    - Leave Out
+    - Let Down
+    - Look For
+    - Look Into
+    - Look Like
+    - Look Out
+    - Look Over
+    - Look Up
+    - Make Out
+    - Make Up
+    - Pack Up
+    - Pass Out
+    - Pick Out
+    - Pick Up
+    - Put Away
+    - Put Off
+    - Put On
+    - Put Out
+    - Put Up
+    - Roll Over
+    - Run Into
+    - Run Out
+    - Run Over
+    - Shine On
+    - Show Up
+    - Take After
+    - Take Back
+    - Take Off
+    - Take On
+    - Take Up
+    - Talk Back
+    - Talk Over
+    - Throw Away
+    - Try On
+    - Turn Down
+    - Turn In
+    - Turn Off
+    - Turn On
+    - Use Up
+    - Wait On
+capitalize_firstword: !!bool "true"
+capitalize_lastword: !!bool "true"

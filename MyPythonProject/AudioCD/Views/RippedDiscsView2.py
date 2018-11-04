@@ -14,7 +14,7 @@ import yaml
 
 from Applications.Tables.RippedDiscs.shared import selectlogs_fromkeywords
 from Applications.parsers import database_parser
-from Applications.shared import LOCAL, TEMPLATE4, UTF8, dateformat
+from Applications.shared import LOCAL, UTF8, format_date
 from Applications.xml import rippeddiscs_view1, rippeddiscs_view2
 
 __author__ = 'Xavier ROSSET'
@@ -47,8 +47,8 @@ for step in arguments.steps:
 
     if step == 1:
         reflist = sorted(sorted([(row.rowid,
-                                  (dateformat(LOCAL.localize(row.ripped), TEMPLATE4), int(LOCAL.localize(row.ripped).timestamp())),
-                                  dateformat(LOCAL.localize(row.ripped), "$Y$m"),
+                                  (format_date(LOCAL.localize(row.ripped)), int(LOCAL.localize(row.ripped).timestamp())),
+                                  format_date(LOCAL.localize(row.ripped), template="$Y$m"),
                                   row.ripped,
                                   row.artist,
                                   row.year,
@@ -65,7 +65,7 @@ for step in arguments.steps:
 
     elif step == 2:
         reflist = sorted([(row.rowid,
-                           (dateformat(LOCAL.localize(row.ripped), TEMPLATE4), int(LOCAL.localize(row.ripped).timestamp())),
+                           (format_date(LOCAL.localize(row.ripped)), int(LOCAL.localize(row.ripped).timestamp())),
                            row.ripped,
                            row.artist,
                            row.year,

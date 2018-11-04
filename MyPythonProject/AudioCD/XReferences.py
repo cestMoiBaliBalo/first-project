@@ -7,7 +7,7 @@ from contextlib import suppress
 
 import yaml
 
-from Applications.Tables.Albums.shared import insertfromfile
+from Applications.Tables.XReferences.shared import insert_albums_fromjson
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -18,13 +18,13 @@ __status__ = "Production"
 # Arguments parser.
 # =================
 parser = argparse.ArgumentParser()
-parser.add_argument("tags", type=argparse.FileType(mode="r", encoding="UTF_8"))
+parser.add_argument("xreferences", type=argparse.FileType(mode="r", encoding="UTF_8"))
 parser.add_argument("--debug", action="store_true")
 
 # ==========
 # Constants.
 # ==========
-LOGGERS = ["Applications.Tables.Albums"]
+LOGGERS = ["Applications"]
 MAPPING = {True: "debug", False: "info"}
 
 # ================
@@ -45,4 +45,4 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insertfromfile(arguments.tags))
+sys.exit(insert_albums_fromjson(arguments.xreferences))

@@ -4,232 +4,190 @@ import logging.config
 import os
 import sqlite3
 import sys
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 from datetime import datetime, timedelta
-from itertools import repeat
+from typing import Iterable, Optional, Tuple
 
 import yaml
 
+from ..shared import DatabaseConnection, close_database
 from ...parsers import tasks_parser
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, dateformat
+from ...shared import DATABASE, UTC, UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Production"
-
-# =========
-# Mappings.
-# =========
-MAPPING = {"tasks": ("taskid", "utc_run")}
+__changes__ = "Production"
 
 
 # ===================================
-# Main functions to work with tables.
+# Main interfaces to work with tasks.
 # ===================================
-def selectfrom(table, *uid, db=DATABASE):
+def exist_task(taskid: int, *, db: str = DATABASE) -> bool:
+    with DatabaseConnection(db) as conn:
+        tasks = set(row["taskid"] for row in conn.execute("SELECT taskid FROM tasks"))
+    return taskid in tasks
+
+
+def get_tasks(db: str = DATABASE) -> Iterable[Tuple[int, datetime]]:
+    for taskid, utc_run in _get_tasks(db):
+        yield taskid, utc_run
+
+
+def get_task(taskid: int, *, db: str = DATABASE) -> Tuple[int, Optional[datetime]]:
+    return _get_task(taskid, db=db)
+
+
+def insert_task(taskid: int, *, db: str = DATABASE, dtobj: datetime = datetime.utcnow()) -> int:
+    return _insert_task(taskid, db=db, dtobj=dtobj)
+
+
+def update_task(taskid: int, *, db: str = DATABASE, dtobj: datetime = datetime.utcnow()) -> int:
     """
 
-    :param table:
-    :param uid:
-    :param db:
-    :return:
-    """
-    records = []
-
-    # Log arguments.
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.selectfrom")
-    in_logger.info("Database: %s", db)
-    in_logger.info("Table   : %s", table)
-
-    # Configure sqlite statement.
-    statement, placeholder, args = "SELECT * FROM {0} ORDER BY rowid".format(table), ["?"], ()
-    if uid:
-        statement = "SELECT * FROM {1} WHERE rowid IN ({0}) ORDER BY rowid".format(", ".join(placeholder * len(uid)), table)
-        args = list(args)
-        args.extend(uid)
-    in_logger.debug(statement)
-    in_logger.debug(args)
-
-    # Grab records.
-    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
-    for row in conn.execute(statement, args):
-        in_logger.info("Record  :")
-        in_logger.info("\t%s".expandtabs(3), row[0])
-        in_logger.info("\t%s".expandtabs(3), dateformat(UTC.localize(row[1]).astimezone(LOCAL), TEMPLATE4))
-        records.append(row)
-    conn.close()
-    for row in records:
-        yield row
-
-
-def selectfromuid(uid, table, *, db=DATABASE):
-    """
-
-    :param uid:
-    :param table:
-    :param db:
-    :return:
-    """
-
-    # Log arguments.
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.selectfromuid")
-    in_logger.debug("Database: %s", db)
-    in_logger.debug("Table   : %s", table)
-    in_logger.debug("ROWID   : %s", uid)
-
-    # Grab record.
-    record = ()
-    with suppress(IndexError):
-        record = list(selectfrom(table, uid, db=db))[0]
-    return record
-
-
-def insert(table, *uid, db=DATABASE, dtobj=None):
-    """
-
-    :param table:
-    :param uid:
+    :param taskid:
     :param db:
     :param dtobj:
     :return:
     """
-
-    # Log arguments.
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.insert")
-    in_logger.debug("Database: %s", db)
-    in_logger.debug("Table   : %s", table)
-
-    # Insert record.
-    if table not in MAPPING:
-        return 0
-    if dtobj is None:
-        dtobj = datetime.utcnow()
-    conn = sqlite3.connect(db)
-    try:
-        with conn:
-            conn.executemany("INSERT INTO {0} ({1}, {2}) VALUES(?, ?)".format(table, MAPPING[table][0], MAPPING[table][1]), zip(uid, repeat(dtobj)))
-    except sqlite3.IntegrityError as err:
-        in_logger.exception(err)
-    finally:
-        status = conn.total_changes
-        conn.close()
-    in_logger.debug("%s records inserted.", status)
-    return status
-
-
-def update(uid, table, *, db=DATABASE, dtobj=None):
-    """
-
-    :param uid:
-    :param table:
-    :param db:
-    :param dtobj:
-    :return:
-    """
-
-    # Log arguments.
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.update")
-    in_logger.debug("Database: %s", db)
-    in_logger.debug("Table   : %s", table)
-    in_logger.debug("ROWID   : %s", uid)
-
-    # Update record.
-    if table not in MAPPING:
-        return 0
-    if dtobj is None:
-        dtobj = datetime.utcnow()
-    record = ()
-    try:
-        record = list(selectfrom(table, uid, db=db))[0]
-    except IndexError:
-        pass
+    changes: int = 0
 
     # Record exists: it is updated.
-    if record:
-        conn = sqlite3.connect(db)
-        try:
-            with conn:
-                conn.execute("UPDATE {0} SET {1}=? WHERE rowid=?".format(table, MAPPING[table][1]), (dtobj, uid))
-        except sqlite3.OperationalError:
-            pass
-        finally:
-            status = conn.total_changes
-            conn.close()
-        in_logger.debug("%s records updated.", status)
-        return status
+    if exist_task(taskid, db=db):
+        return _update_task(taskid, db=db, dtobj=dtobj)
 
     # Record doesn't exist: it is inserted.
-    return insert(table, uid, db=db, dtobj=dtobj)
+    return _insert_task(taskid, db=db, dtobj=dtobj)
 
 
-def deletefrom(table, db=DATABASE):
+def delete_task(taskid: int, *, db: str = DATABASE) -> int:
     """
 
-    :param table:
+    :param taskid:
     :param db:
     :return:
     """
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.delete")
-    in_logger.debug("Database: %s", db)
-    in_logger.debug("Table   : %s", table)
-    if table not in MAPPING:
-        return 0
-    conn = sqlite3.connect(db)
-    try:
-        with conn:
-            conn.execute("DELETE FROM {0}".format(table))
-    except sqlite3.OperationalError:
-        pass
-    finally:
-        status = conn.total_changes
-        conn.close()
-    in_logger.debug("%s records removed.", status)
-    return status
+    return _delete_task(taskid, db=db)
 
 
-def deletefromuid(*uid, table, db=DATABASE):
+def run_task(taskid: int, *, db: str = DATABASE, days: int = 10) -> bool:
     """
 
-    :param uid:
-    :param table:
-    :param db:
-    :return:
-    """
-    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.deletefromuid")
-    in_logger.debug("Database: %s", db)
-    in_logger.debug("Table   : %s", table)
-    if table not in MAPPING:
-        return 0
-    conn = sqlite3.connect(db)
-    try:
-        with conn:
-            conn.executemany("DELETE FROM {0} WHERE id=?".format(table), [(rowid,) for rowid in uid])
-    except sqlite3.OperationalError:
-        pass
-    finally:
-        status = conn.total_changes
-        conn.close()
-    in_logger.debug("%s records removed.", status)
-    return status
-
-
-def isdeltareached(uid, table, *, db=DATABASE, days=10, create=True):
-    """
-
-    :param uid:
-    :param table:
+    :param taskid:
     :param db:
     :param days:
-    :param create:
     :return:
     """
-    record = selectfromuid(uid, table, db=db)
-    if record:
-        return not UTC.localize(datetime.utcnow()) - UTC.localize(record[1]) < timedelta(days=days)
-    if create:
-        return bool(insert(table, uid, db=db))
-    return False
+    in_logger = logging.getLogger("Applications.Tables.Tasks.shared.run_task")
+    in_logger.debug("Database: %s", db)
+    if exist_task(taskid, db=db):
+        _, utc_run = _get_task(taskid, db=db)
+        return not UTC.localize(datetime.utcnow()) - UTC.localize(utc_run) < timedelta(days=days)
+    in_logger.debug("%s task(s) inserted.", _insert_task(taskid, db=db))
+    return True
+
+
+# =======================================================
+# These interfaces mustn't be used from external scripts.
+# =======================================================
+def _get_tasks(db: str = DATABASE) -> Iterable[Tuple[int, datetime]]:
+    with DatabaseConnection(db) as conn:
+        for taskid, utc_run in ((row["taskid"], row["utc_run"]) for row in conn.execute("SELECT taskid, utc_run FROM tasks")):
+            yield taskid, utc_run
+
+
+def _get_task(taskid: int, *, db: str = DATABASE) -> Tuple[int, Optional[datetime]]:
+    uid, utc_run = 0, None  # type: int, Optional[datetime]
+    it = iter(filter(lambda i: i[0] == taskid, _get_tasks(db)))
+    with suppress(StopIteration):
+        uid, utc_run = next(it)
+    return uid, utc_run
+
+
+def _insert_task(taskid: int, *, db: str = DATABASE, dtobj: datetime = datetime.utcnow()) -> int:
+    """
+
+    :param taskid:
+    :param db:
+    :param dtobj:
+    :return:
+    """
+    changes: int = 0
+
+    # Log arguments.
+    in_logger = logging.getLogger("Applications.Tables.Tasks.shared._insert_task")
+    in_logger.debug("Database: %s", db)
+
+    # Insert record.
+    with ExitStack() as stack:
+        conn = stack.enter_context(DatabaseConnection(db))
+        stack.enter_context(conn)
+        try:
+            conn.execute("INSERT INTO tasks (taskid, utc_run) VALUES(?, ?)", (taskid, dtobj))
+        except sqlite3.IntegrityError as err:
+            in_logger.exception(err)
+            stack.pop_all()
+            stack.callback(close_database, conn)
+        finally:
+            changes = conn.total_changes
+    in_logger.debug("%s records inserted.", changes)
+    return changes
+
+
+def _update_task(taskid: int, *, db: str = DATABASE, dtobj: datetime = datetime.utcnow()) -> int:
+    """
+
+    :param taskid:
+    :param db:
+    :param dtobj:
+    :return:
+    """
+
+    # Log arguments.
+    in_logger = logging.getLogger("Applications.Tables.Tasks.shared._update_task")
+    in_logger.debug("Database: %s", db)
+    in_logger.debug("Row ID  : %s", taskid)
+
+    # Update record.
+    changes: int = 0
+    with ExitStack() as stack:
+        conn = stack.enter_context(DatabaseConnection(db))
+        stack.enter_context(conn)
+        try:
+            conn.execute("UPDATE tasks SET utc_run=? WHERE rowid=?", (dtobj, taskid))
+        except sqlite3.OperationalError as err:
+            in_logger.exception(err)
+            stack.pop_all()
+            stack.callback(close_database, conn)
+        finally:
+            changes = conn.total_changes
+    in_logger.debug("%s record(s) updated.", changes)
+    return changes
+
+
+def _delete_task(taskid: int, *, db: str = DATABASE) -> int:
+    """
+
+    :param taskid:
+    :param db:
+    :return:
+    """
+    in_logger = logging.getLogger("Applications.Tables.Tasks.shared._delete_task")
+    in_logger.debug("Database: %s", db)
+    in_logger.debug("Row ID  : %s", taskid)
+    changes: int = 0
+    with ExitStack() as stack:
+        conn = stack.enter_context(DatabaseConnection(db))
+        stack.enter_context(conn)
+        try:
+            conn.execute("DELETE FROM tasks WHERE rowid=?", (taskid,))
+        except sqlite3.OperationalError:
+            stack.pop_all()
+            stack.callback(close_database, conn)
+        finally:
+            changes = conn.total_changes
+    in_logger.debug("%s record(s) deleted.", changes)
+    return changes
 
 
 # ===============================================
@@ -238,30 +196,27 @@ def isdeltareached(uid, table, *, db=DATABASE, days=10, create=True):
 if __name__ == "__main__":
 
     # Local constants.
-    LEVELS = {False: "info", True: "debug"}
+    LOG_LEVELS = {False: "info", True: "debug"}
     EXIT = {False: 1, True: 0}
 
     # Get arguments.
     arguments = vars(tasks_parser.parse_args())
 
     # Configure logging.
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp)
     for logger in ["Applications.Tables.Tasks"]:
         with suppress(KeyError):
-            config["loggers"][logger]["level"] = LEVELS[arguments.get("debug", False)].upper()
+            config["loggers"][logger]["level"] = LOG_LEVELS[arguments.get("debug", False)].upper()
     logging.config.dictConfig(config)
 
     # Select task: can it be run?
     if arguments.get("action") == "select":
-        sys.exit(EXIT[isdeltareached(arguments.get("taskid", 0),
-                                     arguments.get("table", "tasks"),
-                                     db=arguments.get("db", DATABASE),
-                                     days=arguments.get("days", 10),
-                                     create=not arguments.get("dontcreate", False))])
+        sys.exit(EXIT[run_task(arguments.get("taskid", 0),
+                               db=arguments.get("db", DATABASE),
+                               days=arguments.get("days", 10))])
 
     # Update last run datetime task.
     elif arguments.get("action") == "update":
-        sys.exit(update(arguments.get("taskid", 0),
-                        arguments.get("table", "tasks"),
-                        db=arguments.get("db", DATABASE)))
+        sys.exit(update_task(arguments.get("taskid", 0),
+                             db=arguments.get("db", DATABASE)))

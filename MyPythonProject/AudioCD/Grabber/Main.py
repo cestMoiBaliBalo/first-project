@@ -6,6 +6,7 @@ import os
 import sys
 from contextlib import ExitStack, suppress
 from string import Template
+from typing import Any, Dict, IO, List, Mapping, Optional, Tuple
 
 import yaml
 
@@ -22,7 +23,8 @@ __status__ = "Production"
 # =================
 # Global functions.
 # =================
-def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs=False, store_tags=False, test=False, dbjsonfile=None):
+def get_tags(profile: str, source: IO, *decorators: str, db: Optional[str] = None, db_albums: bool = False, db_bootlegs: bool = False, store_tags: bool = False, test: bool = False,
+             dbjsonfile: Optional[str] = None) -> int:
     """
 
     :param profile:
@@ -38,7 +40,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
     """
     in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.tags_grabber".format(os.path.splitext(os.path.basename(__file__))[0]))
     stack = ExitStack()
-    value = 0
+    value = 0  # type: int
     in_logger.debug(profile)
     in_logger.debug(source.name)
     try:
@@ -71,7 +73,7 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
                 collection = os.path.join(get_tagsfile(track.audiotrack), "input_tags.json")
                 in_logger.debug(collection)
                 if collection:
-                    tags = []
+                    tags = []  # type: List[Mapping[str, Any]]
                     with suppress(FileNotFoundError):
                         with open(collection, encoding=UTF8) as fr:
                             tags = json.load(fr)
@@ -98,8 +100,8 @@ def get_tags(profile, source, *decorators, db=None, db_albums=False, db_bootlegs
 
             # 4. Store input tags into JSON test configuration.
             if test:
-                mapping = {}
-                collection = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "tags.json")
+                mapping = {}  # type: Dict[str, Mapping[str, str]]
+                collection = os.path.abspath(os.path.join("MyPythonProject", "Applications", "Tests", "AudioTags.json"))
                 with suppress(FileNotFoundError):
                     with open(collection, encoding=UTF8) as fr:
                         mapping = json.load(fr)
@@ -176,31 +178,36 @@ if __name__ == "__main__":
     # Get arguments.
 
     # ----- Debug mode.
-    l_debug = arguments.get("debug", False)
+    arg_debug = arguments.get("debug", False)  # type: bool
 
     # ----- Output database.
-    l_database = arguments.get("db")
+    arg_database = arguments.get("db")  # type: Optional[str]
 
     # ----- Decorators.
-    l_decorators = arguments.get("decorators", ())
+    arg_decorators = arguments.get("decorators", ())  # type: Tuple[str, ...]
 
     # ----- Store both input and output tags?
-    l_store_tags = arguments.get("store_tags", False)
+    arg_store_tags = arguments.get("store_tags", False)  # type: bool
 
     # ----- Store tags sample?
-    l_test = arguments.get("test", False)
+    arg_test = arguments.get("test", False)  # type: bool
 
     # Configure logging.
     with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         config = yaml.load(fp)
-    for logger in LOGGERS:
+    for item in LOGGERS:
         with suppress(KeyError):
-            config["loggers"][logger]["level"] = MAPPING[l_debug].upper()
+            config["loggers"][item]["level"] = MAPPING[arg_debug].upper()
     logging.config.dictConfig(config)
     logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext(basename(__file__))[0]))
 
     # Grab tags from input file.
     logger.debug(mainscript(__file__))
-    sys.exit(
-            get_tags(arguments.get("profile"), arguments.get("source"), *l_decorators, db=l_database, db_albums=arguments.get("albums"), db_bootlegs=arguments.get("bootlegs"), store_tags=l_store_tags,
-                     test=l_test))
+    sys.exit(get_tags(arguments["profile"],
+                      arguments["source"],
+                      *arg_decorators,
+                      db=arg_database,
+                      db_albums=arguments.get("albums", False),
+                      db_bootlegs=arguments.get("bootlegs", False),
+                      store_tags=arg_store_tags,
+                      test=arg_test))

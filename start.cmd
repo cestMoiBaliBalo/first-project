@@ -44,12 +44,13 @@ REM  2. Tasks.
 REM     ------
 :MAIN
 IF "%~1" EQU "" (
-    PAUSE
+    REM PAUSE
     EXIT /B %ERRORLEVEL%
 )
 IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
+IF "%~1" EQU "5" GOTO STEP5
 IF "%~1" EQU "6" GOTO STEP6
 IF "%~1" EQU "7" GOTO STEP7
 IF "%~1" EQU "9" GOTO STEP9
@@ -187,10 +188,10 @@ REM 12. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
 SET _taskid=123456798
-python -m Applications.Tables.Tasks.shared select %_taskid%
+python -m Applications.Tables.Tasks.shared select %_taskid% --days 8 --debug
 IF %ERRORLEVEL% EQU 0 (
     "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent
-    python -m Applications.Tables.Tasks.shared update %_taskid%
+    python -m Applications.Tables.Tasks.shared update %_taskid% --debug
 )
 SHIFT
 GOTO MAIN
@@ -199,21 +200,19 @@ GOTO MAIN
 REM     ------------------------------------------------
 REM 15. Clone "\\Diskstation\Images\Collection" to "H:".
 REM     ------------------------------------------------
-::STEP14
+REM STEP14
+REM  -->  1. Clone "\\Diskstation\Images\Collection" to "H:". Don't delete extra files and directories!
+REM XXCOPY "\\Diskstation\backup\Images\Collection\" "H:\" /CLONE /Z0 /oA:%_XXCOPYLOG%
 
-:: -->  1. Clone "\\Diskstation\Images\Collection" to "H:". Don't delete extra files and directories!
-::XXCOPY "\\Diskstation\backup\Images\Collection\" "H:\" /CLONE /Z0 /oA:%_XXCOPYLOG%
-
-:: -->  2. Reverse both source and destination. Then remove brand new files but preserve:
-::         - "RECYCLER".
-::         - "$RECYCLE.BIN".
-::         - "SYSTEM VOLUME INFORMATION".
-::         - "IPHONE".
-::         - "RECOVER".
-::XXCOPY "H:\" "\\Diskstation\backup\Images\Collection\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
-
-::SHIFT
-::GOTO MAIN
+REM  -->  2. Reverse both source and destination. Then remove brand new files but preserve:
+REM          - "RECYCLER".
+REM          - "$RECYCLE.BIN".
+REM          - "SYSTEM VOLUME INFORMATION".
+REM          - "IPHONE".
+REM          - "RECOVER".
+REM XXCOPY "H:\" "\\Diskstation\backup\Images\Collection\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+REM SHIFT
+REM GOTO MAIN
 
 
 REM     -----------------------------------------------
@@ -231,17 +230,17 @@ GOTO MAIN
 REM     -----------------
 REM 14. Backup documents.
 REM     -----------------
-REM Incremental backup.
-REM Target Group : "workspace.documents".
-REM Target : "Documents (USB Drive)".
+REM     Incremental backup.
+REM     Target Group : "workspace.documents".
+REM     Target : "Documents (USB Drive)".
 :STEP18
 IF EXIST "y:" (
     SET _taskid=123456802
     "%_areca%" backup -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
-    python -m Applications.Tables.Tasks.shared select !_taskid! --days 20
+    python -m Applications.Tables.Tasks.shared select !_taskid! --days 20 --debug
     IF !ERRORLEVEL! EQU 0 (
        "%_areca%" merge -c -k -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg" -from 0 -to 0
-        python -m Applications.Tables.Tasks.shared update !_taskid!
+        python -m Applications.Tables.Tasks.shared update !_taskid! --debug
     )
 )
 IF [%2] EQU [] (
@@ -258,11 +257,11 @@ REM 15. Move videos to local CloudStation.
 REM     ----------------------------------
 :STEP19
 SET _taskid=123456801
-python -m Applications.Tables.Tasks.shared select %_taskid% --days 5
+python -m Applications.Tables.Tasks.shared select %_taskid% --days 5 --debug
 IF %ERRORLEVEL% EQU 0 (
     PUSHD "%_PYTHONPROJECT%\Tasks\04"
     python main.py
-    IF !ERRORLEVEL! EQU 0 python -m Applications.Tables.Tasks.shared update %_taskid%
+    IF !ERRORLEVEL! EQU 0 python -m Applications.Tables.Tasks.shared update %_taskid% --debug
     POPD
 )
 SHIFT
@@ -276,5 +275,16 @@ REM     ----------------------------
 SHIFT
 GOTO MAIN
 XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+SHIFT
+GOTO MAIN
+
+
+REM     --------------------------
+REM 17. Sync xreferences database.
+REM     --------------------------
+:STEP5
+PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
+python main.py
+POPD
 SHIFT
 GOTO MAIN

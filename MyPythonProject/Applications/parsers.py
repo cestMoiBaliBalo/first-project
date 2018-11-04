@@ -9,12 +9,12 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-#  ========
-#  Classes.
-#  ========
+# ===============
+# Global Classes.
+# ===============
 class SetDatabase(argparse.Action):
     def __init__(self, option_strings, dest, **kwargs):
-        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -22,25 +22,23 @@ class SetDatabase(argparse.Action):
             setattr(namespace, "db", getattr(namespace, "db", shared.DATABASE))
 
 
-# ==========
-#  Functions.
-#  ==========
-def unixepochtime(time):
+# =================
+# Global Functions.
+# =================
+def unixtime(timestamp) -> int:
     """
 
-    :param time:
+    :param timestamp:
     :return:
     """
     try:
-        _unixepochtime = shared.valid_datetime(time)
+        _unixtime = shared.valid_datetime(timestamp)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
-    else:
-        _unixepochtime = _unixepochtime[0]
-    return _unixepochtime
+    return _unixtime[0]
 
 
-def database(db):
+def database(db: str) -> str:
     """
 
     :param db:
@@ -77,8 +75,8 @@ parser1_g.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.
 #  2. PARSER 2.
 #     =========
 epochconverter = argparse.ArgumentParser()
-epochconverter.add_argument("beg", help="Beginning epoch", type=unixepochtime)
-epochconverter.add_argument("end", help="End epoch", type=unixepochtime, nargs="?", action=shared.SetEndSeconds)
+epochconverter.add_argument("beg", help="Beginning epoch", type=unixtime)
+epochconverter.add_argument("end", help="End epoch", type=unixtime, nargs="?", action=shared.SetEndSeconds)
 epochconverter.add_argument("-z", "--zone", help="Time zone", default=shared.DFTTIMEZONE)
 
 #     =========

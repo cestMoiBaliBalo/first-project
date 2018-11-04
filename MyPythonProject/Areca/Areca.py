@@ -7,6 +7,7 @@ import operator
 import subprocess
 import sys
 from os.path import basename, exists, expandvars, join, normpath, splitext
+from typing import List
 from xml.etree.ElementTree import parse
 
 import yaml
@@ -66,11 +67,12 @@ TABS = 4
 # ================
 # Initializations.
 # ================
-status, returncode, arguments = 100, [], parser.parse_args()
+status, codes,  = 100, []  # type: int, List[int]
 
 # ===============
 # Main algorithm.
 # ===============
+arguments = parser.parse_args()
 
 #    --------------------
 # 1. Log input arguments.
@@ -116,31 +118,32 @@ for target in arguments.targets:
         continue
 
     # 2.c. Build backup command.
-    command = ['"{0}"'.format(ARECA), "backup"]
+    command: List[str] = [f'"{ARECA}"', "backup"]
     if arguments.full:
         command.append("-f")
     if arguments.check:
         command.append("-c")
-    command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", '"{0}"'.format(cfgfile)])
+    command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", f'"{cfgfile}"'])
     logger.debug("Backup command.")
     logger.debug('\t%s.'.expandtabs(TABS), " ".join(command))
 
     #  2.d. Run backup command.
-    code = 0
+    code: int = 0
     if not arguments.test:
         process = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
         code = process.returncode
-        if process.returncode:
-            logger.debug('"%s" was returned by "areca_cl.exe". Backup failed.', process.returncode)
+        if code:
+            logger.debug('"%s" was returned by "areca_cl.exe". Backup failed.', code)
+            codes.append(code)
             continue
         logger.info("Backup log.")
         for line in process.stdout.splitlines():
             logger.info("\t%s".expandtabs(TABS), line)
-    returncode.append(code)
+    codes.append(code)
 
 # ===============
 # Exit algorithm.
 # ===============
-if all(operator.eq(i, 0) for i in returncode):
+if all(operator.eq(code, 0) for code in codes):
     status = 0
 sys.exit(status)

@@ -7,7 +7,7 @@ from datetime import datetime
 from pprint import PrettyPrinter
 
 from Applications.parsers import database_parser
-from Applications.shared import LOCAL, TEMPLATE2, UTC, WRITE, dateformat
+from Applications.shared import LOCAL, TEMPLATE2, UTC, WRITE, format_date
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -39,7 +39,7 @@ pp, arguments = PrettyPrinter(indent=4, width=160), parser.parse_args()
 conn = sqlite3.connect(arguments.db)
 
 # 2. Restitution des tables.
-r = [dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), TEMPLATE2), list(conn.execute("SELECT * FROM {table} ORDER BY rowid".format(table=arguments.table)))]
+r = [format_date(UTC.localize(datetime.utcnow()).astimezone(LOCAL), template=TEMPLATE2), list(conn.execute("SELECT * FROM {table} ORDER BY rowid".format(table=arguments.table)))]
 if arguments.print:
     pp.pprint(r)
 with open(OUTFILE, mode=WRITE) as fp:

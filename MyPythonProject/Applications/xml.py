@@ -6,7 +6,7 @@ from collections import namedtuple
 from datetime import date, datetime
 from operator import itemgetter
 
-from Applications.shared import LOCAL, TEMPLATE4, dateformat, now
+from Applications.shared import LOCAL, format_date, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -31,13 +31,13 @@ def audiofileslist(obj):
     #  2. "FilesList" element.
     se = ET.SubElement(root, "FilesList")
     for file, ctime in sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)):
-        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": dateformat(LOCAL.localize(datetime.fromtimestamp(ctime)), TEMPLATE4)})
+        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
         sse.text = file
 
     # 3. "RecentFiles" element.
     se = ET.SubElement(root, "RecentFilesList")
     for file, ctime in sorted(sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)), key=itemgetter(1), reverse=True)[:50]:
-        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": dateformat(LOCAL.localize(datetime.fromtimestamp(ctime)), TEMPLATE4)})
+        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
         sse.text = file
 
     # 4. "FilesByArtist" element.
@@ -46,7 +46,7 @@ def audiofileslist(obj):
         groups = list(groups)
         sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
         for group in groups:
-            ssse = ET.SubElement(sse, "File", attrib={"seconds": str(int(group[3])), "converted": dateformat(LOCAL.localize(datetime.fromtimestamp(group[3])), TEMPLATE4)})
+            ssse = ET.SubElement(sse, "File", attrib={"seconds": str(int(group[3])), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(group[3])))})
             ssse.text = group[0]
 
     # 5. "ExtensionsList" element.
@@ -81,7 +81,7 @@ def rippeddiscs_view1(reflist):
 
     for key, group in itertools.groupby(reflist, key=itemgetter(2)):
         group = list(group)
-        se = ET.SubElement(root, "month", attrib={"label": dateformat(date(int(key[:4]), int(key[-2:]), 1), "$month $Y"), "count": str(len(group))})
+        se = ET.SubElement(root, "month", attrib={"label": format_date(date(int(key[:4]), int(key[-2:]), 1), template="$month $Y"), "count": str(len(group))})
         for row in map(RippedDisc._make, group):
             sse = ET.SubElement(se, "rippeddiscs", attrib={"uid": str(row.rowid)})
 

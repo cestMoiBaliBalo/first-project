@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import re
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from contextlib import suppress
 from datetime import datetime
 
@@ -9,7 +9,7 @@ from pytz import timezone
 from sortedcontainers import SortedDict
 
 from Applications.AudioCD.shared import DFTPATTERN, filcontents
-from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, dateformat, valid_albumsort
+from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, format_date, valid_albumsort
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -102,7 +102,7 @@ class DefaultTags(TagsDecorator):
         super(DefaultTags, self).__init__(obj)
         self._tags["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
         self._tags["encodingyear"] = datetime.now(tz=timezone(DFTTIMEZONE)).strftime("%Y")
-        self._tags["taggingtime"] = dateformat(datetime.now(tz=timezone(DFTTIMEZONE)), TEMPLATE3)
+        self._tags["taggingtime"] = format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3)
         for tag in ["copyright", "description", "mediaprovider", "purchasedate"]:
             with suppress(KeyError):
                 del self._tags[tag]
@@ -111,13 +111,13 @@ class DefaultTags(TagsDecorator):
 class EncodedFromLegalFLACFile(TagsDecorator):
     def __init__(self, obj):
         super(EncodedFromLegalFLACFile, self).__init__(obj)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(dateformat(datetime.now(tz=timezone(DFTTIMEZONE)), TEMPLATE3))
+        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class EncodedFromLegalDSDFile(TagsDecorator):
     def __init__(self, obj):
         super(EncodedFromLegalDSDFile, self).__init__(obj)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(dateformat(datetime.now(tz=timezone(DFTTIMEZONE)), TEMPLATE3))
+        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class AlbumSort(TagsDecorator):

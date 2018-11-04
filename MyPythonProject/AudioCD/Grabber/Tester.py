@@ -6,10 +6,11 @@ import logging.config
 import os
 from contextlib import ExitStack, suppress
 from subprocess import run
+from typing import List
 
 import yaml
 
-from Applications.Tables.Albums.shared import insertfromfile
+from Applications.Tables.Albums.shared import insert_albums_fromjson
 from Applications.parsers import SetDatabase
 from Applications.shared import DATABASE, UTF16, UTF8
 from Main import get_tags
@@ -55,17 +56,17 @@ with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging
 
 # -----
 if arguments.get("debug", False):
-    for logger in LOGGERS:
+    for item in LOGGERS:
         with suppress(KeyError):
-            config["loggers"][logger]["level"] = "DEBUG"
+            config["loggers"][item]["level"] = "DEBUG"
 
 # -----
 if arguments.get("console", False):
 
     # Set up a specific stream handler.
-    for logger in LOGGERS:
+    for item in LOGGERS:
         with suppress(KeyError):
-            config["loggers"][logger]["handlers"] = ["file", "console"]
+            config["loggers"][item]["handlers"] = ["file", "console"]
     with suppress(KeyError):
         config["handlers"]["console"]["level"] = "DEBUG"
 
@@ -85,30 +86,29 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(os.path.
 # ================
 # Initializations.
 # ================
-returns = []
+returns = []  # type: List[int]
 
 # ============
 # Main script.
 # ============
 run("CLS", shell=True)
-tags = json.load(arguments.get("source"))
-for item in tags:
+for tags in json.load(arguments["source"]):
 
     # ----- Create an UTF-16-LE encoded plain text file displaying tags as key/value pairs.
     with open(TXTTAGS, mode="w", encoding=UTF16) as fw:
-        for k, v in item.items():
+        for k, v in tags.items():
             fw.write("{0}={1}\n".format(k.lower(), v))
 
     # ----- Create an "AudioCDTags object" gathering together audio tags.
     #       Create an UTF-8 encoded JSON file for database insertions if required.
     with open(TXTTAGS, mode="r+", encoding=UTF16) as fr:
-        returned = get_tags(arguments.get("profile"),
+        returned = get_tags(arguments["profile"],
                             fr,
                             *arguments.get("decorators", ()),
                             db=arguments.get("db", DATABASE),
                             db_albums=arguments.get("albums", False),
                             db_bootlegs=arguments.get("bootlegs", False),
-                            store_tags=arguments.get("store_tags", False))
+                            store_tags=arguments.get("store_tags", False))  # type: int
         logger.debug(returned)
         returns.append(returned)
 
@@ -122,4 +122,4 @@ if arguments.get("insert", False):
             logger.exception(exception)
         else:
             with stack:
-                logger.debug(insertfromfile(fr))
+                logger.debug(insert_albums_fromjson(fr))
