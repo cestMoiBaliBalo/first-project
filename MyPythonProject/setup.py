@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 setup(name='MyPythonProject',
       version='0.0.1',
@@ -13,4 +13,6 @@ setup(name='MyPythonProject',
       author="",
       author_email="",
       url="",
-      packages=find_packages())
+      packages=find_packages(),
+      package_data={"Applications.Unittests": ["Resources/*.yml", "Resources/*.json"]},
+      )

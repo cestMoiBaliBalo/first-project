@@ -1,27 +1,21 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import json
-import logging.config
 import os
 import unittest
 from collections.abc import MutableSequence
+from datetime import datetime
 from functools import partial
 from operator import eq, gt, lt
 
-import yaml
+from pytz import timezone
 
-from Applications.shared import TitleCaseConverter, UTF8
+from Applications.shared import TitleCaseConverter, UTF8, get_readabledate
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-# ========
-# Logging.
-# ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
 
 
 # ========
@@ -153,7 +147,7 @@ class Test03(unittest.TestCase):
 
 class TestTitleCaseConverter(unittest.TestCase):
     def setUp(self):
-        with open(os.path.normpath(os.path.join(os.path.dirname(__file__), "TitleCaseConverter.json")), encoding=UTF8) as stream:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource2.json"), encoding=UTF8) as stream:
             self.titles = json.load(stream)
 
     def test_t01(self):
@@ -161,3 +155,15 @@ class TestTitleCaseConverter(unittest.TestCase):
             title_in, title_out = title
             with self.subTest(title=title_in):
                 self.assertEqual(title_out, TitleCaseConverter().convert(title_in))
+
+
+class TestGetReadableDate(unittest.TestCase):
+
+    def setUp(self):
+        self.readable_date = "Jeudi 08 Novembre 2018 13:48:51 CET (UTC+0100)"
+
+    def test_t01(self):
+        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 13, 48, 51), tz=timezone("Europe/Paris")), self.readable_date)
+
+    def test_t02(self):
+        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)

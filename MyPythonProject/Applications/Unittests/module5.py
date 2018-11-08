@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-import logging.config
-import os
+import sys
 import unittest
 from itertools import chain, compress
-
-import yaml
 
 from Applications.shared import get_albums
 
@@ -14,12 +11,12 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
 
-
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestGetAlbums(unittest.TestCase):
-    albums = list(get_albums(r"F:\A\Adams, Bryan"))
+
+    def setUp(self):
+        self.albums = list(get_albums(r"F:\A\Adams, Bryan"))
 
     def test_t01(self):
         albums = sorted(chain.from_iterable(compress(album, [1, 0, 0, 0]) for album in self.albums))

@@ -1,58 +1,44 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
-import logging.config
 import os
+import sys
 import unittest
 
-import yaml
-
 from ..parsers import database_parser, epochconverter, loglevel_parser, tasks_parser, zipfile
-from ..shared import GetPath
+from ..shared import GetPath, get_dirname, valid_path
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
+
+def local_validpath(path):
+    """
+    :param path:
+    :return:
+    """
+    try:
+        path = valid_path(path)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(error)
+    return path
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test01(unittest.TestCase):
     """
 
     """
 
     def setUp(self):
-
-        # # --> Constants.
         destinations = {"documents": os.path.expandvars("%_MYDOCUMENTS%"),
                         "onedrive": os.path.join(os.path.expandvars("%USERPROFILE%"), "OneDrive"),
                         "temp": os.path.expandvars("%TEMP%"),
                         "backup": os.path.expandvars("%_BACKUP%")}
-
-        #
-        # # --> Classes.
-        # class GetPath(argparse.Action):
-        #
-        #     def __init__(self, option_strings, dest, **kwargs):
-        #         super(GetPath, self).__init__(option_strings, dest, **kwargs)
-        #
-        #     def __call__(self, parsobj, namespace, values, option_string=None):
-        #         setattr(namespace, self.dest, destinations[values])
-
-        # --> Functions.
-        def validdirectory(d):
-            if not os.path.isdir(d):
-                raise argparse.ArgumentTypeError('"{0}" is not a valid directory'.format(d))
-            if not os.access(d, os.R_OK):
-                raise argparse.ArgumentTypeError('"{0}" is not a readable directory'.format(d))
-            return d
-
-        # --> Arguments parser.
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("directory", help="browsed directory", type=validdirectory)
+        self.parser.add_argument("directory", help="browsed directory", type=local_validpath)
         self.parser.add_argument("archive", help="archive name")
         self.parser.add_argument("destination", help="archive destination", action=GetPath, choices=list(destinations))
         self.parser.add_argument("-e", "--ext", dest="extensions", help="archived extension(s)", nargs="*")
@@ -72,6 +58,7 @@ class Test01(unittest.TestCase):
         self.assertIsNone(arguments.extensions)
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test02(unittest.TestCase):
     """
 
@@ -125,6 +112,7 @@ class Test02(unittest.TestCase):
         self.assertListEqual(arguments.extensions, ["doc", "pdf", "txt", "css", "abc"])
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test03(unittest.TestCase):
     """
 
@@ -155,32 +143,34 @@ class Test03(unittest.TestCase):
         self.assertEqual(arguments.zone, "US/Eastern")
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test04(unittest.TestCase):
     """
 
     """
 
     def test_t01(self):
-        arguments = database_parser.parse_args(["--database", r"g:\computing\resources\database.db"])
-        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_RESOURCES%"), "database.db").lower())
+        arguments = database_parser.parse_args(["--database", os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db")])
+        self.assertEqual(arguments.db.lower(), os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db").lower())
         self.assertFalse(arguments.test)
 
     def test_t02(self):
         arguments = database_parser.parse_args(["--test"])
-        self.assertEqual(arguments.db.lower(), os.path.normpath(os.path.join(os.path.dirname(__file__), "database.db")).lower())
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db").lower())
         self.assertTrue(arguments.test)
 
     def test_t03(self):
         arguments = database_parser.parse_args([])
-        self.assertEqual(arguments.db.lower(), os.path.join(os.path.expandvars("%_RESOURCES%"), "database.db").lower())
+        self.assertEqual(arguments.db.lower(), os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db").lower())
         self.assertFalse(arguments.test)
 
     def test_t04(self):
-        arguments = database_parser.parse_args(["--database", os.path.normpath(os.path.join(os.path.dirname(__file__), "database.db")).lower()])
-        self.assertEqual(arguments.db.lower(), os.path.normpath(os.path.join(os.path.dirname(__file__), "database.db")).lower())
+        arguments = database_parser.parse_args(["--database", os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db")])
+        self.assertEqual(arguments.db.lower(), os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db").lower())
         self.assertFalse(arguments.test)
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test05(unittest.TestCase):
     """
 
@@ -195,6 +185,7 @@ class Test05(unittest.TestCase):
         self.assertEqual(arguments.loglevel, "DEBUG")
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test06(unittest.TestCase):
     """
 

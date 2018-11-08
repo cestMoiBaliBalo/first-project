@@ -12,7 +12,7 @@ from jinja2 import FileSystemLoader
 
 import patterns
 from Applications.AudioCD.shared import DFTPATTERN
-from Applications.shared import TemplatingEnvironment, UTF16, WRITE, left_justify, mainscript
+from Applications.shared import TemplatingEnvironment, UTF16, WRITE, left_justify, mainscript, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -48,7 +48,7 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(os.pat
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Grabber"))).environment.get_template("Tags")
+_template = TemplatingEnvironment(loader=FileSystemLoader(os.path.join(get_dirname(os.path.abspath(__file__), level=2), "Grabber"))).environment.get_template("Tags")
 
 # ============
 # Main script.

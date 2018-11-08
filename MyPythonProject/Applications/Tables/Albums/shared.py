@@ -18,7 +18,7 @@ import yaml
 from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, ToBoolean, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, get_readabledate
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, get_dirname, get_readabledate
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -782,7 +782,7 @@ def _insert_albums(*iterables) -> int:
     logger = logging.getLogger("{0}.insert_album".format(__name__))
 
     # -----
-    with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Applications", "Tables", "configuration.yml"), encoding="UTF_8") as stream:
+    with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
         config = yaml.load(stream)
     _statements = config["statements"]
     _selectors = config["selectors"]

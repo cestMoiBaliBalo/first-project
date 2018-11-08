@@ -12,7 +12,7 @@ import yaml
 
 from Applications.Tables.Albums.shared import insert_albums_fromjson
 from Applications.parsers import SetDatabase
-from Applications.shared import DATABASE, UTF16, UTF8
+from Applications.shared import DATABASE, UTF16, UTF8, get_dirname
 from Main import get_tags
 
 __author__ = 'Xavier ROSSET'
@@ -51,7 +51,7 @@ arguments = vars(parser.parse_args())
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding=UTF8) as fp:
     config = yaml.load(fp)
 
 # -----

@@ -575,7 +575,7 @@ class ChangeEncodedBy(TagsModifier):
 
 
 class RippedDisc(ContextDecorator):
-    _environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
+    _environment = Environment(loader=FileSystemLoader(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
     logger = logging.getLogger("{0}.RippedDisc".format(__name__))
@@ -1171,9 +1171,9 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 # ==========
 TABSIZE = 3
 DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(.+)$"
-GENRES = os.path.normpath(os.path.join(os.path.dirname(__file__), "Genres.json"))
-LANGUAGES = os.path.normpath(os.path.join(os.path.dirname(__file__), "Languages.json"))
-ENCODERS = os.path.normpath(os.path.join(os.path.dirname(__file__), "Encoders.json"))
+GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
+LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
+ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.json")
 ENC_KEYS = ["name",
             "code",
             "folder",
@@ -1204,5 +1204,5 @@ PROFILES = {"default": Profile(["albumsortcount",
                                 "provider",
                                 "tracklanguage"], BootlegAudioCDTags.fromfile)
             }
-with open(os.path.normpath(os.path.join(os.path.dirname(__file__), "Mapping.json")), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

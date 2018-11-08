@@ -16,8 +16,8 @@ import jinja2
 import wx  # type: ignore
 import yaml
 
-from Applications.shared import TemplatingEnvironment, find_files
 from Applications.Tables.XReferences.shared import get_albums, get_artists
+from Applications.shared import TemplatingEnvironment, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -47,7 +47,7 @@ def exclude_allbut_checked_extensions(curdir: str, *files: str, extensions: Opti
 class MainFrame(wx.Frame):
 
     def __init__(self, parent, config) -> None:
-        super(MainFrame, self).__init__(self, parent, id=wx.ID_ANY, title="Sync Audio Repository", pos=wx.DefaultPosition, size=wx.Size(-1, -1), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Sync Audio Repository", pos=wx.DefaultPosition, size=wx.Size(-1, -1), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
 
         # -----
         with open(config) as stream:
@@ -375,15 +375,15 @@ class MainFrame(wx.Frame):
 # Main script.
 # ============
 if __name__ == '__main__':
+
+    that_script = os.path.abspath(__file__)
+
     # Define variables.
     collection, level = [], 100  # type: List[Tuple[str, str]], int
 
     # Define template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "GUI", "Sources", "01")))
-    # template.set_environment(globalvars={},
-    #                          filters={})
+    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(get_dirname(that_script)))
     template.set_template(T1="T01")
-    # T1 = template.environment.get_template("T01")
 
     # Parse input arguments.
     parser = argparse.ArgumentParser()
@@ -396,7 +396,7 @@ if __name__ == '__main__':
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.yml"))
+    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml"))
     interface.Show()
     app.MainLoop()
     if interface.sync_audiofiles:

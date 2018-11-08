@@ -26,7 +26,7 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "")
+locale.setlocale(locale.LC_ALL, "french")
 
 # ========
 # Logging.

@@ -32,12 +32,12 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "")
+locale.setlocale(locale.LC_ALL, "french")
 
 # ==================
 # Functions aliases.
 # ==================
-basename, dirname, exists, expandvars, isdir, join, normpath = os.path.basename, os.path.dirname, os.path.exists, os.path.expandvars, os.path.isdir, os.path.join, os.path.normpath
+abspath, basename, dirname, exists, expandvars, isdir, join, normpath = os.path.abspath, os.path.basename, os.path.dirname, os.path.exists, os.path.expandvars, os.path.isdir, os.path.join, os.path.normpath
 
 # ==========
 # Constants.
@@ -56,8 +56,8 @@ WRITE = "w"
 
 # Resources.
 ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
-DATABASE = join(expandvars("%_COMPUTING%"), "Resources", "database.db")
-TESTDATABASE = join(expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
+DATABASE = join(dirname(dirname(abspath(__file__))), "Resources", "database.db")
+TESTDATABASE = join(dirname(abspath(__file__)), "Unittests", "Resources", "database.db")
 XREFERENCES = join(expandvars("%_COMPUTING%"), "Resources", "xreferences.db")
 
 # Regular expressions.
@@ -220,7 +220,7 @@ class TitleCaseBaseConverter(ABC):
     """
 
     # Define class-level configuration.
-    with open(normpath(join(dirname(__file__), "TitleCaseConverter.yml")), encoding=UTF8) as fp:
+    with open(join(dirname(abspath(__file__)), "Resources", "resource1.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp)
 
     # Define class-level regular expressions.
@@ -504,9 +504,11 @@ class TemplatingEnvironment(object):
         self._environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=kwargs.get("loader"))
 
     def set_environment(self, **kwargs):
-        for k, v in kwargs["globalvars"].items():
+        globalvars = kwargs.get("globalvars", {})
+        filters = kwargs.get("filters", {})
+        for k, v in globalvars.items():
             self._environment.globals[k] = v
-        for k, v in kwargs["filters"].items():
+        for k, v in filters.items():
             self._environment.filters[k] = v
 
     def set_template(self, **templates):
@@ -528,11 +530,11 @@ def valid_path(path: str) -> str:
     :return:
     """
     if not exists(path):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(path))
+        raise ValueError(f'"{path}" doesn\'t exist.')
     if not isdir(path):
-        raise argparse.ArgumentTypeError('"{0}" is not a directory.'.format(path))
+        raise ValueError(f'"{path}" is not a directory.')
     if not os.access(path, os.R_OK):
-        raise argparse.ArgumentTypeError('"{0}" is not a readable directory.'.format(path))
+        raise ValueError(f'"{path}" is not a readable directory.')
     return path
 
 
@@ -712,7 +714,7 @@ def customformatterfactory(pattern=LOGPATTERN):
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(join(expandvars("%_COMPUTING%"), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return RotatingFileHandler(join(dirname(dirname(dirname(abspath(__file__)))), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
 def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
@@ -752,6 +754,20 @@ def partitioner(iterable, *, predicate=None):
         predicate = bool
     it1, it2 = tee(iterable)
     return filter(predicate, it1), filterfalse(predicate, it2)
+
+
+def get_dirname(path: str, *, level: int = 1) -> str:
+    """
+
+    :param path:
+    :param level:
+    :return:
+    """
+    _dirname, _level = path, 1  # type: str, int
+    while _level <= level:
+        _dirname = dirname(_dirname)
+        _level += 1
+    return _dirname
 
 
 def get_readabledate(dt: datetime, *, template: str = TEMPLATE4, tz=None) -> str:

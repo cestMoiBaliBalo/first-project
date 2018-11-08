@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import re
+import sys
 import unittest
 
 from .. import shared
@@ -12,7 +13,8 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-class TestRegex_T01(unittest.TestCase):
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+class TestRegexT01(unittest.TestCase):
 
     def test_t01(self):
         found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(r"F:\K\Kiss\1\1975.2 - Alive_\CD2\1.Monkey's Audio\1.19750000.2.12.D2.T01.ape")
@@ -53,7 +55,7 @@ class TestRegex_T01(unittest.TestCase):
         self.assertIsNone(extension)
 
 
-class TestRegex_T02(unittest.TestCase):
+class TestRegexT02(unittest.TestCase):
 
     def setUp(self):
         lookextensions = shared.CustomTemplate(shared.LOOKEXTENSIONS).substitute(extensions="|".join(shared.EXTENSIONS["music"]))
@@ -150,7 +152,7 @@ class TestRegex_T02(unittest.TestCase):
         self.assertNotRegex(r"F:\J\Judas Priest\1977 - Sin After Sin\0.MPEG 1 Layer III\[Judas Priest] - 1977 - Sin After Sin - D1 T09.mp3", self.regex)
 
 
-class TestRegex_T03(unittest.TestCase):
+class TestRegexT03(unittest.TestCase):
 
     def test_t01(self):
         self.assertEqual(shared.valid_albumsort("1.19840000.1"), "1.19840000.1")
@@ -222,7 +224,7 @@ class TestRegex_T03(unittest.TestCase):
         self.assertRaises(ValueError, shared.valid_albumsort, "S.Springsteen, Bruce.2.20120704.1")
 
 
-class TestValid_year(unittest.TestCase):
+class TestValidYear(unittest.TestCase):
     """
     Test `valid_year` function.
     """
@@ -266,7 +268,7 @@ class TestValid_albumsort(unittest.TestCase):
         self.assertEqual(exception, '"1.20180000.1.13" is not a valid albumsort.')
 
 
-class TestValid_genre(unittest.TestCase):
+class TestValidGenre(unittest.TestCase):
     """
     Test `valid_genre` function.
     """

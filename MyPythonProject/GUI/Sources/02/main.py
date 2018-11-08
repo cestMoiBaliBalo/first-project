@@ -11,7 +11,7 @@ import jinja2
 import wx  # type: ignore
 import yaml
 
-from Applications.shared import TemplatingEnvironment, get_drives
+from Applications.shared import TemplatingEnvironment, get_dirname, get_drives
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -274,15 +274,14 @@ class MainFrame(wx.Frame):
 # ============
 if __name__ == '__main__':
 
+    that_script = os.path.abspath(__file__)
+
     # Define variables.
     level = 100  # type: int
 
     # Define template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "GUI", "Sources", "02")))
-    # template.set_environment(globalvars={},
-    #                          filters={})
+    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(get_dirname(that_script)))
     template.set_template(T1="T01")
-    # T1 = template.environment.get_template("T01")
 
     # Parse input arguments.
     parser = argparse.ArgumentParser()
@@ -295,7 +294,7 @@ if __name__ == '__main__':
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Configuration.yml"))
+    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml"))
     interface.Show()
     app.MainLoop()
     if interface.copy_audiofiles:

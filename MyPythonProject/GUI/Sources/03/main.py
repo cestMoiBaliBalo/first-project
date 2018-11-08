@@ -9,6 +9,7 @@ from typing import Any, Mapping
 import wx  # type: ignore
 import yaml
 
+from Applications.shared import get_dirname
 from shared import ParentFrame
 
 __author__ = 'Xavier ROSSET'
@@ -19,13 +20,14 @@ __status__ = "Development"
 # ============
 # Main script.
 # ============
+that_file = os.path.abspath(__file__)
 
 # Logging.
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(that_file, level=4), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 
 # Interface global configuration.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "GUI", "Sources", "03", "configuration.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(that_file, level=2), "Resources", "resource2.yml"), encoding="UTF_8") as fp:
     global_config = yaml.load(fp)  # type: Mapping[str, Any]
 
 app = wx.App()

@@ -12,7 +12,7 @@ import yaml
 
 from Applications.AudioCD.shared import RippedDisc, albums, bootlegs
 from Applications.parsers import tags_grabber
-from Applications.shared import MUSIC, UTF8, mainscript
+from Applications.shared import MUSIC, UTF8, get_dirname, mainscript
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -38,7 +38,7 @@ def get_tags(profile: str, source: IO, *decorators: str, db: Optional[str] = Non
     :param dbjsonfile:
     :return:
     """
-    in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.tags_grabber".format(os.path.splitext(os.path.basename(__file__))[0]))
+    in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.get_tags".format(os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]))
     stack = ExitStack()
     value = 0  # type: int
     in_logger.debug(profile)
@@ -101,7 +101,7 @@ def get_tags(profile: str, source: IO, *decorators: str, db: Optional[str] = Non
             # 4. Store input tags into JSON test configuration.
             if test:
                 mapping = {}  # type: Dict[str, Mapping[str, str]]
-                collection = os.path.abspath(os.path.join("MyPythonProject", "Applications", "Tests", "AudioTags.json"))
+                collection = os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Applications", "Tests", "Resources", "resource1.json")
                 with suppress(FileNotFoundError):
                     with open(collection, encoding=UTF8) as fr:
                         mapping = json.load(fr)
@@ -119,7 +119,7 @@ def get_tagsfile(obj):
     :param obj:
     :return:
     """
-    in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.get_tagsfile".format(os.path.splitext(os.path.basename(__file__))[0]))
+    in_logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}.get_tagsfile".format(os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]))
     tags = {}
 
     # -----
@@ -140,7 +140,7 @@ def get_tagsfile(obj):
     in_logger.debug(tags)
 
     # -----
-    with open(os.path.join(os.path.expandvars("%_RESOURCES%"), "tags.yml"), encoding=UTF8) as stream:
+    with open(os.path.join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "resource1.yml"), encoding=UTF8) as stream:
         templates = yaml.load(stream)
     in_logger.debug(templates)
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     MAPPING = {True: "debug", False: "info"}
 
     # Functions aliases.
-    basename, join, expandvars, splitext = os.path.basename, os.path.join, os.path.expandvars, os.path.splitext
+    abspath, basename, join, expandvars, splitext = os.path.abspath, os.path.basename, os.path.join, os.path.expandvars, os.path.splitext
 
     # Parse arguments.
     arguments = vars(tags_grabber.parse_args())
@@ -193,13 +193,13 @@ if __name__ == "__main__":
     arg_test = arguments.get("test", False)  # type: bool
 
     # Configure logging.
-    with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         config = yaml.load(fp)
     for item in LOGGERS:
         with suppress(KeyError):
             config["loggers"][item]["level"] = MAPPING[arg_debug].upper()
     logging.config.dictConfig(config)
-    logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext(basename(__file__))[0]))
+    logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext(basename(abspath(__file__)))[0]))
 
     # Grab tags from input file.
     logger.debug(mainscript(__file__))

@@ -15,6 +15,7 @@ from typing import Any, Mapping, NamedTuple
 import yaml
 
 from Applications.AudioCD.shared import getmetadata
+from Applications.shared import get_dirname
 from patterns import REGEX, RenameWithTitle, RightTrim
 
 __author__ = 'Xavier ROSSET'
@@ -39,7 +40,7 @@ MAPPING = {True: "debug", False: "info"}
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
 for item in ["Applications.AudioCD", "MyPythonProject.AudioCD"]:
     with suppress(KeyError):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-import logging.config
 import os
+import sys
 import unittest
 from contextlib import ExitStack
 from tempfile import TemporaryDirectory
@@ -19,17 +19,15 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
-
 basename, join = os.path.basename, os.path.join
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class RippedDiscTest(unittest.TestCase):
 
     def setUp(self):
         self.totallogs = get_total_rippeddiscs(DATABASE)
-        with open(os.path.normpath(os.path.join(os.path.dirname(__file__), "RippedDisc.yml")), encoding=UTF8) as stream:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource3.yml"), encoding=UTF8) as stream:
             self.config = yaml.load(stream)
 
     def test_t01(self):

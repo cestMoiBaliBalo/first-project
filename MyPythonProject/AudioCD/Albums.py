@@ -8,6 +8,7 @@ from contextlib import suppress
 import yaml
 
 from Applications.Tables.Albums.shared import insert_albums_fromjson
+from Applications.shared import get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -35,7 +36,7 @@ arguments = parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
 for logger in LOGGERS:
     with suppress(KeyError):
