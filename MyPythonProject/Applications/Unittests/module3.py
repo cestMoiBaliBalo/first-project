@@ -246,7 +246,7 @@ class TestValidYear(unittest.TestCase):
         self.assertEqual(exception, '"20171" is not a valid year.')
 
 
-class TestValid_albumsort(unittest.TestCase):
+class TestValidAlbumsort(unittest.TestCase):
     """
     Test `valid_albumsort` function.
     """

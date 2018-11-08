@@ -32,7 +32,7 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "french")
+# locale.setlocale(locale.LC_ALL, "french")
 
 # ==================
 # Functions aliases.
@@ -678,7 +678,7 @@ def valid_productcode(productcode: str) -> str:
     :param productcode: string.
     :return: input string.
     """
-    regex, msg = re.compile(r"^{0}$".format(UPCREGEX)), r"is not a valid product code."
+    regex, msg = re.compile(f"^{UPCREGEX}$"), r"is not a valid product code."
 
     try:
         productcode = str(productcode)
@@ -857,7 +857,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
     :param timestamp: facultative input local timestamp.
     :return: ripping application.
     """
-    application = {"1512082800": "dBpoweramp 16.1", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    application = {"1546340400": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
     ts: Optional[int] = timestamp
     if timestamp is None:
         ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
@@ -900,20 +900,20 @@ def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) 
 #     return process.returncode
 
 
-def get_input(prompt, *, cls=True, template=None, **kwargs):
-    """
-
-    :param prompt:
-    :param cls:
-    :param template:
-    :param kwargs:
-    :return:
-    """
-    if cls:
-        run("CLS", shell=True)
-    if template:
-        print(template.render(**kwargs))
-    return input(prompt)
+# def get_input(prompt, *, cls=True, template=None, **kwargs):
+#     """
+#
+#     :param prompt:
+#     :param cls:
+#     :param template:
+#     :param kwargs:
+#     :return:
+#     """
+#     if cls:
+#         run("CLS", shell=True)
+#     if template:
+#         print(template.render(**kwargs))
+#     return input(prompt)
 
 
 def get_drives() -> Iterable[str]:

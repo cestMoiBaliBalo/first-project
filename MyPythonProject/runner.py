@@ -14,7 +14,10 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "french")
+if sys.platform.startswith("win"):
+    locale.setlocale(locale.LC_ALL, "french")
+if sys.platform.startswith("lin"):
+    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 # ============
 # Main script.
@@ -24,7 +27,9 @@ suite, loader, result = TestSuite(), TestLoader(), TestResult()
 suite.addTests(loader.loadTestsFromModule(module1))
 suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
-# suite.addTests(loader.loadTestsFromModule(module4))
+if sys.platform.startswith("win"):
+    from Applications.Unittests import module4
+    suite.addTests(loader.loadTestsFromModule(module4))
 suite.addTests(loader.loadTestsFromModule(module5))
 suite.run(result)
 sys.exit(exit_code[result.wasSuccessful()])

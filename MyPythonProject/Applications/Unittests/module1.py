@@ -10,7 +10,7 @@ from operator import eq, gt, lt
 
 from pytz import timezone
 
-from Applications.shared import TitleCaseConverter, UTF8, get_readabledate
+from Applications.shared import TitleCaseConverter, UTF8, get_readabledate, get_rippingapplication
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -167,3 +167,21 @@ class TestGetReadableDate(unittest.TestCase):
 
     def test_t02(self):
         self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)
+
+
+class TestGetRippingApplication(unittest.TestCase):
+    """
+
+    """
+
+    def test_t01(self):
+        self.assertEqual(get_rippingapplication(), "dBpoweramp 15.1")
+
+    def test_t02(self):
+        self.assertEqual(get_rippingapplication(timestamp=1541702820), "dBpoweramp 15.1")
+
+    def test_t03(self):
+        self.assertEqual(get_rippingapplication(timestamp=1547146020), "dBpoweramp 16.5")
+
+    def test_t04(self):
+        self.assertEqual(get_rippingapplication(timestamp=1357843620), "dBpoweramp 14.1")

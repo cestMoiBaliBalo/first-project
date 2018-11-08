@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import os
-import sys
 import unittest
 from contextlib import ExitStack
 from tempfile import TemporaryDirectory
@@ -22,7 +21,6 @@ __status__ = "Production"
 basename, join = os.path.basename, os.path.join
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class RippedDiscTest(unittest.TestCase):
 
     def setUp(self):
