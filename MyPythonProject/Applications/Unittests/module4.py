@@ -2,15 +2,17 @@
 # pylint: disable=invalid-name
 import os
 import unittest
+from collections import defaultdict
 from contextlib import ExitStack
 from tempfile import TemporaryDirectory
+import sys
 
 import yaml
 
-from Main import get_tags
-from ..AudioCD.shared import RippedDisc
+from ..AudioCD.shared import RippedDisc, set_audiotags
 from ..Tables.Albums.shared import insert_albums_fromjson
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
+from ..Tables.tables import create_tables, drop_tables
 from ..shared import DATABASE, UTF16, UTF8, copy
 
 __author__ = 'Xavier ROSSET'
@@ -49,6 +51,7 @@ class RippedDiscTest(unittest.TestCase):
                     with self.subTest(key=k):
                         self.assertEqual(v, getattr(track.audiotrack, k, None))
 
+    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t02(self):
         with TemporaryDirectory() as tempdir:
             inserted, items = 0, 0
@@ -66,7 +69,7 @@ class RippedDiscTest(unittest.TestCase):
 
                 # -----
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    get_tags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
+                    set_audiotags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
 
             stack = ExitStack()
             try:
@@ -78,6 +81,7 @@ class RippedDiscTest(unittest.TestCase):
                     insert_albums_fromjson(stream)
             self.assertEqual(self.totallogs + items, get_total_rippeddiscs(database))
 
+    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t03(self):
         with TemporaryDirectory() as tempdir:
             inserted, items = 0, 0
@@ -95,7 +99,7 @@ class RippedDiscTest(unittest.TestCase):
 
                 # -----
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    get_tags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
+                    set_audiotags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
 
             stack = ExitStack()
             try:
@@ -106,3 +110,54 @@ class RippedDiscTest(unittest.TestCase):
                 with stack:
                     inserted = insert_albums_fromjson(stream)
             self.assertEqual(inserted, items)
+
+    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+    def test_t04(self):
+        with TemporaryDirectory() as tempdir:
+            inserted, items = 0, 0
+            database = join(tempdir, "database.db")
+            txttags = join(tempdir, "tags.txt")
+            jsontags = join(tempdir, "tags.json")
+            drop_tables(database)
+            create_tables(database)
+            _artists = defaultdict(int)
+            _albums = defaultdict(int)
+            _defaultalbums = 0
+            _bootlegalbums = 0
+            _discs = 0
+            _rippeddiscs = 0
+            _tracks = 0
+            for key, value in self.config.items():
+                items += 1
+                tags, profile, decorators, albums, bootlegs, _ = value
+
+                # -----
+                _artists[tags["AlbumArtistSort"]] += 1
+                if albums:
+                    _albums[tags["Album"]] += 1
+                    _defaultalbums += 1
+                if bootlegs:
+                    _albums[tags["BootlegAlbumYear"]] += 1
+                    _bootlegalbums += 1
+                _discs += 1
+                _rippeddiscs += 1
+                _tracks += 1
+
+                # -----
+                with open(txttags, mode="w", encoding=UTF16) as stream:
+                    for k, v in tags.items():
+                        stream.write("{0}={1}\n".format(k.lower(), v))
+
+                # -----
+                with open(txttags, mode="r+", encoding=UTF16) as stream:
+                    set_audiotags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
+
+            stack = ExitStack()
+            try:
+                stream = stack.enter_context(open(jsontags, encoding=UTF8))
+            except FileNotFoundError:
+                pass
+            else:
+                with stack:
+                    inserted = insert_albums_fromjson(stream)
+            self.assertEqual(inserted, len(_artists.keys()) + len(_albums.keys()) + _defaultalbums + _bootlegalbums + _discs + _rippeddiscs + _tracks)

@@ -10,10 +10,10 @@ from typing import List
 
 import yaml
 
+from Applications.AudioCD.shared import set_audiotags
 from Applications.Tables.Albums.shared import insert_albums_fromjson
 from Applications.parsers import SetDatabase
 from Applications.shared import DATABASE, UTF16, UTF8, get_dirname
-from Main import get_tags
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -102,13 +102,13 @@ for tags in json.load(arguments["source"]):
     # ----- Create an "AudioCDTags object" gathering together audio tags.
     #       Create an UTF-8 encoded JSON file for database insertions if required.
     with open(TXTTAGS, mode="r+", encoding=UTF16) as fr:
-        returned = get_tags(arguments["profile"],
-                            fr,
-                            *arguments.get("decorators", ()),
-                            db=arguments.get("db", DATABASE),
-                            db_albums=arguments.get("albums", False),
-                            db_bootlegs=arguments.get("bootlegs", False),
-                            store_tags=arguments.get("store_tags", False))  # type: int
+        returned = set_audiotags(arguments["profile"],
+                                 fr,
+                                 *arguments.get("decorators", ()),
+                                 db=arguments.get("db", DATABASE),
+                                 db_albums=arguments.get("albums", False),
+                                 db_bootlegs=arguments.get("bootlegs", False),
+                                 store_tags=arguments.get("store_tags", False))  # type: int
         logger.debug(returned)
         returns.append(returned)
 
