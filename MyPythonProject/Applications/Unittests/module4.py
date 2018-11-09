@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import os
+import sys
 import unittest
 from collections import defaultdict
 from contextlib import ExitStack
 from tempfile import TemporaryDirectory
-import sys
 
 import yaml
 
@@ -23,10 +23,10 @@ __status__ = "Production"
 basename, join = os.path.basename, os.path.join
 
 
-class RippedDiscTest(unittest.TestCase):
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+class TestRippedDisc(unittest.TestCase):
 
     def setUp(self):
-        self.totallogs = get_total_rippeddiscs(DATABASE)
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource3.yml"), encoding=UTF8) as stream:
             self.config = yaml.load(stream)
 
@@ -51,8 +51,8 @@ class RippedDiscTest(unittest.TestCase):
                     with self.subTest(key=k):
                         self.assertEqual(v, getattr(track.audiotrack, k, None))
 
-    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t02(self):
+        total_discs = get_total_rippeddiscs(DATABASE)
         with TemporaryDirectory() as tempdir:
             inserted, items = 0, 0
             database = copy(DATABASE, tempdir)
@@ -79,9 +79,8 @@ class RippedDiscTest(unittest.TestCase):
             else:
                 with stack:
                     insert_albums_fromjson(stream)
-            self.assertEqual(self.totallogs + items, get_total_rippeddiscs(database))
+            self.assertEqual(total_discs + items, get_total_rippeddiscs(database))
 
-    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t03(self):
         with TemporaryDirectory() as tempdir:
             inserted, items = 0, 0
@@ -111,24 +110,22 @@ class RippedDiscTest(unittest.TestCase):
                     inserted = insert_albums_fromjson(stream)
             self.assertEqual(inserted, items)
 
-    # @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t04(self):
         with TemporaryDirectory() as tempdir:
-            inserted, items = 0, 0
-            database = join(tempdir, "database.db")
-            txttags = join(tempdir, "tags.txt")
-            jsontags = join(tempdir, "tags.json")
-            drop_tables(database)
-            create_tables(database)
-            _artists = defaultdict(int)
-            _albums = defaultdict(int)
+            _inserted = 0
             _defaultalbums = 0
             _bootlegalbums = 0
             _discs = 0
             _rippeddiscs = 0
             _tracks = 0
+            _artists = defaultdict(int)
+            _albums = defaultdict(int)
+            database = join(tempdir, "database.db")
+            txttags = join(tempdir, "tags.txt")
+            jsontags = join(tempdir, "tags.json")
+            drop_tables(database)
+            create_tables(database)
             for key, value in self.config.items():
-                items += 1
                 tags, profile, decorators, albums, bootlegs, _ = value
 
                 # -----
@@ -150,7 +147,7 @@ class RippedDiscTest(unittest.TestCase):
 
                 # -----
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    set_audiotags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags)
+                    set_audiotags(profile, stream, *decorators, db=database, db_albums=albums, db_bootlegs=bootlegs, dbjsonfile=jsontags, store_tags=True, drive_tags=tempdir)
 
             stack = ExitStack()
             try:
@@ -159,5 +156,5 @@ class RippedDiscTest(unittest.TestCase):
                 pass
             else:
                 with stack:
-                    inserted = insert_albums_fromjson(stream)
-            self.assertEqual(inserted, len(_artists.keys()) + len(_albums.keys()) + _defaultalbums + _bootlegalbums + _discs + _rippeddiscs + _tracks)
+                    _inserted = insert_albums_fromjson(stream)
+            self.assertEqual(_inserted, len(_artists.keys()) + len(_albums.keys()) + _defaultalbums + _bootlegalbums + _discs + _rippeddiscs + _tracks)

@@ -43,7 +43,7 @@ loggers:
 
 # Loggers for tables processing Applications.
   Applications.Tables.Albums:
-    level: DEBUG
+    level: INFO
     handlers: [file]
     propagate: no
   Applications.Tables.Bootlegs:
@@ -60,8 +60,14 @@ loggers:
     propagate: no
 
 # Logger for unittest modules.
-  Applications.Tests:
+  Applications.Unittests:
     level: DEBUG
+    handlers: [file]
+    propagate: no
+
+# Logger for global shared classes and functions.
+  Applications.shared:
+    level: INFO
     handlers: [file]
     propagate: no
 

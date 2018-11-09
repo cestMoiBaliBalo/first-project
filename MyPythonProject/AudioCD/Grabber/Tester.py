@@ -2,6 +2,7 @@
 # pylint: disable=invalid-name
 import argparse
 import json
+import locale
 import logging.config
 import os
 from contextlib import ExitStack, suppress
@@ -20,10 +21,15 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+# ==========================
+# Define French environment.
+# ==========================
+locale.setlocale(locale.LC_ALL, "french")
+
 # =================
 # Global constants.
 # =================
-LOGGERS = ["Applications.AudioCD", "MyPythonProject"]
+LOGGERS = ["Applications.shared", "Applications.AudioCD", "MyPythonProject"]
 TXTTAGS = os.path.join(os.path.expandvars("%TEMP%"), "tags.txt")
 JSONTAGS = os.path.join(os.path.expandvars("%TEMP%"), "tags.json")
 
@@ -42,6 +48,7 @@ group.add_argument("--bootlegs", nargs="?", const=True, default=False, action=Se
 parser.add_argument("--insert", action="store_true", help="insert data into database from an UTF-8 encoded JSON file")
 parser.add_argument("--database", dest="db")
 parser.add_argument("--store_tags", action="store_true")
+parser.add_argument("--drive_tags", nargs="?", default="F:\\")
 
 # ==============
 # Get arguments.
@@ -71,8 +78,9 @@ if arguments.get("console", False):
         config["handlers"]["console"]["level"] = "DEBUG"
 
     # Set up a specific filter for logging from "Applications.AudioCD.shared" only.
-    localfilter = {"class": "logging.Filter", "name": "Applications.AudioCD.shared"}
-    config["filters"]["localfilter"] = localfilter
+    localfilter, audiocd_filter = {}, {"class": "logging.Filter", "name": "Applications.AudioCD.shared"}
+    localfilter["localfilter"] = audiocd_filter
+    config["filters"] = localfilter
     config["handlers"]["console"]["filters"] = ["localfilter"]
 
 # Dump logging configuration.
@@ -108,7 +116,8 @@ for tags in json.load(arguments["source"]):
                                  db=arguments.get("db", DATABASE),
                                  db_albums=arguments.get("albums", False),
                                  db_bootlegs=arguments.get("bootlegs", False),
-                                 store_tags=arguments.get("store_tags", False))  # type: int
+                                 store_tags=arguments.get("store_tags", False),
+                                 drive_tags=arguments.get("drive_tags"))  # type: int
         logger.debug(returned)
         returns.append(returned)
 

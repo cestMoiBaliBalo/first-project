@@ -30,8 +30,22 @@ bootleg:
   - false
   - true
   - albumartist: Bruce Springsteen And The E Street Band
+    albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
     album: The Other Tour - 1993.06.24 - [East Rutherford, NJ]
+    bootlegalbum_city: East Rutherford, NJ
+    bootlegalbum_country: United States
+    bootlegalbum_date: !!python/str 1993-06-24
+    bootlegalbum_day: !!python/str 24
+    bootlegalbum_month: !!python/str 06
+    bootlegalbum_provider: nugs.net
+    bootlegalbum_tour: The Other Tour
+    bootlegalbum_year: !!python/str 1993
+    deluxe: N
+    foldersortcount: N
+    genre: Rock
+    tracklanguage: English
+    upc: !!python/none
 
 #
 default:
@@ -46,8 +60,8 @@ default:
     Deluxe: N
     Disc: 1/1
     Encoder: (FLAC 1.3.0)
-    FolderSortCount: Y
-    Genre: Rock
+    FolderSortCount: N
+    Genre: Hard Rock
     InCollection: Y
     Label: Polygram Records
     LiveDisc: Y
@@ -69,8 +83,22 @@ default:
   - true
   - false
   - albumartist: Kiss
+    albumsort: 1.19960000.1.13
     artist: Kiss
     album: MTV Unplugged
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    foldersortcount: N
+    genre: Hard Rock
+    tracklanguage: English
+    upc: !!python/str 731452895028
 
 default1:
   - Album: Alive!
@@ -84,7 +112,8 @@ default1:
     Deluxe: N
     Disc: 2/2
     Encoder: (FLAC 1.3.0)
-    Genre: Rock
+    FolderSortCount: Y
+    Genre: Hard Rock
     InCollection: Y
     Label: Casablanca Records
     LiveDisc: Y
@@ -105,8 +134,23 @@ default1:
   - true
   - false
   - albumartist: Kiss
+    albumsort: 1.19750000.2.13
     artist: Kiss
     album: Alive!
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    foldersortcount: Y
+    genre: Hard Rock
+    tracklanguage: English
+    upc: !!python/str 042282278029
+
 
 default4:
   - Album: Alive III
@@ -120,7 +164,8 @@ default4:
     Deluxe: N
     Disc: 1/1
     Encoder: (FLAC 1.3.0)
-    Genre: Rock
+    FolderSortCount: N
+    Genre: Hard Rock
     InCollection: Y
     Label: Polygram Records
     LiveDisc: Y
@@ -141,8 +186,22 @@ default4:
   - true
   - false
   - albumartist: Kiss
+    albumsort: 1.19930000.1.13
     artist: Kiss
     album: Alive III
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    foldersortcount: N
+    genre: Hard Rock
+    tracklanguage: English
+    upc: !!python/str 731451482724
 
 default5:
   - Album: Rock and Roll Over
@@ -157,7 +216,7 @@ default5:
     Disc: 1/1
     Encoder: (FLAC 1.3.0)
     FolderSortCount: Y
-    Genre: Rock
+    Genre: Hard Rock
     InCollection: Y
     Label: Casablanca Records
     LiveDisc: N
@@ -179,5 +238,19 @@ default5:
   - true
   - false
   - albumartist: Kiss
+    albumsort: 1.19760000.2.13
     artist: Kiss
     album: Rock and Roll Over
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    foldersortcount: Y
+    genre: Hard Rock
+    tracklanguage: English
+    upc: !!python/str 042282415028

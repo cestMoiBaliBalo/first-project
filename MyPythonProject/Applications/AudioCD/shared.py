@@ -118,15 +118,24 @@ class AudioCDTags(MutableMapping):
 
     @property
     def bootlegalbum_day(self):
-        return self._otags.get("bootlegalbumday")[-2:]
+        day = None
+        with suppress(TypeError):
+            day = self._otags.get("bootlegalbumday")[-2:]
+        return day
 
     @property
     def bootlegalbum_month(self):
-        return self._otags.get("bootlegalbumday")[5:-3]
+        month = None
+        with suppress(TypeError):
+            month = self._otags.get("bootlegalbumday")[5:-3]
+        return month
 
     @property
     def bootlegalbum_year(self):
-        return self._otags.get("bootlegalbumday")[:4]
+        year = None
+        with suppress(TypeError):
+            year = self._otags.get("bootlegalbumday")[:4]
+        return year
 
     @property
     def bootlegalbum_name(self):
@@ -182,7 +191,7 @@ class AudioCDTags(MutableMapping):
 
     @property
     def foldersortcount(self):
-        return self._otags["foldersortcount"]
+        return self._otags.get("foldersortcount", "N")
 
     @property
     def genre(self):
@@ -234,7 +243,7 @@ class AudioCDTags(MutableMapping):
 
     @property
     def upc(self):
-        return self._otags["upc"]
+        return self._otags.get("upc")
 
     @property
     def year(self):
@@ -579,7 +588,7 @@ class RippedDisc(ContextDecorator):
     _environment = Environment(loader=FileSystemLoader(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
-    logger = logging.getLogger("{0}.RippedDisc".format(__name__))
+    _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
     def __init__(self, rippingprofile, file, *decoratingprofiles):
         self._audiotracktags = None
@@ -646,15 +655,15 @@ class RippedDisc(ContextDecorator):
     @staticmethod
     def alter_tags(audiotrack, *decorators, **kwargs):
         """
-        
+
         :param audiotrack:
         :param decorators: 
         :return: 
         """
-        logger = logging.getLogger("{0}.RippedCD.alter_tags".format(__name__))
+        in_logger = logging.getLogger(f"{__name__}.RippedDisc.alter_tags")
         offset, totaltracks = kwargs.get("offset", 0), kwargs.get("totaltracks", "0")
         for decorator in decorators:
-            logger.debug('Tags altered according to decorating profile "%s".', decorator)
+            in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
 
             # Change `album`.
             if decorator.lower() == "dftupdalbum":
@@ -687,22 +696,22 @@ class RippedDisc(ContextDecorator):
     def __enter__(self):
 
         # --> 1. Start logging.
-        self.logger.debug('START "%s".', os.path.basename(__file__))
-        self.logger.debug('"%s" used as ripping profile.', self._profile)
+        self._in_logger.debug('START "%s".', os.path.basename(__file__))
+        self._in_logger.debug('"%s" used as ripping profile.', self._profile)
         for decorator in self._decorators:
-            self.logger.debug('"%s" used as decorating profile.', decorator)
+            self._in_logger.debug('"%s" used as decorating profile.', decorator)
 
         # --> 2. Log input file.
-        self.logger.debug("Input file.")
-        self.logger.debug('\t"%s"'.expandtabs(self._tabs), self._tags.name)
+        self._in_logger.debug("Input file.")
+        self._in_logger.debug('\t"%s"'.expandtabs(self._tabs), self._tags.name)
 
         # --> 3. Log input tags.
         self._tags.seek(0)
         self._intags, offset, totaltracks = self.get_tags(self._tags)
-        self.logger.debug("Input tags.")
+        self._in_logger.debug("Input tags.")
         keys, values = list(zip(*self._intags))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
-            self.logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
         offset = int(offset)
 
         # --> 4. Create AudioCDTags instance.
@@ -710,11 +719,11 @@ class RippedDisc(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        self.logger.debug("Here are the key/value pairs stored into the AudioCDTags object.")
+        self._in_logger.debug("Here are the key/value pairs stored into the AudioCDTags object.")
         keys = shared.left_justify(sorted(self._audiotracktags))
         values = [self._audiotracktags[key] for key in sorted(self._audiotracktags)]
         for key, value in zip(keys, values):
-            self.logger.debug("\t%s: %s".expandtabs(5), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
 
         # --> 6. Change instance attributes.
         self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators, offset=offset, totaltracks=totaltracks)
@@ -727,28 +736,36 @@ class RippedDisc(ContextDecorator):
         outtags = {key: value for key, value in self._audiotracktags.items() if key not in PROFILES[self._profile].exclusions}
 
         # --> 1. Log output tags.
-        self.logger.debug("Output tags.")
+        self._in_logger.debug("Output tags.")
         keys, values = list(zip(*list(outtags.items())))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
-            self.logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
 
         # --> 2. Log output file.
-        self.logger.debug("Output file.")
-        self.logger.debug("\t%s".expandtabs(self._tabs), self._tags.name)
+        self._in_logger.debug("Output file.")
+        self._in_logger.debug("\t%s".expandtabs(self._tabs), self._tags.name)
 
         # --> 3. Store tags.
-        self.logger.debug("Write output tags to output file.")
+        self._in_logger.debug("Write output tags to output file.")
         self._tags.seek(0)
         self._tags.write(self._outputtags.render(tags=outtags))
 
         # --> 4. Stop logging.
-        self.logger.debug('END "%s".', os.path.basename(__file__))
+        self._in_logger.debug('END "%s".', os.path.basename(__file__))
 
 
 # ==========
 # Functions.
 # ==========
-def set_audiotags(profile: str, source: IO, *decorators: str, db: Optional[str] = None, db_albums: bool = False, db_bootlegs: bool = False, store_tags: bool = False, test: bool = False,
+def set_audiotags(profile: str,
+                  source: IO,
+                  *decorators: str,
+                  db: Optional[str] = None,
+                  db_albums: bool = False,
+                  db_bootlegs: bool = False,
+                  store_tags: bool = False,
+                  drive_tags: Optional[str] = None,
+                  test: bool = False,
                   dbjsonfile: Optional[str] = None) -> int:
     """
 
@@ -759,6 +776,7 @@ def set_audiotags(profile: str, source: IO, *decorators: str, db: Optional[str] 
     :param db_albums:
     :param db_bootlegs:
     :param store_tags:
+    :param drive_tags:
     :param test:
     :param dbjsonfile:
     :return:
@@ -795,7 +813,9 @@ def set_audiotags(profile: str, source: IO, *decorators: str, db: Optional[str] 
             # 3. Store both input and output tags into permanent files.
             if store_tags:
 
-                collection = os.path.join(get_tagsfile(track.audiotrack), "input_tags.json")
+                path = os.path.join(drive_tags, get_tagsfile(track.audiotrack))
+                os.makedirs(path, exist_ok=True)
+                collection = os.path.join(path, "input_tags.json")
                 in_logger.debug(collection)
                 if collection:
                     tags = []  # type: List[Mapping[str, Any]]
@@ -809,7 +829,7 @@ def set_audiotags(profile: str, source: IO, *decorators: str, db: Optional[str] 
                         json.dump(tags, json_stream, indent=4, ensure_ascii=False, sort_keys=True)
                         yaml.dump(tags, yaml_stream, default_flow_style=False, indent=2)
 
-                collection = os.path.join(get_tagsfile(track.audiotrack), "output_tags.json")
+                collection = os.path.join(path, "output_tags.json")
                 in_logger.debug(collection)
                 if collection:
                     tags = []
@@ -855,17 +875,17 @@ def get_tagsfile(obj):
                 "origyear",
                 "album",
                 "discnumber",
-                "bootlegalbumyear",
-                "bootlegalbummonth",
-                "bootlegalbumday",
-                "bootlegalbumcity",
-                "bootlegalbumcountry"]:
+                "bootlegalbum_year",
+                "bootlegalbum_month",
+                "bootlegalbum_day",
+                "bootlegalbum_city",
+                "bootlegalbum_country"]:
         with suppress(AttributeError):
             tags[key] = getattr(obj, key)
     in_logger.debug(tags)
 
     # -----
-    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=2), "Resources", "resource1.yml"), encoding=shared.UTF8) as stream:
+    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "resource1.yml"), encoding=shared.UTF8) as stream:
         templates = yaml.load(stream)
     in_logger.debug(templates)
 
@@ -876,13 +896,13 @@ def get_tagsfile(obj):
     template = template.get(obj.artistsort, template["default"])
 
     # Load templates respective to "foldersortcount" value.
-    template = template.get(obj.foldersortcount, template["N"])
+    template = template.get(obj.foldersortcount, templates["N"])
 
     # Load template respective to "totaldiscs" value.
     template = template.get(str(obj.totaldiscs), template["9"])
 
     # Return tags file dirname.
-    return Template(os.path.join(shared.MUSIC, template)).substitute(tags)
+    return Template(template).substitute(tags)
 
 
 def changealbum(obj, template):

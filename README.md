@@ -1,0 +1,1 @@
+[![Build Status](https://travis-ci.org/cestMoiBaliBalo/first-project.svg?branch=B026)](https://travis-ci.org/cestMoiBaliBalo/first-project)

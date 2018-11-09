@@ -4,7 +4,6 @@ import logging.config
 import os
 import sys
 from contextlib import suppress
-from typing import Optional, Tuple
 
 import yaml
 
@@ -27,29 +26,12 @@ abspath, basename, join, expandvars, splitext = os.path.abspath, os.path.basenam
 # Parse arguments.
 arguments = vars(tags_grabber.parse_args())
 
-# Get arguments.
-
-# ----- Debug mode.
-arg_debug = arguments.get("debug", False)  # type: bool
-
-# ----- Output database.
-arg_database = arguments.get("db")  # type: Optional[str]
-
-# ----- Decorators.
-arg_decorators = arguments.get("decorators", ())  # type: Tuple[str, ...]
-
-# ----- Store both input and output tags?
-arg_store_tags = arguments.get("store_tags", False)  # type: bool
-
-# ----- Store tags sample?
-arg_test = arguments.get("test", False)  # type: bool
-
 # Configure logging.
 with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
 for item in LOGGERS:
     with suppress(KeyError):
-        config["loggers"][item]["level"] = MAPPING[arg_debug].upper()
+        config["loggers"][item]["level"] = MAPPING[arguments.get("debug", False)].upper()
 logging.config.dictConfig(config)
 logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext(basename(abspath(__file__)))[0]))
 
@@ -57,9 +39,10 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext
 logger.debug(mainscript(__file__))
 sys.exit(set_audiotags(arguments["profile"],
                        arguments["source"],
-                       *arg_decorators,
-                       db=arg_database,
+                       *arguments.get("decorators", ()),
+                       db=arguments.get("db"),
                        db_albums=arguments.get("albums", False),
                        db_bootlegs=arguments.get("bootlegs", False),
-                       store_tags=arg_store_tags,
-                       test=arg_test))
+                       store_tags=arguments.get("store_tags", False),
+                       drive_tags=arguments.get("drive_tags"),
+                       test=arguments.get("test", False)))
