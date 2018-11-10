@@ -1,20 +1,24 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import json
 import logging
 import os
 import re
-from collections import MutableMapping, namedtuple
+from collections import namedtuple
+from collections.abc import MutableMapping
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import compress
 from operator import itemgetter
 from string import Template
+from typing import Any, Dict, IO, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
 
 import ftputil.error
 import mutagen.flac
 import mutagen.monkeysaudio
 import mutagen.mp3
+import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
 from mutagen import File, MutagenError
@@ -114,15 +118,24 @@ class AudioCDTags(MutableMapping):
 
     @property
     def bootlegalbum_day(self):
-        return self._otags.get("bootlegalbumday")[-2:]
+        day = None
+        with suppress(TypeError):
+            day = self._otags.get("bootlegalbumday")[-2:]
+        return day
 
     @property
     def bootlegalbum_month(self):
-        return self._otags.get("bootlegalbumday")[5:-3]
+        month = None
+        with suppress(TypeError):
+            month = self._otags.get("bootlegalbumday")[5:-3]
+        return month
 
     @property
     def bootlegalbum_year(self):
-        return self._otags.get("bootlegalbumday")[:4]
+        year = None
+        with suppress(TypeError):
+            year = self._otags.get("bootlegalbumday")[:4]
+        return year
 
     @property
     def bootlegalbum_name(self):
@@ -178,7 +191,7 @@ class AudioCDTags(MutableMapping):
 
     @property
     def foldersortcount(self):
-        return self._otags["foldersortcount"]
+        return self._otags.get("foldersortcount", "N")
 
     @property
     def genre(self):
@@ -230,7 +243,7 @@ class AudioCDTags(MutableMapping):
 
     @property
     def upc(self):
-        return self._otags["upc"]
+        return self._otags.get("upc")
 
     @property
     def year(self):
@@ -302,11 +315,11 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
-        self._otags["encodedby"] = "dBpoweramp 15.1 on {0}".format(shared.dateformat(datetime.now(tz=timezone(shared.DFTTIMEZONE)), shared.TEMPLATE4))
+        self._otags["encodedby"] = "dBpoweramp 15.1 on {0}".format(shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
 
         # ----- Set taggingtime.
         self.logger.debug("Set taggingtime.")
-        self._otags["taggingtime"] = shared.dateformat(datetime.now(tz=timezone(shared.DFTTIMEZONE)), shared.TEMPLATE4)
+        self._otags["taggingtime"] = shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE)))
 
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
@@ -355,7 +368,7 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Update title.
         self.logger.debug("Update title.")
-        self._otags["title"] = shared.StringFormatter(self._otags["title"]).convert()
+        self._otags["title"] = shared.TitleCaseConverter().convert(self._otags["title"])
 
     def __validatetags(self, **kwargs):
         checktags = partial(self.checktags, container=self.__tags)
@@ -414,7 +427,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
 
         # ----- Update album.
         self.logger.debug("Update album.")
-        self._otags["album"] = shared.StringFormatter(self._otags["album"]).convert()
+        self._otags["album"] = shared.TitleCaseConverter().convert(self._otags["album"])
 
         # ----- Log new tags.
         self.logger.debug("Build tags.")
@@ -568,14 +581,14 @@ class ChangeAlbumArtist(TagsModifier):
 class ChangeEncodedBy(TagsModifier):
     def __init__(self, obj):
         super(ChangeEncodedBy, self).__init__(obj)
-        self._otags["encodedby"] = "dBpoweramp 15.1 on {0} from nugs.net bootleg Audio CD".format(shared.dateformat(datetime.now(tz=timezone(shared.DFTTIMEZONE)), shared.TEMPLATE4))
+        self._otags["encodedby"] = "dBpoweramp 15.1 on {0} from nugs.net bootleg Audio CD".format(shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
 
 
 class RippedDisc(ContextDecorator):
-    _environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Template")), trim_blocks=True, lstrip_blocks=True)
+    _environment = Environment(loader=FileSystemLoader(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
-    logger = logging.getLogger("{0}.RippedCD".format(__name__))
+    _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
     def __init__(self, rippingprofile, file, *decoratingprofiles):
         self._audiotracktags = None
@@ -642,15 +655,15 @@ class RippedDisc(ContextDecorator):
     @staticmethod
     def alter_tags(audiotrack, *decorators, **kwargs):
         """
-        
+
         :param audiotrack:
         :param decorators: 
         :return: 
         """
-        logger = logging.getLogger("{0}.RippedCD.alter_tags".format(__name__))
+        in_logger = logging.getLogger(f"{__name__}.RippedDisc.alter_tags")
         offset, totaltracks = kwargs.get("offset", 0), kwargs.get("totaltracks", "0")
         for decorator in decorators:
-            logger.debug('Tags altered according to decorating profile "%s".', decorator)
+            in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
 
             # Change `album`.
             if decorator.lower() == "dftupdalbum":
@@ -683,22 +696,22 @@ class RippedDisc(ContextDecorator):
     def __enter__(self):
 
         # --> 1. Start logging.
-        self.logger.debug('START "%s".', os.path.basename(__file__))
-        self.logger.debug('"%s" used as ripping profile.', self._profile)
+        self._in_logger.debug('START "%s".', os.path.basename(__file__))
+        self._in_logger.debug('"%s" used as ripping profile.', self._profile)
         for decorator in self._decorators:
-            self.logger.debug('"%s" used as decorating profile.', decorator)
+            self._in_logger.debug('"%s" used as decorating profile.', decorator)
 
         # --> 2. Log input file.
-        self.logger.debug("Input file.")
-        self.logger.debug('\t"%s"'.expandtabs(self._tabs), self._tags.name)
+        self._in_logger.debug("Input file.")
+        self._in_logger.debug('\t"%s"'.expandtabs(self._tabs), self._tags.name)
 
         # --> 3. Log input tags.
         self._tags.seek(0)
         self._intags, offset, totaltracks = self.get_tags(self._tags)
-        self.logger.debug("Input tags.")
+        self._in_logger.debug("Input tags.")
         keys, values = list(zip(*self._intags))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
-            self.logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
         offset = int(offset)
 
         # --> 4. Create AudioCDTags instance.
@@ -706,11 +719,11 @@ class RippedDisc(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        self.logger.debug("Here are the key/value pairs stored into the AudioCDTags object.")
+        self._in_logger.debug("Here are the key/value pairs stored into the AudioCDTags object.")
         keys = shared.left_justify(sorted(self._audiotracktags))
         values = [self._audiotracktags[key] for key in sorted(self._audiotracktags)]
         for key, value in zip(keys, values):
-            self.logger.debug("\t%s: %s".expandtabs(5), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
 
         # --> 6. Change instance attributes.
         self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators, offset=offset, totaltracks=totaltracks)
@@ -723,27 +736,175 @@ class RippedDisc(ContextDecorator):
         outtags = {key: value for key, value in self._audiotracktags.items() if key not in PROFILES[self._profile].exclusions}
 
         # --> 1. Log output tags.
-        self.logger.debug("Output tags.")
+        self._in_logger.debug("Output tags.")
         keys, values = list(zip(*list(outtags.items())))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
-            self.logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
+            self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
 
         # --> 2. Log output file.
-        self.logger.debug("Output file.")
-        self.logger.debug("\t%s".expandtabs(self._tabs), self._tags.name)
+        self._in_logger.debug("Output file.")
+        self._in_logger.debug("\t%s".expandtabs(self._tabs), self._tags.name)
 
         # --> 3. Store tags.
-        self.logger.debug("Write output tags to output file.")
+        self._in_logger.debug("Write output tags to output file.")
         self._tags.seek(0)
         self._tags.write(self._outputtags.render(tags=outtags))
 
         # --> 4. Stop logging.
-        self.logger.debug('END "%s".', os.path.basename(__file__))
+        self._in_logger.debug('END "%s".', os.path.basename(__file__))
 
 
 # ==========
 # Functions.
 # ==========
+def set_audiotags(profile: str,
+                  source: IO,
+                  *decorators: str,
+                  db: Optional[str] = None,
+                  db_albums: bool = False,
+                  db_bootlegs: bool = False,
+                  store_tags: bool = False,
+                  drive_tags: Optional[str] = None,
+                  test: bool = False,
+                  dbjsonfile: Optional[str] = None) -> int:
+    """
+
+    :param profile:
+    :param source:
+    :param decorators:
+    :param db:
+    :param db_albums:
+    :param db_bootlegs:
+    :param store_tags:
+    :param drive_tags:
+    :param test:
+    :param dbjsonfile:
+    :return:
+    """
+    in_logger = logging.getLogger("{0}.set_audiotags".format(__name__))
+    stack = ExitStack()
+    value = 0  # type: int
+    in_logger.debug(profile)
+    in_logger.debug(source.name)
+    try:
+        track = stack.enter_context(RippedDisc(profile, source, *decorators))
+    except ValueError as err:
+        in_logger.debug(err)
+        value = 100
+    else:
+        with stack:
+
+            # 1. Insert data into albums tables.
+            if db_albums and db:
+                in_logger.debug("Process default album.")
+                if dbjsonfile is None:
+                    albums(track.audiotrack, db=db)
+                else:
+                    albums(track.audiotrack, db=db, fil=dbjsonfile)
+
+            # 2. Insert data into bootlegs tables.
+            if db_bootlegs and db:
+                in_logger.debug("Process bootleg album.")
+                if dbjsonfile is None:
+                    bootlegs(track.audiotrack, db=db)
+                else:
+                    bootlegs(track.audiotrack, db=db, fil=dbjsonfile)
+
+            # 3. Store both input and output tags into permanent files.
+            if store_tags:
+
+                path = os.path.join(drive_tags, get_tagsfile(track.audiotrack))
+                os.makedirs(path, exist_ok=True)
+                collection = os.path.join(path, "input_tags.json")
+                in_logger.debug(collection)
+                if collection:
+                    tags = []  # type: List[Mapping[str, Any]]
+                    with suppress(FileNotFoundError):
+                        with open(collection, encoding=shared.UTF8) as fr:
+                            tags = json.load(fr)
+                    tags.append(dict(track.intags))
+                    with ExitStack() as stack:
+                        json_stream = stack.enter_context(open(collection, mode="w", encoding=shared.UTF8))
+                        yaml_stream = stack.enter_context(open("{0}.yml".format(os.path.splitext(collection)[0]), mode="w", encoding=shared.UTF8))
+                        json.dump(tags, json_stream, indent=4, ensure_ascii=False, sort_keys=True)
+                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=2)
+
+                collection = os.path.join(path, "output_tags.json")
+                in_logger.debug(collection)
+                if collection:
+                    tags = []
+                    with suppress(FileNotFoundError):
+                        with open(collection, encoding=shared.UTF8) as fr:
+                            tags = json.load(fr)
+                    tags.append(dict(track.audiotrack))
+                    with ExitStack() as stack:
+                        json_stream = stack.enter_context(open(collection, mode="w", encoding=shared.UTF8))
+                        yaml_stream = stack.enter_context(open("{0}.yml".format(os.path.splitext(collection)[0]), mode="w", encoding=shared.UTF8))
+                        json.dump(tags, json_stream, indent=4, ensure_ascii=False, sort_keys=True)
+                        yaml.dump(tags, yaml_stream, default_flow_style=False, indent=2)
+
+            # 4. Store input tags into JSON test configuration.
+            if test:
+                mapping = {}  # type: Dict[str, Mapping[str, str]]
+                collection = os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "Applications", "Tests", "Resources", "resource1.json")
+                with suppress(FileNotFoundError):
+                    with open(collection, encoding=shared.UTF8) as fr:
+                        mapping = json.load(fr)
+                if profile not in mapping:
+                    mapping[profile] = dict(track.intags)
+                    with open(collection, mode="w", encoding=shared.UTF8) as fw:
+                        json.dump(mapping, fw, indent=4, ensure_ascii=False, sort_keys=True)
+
+    return value
+
+
+def get_tagsfile(obj):
+    """
+
+    :param obj:
+    :return:
+    """
+    in_logger = logging.getLogger("{0}.get_tagsfile".format(__name__))
+    tags = {}
+
+    # -----
+    for key in ["albumsortcount",
+                "foldersortcount",
+                "artistsort_letter",
+                "artistsort",
+                "origyear",
+                "album",
+                "discnumber",
+                "bootlegalbum_year",
+                "bootlegalbum_month",
+                "bootlegalbum_day",
+                "bootlegalbum_city",
+                "bootlegalbum_country"]:
+        with suppress(AttributeError):
+            tags[key] = getattr(obj, key)
+    in_logger.debug(tags)
+
+    # -----
+    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "resource1.yml"), encoding=shared.UTF8) as stream:
+        templates = yaml.load(stream)
+    in_logger.debug(templates)
+
+    # Load templates respective to "bootleg" value.
+    template = templates.get(obj.bootleg, templates["N"])
+
+    # Load templates respective to "artistsort" value.
+    template = template.get(obj.artistsort, template["default"])
+
+    # Load templates respective to "foldersortcount" value.
+    template = template.get(obj.foldersortcount, templates["N"])
+
+    # Load template respective to "totaldiscs" value.
+    template = template.get(str(obj.totaldiscs), template["9"])
+
+    # Return tags file dirname.
+    return Template(template).substitute(tags)
+
+
 def changealbum(obj, template):
     return ChangeAlbum(obj, template)
 
@@ -786,11 +947,11 @@ def album(track):
     return track.album
 
 
-def albums(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "tags.json"), db=shared.DATABASE):
+def albums(track: DefaultAudioCDTags, *, fil: str = os.path.join(os.path.expandvars("%TEMP%"), "tags.json"), db: str = shared.DATABASE) -> None:
     logger = logging.getLogger("{0}.albums".format(__name__))
-    iterable = []
-    genres = dict(list(get_genres(db)))
-    languages = dict(list(get_languages(db)))
+    iterable = []  # type: List[Sequence[Union[int, str]]]
+    genres = dict(get_genres(db))
+    languages = dict(get_languages(db))
 
     # Load existing sequences.
     with suppress(FileNotFoundError):
@@ -832,13 +993,13 @@ def albums(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "tags.json")
         json.dump(sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def bootlegs(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "tags.json"), db=shared.DATABASE):
+def bootlegs(track: BootlegAudioCDTags, *, fil: str = os.path.join(os.path.expandvars("%TEMP%"), "tags.json"), db: str = shared.DATABASE) -> None:
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
-    iterable = []
-    genres = dict(list(get_genres(db)))
-    languages = dict(list(get_languages(db)))
-    countries = dict(list(get_countries(db)))
-    providers = dict(list(get_providers(db)))
+    iterable = []  # type: List[Sequence[Union[int, str]]]
+    genres = dict(get_genres(db))
+    languages = dict(get_languages(db))
+    countries = dict(get_countries(db))
+    providers = dict(get_providers(db))
 
     # Log track attributes.
     logger.debug('Here are the key/value pairs stored into "_otags" attribute.')
@@ -947,18 +1108,79 @@ def bootlegs(track, *, fil=os.path.join(os.path.expandvars("%TEMP%"), "tags.json
         json.dump(sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def getmetadata(audiofil):
+def xreferences(track: Sequence[Union[bool, str]], *, fil: str = os.path.join(os.path.expandvars("%TEMP%"), "xreferences.json")) -> None:
+    _collection = []  # type: List[Sequence[Union[bool, str]]]
+
+    # Load existing references.
+    with suppress(FileNotFoundError):
+        with open(fil, encoding="UTF_8") as fr:
+            _collection = json.load(fr)
+
+    # Convert list(s) to tuple(s) for using `set` container.
+    _collection = list(map(tuple, _collection))
+
+    # Remove duplicate references.
+    _collection.append(track)
+    _collection = list(set(_collection))
+
+    # Store references.
+    with open(fil, mode=shared.WRITE, encoding="UTF_8") as fw:
+        json.dump(sorted(sorted(sorted(_collection, key=itemgetter(6)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
+
+
+def get_xreferences(track: str) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
+    """
+    return artistid, albumid, artist_path, album_path, album, is_bootleg, track basename and track extension.
+
+    :param track:
+    :return:
+    """
+    mapping = {"1": False, "2": True}  # type: Mapping[str, bool]
+    found = False  # type: bool
+    group1 = (None, None)  # type: Tuple[Optional[str], ...]
+    group2 = (None, None)  # type: Tuple[Optional[str], ...]
+    group3 = None  # type: Optional[str]
+    group4 = False  # type: bool
+    group5 = (None, None)  # type: Tuple[Optional[str], ...]
+
+    # Files with the following extensions are only matched.
+    lookextensions = shared.CustomTemplate(shared.LOOKEXTENSIONS).substitute(extensions="|".join(shared.EXTENSIONS["music"]))
+
+    # Artist group: name's first letter must match content of the 3rd capturing group.
+    artist = shared.CustomTemplate(shared.ARTIST).substitute(letter="\\3")
+
+    # File group: 4-character year must match content of the 6th capturing group.
+    # File group: encoder 1-character code must match content of the 9th capturing group.
+    # File group: both 2-character month and day are set to "00".
+    file = shared.CustomTemplate(shared.FILE).substitute(year="\\6", month="00", day="00", encoder="\\9")
+
+    # Create regular expression object.
+    regex = re.compile(f"^{shared.LOOKDEFAULTALBUM}{lookextensions}(({shared.DRIVE}\\\\{shared.LETTER}\\\\{artist}\\\\){shared.FOLDER}{shared.DEFAULTALBUM}\\\\){shared.DISC}{shared.COMPRESSION}\\\\{file}$")
+
+    # Extract capturing groups content if match is positive.
+    match = regex.match(track)
+    if match:
+        found = True
+        group1 = tuple(match.group(4, 11))
+        group2 = (os.path.normpath(match.group(2)),) + (os.path.normpath(match.group(1)),)
+        group3 = match.group(8)
+        group4 = mapping.get(match.group(12), False)
+        group5 = tuple(match.group(10, 13))
+    return found, group1 + group2 + (group3,) + (group4,) + group5
+
+
+def getmetadata(audiofil: str) -> Any:
     """
     Get metada from an audio file.
-    FLAC or Monkey's Audio are only processed.
+    FLAC, Monkey's Audio or MP3 (with ID3 tags) are only processed.
     :param audiofil: characters string representing an audio file.
-    :return: four attributes named tuple:
+    :return: 4-attribute named tuple:
                 - "file". Both dirname and basename of the audio file.
                 - "found". Boolean value depending on whether metadata have been found or not.
                 - "tags". Dictionary enumerating each metadata found.
                 - "object". Audio file object.
     """
-    tags, result = {}, namedtuple("result", "file found tags object")
+    tags, Result = {}, NamedTuple("Result", [("file", str), ("found", bool), ("tags", Mapping[str, Any]), ("object", Optional[Any])])
     logger = logging.getLogger("{0}.getmetadata".format(__name__))
     logger.debug(audiofil)
 
@@ -967,11 +1189,11 @@ def getmetadata(audiofil):
         audioobj = File(audiofil, easy=True)
     except (MutagenError, mutagen.flac.FLACNoHeaderError, TypeError, ZeroDivisionError) as err:
         logger.exception(err)
-        return result(audiofil, False, {}, None)
+        return Result._make((audiofil, False, {}, None))
 
     # Is "audiofil" a valid audio file?
     if not audioobj:
-        return result(audiofil, False, {}, None)
+        return Result._make((audiofil, False, {}, None))
 
     # Is "audiofil" type FLAC, Monkey's Audio or MP3 (with ID3 tags)?
     if any([isinstance(audioobj, mutagen.flac.FLAC), isinstance(audioobj, mutagen.monkeysaudio.MonkeysAudio), isinstance(audioobj, mutagen.mp3.MP3)]):
@@ -1020,8 +1242,8 @@ def getmetadata(audiofil):
 
     # Have "audiofil" metadata been retrieved?
     if not tags:
-        return result(audiofil, False, {}, None)
-    return result(audiofil, True, tags, audioobj)
+        return Result._make((audiofil, False, {}, None))
+    return Result._make((audiofil, True, tags, audioobj))
 
 
 def get_audiofiles(folder):
@@ -1107,9 +1329,9 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 # ==========
 TABSIZE = 3
 DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(.+)$"
-GENRES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Genres.json")
-LANGUAGES = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Languages.json")
-ENCODERS = os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Encoders.json")
+GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
+LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
+ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.json")
 ENC_KEYS = ["name",
             "code",
             "folder",
@@ -1140,5 +1362,5 @@ PROFILES = {"default": Profile(["albumsortcount",
                                 "provider",
                                 "tracklanguage"], BootlegAudioCDTags.fromfile)
             }
-with open(os.path.normpath(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "AudioCD", "Resources", "Mapping.json")), encoding="UTF_8") as fp:
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

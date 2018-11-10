@@ -427,8 +427,9 @@ REM -----------------------------------------
 REM Sync mobile device from audio repository.
 REM -----------------------------------------
 IF ERRORLEVEL 16 (
+    CLS
     DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\Tasks\02"
+    PUSHD "%_PYTHONPROJECT%\GUI\Sources\02"
     python main.py
     IF !ERRORLEVEL! EQU 0 (
         PUSHD "%TEMP%"
@@ -470,8 +471,9 @@ REM ------------------------
 REM Sync audio repositories.
 REM ------------------------
 IF ERRORLEVEL 13 (
+    CLS
     DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\Tasks\01"
+    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
     python main.py
     IF !ERRORLEVEL! EQU 0 (
         PUSHD "%TEMP%"

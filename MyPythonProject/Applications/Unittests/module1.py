@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
-import logging.config
+# pylint: disable=invalid-name
+import json
 import os
 import unittest
-from collections import MutableSequence
+from collections.abc import MutableSequence
+from datetime import datetime
 from functools import partial
 from operator import eq, gt, lt
 
-import yaml
+from pytz import timezone
 
-from .. import shared
+from Applications.shared import TitleCaseConverter, UTF8, get_readabledate, get_rippingapplication
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-# ========
-# Logging.
-# ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
 
 
 # ========
@@ -29,19 +25,19 @@ class Test01(unittest.TestCase):
     def setUp(self):
         self.ref = [1, 2, 3, 4, 5, 6, 7, 8]
 
-    def test_01first(self):
+    def test_t01(self):
         self.assertTrue(all([lt(x, 50) for x in self.ref]))
 
-    def test_02second(self):
+    def test_t02(self):
         self.assertFalse(all([gt(x, 50) for x in self.ref]))
 
-    def test_03third(self):
+    def test_t03(self):
         self.assertTrue(any([gt(x, 5) for x in self.ref]))
 
-    def test_04fourth(self):
+    def test_t04(self):
         self.assertTrue(any([eq(x, 5) for x in self.ref]))
 
-    def test_05fifth(self):
+    def test_t05(self):
         self.assertFalse(all([eq(x, 5) for x in self.ref]))
 
 
@@ -92,22 +88,22 @@ class Test02(unittest.TestCase):
         self.obj = ThatClass(["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "2.20160422.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13",
                               "2.20000823.13", "2.20170101.13", "1.20160422.02"])
 
-    def test_01first(self):
+    def test_t01(self):
         self.assertListEqual(self.obj.sequence, ["2.19841102.13", "2.19990822.13", "2.20000823.13", "2.20021014.13", "2.20160120.13", "2.20160125.13", "2.20160201.13", "1.20160422.02", "1.20160422.13",
                                                  "2.20160422.13", "2.20160422.15", "1.20160625.13", "2.20170101.13"])
 
-    def test_02second(self):
+    def test_t02(self):
         self.assertListEqual(list(self.obj), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
 
-    def test_03third(self):
+    def test_t03(self):
         sentinel = "2016"
         self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002"])
 
-    def test_04fourth(self):
+    def test_t04(self):
         sentinel = "2018"
         self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
 
-    def test_05fifth(self):
+    def test_t05(self):
         sentinel = "2017"
         self.assertListEqual(sorted(set(iter(partial(self.obj, sentinel), sentinel))), ["1984", "1999", "2000", "2002", "2016"])
 
@@ -116,70 +112,76 @@ class Test03(unittest.TestCase):
     def setUp(self):
         self.x = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
 
-    def test_01first(self):
+    def test_t01(self):
         self.assertEqual(int(max(self.x).split("_")[1]), 101)
 
-    def test_02second(self):
+    def test_t02(self):
         self.assertEqual(int(max([i.split("_")[1] for i in self.x])), 456)
 
-    def test_03third(self):
+    def test_t03(self):
         def myfunc1(s):
             return int(s.split("_")[1])
 
         self.assertListEqual(sorted(self.x, key=myfunc1), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
-    def test_04fourth(self):
+    def test_t04(self):
         self.assertListEqual(sorted(sorted(self.x, key=lambda i: int(i.split("_")[1])), key=lambda i: int(i.split("_")[0])), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
-class Test05(unittest.TestCase):
-    def test_01first(self):
-        self.assertEqual(validmonth("Janvier 2017"), 201701)
+# class Test05(unittest.TestCase):
+#     def test_t01(self):
+#         self.assertEqual(validmonth("Janvier 2017"), 201701)
+#
+#     def test_t02(self):
+#         self.assertEqual(validmonth("2017 01"), 201701)
+#
+#     def test_t03(self):
+#         self.assertEqual(validmonth("Février 2017"), 201702)
+#
+#     def test_t04(self):
+#         self.assertEqual(validmonth("2017 02"), 201702)
+#
+#     def test_t05(self):
+#         self.assertEqual(validmonth("2017-02"), 201702)
 
-    def test_02second(self):
-        self.assertEqual(validmonth("2017 01"), 201701)
 
-    def test_03third(self):
-        self.assertEqual(validmonth("Février 2017"), 201702)
+class TestTitleCaseConverter(unittest.TestCase):
+    def setUp(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource2.json"), encoding=UTF8) as stream:
+            self.titles = json.load(stream)
 
-    def test_04fourth(self):
-        self.assertEqual(validmonth("2017 02"), 201702)
+    def test_t01(self):
+        for title in self.titles:
+            title_in, title_out = title
+            with self.subTest(title=title_in):
+                self.assertEqual(title_out, TitleCaseConverter().convert(title_in))
 
-    def test_05fifth(self):
-        self.assertEqual(validmonth("2017-02"), 201702)
+
+class TestGetReadableDate(unittest.TestCase):
+
+    def setUp(self):
+        self.readable_date = "Jeudi 08 Novembre 2018 13:48:51 CET (UTC+0100)"
+
+    def test_t01(self):
+        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 13, 48, 51), tz=timezone("Europe/Paris")), self.readable_date)
+
+    def test_t02(self):
+        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)
 
 
-class Test06(unittest.TestCase):
+class TestGetRippingApplication(unittest.TestCase):
     """
-    Test regular expressions.
+
     """
 
-    def test_01first(self):
-        self.assertRegex("1.19840000.1.13", r"^(?=1\.\d[\d.]+$)(?=[\d.]+\.13$)1\.(?:{0})0000\.\d\.13$".format(shared.DFTYEARREGEX))
+    def test_t01(self):
+        self.assertEqual(get_rippingapplication(), "dBpoweramp 15.1")
 
-    def test_02second(self):
-        self.assertNotRegex("1.19840000.1.15", r"^(?=1\.\d[\d.]+$)(?=[\d.]+\.13$)1\.(?:{0})0000\.\d\.13$".format(shared.DFTYEARREGEX))
+    def test_t02(self):
+        self.assertEqual(get_rippingapplication(timestamp=1541702820), "dBpoweramp 15.1")
 
-    def test_03third(self):
-        self.assertNotRegex("1.19840000.1", r"^(?=1\.\d[\d.]+$)(?=[\d.]+\.13$)1\.(?:{0})0000\.\d\.13$".format(shared.DFTYEARREGEX))
+    def test_t03(self):
+        self.assertEqual(get_rippingapplication(timestamp=1547146020), "dBpoweramp 16.5")
 
-    def test_04fourth(self):
-        self.assertNotRegex("2.20160529.1.13", r"^(?=1\.\d[\d.]+$)(?=[\d.]+\.13$)1\.(?:{0})0000\.\d\.13$".format(shared.DFTYEARREGEX))
-
-    def test_05fifth(self):
-        self.assertNotRegex("2.99999999.1.13", r"^(?=1\.\d[\d.]+$)(?=[\d.]+\.13$)1\.(?:{0})0000\.\d\.13$".format(shared.DFTYEARREGEX))
-
-    def test_06sixth(self):
-        self.assertRegex("1994.1 - Dissident", r"^(?:{0})\.\d -\B".format(shared.DFTYEARREGEX))
-
-    def test_07seventh(self):
-        self.assertNotRegex("Dissident", r"^(?:{0})\.\d -\B".format(shared.DFTYEARREGEX))
-
-    def test_08eighth(self):
-        self.assertNotRegex("1994 - Dissident", r"^(?:{0})\.\d -\B".format(shared.DFTYEARREGEX))
-
-    def test_09ninth(self):
-        self.assertRegex("Janvier 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
-
-    def test_10Tenth(self):
-        self.assertRegex("Février 2017", r"^\b[\w]+\b\s\b{0}$".format(shared.DFTYEARREGEX))
+    def test_t04(self):
+        self.assertEqual(get_rippingapplication(timestamp=1357843620), "dBpoweramp 14.1")

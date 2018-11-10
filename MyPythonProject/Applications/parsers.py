@@ -9,12 +9,12 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-#  ========
-#  Classes.
-#  ========
+# ===============
+# Global Classes.
+# ===============
 class SetDatabase(argparse.Action):
     def __init__(self, option_strings, dest, **kwargs):
-        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -22,25 +22,23 @@ class SetDatabase(argparse.Action):
             setattr(namespace, "db", getattr(namespace, "db", shared.DATABASE))
 
 
-# ==========
-#  Functions.
-#  ==========
-def unixepochtime(time):
+# =================
+# Global Functions.
+# =================
+def unixtime(timestamp) -> int:
     """
 
-    :param time:
+    :param timestamp:
     :return:
     """
     try:
-        _unixepochtime = shared.valid_datetime(time)
+        _unixtime = shared.valid_datetime(timestamp)
     except ValueError as err:
         raise argparse.ArgumentTypeError(err)
-    else:
-        _unixepochtime = _unixepochtime[0]
-    return _unixepochtime
+    return _unixtime[0]
 
 
-def database(db):
+def database(db: str) -> str:
     """
 
     :param db:
@@ -77,8 +75,8 @@ parser1_g.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.
 #  2. PARSER 2.
 #     =========
 epochconverter = argparse.ArgumentParser()
-epochconverter.add_argument("beg", help="Beginning epoch", type=unixepochtime)
-epochconverter.add_argument("end", help="End epoch", type=unixepochtime, nargs="?", action=shared.SetEndSeconds)
+epochconverter.add_argument("beg", help="Beginning epoch", type=unixtime)
+epochconverter.add_argument("end", help="End epoch", type=unixtime, nargs="?", action=shared.SetEndSeconds)
 epochconverter.add_argument("-z", "--zone", help="Time zone", default=shared.DFTTIMEZONE)
 
 #     =========
@@ -92,8 +90,8 @@ group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=
 #     =========
 #  4. PARSER 4.
 #     =========
-readtable = argparse.ArgumentParser(parents=[database_parser])
-readtable.add_argument("table", choices=["tasks"], help="Read table")
+# readtable = argparse.ArgumentParser(parents=[database_parser])
+# readtable.add_argument("table", choices=["tasks"], help="Read table")
 
 #     =========
 #  5. PARSER 5.
@@ -131,52 +129,52 @@ parser_update.add_argument("--debug", action="store_true")
 # --------------
 # Parent parser.
 # --------------
-images_pparser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
-images_pparser.add_argument("files", nargs="+", help="Source directories or images")
-images_pparser.add_argument("--ext", nargs="*", dest="extensions", default=["jpg"])
-images_pparser.add_argument("--test", action="store_true")
+# images_pparser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
+# images_pparser.add_argument("files", nargs="+", help="Source directories or images")
+# images_pparser.add_argument("--ext", nargs="*", dest="extensions", default=["jpg"])
+# images_pparser.add_argument("--test", action="store_true")
 
 # -------------
 # Child parser.
 # -------------
-images_cparser = argparse.ArgumentParser()
-subparser = images_cparser.add_subparsers(dest="script")
+# images_cparser = argparse.ArgumentParser()
+# subparser = images_cparser.add_subparsers(dest="script")
 
 # --> Rename images.
-images_rename = subparser.add_parser("rename", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
-images_rename.add_argument("--index", default="1", type=int, help="Starting index")
+# images_rename = subparser.add_parser("rename", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+# images_rename.add_argument("--index", default="1", type=int, help="Starting index")
 
 # --> Write tags.
-images_write = subparser.add_parser("write", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
-images_write.add_argument("--city")
-images_write.add_argument("--location")
-images_write.add_argument("--keywords", nargs="*")
-images_write.add_argument("--copyright", action="store_true")
+# images_write = subparser.add_parser("write", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+# images_write.add_argument("--city")
+# images_write.add_argument("--location")
+# images_write.add_argument("--keywords", nargs="*")
+# images_write.add_argument("--copyright", action="store_true")
 
 # --> Read tags.
-images_read = subparser.add_parser("read", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
+# images_read = subparser.add_parser("read", argument_default=argparse.SUPPRESS, parents=[images_pparser, loglevel_parser])
 
 #     =========
 #  9. PARSER 9.
 #     =========
-foldercontent = argparse.ArgumentParser()
-subparser = foldercontent.add_subparsers(dest="command")
+# foldercontent = argparse.ArgumentParser()
+# subparser = foldercontent.add_subparsers(dest="command")
 
 # -----
-parser1 = subparser.add_parser("1")
-parser1.add_argument("extensions", nargs="*", help="only given extensions. Facultative", default=[])
+# parser1 = subparser.add_parser("1")
+# parser1.add_argument("extensions", nargs="*", help="only given extensions. Facultative", default=[])
 
 # -----
-parser2 = subparser.add_parser("2")
-parser2.add_argument("group", nargs="+", choices=["computing", "documents", "lossless", "lossy", "music"], action=shared.GetExtensions)
-group = parser2.add_mutually_exclusive_group()
-group.add_argument("-e", "--excl", dest="exclude", nargs="*", action=shared.ExcludeExtensions, help="exclude enumerated extension(s)")
-group.add_argument("-k", "--keep", nargs="*", action=shared.KeepExtensions, help="exclude all extensions but enumerated extension(s)")
-parser2.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.IncludeExtensions, help="include enumerated extension(s)")
+# parser2 = subparser.add_parser("2")
+# parser2.add_argument("group", nargs="+", choices=["computing", "documents", "lossless", "lossy", "music"], action=shared.GetExtensions)
+# group = parser2.add_mutually_exclusive_group()
+# group.add_argument("-e", "--excl", dest="exclude", nargs="*", action=shared.ExcludeExtensions, help="exclude enumerated extension(s)")
+# group.add_argument("-k", "--keep", nargs="*", action=shared.KeepExtensions, help="exclude all extensions but enumerated extension(s)")
+# parser2.add_argument("-i", "--incl", dest="include", nargs="*", action=shared.IncludeExtensions, help="include enumerated extension(s)")
 
 # -----
-parser3 = subparser.add_parser("3")
-parser3.add_argument("extensions", nargs="+", help="excluded extensions. Mandatory.")
+# parser3 = subparser.add_parser("3")
+# parser3.add_argument("extensions", nargs="+", help="excluded extensions. Mandatory.")
 
 #     ==========
 # 10. PARSER 10.
@@ -192,3 +190,4 @@ tags_grabber.add_argument("--test", action="store_true", help="insert a tags sam
 tags_grabber.add_argument("--debug", action="store_true")
 tags_grabber.add_argument("--database", dest="db")
 tags_grabber.add_argument("--store_tags", action="store_true")
+tags_grabber.add_argument("--drive_tags", nargs="?", default="F:\\")

@@ -6,7 +6,7 @@ import json
 import logging.config
 import os
 import re
-from collections import MutableSequence
+from collections.abc import MutableSequence
 from contextlib import suppress
 from itertools import filterfalse, groupby, repeat, tee
 from operator import itemgetter

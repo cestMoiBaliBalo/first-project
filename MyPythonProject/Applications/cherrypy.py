@@ -15,10 +15,10 @@ import cherrypy
 import jinja2
 from pytz import timezone
 
-from .Tables.Albums.shared import get_albumheader, getartist, getlastplayeddate, get_track, updatelastplayeddate
+from .Tables.Albums.shared import get_albumheader, get_track, getartist, getlastplayeddate, updatelastplayeddate
 # from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 from .Tables.RippedDiscs.shared import validyear
-from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, dateformat, filesinfolder, localize_date, normalize, \
+from .shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UPCREGEX, UTC, UTF8, WRITE, filesinfolder, format_date, localize_date, normalize, \
     normalize2, now
 
 __author__ = 'Xavier ROSSET'
@@ -129,8 +129,8 @@ class DigitalAudioCollection(object):
                                       "getcover": getcover,
                                       "getvalue": getvalue,
                                       "localize": localize_date,
-                                      "readable": partial(dateformat, template=TEMPLATE4),
-                                      "readmonth": partial(dateformat, template="$Y$m"),
+                                      "readable": partial(format_date, template=TEMPLATE4),
+                                      "readmonth": partial(format_date, template="$Y$m"),
                                       "timestamp": timestamp})
     TEMPLATE.set_template(**TEMPLATES)
 
@@ -287,7 +287,7 @@ class DigitalAudioCollection(object):
     @audiofiles.setter
     def audiofiles(self, arg):
         extensions, folder, excluded = arg
-        audiofiles = ((os.path.normpath(fil), dateformat(LOCAL.localize(datetime.datetime.fromtimestamp(os.path.getctime(fil))), TEMPLATE4), os.path.splitext(fil)[1][1:])
+        audiofiles = ((os.path.normpath(fil), format_date(LOCAL.localize(datetime.datetime.fromtimestamp(os.path.getctime(fil)))), os.path.splitext(fil)[1][1:])
                       for fil in filesinfolder(*extensions,
                                                folder=folder,
                                                excluded=excluded)
@@ -360,7 +360,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         albums = None
-        mapping = dict(set((dateformat(LOCAL.localize(album.utc_created), "$Y$m"), dateformat(LOCAL.localize(album.utc_created), "$month $Y")) for album in self.digitalalbums))
+        mapping = dict(set((format_date(LOCAL.localize(album.utc_created), template="$Y$m"), format_date(LOCAL.localize(album.utc_created), template="$month $Y")) for album in self.digitalalbums))
 
         # 1. Covers view.
         if view == "default":
@@ -374,8 +374,8 @@ class DigitalAudioCollection(object):
 
         # 3. Covers grouped by month.
         elif view == "months":
-            albums = sorted(sorted(self.digitalalbums, key=lambda album: album.albumid), key=lambda album: dateformat(LOCAL.localize(album.utc_created), "$Y$m"), reverse=True)
-            albums = [(key, list(group)) for key, group in groupby(albums, key=lambda album: dateformat(LOCAL.localize(album.utc_created), "$Y$m"))]
+            albums = sorted(sorted(self.digitalalbums, key=lambda album: album.albumid), key=lambda album: format_date(LOCAL.localize(album.utc_created), template="$Y$m"), reverse=True)
+            albums = [(key, list(group)) for key, group in groupby(albums, key=lambda album: format_date(LOCAL.localize(album.utc_created), template="$Y$m"))]
 
         # 4. Return HTML page.
         return self.TEMPLATE.index.render(body="index",
@@ -422,7 +422,7 @@ class DigitalAudioCollection(object):
         """
         rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
         return self.TEMPLATE.rippedartistsview.render(menu=self.TEMPLATE.menu.render(months=self.months),
-                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                      current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
                                                       content=[(key, self.getclass(len(list(group)))) for key, group in groupby(sorted(tup[3].artist for tup in rippedcd))])
 
     # -----------------------
@@ -488,7 +488,7 @@ class DigitalAudioCollection(object):
                                                        stylesheets=["stylesheets/common.css",
                                                                     "stylesheets/rippedcdview.css"],
                                                        content={"content": [(key, list(group)) for key, group in
-                                                                            groupby(filter(lambda i: dateformat(LOCAL.localize(i[3].ripped), "$Y") == year, rippedcd), key=lambda i: (i[0], i[1]))],
+                                                                            groupby(filter(lambda i: format_date(LOCAL.localize(i[3].ripped), template="$Y") == year, rippedcd), key=lambda i: (i[0], i[1]))],
                                                                 "scripts": ["frameworks/jquery.js",
                                                                             "scripts/functions.js",
                                                                             "scripts/rippedcdview.js",
@@ -559,8 +559,8 @@ class DigitalAudioCollection(object):
             detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
                                      k[0],
                                      k,
-                                     len(list(g)))) for k, g in groupby(sorted([(dateformat(item[2], "$Y"),
-                                                                                 dateformat(item[2], "$Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
+                                     len(list(g)))) for k, g in groupby(sorted([(format_date(item[2], template="$Y"),
+                                                                                 format_date(item[2], template="$Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
             content = secondnt._make((view, "table1", (view, "count"), detail))
 
         # 2. Total by month in descending order.
@@ -568,8 +568,8 @@ class DigitalAudioCollection(object):
             detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
                                      k[0],
                                      k,
-                                     len(list(g)))) for k, g in groupby(sorted([(dateformat(item[2], "$Y$m"),
-                                                                                 dateformat(item[2], "$month $Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
+                                     len(list(g)))) for k, g in groupby(sorted([(format_date(item[2], template="$Y$m"),
+                                                                                 format_date(item[2], template="$month $Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
             content = secondnt._make((view, "table2", (view, "count"), detail))
 
         # 3. Total by artist in ascending order.
@@ -686,7 +686,7 @@ class DigitalAudioCollection(object):
                     template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Unix epoch time.".format(tags["ripped"])})}
                     break
                 try:
-                    validyear(dateformat(LOCAL.localize(datetime.datetime.fromtimestamp(int(tags["ripped"]))), "$Y"))
+                    validyear(format_date(LOCAL.localize(datetime.datetime.fromtimestamp(int(tags["ripped"]))), template="$Y"))
                 except ValueError:
                     template = {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "An error has been detected", "body": "{0} is not a correct Unix epoch time.".format(tags["ripped"])})}
                     break
@@ -758,7 +758,7 @@ class DigitalAudioCollection(object):
 
         #  2. Return HTML page.
         return self.TEMPLATE.digitalaudiotracksbyartist.render(menu=self.TEMPLATE.menu.render(months=self.months),
-                                                               current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                               current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
                                                                content=self.gettracks(*reflist, artists=self.digitalartists, db=self.database, **self.digitalalbums_mapping),
                                                                previous_page=prevpage)
 
@@ -768,7 +768,7 @@ class DigitalAudioCollection(object):
     @cherrypy.expose
     def digitalaudiotracksbyalbum(self, albumid, prevpage=None):
         return self.TEMPLATE.digitalaudiotracksbyalbum.render(menu=self.TEMPLATE.menu.render(months=self.months),
-                                                              current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                              current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
                                                               content=self.gettracks(albumid, artists=self.digitalartists, db=self.database, **self.digitalalbums_mapping),
                                                               previous_page=prevpage)
 
@@ -818,7 +818,7 @@ class DigitalAudioCollection(object):
         # Last played audio CDs list.
         lastplayedalbums = filter(lambda i: self.getplayedperiod(UTC.localize(i.utc_played).astimezone(LOCAL))[0], self.lastplayedalbums)
         lastplayedalbums = [(self.getplayedperiod(UTC.localize(album.utc_played).astimezone(LOCAL))[1],
-                             dateformat(UTC.localize(album.utc_played).astimezone(LOCAL), "$day $d $month $Y"),
+                             format_date(UTC.localize(album.utc_played).astimezone(LOCAL), template="$day $d $month $Y"),
                              UTC.localize(album.utc_played).astimezone(LOCAL),
                              album.albumid[2:-13],
                              album.albumid[-12:],
@@ -919,7 +919,7 @@ class DigitalAudioCollection(object):
 
         #  3. Return HTML page.
         return self.TEMPLATE.digitalaudiofiles.render(menu=self.TEMPLATE.menu.render(months=self.months),
-                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
+                                                      current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
                                                       content={"letters": letters,
                                                                "artists": artists,
                                                                "extensions": extensions,
@@ -1198,7 +1198,7 @@ class DigitalAudioCollection(object):
         keys = ["RIPPED", "ARTISTSORT", "ALBUMSORT", "ARTIST", "YEAR", "ALBUM", "GENRE", "BARCODE", "APPLICATION"]
         reflist = sorted([item[3] for item in collection], key=lambda i: i.rowid)
         reflist = [(item.rowid,
-                    dict(zip(keys, (dateformat(LOCAL.localize(item.ripped), TEMPLATE4),
+                    dict(zip(keys, (format_date(LOCAL.localize(item.ripped)),
                                     item.artistsort,
                                     item.albumsort,
                                     item.artist,
@@ -1210,8 +1210,8 @@ class DigitalAudioCollection(object):
         if reflist:
             with open(outfile, mode=WRITE, encoding=UTF8) as fp:
                 json.dump([now(),
-                           dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Eastern")), TEMPLATE4),
-                           dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Pacific")), TEMPLATE4),
+                           format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Eastern"))),
+                           format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Pacific"))),
                            dict(reflist)], fp, indent=4, sort_keys=True, ensure_ascii=False)
 
 # A.6. Update log.

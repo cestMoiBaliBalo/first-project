@@ -22,6 +22,7 @@ REM Initializations 2.
 REM ==================
 SET _errorlevel=0
 SET _jsontags=%TEMP%\tags.json
+SET _jsonxreferences=%TEMP%\xreferences.json
 
 
 REM ============
@@ -41,22 +42,19 @@ REM  1 --> Digital audio database.
 REM        -----------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    python %_PYTHONPROJECT%\AudioCD\Views\Albums.py "%_jsontags%"
+    python %_PYTHONPROJECT%\AudioCD\Albums.py "%_jsontags%"
     DEL "%_jsontags%" 2>NUL
 )
 SHIFT
 GOTO MAIN
 
-
-REM        -------------------------
-REM  2 --> Update Ripping log views.
-REM        -------------------------
+REM        ---------------------
+REM  2 --> XReferences database.
+REM        ---------------------
 :STEP2
-REM PUSHD %_PYTHONPROJECT%\AudioCD\Tables
-REM python RippedDiscsView1.py
-REM python RippedDiscsView2.py 1
-REM python RippedDiscsView3.py
-REM python AlbumsView.py
-REM POPD
+IF EXIST "%_jsonxreferences%" (
+    python %_PYTHONPROJECT%\AudioCD\XReferences.py "%_jsonxreferences%"
+    DEL "%_jsonxreferences%" 2>NUL
+)
 SHIFT
 GOTO MAIN

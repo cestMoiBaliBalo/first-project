@@ -9,11 +9,11 @@ from operator import itemgetter
 from subprocess import run
 
 import jinja2
-import shared
 import yaml
 
+import shared
 from Applications.Tables.RippedDiscs.shared import deletelog, selectlogs_fromuid
-from Applications.shared import LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, dateformat, grouper, rjustify
+from Applications.shared import LOCAL, TemplatingEnvironment, UTC, format_date, grouper, rjustify
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -102,8 +102,8 @@ while not q_pressed:
                                    upc,
                                    disc,
                                    tracks,
-                                   dateformat(UTC.localize(ripped).astimezone(LOCAL), TEMPLATE4),
-                                   dateformat(UTC.localize(utc_created).astimezone(LOCAL), TEMPLATE4)) for
+                                   format_date(UTC.localize(ripped).astimezone(LOCAL)),
+                                   format_date(UTC.localize(utc_created).astimezone(LOCAL))) for
                                   rowid, ripped, artistsort, albumsort, artist, origyear, year, album, label, genre, upc, application, disc, tracks, utc_created, utc_modified in log]
                         values = list(chain.from_iterable(values))
                         max_length_value = max(map(len, map(str, values)))

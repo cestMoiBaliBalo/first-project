@@ -1,0 +1,16 @@
+language: python
+python:
+  - "3.6"
+before_install:
+  - python MyPythonProject/setup.py install
+install:
+  - pip install python-dateutil
+  - pip install ftputil
+  - pip install jinja2
+  - pip install mutagen
+  - pip install pandas
+  - pip install pytz
+  - pip install pyyaml
+  - pip install sortedcontainers
+script:
+  - python MyPythonProject/runner.py

@@ -174,14 +174,3 @@ def check_input(tag, value):
     if error:
         return None
     return value
-
-
-def get_drives():
-    """
-
-    :return:
-    """
-    regex = re.compile(r"^(E|[I-R]):$")
-    process = run("wmic logicaldisk get name", shell=True, universal_newlines=True, stdout=PIPE)
-    for drive in (drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())):
-        yield drive

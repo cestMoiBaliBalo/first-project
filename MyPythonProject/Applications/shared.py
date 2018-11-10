@@ -2,21 +2,26 @@
 # pylint: disable=invalid-name
 import argparse
 import locale
+import logging
 import os
 import re
-import subprocess
+from abc import ABC, abstractmethod
 from base64 import b85decode, b85encode
 from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack
-from datetime import datetime
-from itertools import dropwhile, filterfalse, islice, repeat, tee, zip_longest
-from logging import Formatter, getLogger
+from datetime import date, datetime
+from functools import singledispatch
+from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
+from logging import Formatter
 from logging.handlers import RotatingFileHandler
 from string import Template
+from subprocess import PIPE, run
+from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
 
 import jinja2
 import yaml
 from dateutil.parser import parserinfo
+from pandas import DataFrame  # type: ignore
 from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
@@ -27,43 +32,84 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "")
+# locale.setlocale(locale.LC_ALL, "french")
 
 # ==================
 # Functions aliases.
 # ==================
-basename, exists, expandvars, isdir, join = os.path.basename, os.path.exists, os.path.expandvars, os.path.isdir, os.path.join
+abspath, basename, dirname, exists, expandvars, isdir, join, normpath = os.path.abspath, os.path.basename, os.path.dirname, os.path.exists, os.path.expandvars, os.path.isdir, os.path.join, os.path.normpath
 
 # ==========
 # Constants.
 # ==========
 APPEND = "a"
-WRITE = "w"
-DATABASE = join(expandvars("%_COMPUTING%"), "Resources", "database.db")
-TESTDATABASE = join(expandvars("%_PYTHONPROJECT%"), "Applications", "Tests", "database.db")
-ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
+COPYRIGHT = "\u00a9"
 DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
-UTC = timezone("UTC")
 LOCAL = timezone("Europe/Paris")
+LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
+UTC = timezone("UTC")
+UTF8 = "UTF_8"
+UTF16 = "UTF_16LE"
+UTF16BOM = "\ufeff"
+WRITE = "w"
+
+# Resources.
+ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
+DATABASE = join(dirname(dirname(abspath(__file__))), "Resources", "database.db")
+TESTDATABASE = join(dirname(abspath(__file__)), "Unittests", "Resources", "database.db")
+XREFERENCES = join(expandvars("%_COMPUTING%"), "Resources", "xreferences.db")
+
+# Regular expressions.
+BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
+DEFAULTALBUM = r"(((?:20[0-2]|19[6-9])\d)(?:\.(\d))?(?: - ([^\\]+)))"
+COMPRESSION = r"(?:([01])\.[^\\]+)"
+DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
+DFTMONTHREGEX = r"0[1-9]|1[0-2]"
+DFTYEARREGEX = r"(?:20[0-2]|19[6-9])\d"
+DISC = r"(?:CD\d\\)?"
+DRIVE = r"(?:[^\\]+)"
+FOLDER = r"(?:\d\\)?"
+LETTER = r"([A-Z])"
+LOOKALBUMSORT = r"(?=[\d.]{12}$)(?=[12]\.\d{8}\.\d$)"
+LOOKBOOTLEGALBUM = r"(?=(?:[^\\]+\\){7,8}[A-Za-z0-9.]+$)(?=(?:.+\.\w{3,4})$)"
+LOOKDEFAULTALBUM = r"(?=(?:[^\\]+\\){5,7}[A-Za-z0-9.]+$)(?=(?:.+\.\w{3,4})$)"
+UPCREGEX = r"\d{12,13}"
+
+# Regular expressions templates.
+ARTIST = "(?:(@{letter}[^\\\\]+))"
+FILE = "(?:((([12])\\.\\b@{year}\\B(?:@{month}@{day})\\b\\.\\d)\\.\\b@{encoder}\\B\\d\\.D\\d\\.T\\d{2})\\.(\\w{3,4}))"
+LOOKEXTENSIONS = r"(?=.+\.(?:@{extensions})$)"
+
+# Templates for converting datetime objects to strings.
 TEMPLATE1 = "$day $d/$m/$Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE2 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE3 = "$d/$m/$Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE4 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE5 = "$Y-$m-$d"
 TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
-LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
-UTF8 = "UTF_8"
-UTF16 = "UTF_16LE"
-UTF16BOM = "\ufeff"
-COPYRIGHT = "\u00a9"
-DFTYEARREGEX = r"20[0-2]\d|19[6-9]\d"
-DFTMONTHREGEX = r"0[1-9]|1[0-2]"
-DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
-UPCREGEX = r"\d{12,13}"
-ACCEPTEDANSWERS = ["N", "Y"]
-MUSIC = "F:\\"
+
+# Local drives.
 IMAGES = "H:\\"
+MUSIC = "F:\\"
+
+# Miscellaneous containers.
+ACCEPTEDANSWERS = ["N", "Y"]
+EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
+              "documents": ["doc", "txt", "pdf", "xav"],
+              "music": ["ape", "dsf", "flac", "mp3", "m4a", "ogg", "tak", "wv"],
+              "lossless": ["ape", "dsf", "flac", "tak", "wv"],
+              "lossy": ["mp3", "m4a", "ogg"]}
+GENRES = ["Rock",
+          "Hard Rock",
+          "Heavy Metal",
+          "Trash Metal",
+          "Black Metal",
+          "Doom Metal",
+          "Progressive Rock",
+          "Alternative Rock",
+          "Pop",
+          "French Pop"]
 LOCALMONTHS = ["Janvier",
                "Février",
                "Mars",
@@ -76,27 +122,6 @@ LOCALMONTHS = ["Janvier",
                "Octobre",
                "Novembre",
                "Decembre"]
-GENRES = ["Rock",
-          "Hard Rock",
-          "Heavy Metal",
-          "Trash Metal",
-          "Black Metal",
-          "Doom Metal",
-          "Progressive Rock",
-          "Alternative Rock",
-          "Pop",
-          "French Pop"]
-EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
-              "documents": ["doc", "txt", "pdf", "xav"],
-              "music": ["ape", "mp3", "m4a", "flac", "ogg", "tak", "wv"],
-              "lossless": ["ape", "flac", "tak", "wv"],
-              "lossy": ["mp3", "m4a", "ogg"]}
-ZONES = ["UTC",
-         "US/Pacific",
-         "US/Eastern",
-         "Indian/Mayotte",
-         "Asia/Tokyo",
-         "Australia/Sydney"]
 
 
 # ========
@@ -111,10 +136,17 @@ ZONES = ["UTC",
 #         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
 #         #     return True
 #         return False
+class CustomTemplate(Template):
+    delimiter = "@"
+    idpattern = r"([a-z][a-z0-9]+)"
+    flags = re.ASCII
+
+    def __init__(self, template):
+        super().__init__(template)
 
 
 class CustomFormatter(Formatter):
-    converter = datetime.fromtimestamp
+    converter = datetime.fromtimestamp  # type: ignore
     default_time_format = "%d/%m/%Y %H:%M:%S"
     default_localizedtime_format = "%Z (UTC%z)"
     default_format = "%s %s,%03d %s"
@@ -182,130 +214,150 @@ class ChangeLocalCurrentDirectory(ContextDecorator):
         os.chdir(self._cwd)
 
 
-class StringFormatter(object):
+class TitleCaseBaseConverter(ABC):
+    """
+    
     """
 
-    """
+    # Define class-level configuration.
+    with open(join(dirname(abspath(__file__)), "Resources", "resource1.yml"), encoding=UTF8) as fp:
+        config = yaml.load(fp)
 
-    # 1. Class level regular expressions.
-    _REX01 = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
-    _REX02 = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?))\b", re.IGNORECASE)
-    _REX04 = re.compile(r"(\B\()([a-z]+)\b", re.IGNORECASE)  # Not used anymore!
-    _REX05a = re.compile(r"\b([a-z]+)'([a-z]+)\b", re.IGNORECASE)
-    _REX05b = re.compile(r"\b(o)'\b([a-z]+)\b", re.IGNORECASE)
-    _REX05c = re.compile(r"\b(o)'\B", re.IGNORECASE)
-    _REX05d = re.compile(r" \bn'\B ", re.IGNORECASE)
-    _REX05e = re.compile(r" \B'n\b ", re.IGNORECASE)
-    _REX05f = re.compile(r" \B'n'\B ", re.IGNORECASE)
-    _REX05g = re.compile(r"\b'n'\b", re.IGNORECASE)
-    _REX06 = re.compile(r"^(\([^)]+\) )\b([a-z]+)\b", re.IGNORECASE)
+    # Define class-level regular expressions.
+    acronyms = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?))\b", re.IGNORECASE)
+    apostrophe_regex1 = re.compile(r"\b([a-z]+)'([a-z]+)\b", re.IGNORECASE)
+    apostrophe_regex2 = re.compile(r"\b(o)'\b([a-z]+)\b", re.IGNORECASE)
+    apostrophe_regex3 = re.compile(r"\b(o)'\B", re.IGNORECASE)
+    apostrophe_regex4 = re.compile(r" \bn'\B ", re.IGNORECASE)
+    apostrophe_regex5 = re.compile(r" \B'n\b ", re.IGNORECASE)
+    apostrophe_regex6 = re.compile(r" \B'n'\B ", re.IGNORECASE)
+    apostrophe_regex7 = re.compile(r"\b'n'\b", re.IGNORECASE)
+    capitalize_secondword = re.compile(r"^(\([^)]+\) )\b([a-z]+)\b", re.IGNORECASE)
+    capitalize_words = re.compile(r"\b([a-z]+)\b", re.IGNORECASE)
+    punctuation = re.compile(r"(\w+\.\.\.) (\w+)")
+    roman_numbers_regex1 = re.compile(r"(?i)\b(?:V|(X{1,3}|(?=[CL])C{,3}L?X{,3})V?)?I{,3}\b")
+    roman_numbers_regex2 = re.compile(r"(?i)\b(?:(?=[CL])C{,3}L?X{,3}|X{1,3})?I[VX]\b")
+    roman_numbers_regex3 = re.compile(r"(?i)\bC{,3}X[CL](?:V?I{,3}|I[VX])\b")
 
-    # 2. Class level logger.
-    _logger = getLogger("{0}.StringFormatter".format(__name__))
-
-    # 3. Initialize instance.
-    def __init__(self, somestring=None, config=join(expandvars("%_COMPUTING%"), "Resources", "stringformatter.yml")):
+    def __init__(self) -> None:
 
         # Initializations.
-        self._inp_string, self._out_string = "", ""
-        dict_config, self._rex09, self._rex10, self._rex11, self._rex12, self._rex13 = None, None, None, None, None, None
-        if somestring:
-            self.inp_string = somestring
+        self.alw_lowercase, self.alw_uppercase, self.alw_capital, self.capitalize_firstword, self.capitalize_lastword = None, None, None, None, None
 
         # Load configuration.
-        with open(config, encoding=UTF8) as fp:
-            dict_config = yaml.load(fp)
-        lowercases = dict_config.get("lowercases", [])
-        uppercases = dict_config.get("uppercases", [])
-        capitalized = dict_config.get("capitalized", [])
-        capitalize_first_word = dict_config.get("capitalize_first_word", False)
-        capitalize_last_word = dict_config.get("capitalize_last_word", False)
+        capitalized = self.config.get("capitalized", [])
+        capitalize_firstword = self.config.get("capitalize_firstword", False)
+        capitalize_lastword = self.config.get("capitalize_lastword", False)
+        lowercases = self.config.get("lowercases", [])
+        uppercases = self.config.get("uppercases", [])
         if lowercases:
-            self._rex09 = re.compile(r"\b({0})\b".format("|".join(lowercases)), re.IGNORECASE)
+            self.alw_lowercase = re.compile(r"\b({0})\b".format("|".join(lowercases)), re.IGNORECASE)
         if uppercases:
-            self._rex10 = re.compile(r"\b({0})\b".format("|".join(uppercases)), re.IGNORECASE)
+            self.alw_uppercase = re.compile(r"\b({0})\b".format("|".join(uppercases)), re.IGNORECASE)
         if capitalized:
-            self._rex11 = re.compile(r"\b({0})\b".format("|".join(capitalized)), re.IGNORECASE)
-        if capitalize_first_word:
-            self._rex12 = re.compile(r"^([a-z]+)\b", re.IGNORECASE)
-        if capitalize_last_word:
-            self._rex13 = re.compile(r"\b([a-z]+)$", re.IGNORECASE)
+            self.alw_capital = re.compile(r"\b({0})\b".format("|".join(capitalized)), re.IGNORECASE)
+        if capitalize_firstword:
+            self.capitalize_firstword = re.compile(r"^([a-z]+)\b", re.IGNORECASE)
+        if capitalize_lastword:
+            self.capitalize_lastword = re.compile(r"\b([a-z]+)$", re.IGNORECASE)
 
-        # Log regular expressions.
-        self._logger.debug(self._rex09)
-        self._logger.debug(self._rex10)
-        self._logger.debug(self._rex11)
+    @abstractmethod
+    def convert(self, title: str) -> str:
+        """
 
-    def convert(self, somestring=None):
-        if somestring:
-            self.inp_string = somestring
-        self._out_string = self._inp_string
-        self._logger.debug(self._out_string)
+        :param title:
+        :return:
+        """
+        pass
+
+
+class TitleCaseConverter(TitleCaseBaseConverter):
+    """
+
+    """
+    logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def convert(self, title: str):
+        """
+        
+        :param title: 
+        :return: 
+        """
+        self.logger.debug(title)
 
         # ----------------
         # General process.
         # ----------------
         # 1. Title is formatted with lowercase letters.
-        # 2. Words are capitalized --> _REX01.
-        self._out_string = self._REX01.sub(lambda match: match.group(1).capitalize(), self._out_string.lower().replace("[", "(").replace("]", ")"))
-        self._logger.debug(self._out_string)
+        # 2. Words are capitalized --> `capitalize_words`.
+        title = self.capitalize_words.sub(lambda match: match.group(1).capitalize(), title.lower().replace("[", "(").replace("]", ")"))
+        self.logger.debug(title)
 
         # -------------------
         # Exceptions process.
         # -------------------
-        # 1. Words formatted only with lowercase letters --> _rex09.
-        # 2. Words formatted only with a capital letter --> _rex11.
-        # 3. Capital letter is mandatory for the first word of the title --> _rex12.
-        # 4. Capital letter is mandatory for the last word of the title --> _rex13.
-        # 5. Words formatted only with uppercase letters --> _rex10.
-        if self._rex09:
-            self._out_string = self._rex09.sub(lambda match: match.group(1).lower(), self._out_string)
-        if self._rex11:
-            self._out_string = self._rex11.sub(lambda match: " ".join(word.capitalize() for word in match.group(1).split()), self._out_string)
-        if self._rex12:
-            self._out_string = self._rex12.sub(lambda match: match.group(1).capitalize(), self._out_string)
-        if self._rex13:
-            self._out_string = self._rex13.sub(lambda match: match.group(1).capitalize(), self._out_string)
-        if self._rex10:
-            self._out_string = self._rex10.sub(lambda match: match.group(1).upper(), self._out_string)
-        self._logger.debug(self._out_string)
+        # 1. Words formatted only with lowercase letters --> `alw_lowercase`.
+        # 2. Words formatted only with a capital letter --> `alw_capital`.
+        # 3. Capital letter is mandatory for the first word of the title --> `capitalize_firstword`.
+        # 4. Capital letter is mandatory for the last word of the title --> `capitalize_lastword`.
+        # 5. Words formatted only with uppercase letters --> `alw_uppercase`.
+        if self.alw_lowercase:
+            title = self.alw_lowercase.sub(lambda match: match.group(1).lower(), title)
+        if self.alw_capital:
+            title = self.alw_capital.sub(lambda match: " ".join(word.capitalize() for word in match.group(1).split()), title)
+        if self.capitalize_firstword:
+            title = self.capitalize_firstword.sub(lambda match: match.group(1).capitalize(), title)
+        if self.capitalize_lastword:
+            title = self.capitalize_lastword.sub(lambda match: match.group(1).capitalize(), title)
+        if self.alw_uppercase:
+            title = self.alw_uppercase.sub(lambda match: match.group(1).upper(), title)
+        self.logger.debug(title)
 
         # -----------------
         # Acronyms process.
         # -----------------
-        self._out_string = self._REX02.sub(lambda match: match.group(1).upper(), self._out_string)
-        self._logger.debug(self._out_string)
+        title = self.acronyms.sub(lambda match: match.group(1).upper(), title)
+        self.logger.debug(title)
 
         # --------------------
         # Apostrophes process.
         # --------------------
-        self._out_string = self._REX05a.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).lower()), self._out_string)
-        self._out_string = self._REX05b.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).capitalize()), self._out_string)
-        self._out_string = self._REX05c.sub(lambda match: "{0}'".format(match.group(1).lower()), self._out_string)
-        self._out_string = self._REX05d.sub(" 'n' ", self._out_string)
-        self._out_string = self._REX05e.sub(" 'n' ", self._out_string)
-        self._out_string = self._REX05f.sub(" 'n' ", self._out_string)
-        self._out_string = self._REX05g.sub(" 'n' ", self._out_string)
-        self._logger.debug(self._out_string)
+        title = self.apostrophe_regex1.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).lower()), title)
+        title = self.apostrophe_regex2.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).capitalize()), title)
+        title = self.apostrophe_regex3.sub(lambda match: "{0}'".format(match.group(1).lower()), title)
+        title = self.apostrophe_regex4.sub(" 'n' ", title)
+        title = self.apostrophe_regex5.sub(" 'n' ", title)
+        title = self.apostrophe_regex6.sub(" 'n' ", title)
+        title = self.apostrophe_regex7.sub(" 'n' ", title)
+        self.logger.debug(title)
 
         # -----------------
         # Specific process.
         # -----------------
-        self._out_string = self._REX06.sub(lambda match: "{0}{1}".format(match.group(1), match.group(2).capitalize()), self._out_string)
-        self._logger.debug(self._out_string)
+        # Capital letter is mandatory for the second word if the first one is defined between parenthesis --> `capitalize_secondword`.
+        title = self.capitalize_secondword.sub(lambda match: "{0}{1}".format(match.group(1), match.group(2).capitalize()), title)
+        self.logger.debug(title)
 
-        # ---------------------
-        # Return output string.
-        # ---------------------
-        return self._out_string
+        # ----------------------
+        # Roman numbers process.
+        # ----------------------
+        title = self.roman_numbers_regex1.sub(lambda match: match.group(0).upper(), title)
+        title = self.roman_numbers_regex2.sub(lambda match: match.group(0).upper(), title)
+        title = self.roman_numbers_regex3.sub(lambda match: match.group(0).upper(), title)
+        self.logger.debug(title)
 
-    @property
-    def inp_string(self):
-        return self._inp_string
+        # --------------------
+        # Punctuation process.
+        # --------------------
+        title = self.punctuation.sub(lambda match: f"{match.group(1)}{match.group(2)}", title)
 
-    @inp_string.setter
-    def inp_string(self, arg):
-        self._inp_string = arg
+        # -----------------------
+        # Return converted title.
+        # -----------------------
+        return title
 
 
 class LocalParser(parserinfo):
@@ -335,7 +387,7 @@ class SetDatabase(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -353,7 +405,7 @@ class GetPath(argparse.Action):
                     "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(GetPath, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.destinations[values])
@@ -366,7 +418,7 @@ class GetExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(GetExtensions, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -383,7 +435,7 @@ class ExcludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(ExcludeExtensions, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -401,7 +453,7 @@ class KeepExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(KeepExtensions, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -419,7 +471,7 @@ class IncludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(IncludeExtensions, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -436,7 +488,7 @@ class SetEndSeconds(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super(SetEndSeconds, self).__init__(option_strings, dest, **kwargs)
+        super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -449,13 +501,14 @@ class SetEndSeconds(argparse.Action):
 # ===================
 class TemplatingEnvironment(object):
     def __init__(self, keep_trailing_newline=True, trim_blocks=True, lstrip_blocks=True, **kwargs):
-        self._environment = None
-        self.environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=kwargs.get("loader"))
+        self._environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=kwargs.get("loader"))
 
     def set_environment(self, **kwargs):
-        for k, v in kwargs["globalvars"].items():
+        globalvars = kwargs.get("globalvars", {})
+        filters = kwargs.get("filters", {})
+        for k, v in globalvars.items():
             self._environment.globals[k] = v
-        for k, v in kwargs["filters"].items():
+        for k, v in filters.items():
             self._environment.filters[k] = v
 
     def set_template(self, **templates):
@@ -466,30 +519,26 @@ class TemplatingEnvironment(object):
     def environment(self):
         return self._environment
 
-    @environment.setter
-    def environment(self, arg):
-        self._environment = arg
-
 
 # ==========================
 # Data validation functions.
 # ==========================
-def valid_path(path):
+def valid_path(path: str) -> str:
     """
 
     :param path:
     :return:
     """
     if not exists(path):
-        raise argparse.ArgumentTypeError('"{0}" doesn\'t exist.'.format(path))
+        raise ValueError(f'"{path}" doesn\'t exist.')
     if not isdir(path):
-        raise argparse.ArgumentTypeError('"{0}" is not a directory.'.format(path))
+        raise ValueError(f'"{path}" is not a directory.')
     if not os.access(path, os.R_OK):
-        raise argparse.ArgumentTypeError('"{0}" is not a readable directory.'.format(path))
+        raise ValueError(f'"{path}" is not a readable directory.')
     return path
 
 
-def valid_database(database):
+def valid_database(database: str) -> str:
     """
 
     :param database:
@@ -503,12 +552,13 @@ def valid_database(database):
     return database
 
 
-def valid_discnumber(discnumber):
+def valid_discnumber(discnumber: Union[int, str]) -> int:
     """
-    Check if string `discnumber` is a coherent disc number
+    Check if string `discnumber` is a coherent disc number.
+    Raise a ValueError if it is not coherent.
 
-    :param discnumber: disc number.
-    :return: disc number converted to numeric characters.
+    :param discnumber: string.
+    :return: input string converted to an integer number.
     """
     msg = r"is not a valid disc number."
     try:
@@ -520,12 +570,13 @@ def valid_discnumber(discnumber):
     return _discnumber
 
 
-def valid_tracks(tracks):
+def valid_tracks(tracks: Union[int, str]) -> int:
     """
     Check if string `tracks` is a coherent track number.
+    Raise a ValueError if it is not coherent.
 
-    :param tracks: track number.
-    :return: track number converted to numeric characters.
+    :param tracks: string.
+    :return: input string converted to an integer number.
     """
     msg = r"is not a valid total tracks number."
     try:
@@ -537,12 +588,13 @@ def valid_tracks(tracks):
     return _tracks
 
 
-def valid_albumid(albumid):
+def valid_albumid(albumid: str) -> str:
     """
     Check if string `albumid` is a coherent unique album ID.
+    Raise a ValueError if it is not coherent.
 
-    :param albumid: unique album ID.
-    :return: unique album ID.
+    :param albumid: string.
+    :return: input string.
     """
     rex = re.compile(r"^([A-Z])\.\1[^.]+\.$")
     selectors = [True, True]
@@ -569,15 +621,16 @@ def valid_albumid(albumid):
     return "{0}{1}".format(_artistsort, _albumsort)
 
 
-def valid_albumsort(albumsort):
+def valid_albumsort(albumsort: str) -> str:
     """
-    Check if string `albumsort` is a coherent `albumsort` tag.
+    Check if string `albumsort` is a coherent albumsort audio tag.
+    Raise a ValueError if it is not coherent.
 
-    :param albumsort: `albumsort` tag.
-    :return: `albumsort` tag.
+    :param albumsort: string.
+    :return: input string.
     """
-    rex1 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})({1})({2})\..$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX))
-    rex2 = re.compile(r"^(?=[\d.]+$)(?=.\.[^.]+\..$)(?=\d\.\d{{8}}\.\d$).\.({0})0000\..$".format(DFTYEARREGEX))
+    rex1 = re.compile(r"^{3}\d\.({0})({1})({2})\.\d$".format(DFTYEARREGEX, DFTMONTHREGEX, DFTDAYREGEX, LOOKALBUMSORT))
+    rex2 = re.compile(r"^{1}\d\.({0})0000\.\d$".format(DFTYEARREGEX, LOOKALBUMSORT))
     msg = r"is not a valid albumsort."
 
     try:
@@ -590,12 +643,13 @@ def valid_albumsort(albumsort):
     return albumsort
 
 
-def valid_year(year):
+def valid_year(year: Union[int, str]) -> int:
     """
     Check if string `year` is a coherent year.
+    Raise a ValueError if it is not coherent.
 
-    :param year: year.
-    :return: year converted to numeric characters.
+    :param year: string.
+    :return: input string converted to an integer number.
     """
     regex, msg = re.compile("^({0})$".format(DFTYEARREGEX)), r"is not a valid year."
 
@@ -616,14 +670,15 @@ def valid_year(year):
     return int(year)
 
 
-def valid_productcode(productcode):
+def valid_productcode(productcode: str) -> str:
     """
     Check if string `productcode` is a coherent product code.
+    Raise a ValueError if it is not coherent.
 
-    :param productcode: product code.
-    :return: product code.
+    :param productcode: string.
+    :return: input string.
     """
-    regex, msg = re.compile(r"^{0}$".format(UPCREGEX)), r"is not a valid product code."
+    regex, msg = re.compile(f"^{UPCREGEX}$"), r"is not a valid product code."
 
     try:
         productcode = str(productcode)
@@ -634,12 +689,13 @@ def valid_productcode(productcode):
     return productcode
 
 
-def valid_genre(genre):
+def valid_genre(genre: str) -> str:
     """
     Check if string `genre` is a coherent audio genre.
+    Raise a ValueError if it is not coherent.
 
-    :param genre: audio genre.
-    :return: audio genre.
+    :param genre: string.
+    :return: input string.
     """
     msg = r"is not a valid genre."
     try:
@@ -650,39 +706,18 @@ def valid_genre(genre):
     return genre
 
 
-def valid_datetime(timestamp):
-    """
-    Check if string `timestamp` is a coherent Unix time or a coherent python datetime object.
-
-    :param timestamp: Unix time or python datetime object.
-    :return: (Unix time converted to a) python datetime naive object respective to the local system time zone.
-    """
-    error, msg = False, r"is not a valid Unix time."
-    try:
-        timestamp = int(timestamp)
-    except (ValueError, TypeError):
-        error = True
-
-    if error:
-        try:
-            _struct = timestamp.timetuple()
-        except (TypeError, AttributeError):
-            raise ValueError('"{0}" {1}'.format(timestamp, msg))
-        return int(timestamp.timestamp()), timestamp, _struct
-
-    try:
-        datobj = datetime.fromtimestamp(timestamp)
-    except OSError:
-        raise ValueError('"{0}" {1}'.format(timestamp, msg))
-    else:
-        _struct = datobj.timetuple()
-    return timestamp, datobj, _struct
-
-
 # ========================
 # Miscellaneous functions.
 # ========================
-def copy(src, dst, *, size=16 * 1024):
+def customformatterfactory(pattern=LOGPATTERN):
+    return CustomFormatter(pattern)
+
+
+def customfilehandler(maxbytes, backupcount, encoding=UTF8):
+    return RotatingFileHandler(join(dirname(dirname(dirname(abspath(__file__)))), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+
+
+def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
     if not isdir(dst):
         raise ValueError('"%s" is not a directory.' % dst)
     with ExitStack() as stack:
@@ -721,44 +756,503 @@ def partitioner(iterable, *, predicate=None):
     return filter(predicate, it1), filterfalse(predicate, it2)
 
 
-def customformatterfactory(pattern=LOGPATTERN):
-    return CustomFormatter(pattern)
-
-
-def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(join(expandvars("%_COMPUTING%"), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
-
-
-def get_readabledate(dt, template, tz=None):
+def get_dirname(path: str, *, level: int = 1) -> str:
     """
-    Return a local human readable (naive or aware) datetime object respective to the local system time zone.
 
-    :param dt: datetime object. Naive or aware.
-    :param template: template to make the object human readable.
-    :param tz: datetime object original time zone.
-    :return: human readable datetime object respective to the local system time zone.
+    :param path:
+    :param level:
+    :return:
     """
-    datobj = dt
-    if tz:
-        datobj = tz.localize(dt).astimezone(LOCAL)
-    return dateformat(datobj, template)
+    _dirname, _level = path, 1  # type: str, int
+    while _level <= level:
+        _dirname = dirname(_dirname)
+        _level += 1
+    return _dirname
 
 
-def now(template=TEMPLATE4):
+def get_readabledate(dt: datetime, *, template: str = TEMPLATE4, tz=None) -> str:
+    """
+    Return a human readable (naive or aware) date respective to the local time zone.
+
+    :param dt: datetime object.
+    :param template: template used to display the date.
+    :param tz: datetime object time zone.
+    :return: string.
+    """
+    return _get_readabledate(dt, template, tz)
+
+
+def now(*, template: str = TEMPLATE4) -> str:
     """
 
     :return:
     """
-    return dateformat(UTC.localize(datetime.utcnow()).astimezone(LOCAL), template)
+    return _get_readabledate(datetime.utcnow(), template, tz=UTC)
 
 
-def dateformat(dt, template):
+def format_date(dt: Union[date, datetime], *, template: str = TEMPLATE4) -> str:
     """
-    Return a human readable datetime aware object.
+    Return a human readable datetime object.
 
     :param dt: datetime object.
-    :param template: template to make the object human readable.
-    :return: human readable datetime object.
+    :param template: template used to display the date.
+    :return: string.
+    """
+    return _format_date(dt, template)
+
+
+def localize_date(dt: datetime, tz=UTC) -> datetime:
+    """
+    Return a datetime object localized into the local time zone from a different time zone.
+
+    :param dt: datetime object.
+    :param tz: datetime object time zone.
+    :return: datetime object.
+    """
+    return _localize_date(dt, tz)
+
+
+def convert_timestamp(timestamp: int, tz=UTC) -> datetime:
+    """
+
+    :param timestamp:
+    :param tz:
+    :return:
+    """
+    return _convert_timestamp(timestamp, tz)
+
+
+def get_tabs(length: int, *, tabsize: int = 3) -> str:
+    """
+
+    :param length:
+    :param tabsize:
+    :return:
+    """
+    x = int(length / tabsize)
+    y = length % tabsize
+    if y:
+        x += 1
+    return x * "\t"
+
+
+def get_nearestmultiple(length: int, *, multiple: int = 3) -> int:
+    """
+
+    :param length:
+    :param multiple:
+    :return:
+    """
+    x = int(length / multiple)
+    y = length % multiple
+    if y:
+        x += 1
+    return x * multiple
+
+
+def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
+    """
+    Get ripping application respective to the facultative input local timestamp.
+
+    :param timestamp: facultative input local timestamp.
+    :return: ripping application.
+    """
+    application = {"1546340400": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    ts: Optional[int] = timestamp
+    if timestamp is None:
+        ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
+    it = iter(dropwhile(lambda i: int(i) > ts, sorted(application, key=int, reverse=True)))  # type: ignore
+    return application[next(it)]
+
+
+def find_files(directory: str, *, excluded=None):
+    """
+    Return a generator object yielding files stored into `directory` argument.
+    :param directory: Directory to walk through. Must be a string representing an existing path.
+    :param excluded: Callable returning a set of files (as returned by os.listdir) to exclude.
+                     Callable arguments are:
+                        - root folder returned by os.walk.
+                        - list of files present into the root folder.
+    :return: generator object.
+    """
+    collection = []  # type: List[Iterable[str]]
+    if not excluded:
+        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(directory) if files)
+    elif excluded:
+        for root, _, files in os.walk(directory):
+            if files:
+                files = set(files) - excluded(root, *set(files))
+                if files:
+                    collection.extend(map(os.path.join, repeat(root), files))
+    for file in sorted(collection):
+        yield file
+
+
+def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) -> str:
+    return "{0:{fill}{align}{length}}".format(" {0} ".format(strg), align=align, fill=fill, length=length)
+
+
+# def xsltransform(xml, xsl, html):
+#     process = subprocess.run(["java", "-cp", expandvars("%_SAXON%"), "net.sf.saxon.Transform",
+#                               "-s:{0}".format(xml),
+#                               "-xsl:{0}".format(xsl),
+#                               "-o:{0}".format(html)])
+#     return process.returncode
+
+
+# def get_input(prompt, *, cls=True, template=None, **kwargs):
+#     """
+#
+#     :param prompt:
+#     :param cls:
+#     :param template:
+#     :param kwargs:
+#     :return:
+#     """
+#     if cls:
+#         run("CLS", shell=True)
+#     if template:
+#         print(template.render(**kwargs))
+#     return input(prompt)
+
+
+def get_drives() -> Iterable[str]:
+    """
+
+    :return:
+    """
+    regex = re.compile(r"^(E|[I-R]):$")
+    process = run("wmic logicaldisk get name", shell=True, universal_newlines=True, stdout=PIPE)
+    for drive in (drive.rstrip() for drive in process.stdout.splitlines() if regex.match(drive.rstrip())):
+        yield drive
+
+
+def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3, gap: int = 3, group: Optional[int] = 15) -> Iterable[Tuple[str, ...]]:
+    """
+
+    :param collection:
+    :param tabsize:
+    :param gap:
+    :param group:
+    :return:
+
+
+    :how to use it:
+    collection = list(format_collection(somecollection, None, group=15))
+    template.render(collection=collection[somepage])
+    """
+    out_collection = []  # type: Iterable[Tuple[Any, ...]]
+    _, _, in_collection = _set_collection(collection, None, tabsize=tabsize, gap=gap)
+    if group:
+        out_collection = zip_longest(*[in_collection] * group, fillvalue=None)
+    for item in out_collection:
+        yield item
+
+
+def print_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3, group: Optional[int] = 50) -> Iterable[str]:
+    """
+
+    :param collection:
+    :param headers:
+    :param char:
+    :param tabsize:
+    :param gap:
+    :param group:
+    :return:
+
+    :how to use it:
+    for item in print_collection(somecollection, someheaders):
+        print(item)
+    """
+    separators, headers, in_collection = _set_collection(collection, headers, char=char, tabsize=tabsize, gap=gap)
+    if group:
+        in_collection = zip_longest(*[in_collection] * group, fillvalue=None)
+    out_collection: List[str]
+
+    # Both headers and groups.
+    if all([bool(headers), bool(group)]):
+        out_collection = []
+        for _group in in_collection:
+            out_collection.extend(["", "", "".join(separators), "".join(headers), "".join(separators)])
+            out_collection.extend("".join(item) for item in filter(None, _group))
+        out_collection = out_collection[2:]
+
+    # Headers only.
+    elif headers and not group:
+        out_collection = ["".join(separators), "".join(headers), "".join(separators)]
+        out_collection.extend("".join(item) for item in in_collection)
+
+    # Groups only.
+    elif not headers and group:
+        out_collection = []
+        for _group in in_collection:
+            out_collection.extend(["", ""])
+            out_collection.extend("".join(item) for item in filter(None, _group))
+        out_collection = out_collection[2:]
+
+    # Neither headers nor groups.
+    elif not any([bool(headers), bool(group)]):
+        out_collection = ["".join(item) for item in in_collection]
+
+    # Return formatted collection.
+    for item in out_collection:
+        yield item
+
+
+def get_dataframe(collection: Iterable[Tuple[Any, ...]], headers: List[str]):
+    """
+
+    :param collection:
+    :param headers:
+    :return:
+    """
+    return DataFrame(dict(zip(headers, zip(*collection))))
+
+
+def left_justify(iterable: Iterable[Any]) -> Iterable[str]:
+    """
+
+    :param iterable:
+    :return:
+    """
+    sequence = list(iterable)  # type: List[Any]
+    length = max(len(stringify(item)) for item in sequence)
+    for item in ("{0:<{1}}".format(item, length) for item in sequence):
+        yield item
+
+
+def base85_encode(strg, encoding="UTF-8"):
+    return b85encode(strg.encode(encoding=encoding))
+
+
+def base85_decode(bytobj, encoding="UTF-8"):
+    return b85decode(bytobj).decode(encoding=encoding)
+
+
+# ============================
+# Audio directories functions.
+# ============================
+def get_artists(directory: str = MUSIC) -> Iterable[Tuple[str, str]]:
+    """
+    Get artists composing the local music drive.
+    Yield 2-items tuples composed of both artist's name and artist's folder path.
+
+    :param directory: local music drive.
+    :return: 2-items tuples composed of both artist's name and artist's folder path.
+    """
+    for _artist, _artist_path in chain.from_iterable(list(get_folders(letter_path)) for letter, letter_path in get_folders(directory)):
+        yield _artist, _artist_path
+
+
+def get_albums(directory: str) -> Iterable[Tuple[str, str, str, bool]]:
+    """
+    Get albums composing an artist folder.
+    Yield 3-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
+
+    :param directory: artist folder path.
+    :return: 4-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
+    """
+    regex1 = re.compile(DEFAULTALBUM)
+    regex2 = re.compile(r"\b\\([12])\\{0}".format(DEFAULTALBUM))
+    regex3 = re.compile(r"^(?:{0})$".format(DFTYEARREGEX))
+    regex4 = re.compile(BOOTLEGALBUM)
+    regex5 = re.compile(r"\b\\([12])\\({0})\\{1}".format(DFTYEARREGEX, BOOTLEGALBUM))
+    isbootleg = {"1": False, "2": True}
+    for _name, _path in get_folders(directory):
+        if not os.path.isdir(_path):
+            continue
+        if _name in ["1", "2"]:
+            for _album, _album_path, _albumsort, _isbootleg in get_albums(_path):
+                yield _album, _album_path, _albumsort, _isbootleg
+        else:
+            match = regex1.match(_name)
+            if match:
+                category = "1"
+                year, sort, album = match.group(2, 3, 4)
+                match = regex2.search(_path)
+                if match:
+                    category = match.group(1)
+                if not sort:
+                    sort = "1"
+                yield album, _path, f"{category}.{year}0000.{sort}", isbootleg.get(category, False)
+            elif not match:
+                match = regex3.match(_name)
+                if match:
+                    for _album, _album_path, _albumsort, _isbootleg in get_albums(_path):
+                        yield _album, _album_path, _albumsort, _isbootleg
+                elif not match:
+                    match = regex4.match(_name)
+                    if match:
+                        match = regex5.search(_path)
+                        if match:
+                            category, year, month, day, sort = match.group(1, 2, 4, 5, 6)
+                            if not sort:
+                                sort = "1"
+                            yield _name, _path, f"{category}.{year}{month}{day}.{sort}", isbootleg.get(category, False)
+
+
+def get_folders(directory: str) -> Iterable[Tuple[str, str]]:
+    """
+    Get folders composing a directory.
+    Yield a 2-item tuples composed of both folder name and folder path.
+
+    :param directory: directory path.
+    :return: 2-item tuples composed of both folder name and folder path.
+    """
+    _collection = []  # type: List[Tuple[str, str]]
+    stack = ExitStack()
+    try:
+        stack.enter_context(ChangeLocalCurrentDirectory(directory))
+    except PermissionError:
+        pass
+    else:
+        with stack:
+            _collection = [(name, os.path.join(os.getcwd(), name)) for name in os.listdir(".")]
+    for name, path in _collection:
+        yield name, path
+
+
+# ==========================
+# Single dispatch functions.
+# ==========================
+@singledispatch
+def stringify(arg, **kwargs):
+    return arg
+
+
+@stringify.register(int)
+def _(arg: int, **kwargs) -> str:
+    return str(arg)
+
+
+@stringify.register  # type: ignore
+def _(arg: datetime, *, template: str = TEMPLATE4, tz=UTC) -> str:
+    return _format_date(tz.localize(arg).astimezone(LOCAL), template)
+
+
+@stringify.register  # type: ignore
+def _(arg: date, *, template: str = "%d/%m/%Y") -> str:
+    return arg.strftime(template)
+
+
+@singledispatch
+def valid_datetime(arg):
+    """
+    Check if input argument is a coherent Unix time or a coherent python datetime object.
+    Raise a ValueError if not.
+    :param arg: Unix time (int or str allowed) or python datetime object.
+    :return: Tuple composed of :
+                   - Unix time.
+                   - Datetime aware object respective to the local system time zone.
+                   - time.struct_time object.
+    """
+    raise ValueError(f"Input argument is not a coherent argument.")
+
+
+@valid_datetime.register(int)  # type: ignore
+def _(arg: int) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
+    _msg = r"is not a valid Unix time."  # type: str
+    try:
+        _datobj = datetime.fromtimestamp(arg)  # type: datetime
+    except OSError:
+        raise ValueError(f'"{arg}" {_msg}')
+    return arg, LOCAL.localize(_datobj), _datobj.timetuple()
+
+
+@valid_datetime.register(str)  # type: ignore
+def _(arg: str) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
+    _msg = r"is not a valid Unix time."  # type: str
+
+    try:
+        arg = int(arg)
+    except (ValueError, TypeError) as err:
+        raise ValueError(err)
+
+    try:
+        _datobj = datetime.fromtimestamp(arg)  # type: datetime
+    except OSError:
+        raise ValueError(f'"{arg}" {_msg}')
+
+    return arg, LOCAL.localize(_datobj), _datobj.timetuple()
+
+
+@valid_datetime.register(datetime)  # type: ignore
+def _(arg: datetime) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
+    return int(arg.timestamp()), arg, arg.timetuple()
+
+
+# ======================
+# Jinja2 Custom filters.
+# ======================
+def integer_to_string(intg: int) -> str:
+    return str(intg)
+
+
+def repeat_element(elem, n):
+    for i in repeat(elem, n):
+        yield i
+
+
+def cjustify(strg: str, width: int, char: str = "") -> str:
+    return "{0:{2}^{1}}".format(strg, width, char)
+
+
+def rjustify(strg: str, width: int, char: str = "") -> str:
+    return "{0:{2}>{1}}".format(str(strg), width, char)
+
+
+def ljustify(strg: str, width: int, char: str = "") -> str:
+    return "{0:{2}<{1}}".format(strg, width, char)
+
+
+def normalize(strg: str) -> str:
+    return strg.replace(", ", "_").replace(" ", "_")
+
+
+def normalize2(strg: str) -> str:
+    return strg.replace(" ", "%20").replace("&", "%26")
+
+
+# =======================================================
+# These interfaces mustn't be used from external scripts.
+# =======================================================
+def _localize_date(dt: datetime, tz) -> datetime:
+    """
+    Return a datetime object localized into the local time zone from a different time zone.
+
+    :param dt: datetime object.
+    :param tz: datetime object time zone.
+    :return: datetime object.
+    """
+    return tz.localize(dt).astimezone(LOCAL)  # type: ignore
+
+
+def _get_readabledate(dt: datetime, template: str, tz) -> str:
+    """
+    Return a human readable (naive or aware) date respective to the local time zone.
+
+    :param dt: datetime object.
+    :param template: template used to display the date.
+    :param tz: datetime object time zone.
+    :return: string.
+    """
+    datobj = dt
+    if tz is not None:
+        datobj = _localize_date(dt, tz)
+    return _format_date(datobj, template)
+
+
+def _convert_timestamp(timestamp: int, tz) -> datetime:
+    return UTC.localize(datetime.utcfromtimestamp(timestamp)).astimezone(tz)
+
+
+def _format_date(dt: Union[date, datetime], template: str) -> str:
+    """
+    Return a human readable date.
+
+    :param dt: datetime object.
+    :param template: template used to display the date.
+    :return: string.
     """
     return Template(template).substitute(day=dt.strftime("%A").capitalize(),
                                          month=dt.strftime("%B").capitalize(),
@@ -776,225 +1270,58 @@ def dateformat(dt, template):
                                          Z=dt.strftime("%Z"))
 
 
-def get_tabs(length, *, tabsize=3):
-    x = int(length / tabsize)
-    y = length % tabsize
-    if y:
-        x += 1
-    return x * "\t"
-
-
-def get_nearestmultiple(length, *, multiple=3):
-    x = int(length / multiple)
-    y = length % multiple
-    if y:
-        x += 1
-    return x * multiple
-
-
-def get_rippingapplication(*, timestamp=None):
-    """
-    Get ripping application respective to the facultative input local timestamp.
-
-    :param timestamp: facultative input local timestamp.
-    :return: ripping application.
-    """
-    application = {"1512082800": "dBpoweramp 16.1", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
-    if not timestamp:
-        timestamp = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
-    return list(islice(dropwhile(lambda i: int(i[0]) > timestamp, sorted(application.items(), key=lambda i: int(i[0]), reverse=True)), 1))[0][1]
-
-
-def find_files(directory, *, excluded=None):
-    """
-    Return a generator object yielding files stored in `directory`.
-    :param directory: directory to walk through.
-    :param excluded: callable returning a list composed of files to exclude as returned by os.listdir.
-                     Callable input arguments must be:
-                        :The root directory returned by os.walk.
-                        :The list of files present into the root directory.
-    :return: generator object.
-    """
-    collection = []
-    for root, _, files in os.walk(directory):
-        if not excluded:
-            collection.extend(map(join, repeat(root), files))
-        else:
-            collection.extend(map(join, repeat(root), set(files) - excluded(root, *files)))
-    for file in sorted(collection):
-        yield file
-
-
-def get_datefromseconds(beg, end, zone=DFTTIMEZONE):
-    """
-    Return a map object yielding human readable dates corresponding to a range of seconds since the epoch.
-    :param beg: range start seconds.
-    :param end: range stop seconds.
-    :param zone: not mandatory time zone appended to the map object.
-    :return: map object.
-    """
-    gap, width = 5, {}
-
-    if beg > end:
-        raise ValueError("Beginning Unix epoch time {0} must be lower than or equal to end Unix epoch time {1}".format(beg, end))
-    zones = list(ZONES)
-    zones.insert(0, zone)
-
-    # Create N lists (1 list for 1 timestamp) composed of 7 timezones.
-    mainlist = [[dateformat(timezone("UTC").localize(datetime.utcfromtimestamp(ts)).astimezone(timezone(tz)), TEMPLATE4) for tz in zones] for ts in range(beg, end + 1)]
-
-    # Convert to 7 lists (1 list for 1 timezone) composed of N timestamps.
-
-    # Associer dans un dictionnaire le fuseau avec l'ensemble de ses heures respectives.
-    # La clé est le fuseau ("Europe/Paris" par exemple).
-    # La valeur est la liste des heures respectives à chaque timestamp traité.
-    # Un "OrderedDict" est utilisé pour conserver l'ordre des fuseaux.
-    thatdict = OrderedDict(zip(zones, zip(*mainlist)))
-
-    # Justifier à gauche les heures en tenant compte de la longueur maximale respective à chaque fuseau.
-    # La longueur maximale respective à chaque fuseau est tout d'abord stockée dans un dictionnaire.
-    for tz in thatdict.keys():
-        width[tz] = max(len(item) for item in thatdict[tz]) + gap
-    for tz in thatdict.keys():
-        thatdict[tz] = ["{:<{w}}".format(item, w=width[tz]) for item in thatdict[tz]]
-
-    # Convert to N lists (1 list for 1 timestamp) composed of 1 timestamp and 7 timezones and yield readable times.
-    for ts, z1, z2, z3, z4, z5, z6, z7 in zip(range(beg, end + 1), *[v for k, v in thatdict.items()]):
-        yield ts, z1, z2, z3, z4, z5, z6, z7
-
-
-def mainscript(stg, align="^", fill="=", length=140):
-    return "{0:{fill}{align}{length}}".format(" {0} ".format(stg), align=align, fill=fill, length=length)
-
-
-def xsltransform(xml, xsl, html):
-    process = subprocess.run(["java", "-cp", expandvars("%_SAXON%"), "net.sf.saxon.Transform",
-                              "-s:{0}".format(xml),
-                              "-xsl:{0}".format(xsl),
-                              "-o:{0}".format(html)])
-    return process.returncode
-
-
-def prettyprint(*iterable, headers=(), char="=", tabsize=3, gap=3):
+def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3) -> Tuple[List[str], List[str], Iterator[Tuple[str, ...]]]:
     """
 
-    :param iterable:
+    :param collection:
     :param headers:
     :param char:
     :param tabsize:
     :param gap:
     :return:
     """
-    sequence = [list(item) for item in iterable]
 
     # 1. Initializations.
-    max_length, max_width, out_data, out_headers, separators = {}, {}, OrderedDict(), None, None
+    max_length, max_width = {}, {}
+    out_collection = OrderedDict()  # type: Any
 
-    # 2. Set input headers.
-    inp_headers = list(headers)
-    if not headers:
-        inp_headers = ["header{0:>2d}".format(i) for i in range(len(sequence[0]))]
+    # 2. Gather data per header.
+    in_collection = list(collection)  # type: Any
+    length = len(in_collection)  # type: int
+    in_collection = list(zip(*in_collection))
+    _headers = None  # type: Any
+    if headers is not None:
+        _headers = iter(headers)
+    elif headers is None:
+        _headers = range(1, length + 1)
+    in_collection = OrderedDict(zip(_headers, in_collection))
 
-    # 3. Gather data per header.
-    input_data = OrderedDict(zip(inp_headers, zip(*sequence)))
-
-    # 4. Get data maximum length and maximum allowed width.
-    for k, v in input_data.items():
-        x = 0
-        if headers:
-            x = len(k)
+    # 3. Get data maximum length and maximum allowed width.
+    for k, v in in_collection.items():
+        key = stringify(k)
+        _len = len(key)  # type: int
         if any(bool(item) for item in v):
-            x = max(len(str(item)) for item in v if item)
-        if headers:
-            if len(k) > x:
-                x = len(k)
-        max_length[k] = x
-        max_width[k] = get_nearestmultiple(x, multiple=tabsize) + gap
+            _len = max(len(stringify(item)) for item in v if item)
+        if len(key) > _len:
+            _len = len(key)
+        max_length[k] = _len
+        max_width[k] = get_nearestmultiple(_len, multiple=tabsize) + gap
 
-    # 5. Justify data.
-    for k, v in input_data.items():
+    # 4. Justify data.
+    for k, v in in_collection.items():
         y = []
         for item in v:
-            x = "{0}".format(get_tabs(max_width[k], tabsize=tabsize)).expandtabs(tabsize)
+            _tabs = get_tabs(max_width[k], tabsize=tabsize).expandtabs(tabsize)
             if item:
-                x = "{0}{1}".format(item, get_tabs(max_width[k] - len(str(item)), tabsize=tabsize)).expandtabs(tabsize)
-            y.append(x)
-        out_data[k] = y
+                _tabs = "{0}{1}".format(item, get_tabs(max_width[k] - len(stringify(item)), tabsize=tabsize)).expandtabs(tabsize)
+            y.append(_tabs)
+        out_collection[k] = y
+
+    # 5. Set separators.
+    out_separators = ["{0}{1}".format(char * max_length[header], get_tabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
 
     # 6. Set output headers.
-    if headers:
-        out_headers = tuple(["{0}{1}".format(header.upper(), get_tabs(max_width[header] - len(header), tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
-        separators = tuple(["{0}{1}".format(char * max_length[header], get_tabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in input_data.keys()])
+    out_headers = ["{0}{1}".format(stringify(header).upper(), get_tabs(max_width[header] - len(stringify(header)), tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
 
-    # 7. Set output data.
-    out_data = zip(*[v for k, v in out_data.items()])
-
-    # 8. Return output data as iterator objects.
-    if headers:
-        return [separators, out_headers, separators], out_data
-    return None, out_data
-
-
-def left_justify(iterable):
-    """
-
-    :param iterable:
-    :return:
-    """
-    sequence = list(iterable)
-    length = max(len(str(item)) for item in sequence)
-    for item in ["{0:<{1}}".format(item, length) for item in sequence]:
-        yield item
-
-
-def base85_encode(stg, encoding="UTF-8"):
-    return b85encode(stg.encode(encoding=encoding))
-
-
-def base85_decode(bytobj, encoding="UTF-8"):
-    return b85decode(bytobj).decode(encoding=encoding)
-
-
-# ======================
-# Jinja2 Custom filters.
-# ======================
-def integertostring(intg):
-    return str(intg)
-
-
-def cjustify(stg, width, char=""):
-    return "{0:{2}^{1}}".format(stg, width, char)
-
-
-def rjustify(stg, width, char=""):
-    return "{0:{2}>{1}}".format(str(stg), width, char)
-
-
-def ljustify(stg, width, char=""):
-    return "{0:{2}<{1}}".format(stg, width, char)
-
-
-def repeatelement(elem, n):
-    for i in repeat(elem, n):
-        yield i
-
-
-def normalize(stg):
-    return stg.replace(", ", "_").replace(" ", "_")
-
-
-def normalize2(stg):
-    return stg.replace(" ", "%20").replace("&", "%26")
-
-
-def localize_date(dt, tz=None):
-    """
-    
-    :param dt: 
-    :param tz: 
-    :return: 
-    """
-    datobj = dt
-    if tz:
-        datobj = tz.localize(dt).astimezone(LOCAL)
-    return datobj
+    # 7. Return output data.
+    return out_separators, out_headers, iter(zip(*[v for _, v in out_collection.items()]))

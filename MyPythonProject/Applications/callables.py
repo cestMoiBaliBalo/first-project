@@ -50,6 +50,7 @@ def exclude_allbutlosslessaudiofiles(curdir, *files):
     flac = fnmatch.filter(files, "*.flac")
     return set(files) - (set(ape) | set(flac))
 
+
 # def exclude_allbutimagefiles(curdir, *files):
 #     """
 #
@@ -72,20 +73,20 @@ def exclude_allbutlosslessaudiofiles(curdir, *files):
 #     return set(files) - (set(pdf) | set(txt))
 #
 #
-# def exclude_allbutaudiofiles(curdir, *files):
-#     """
-#
-#     :param curdir:
-#     :param files:
-#     :return:
-#     """
-#     if fnmatch.fnmatch(curdir, "*RECYCLE*"):
-#         return set(files)
-#     flac = fnmatch.filter(files, "*.flac")
-#     mp3 = fnmatch.filter(files, "*.mp3")
-#     m4a = fnmatch.filter(files, "*.m4a")
-#     return set(files) - (set(flac) | set(mp3) | set(m4a))
+def exclude_allbutaudiofiles(curdir, *files):
+    """
 
+    :param curdir:
+    :param files:
+    :return:
+    """
+    ape = fnmatch.filter(files, "*.ape")
+    dsf = fnmatch.filter(files, "*.dsf")
+    flac = fnmatch.filter(files, "*.flac")
+    mp3 = fnmatch.filter(files, "*.mp3")
+    m4a = fnmatch.filter(files, "*.m4a")
+    ogg = fnmatch.filter(files, "*.ogg")
+    return set(files) - (set(ape) | set(dsf) | set(flac) | set(mp3) | set(m4a) | set(ogg))
 
 # def somefunc5(curdir, *files):
 #     """
