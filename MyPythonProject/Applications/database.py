@@ -220,9 +220,9 @@ for task in argument.task:
                     "CREATE TABLE IF NOT EXISTS playeddiscs ("
                     "albumid TEXT NOT NULL, "
                     "discid INTEGER NOT NULL, "
-                    "utc_played TIMESTAMP DEFAULT NULL DEFAULT (DATETIME('now')), "
+                    "utc_played TIMESTAMP DEFAULT NULL, "
                     "played INTEGER NOT NULL DEFAULT 0, "
-                    "utc_created TIMESTAMP NOT NULL, "
+                    "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
                     "utc_modified TIMESTAMP DEFAULT NULL, "
                     "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
             conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS playeddiscs_idx ON playeddiscs (albumid ASC, discid ASC)")
@@ -263,9 +263,9 @@ for task in argument.task:
                     "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
                     "utc_modified TIMESTAMP DEFAULT NULL, "
                     "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
-            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON discs (albumid ASC, discid ASC)")
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON bootlegdiscs (albumid ASC, discid ASC)")
 
-            # --> Bonus.
+            # --> Bonuses.
             conn.execute(
                     "CREATE TABLE IF NOT EXISTS bonuses ("
                     "albumid TEXT NOT NULL, "
@@ -1032,7 +1032,7 @@ for task in argument.task:
 
     elif task == 25:
         with ExitStack() as stack:
-            conn = stack.enter_context(DatabaseConnection(os.path.join(os.path.expandvars("%_RESOURCES%"), "xreferences.db")))
+            conn = stack.enter_context(DatabaseConnection(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Resources", "xreferences.db")))
             stack.enter_context(conn)
             conn.execute("DROP TABLE IF EXISTS files")
             conn.execute("DROP TABLE IF EXISTS albums")
@@ -1056,7 +1056,7 @@ for task in argument.task:
     elif task == 26:
         to_integer = {True: 1, False: 0}
         with ExitStack() as stack:
-            conn = stack.enter_context(DatabaseConnection(os.path.join(os.path.expandvars("%_RESOURCES%"), "xreferences.db")))
+            conn = stack.enter_context(DatabaseConnection(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Resources", "xreferences.db")))
             stack.enter_context(conn)
             for artist, artist_path in get_artists(MUSIC):
                 if "recycle" in artist_path.lower():

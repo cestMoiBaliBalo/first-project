@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
+import datetime
+import locale
 import re
 import sys
 import unittest
+
+from pytz import timezone
 
 from .. import shared
 from ..AudioCD.shared import get_xreferences
@@ -288,3 +292,112 @@ class TestValidGenre(unittest.TestCase):
             shared.valid_genre("Some Genre")
         exception, = cm.exception.args
         self.assertEqual(exception, '"Some Genre" is not a valid genre.')
+
+
+class TestAdjustDatetime(unittest.TestCase):
+
+    def test_t01(self):
+        self.assertEqual(shared.adjust_datetime(2018, 11, 17, 14, 8, 0), datetime.datetime(2018, 11, 17, 14, 8, 0))
+
+    def test_t02(self):
+        self.assertEqual(shared.adjust_datetime(2018, 2, 31, 14, 8, 0), datetime.datetime(2018, 3, 3, 14, 8, 0))
+
+    def test_t03(self):
+        self.assertEqual(shared.adjust_datetime(2018, 11, 31, 14, 8, 0), datetime.datetime(2018, 12, 1, 14, 8, 0))
+
+    def test_t04(self):
+        self.assertRaises(ValueError, shared.adjust_datetime, *(2018, 13, 31, 14, 8, 0))
+
+
+class TestGetReadableDate(unittest.TestCase):
+
+    def setUp(self):
+        self.locale = locale.getlocale()
+        if sys.platform.startswith("win"):
+            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+        elif sys.platform.startswith("lin"):
+            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self.locale)
+
+    def test_t01(self):
+        self.assertEqual(shared.get_readabledate(datetime.datetime(2018, 11, 17, 14, 8, 0)), "Samedi 17 Novembre 2018 14:08:00  (UTC)")
+
+    def test_t02(self):
+        self.assertEqual(shared.get_readabledate(datetime.datetime(2018, 11, 17, 14, 8, 0), tz=shared.LOCAL), "Samedi 17 Novembre 2018 14:08:00 CET (UTC+0100)")
+
+    def test_t03(self):
+        self.assertEqual(shared.get_readabledate(datetime.datetime(2018, 11, 17, 14, 8, 0), template=shared.TEMPLATE3, tz=shared.LOCAL), "17/11/2018 14:08:00 CET (UTC+0100)")
+
+
+class TestFormatDate(unittest.TestCase):
+
+    def setUp(self):
+        self.locale = locale.getlocale()
+        if sys.platform.startswith("win"):
+            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+        elif sys.platform.startswith("lin"):
+            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self.locale)
+
+    def test_t01(self):
+        self.assertEqual(shared.format_date(shared.LOCAL.localize(datetime.datetime(2018, 11, 17, 14, 8, 0))), "Samedi 17 Novembre 2018 14:08:00 CET (UTC+0100)")
+
+    def test_t02(self):
+        self.assertEqual(shared.format_date(shared.UTC.localize(datetime.datetime(2018, 11, 17, 14, 8, 0))), "Samedi 17 Novembre 2018 14:08:00 UTC (UTC+0000)")
+
+    def test_t03(self):
+        self.assertEqual(shared.format_date(timezone("US/Eastern").localize(datetime.datetime(2018, 11, 17, 14, 8, 0))), "Samedi 17 Novembre 2018 14:08:00 EST (UTC-0500)")
+
+    def test_t04(self):
+        self.assertEqual(shared.format_date(timezone("US/Pacific").localize(datetime.datetime(2018, 11, 17, 14, 8, 0))), "Samedi 17 Novembre 2018 14:08:00 PST (UTC-0800)")
+
+    def test_t05(self):
+        self.assertEqual(shared.format_date(shared.LOCAL.localize(datetime.datetime(2018, 6, 17, 14, 8, 0))), "Dimanche 17 Juin 2018 14:08:00 CEST (UTC+0200)")
+
+
+class ValidDatetime(unittest.TestCase):
+
+    def test_t01(self):
+        self.assertRaises(ValueError, shared.valid_datetime, "some_string")
+
+    def test_t02(self):
+        timestamp, _, time_structure = shared.valid_datetime(1542464410)
+        self.assertEqual(timestamp, 1542464410)
+        self.assertTupleEqual(tuple(time_structure), (2018, 11, 17, 15, 20, 10, 5, 321, 0))
+
+    def test_t03(self):
+        timestamp, _, time_structure = shared.valid_datetime(1529238003)
+        self.assertEqual(timestamp, 1529238003)
+        self.assertTupleEqual(tuple(time_structure), (2018, 6, 17, 14, 20, 3, 6, 168, 1))
+
+    def test_t04(self):
+        timestamp, _, time_structure = shared.valid_datetime("1542464410")
+        self.assertEqual(timestamp, 1542464410)
+        self.assertTupleEqual(tuple(time_structure), (2018, 11, 17, 15, 20, 10, 5, 321, 0))
+
+    def test_t05(self):
+        timestamp, _, time_structure = shared.valid_datetime("1529238003")
+        self.assertEqual(timestamp, 1529238003)
+        self.assertTupleEqual(tuple(time_structure), (2018, 6, 17, 14, 20, 3, 6, 168, 1))
+
+    def test_t06(self):
+        timestamp, _, time_structure = shared.valid_datetime(1542464410)
+        self.assertEqual(timestamp, 1542464410)
+        self.assertTupleEqual(tuple(time_structure), (2018, 11, 17, 15, 20, 10, 5, 321, 0))
+
+    def test_t07(self):
+        timestamp, _, time_structure = shared.valid_datetime(datetime.datetime(2018, 6, 17, 14, 20, 3, 6))
+        self.assertEqual(timestamp, 1529238003)
+        self.assertTupleEqual(tuple(time_structure), (2018, 6, 17, 14, 20, 3, 6, 168, 1))
+
+    def test_t08(self):
+        self.assertRaises(ValueError, shared.valid_datetime, "1111aa2222b")
+
+    def test_t09(self):
+        timestamp, _, time_structure = shared.valid_datetime(timezone("Europe/Paris").localize(datetime.datetime(2018, 6, 17, 14, 20, 3, 6)))
+        self.assertEqual(timestamp, 1529238003)
+        self.assertTupleEqual(tuple(time_structure), (2018, 6, 17, 14, 20, 3, 6, 168, 1))

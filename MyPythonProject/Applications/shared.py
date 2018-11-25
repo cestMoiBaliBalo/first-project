@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
-import locale
+import calendar
 import logging
 import os
 import re
 from abc import ABC, abstractmethod
 from base64 import b85decode, b85encode
 from collections import OrderedDict
-from contextlib import ContextDecorator, ExitStack
-from datetime import date, datetime
+from contextlib import ContextDecorator, ExitStack, suppress
+from datetime import date, datetime, time, timedelta
 from functools import singledispatch
 from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
 from logging import Formatter
@@ -29,10 +29,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-# ==========================
-# Define French environment.
-# ==========================
-# locale.setlocale(locale.LC_ALL, "french")
+that_file = os.path.abspath(__file__)
 
 # ==================
 # Functions aliases.
@@ -56,9 +53,9 @@ WRITE = "w"
 
 # Resources.
 ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
-DATABASE = join(dirname(dirname(abspath(__file__))), "Resources", "database.db")
-TESTDATABASE = join(dirname(abspath(__file__)), "Unittests", "Resources", "database.db")
-XREFERENCES = join(expandvars("%_COMPUTING%"), "Resources", "xreferences.db")
+DATABASE = join(dirname(dirname(that_file)), "Resources", "database.db")
+TESTDATABASE = join(dirname(that_file), "Unittests", "Resources", "database.db")
+XREFERENCES = join(dirname(dirname(that_file)), "Resources", "xreferences.db")
 
 # Regular expressions.
 BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
@@ -220,7 +217,7 @@ class TitleCaseBaseConverter(ABC):
     """
 
     # Define class-level configuration.
-    with open(join(dirname(abspath(__file__)), "Resources", "resource1.yml"), encoding=UTF8) as fp:
+    with open(join(dirname(that_file), "Resources", "resource1.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp)
 
     # Define class-level regular expressions.
@@ -714,7 +711,7 @@ def customformatterfactory(pattern=LOGPATTERN):
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(join(dirname(dirname(dirname(abspath(__file__)))), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return RotatingFileHandler(join(dirname(dirname(dirname(that_file))), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
 def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
@@ -820,6 +817,31 @@ def convert_timestamp(timestamp: int, tz=UTC) -> datetime:
     :return:
     """
     return _convert_timestamp(timestamp, tz)
+
+
+def adjust_datetime(year: int, month: int, day: int, hour: int, minutes: int, seconds: int) -> Optional[datetime]:
+    """
+
+    :param year:
+    :param month:
+    :param day:
+    :param hour:
+    :param minutes:
+    :param seconds:
+    :return:
+    """
+    datobj = None  # type: Optional[datetime]
+    try:
+        datobj = datetime(year, month, day, hour, minutes, seconds)
+    except ValueError as error:
+        (message,) = error.args
+    else:
+        return datobj
+    if message.lower() == "day is out of range for month":
+        _, number_of_days = calendar.monthrange(year, month)  # type: int, int
+        delta = day - number_of_days  # type: int
+        return datetime.combine(date(year, month, number_of_days) + timedelta(days=delta), time(hour, minutes, seconds))
+    raise ValueError(message)
 
 
 def get_tabs(length: int, *, tabsize: int = 3) -> str:
@@ -1138,9 +1160,9 @@ def _(arg: date, *, template: str = "%d/%m/%Y") -> str:
 @singledispatch
 def valid_datetime(arg):
     """
-    Check if input argument is a coherent Unix time or a coherent python datetime object.
+    Check if input argument is a coherent (UTC) Unix time or a coherent python (local) datetime object.
     Raise a ValueError if not.
-    :param arg: Unix time (int or str allowed) or python datetime object.
+    :param arg: UTC Unix time (int or str allowed) or python datetime object.
     :return: Tuple composed of :
                    - Unix time.
                    - Datetime aware object respective to the local system time zone.
@@ -1151,16 +1173,26 @@ def valid_datetime(arg):
 
 @valid_datetime.register(int)  # type: ignore
 def _(arg: int) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
+    """
+
+    :param arg: integer UTC Unix time.
+    :return:
+    """
     _msg = r"is not a valid Unix time."  # type: str
     try:
-        _datobj = datetime.fromtimestamp(arg)  # type: datetime
+        _datobj = datetime.utcfromtimestamp(arg)  # type: datetime
     except OSError:
         raise ValueError(f'"{arg}" {_msg}')
-    return arg, LOCAL.localize(_datobj), _datobj.timetuple()
+    return arg, UTC.localize(_datobj).astimezone(LOCAL), UTC.localize(_datobj).astimezone(LOCAL).timetuple()
 
 
 @valid_datetime.register(str)  # type: ignore
 def _(arg: str) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
+    """
+
+    :param arg: string UTC Unix time.
+    :return:
+    """
     _msg = r"is not a valid Unix time."  # type: str
 
     try:
@@ -1169,16 +1201,25 @@ def _(arg: str) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int,
         raise ValueError(err)
 
     try:
-        _datobj = datetime.fromtimestamp(arg)  # type: datetime
+        _datobj = datetime.utcfromtimestamp(arg)  # type: datetime
     except OSError:
         raise ValueError(f'"{arg}" {_msg}')
 
-    return arg, LOCAL.localize(_datobj), _datobj.timetuple()
+    return arg, UTC.localize(_datobj).astimezone(LOCAL), UTC.localize(_datobj).astimezone(LOCAL).timetuple()
 
 
 @valid_datetime.register(datetime)  # type: ignore
 def _(arg: datetime) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int, int, int, int, str, int]]:
-    return int(arg.timestamp()), arg, arg.timetuple()
+    """
+
+    :param arg: local datetime object.
+    :return:
+    """
+    _arg = arg
+    with suppress(ValueError):
+        _arg = LOCAL.localize(arg)
+    _arg.astimezone(LOCAL)
+    return int(_arg.timestamp()), _arg, _arg.timetuple()
 
 
 # ======================

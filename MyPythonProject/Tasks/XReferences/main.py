@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
+import locale
 import logging.config
 import os
 import sys
@@ -17,6 +18,10 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+# -----
+locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+
+# -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("MyPythonProject.Tasks.XReferences.main")
@@ -34,7 +39,7 @@ changes = 0  # type: int
 new_albums = albums_drive.difference(albums_database)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if new_albums:
     collection = sorted(sorted(sorted(sorted(sorted(new_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
-    for key, group in groupby(collection, key=lambda i: (i(0), i(1), i(4))):
+    for key, group in groupby(collection, key=lambda i: tuple(compress(i, [1, 1, 0, 0, 1, 0, 0, 0]))):
         artistid, albumid, album = key
         logger.info("# Album inserted into the local audio drive ================================================== #")
         logger.info("ArtistID : %s", artistid)
@@ -49,7 +54,7 @@ if new_albums:
 removed_albums = albums_database.difference(albums_drive)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if removed_albums:
     collection = sorted(sorted(sorted(sorted(sorted(removed_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
-    for key, group in groupby(collection, key=lambda i: (i(0), i(1), i(4))):
+    for key, group in groupby(collection, key=lambda i: tuple(compress(i, [1, 1, 0, 0, 1, 0, 0, 0]))):
         artistid, albumid, album = key
         logger.info("# Album removed from the local audio drive ================================================== #")
         logger.info("ArtistID : %s", artistid)

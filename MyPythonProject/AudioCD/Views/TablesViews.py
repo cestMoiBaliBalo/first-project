@@ -10,14 +10,14 @@ from typing import Iterable, Mapping, Tuple
 import yaml
 
 from Applications.Tables.RippedDiscs.shared import aggregate_rippeddiscs_by_genre, aggregate_rippeddiscs_by_month, get_rippeddiscs
-from Applications.shared import DATABASE, LOCAL, UTC, format_date, format_collection, get_dataframe, print_collection
+from Applications.shared import DATABASE, LOCAL, UTC, format_collection, format_date, get_dataframe, get_dirname, print_collection
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Development"
 
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 
 boolean_to_string: Mapping[bool, str] = {False: "N", True: "Y"}

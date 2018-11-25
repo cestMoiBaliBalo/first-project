@@ -10,9 +10,9 @@ from operator import itemgetter
 import yaml
 from jinja2 import FileSystemLoader
 
-import patterns
+from Applications import patterns
 from Applications.AudioCD.shared import DFTPATTERN
-from Applications.shared import TemplatingEnvironment, UTF16, WRITE, left_justify, mainscript, get_dirname
+from Applications.shared import TemplatingEnvironment, UTF16, WRITE, get_dirname, left_justify, mainscript
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

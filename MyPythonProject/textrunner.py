@@ -39,7 +39,7 @@ if sys.platform.startswith("win"):
     import os
 
     # -----
-    locale.setlocale(locale.LC_ALL, "french")
+    locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "logging.yml"), encoding="UTF_8") as fp:
         config = yaml.load(fp)
     for item in LOGGERS:
@@ -48,7 +48,7 @@ if sys.platform.startswith("win"):
     logging.config.dictConfig(config)
     logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]))
 
-if sys.platform.startswith("lin"):
+elif sys.platform.startswith("lin"):
     locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 # ============

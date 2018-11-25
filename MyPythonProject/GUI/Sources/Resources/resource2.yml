@@ -7,8 +7,8 @@ _CALLABLES:
   rippeddiscs: !!python/name:Applications.Tables.Albums.shared.update_rippeddiscs
 
 _CLASSES:
- defaultalbums: !!python/name:shared.DefaultAlbumRecord
- rippeddiscs: !!python/name:shared.RippedDiscRecord
+ defaultalbums: !!python/name:Applications.interfaces.DefaultAlbumRecord
+ rippeddiscs: !!python/name:Applications.interfaces.RippedDiscRecord
 
 _DFTSORTFIELDS:
   bootlegalbums:
@@ -120,7 +120,7 @@ _MAPPINGS:
   rippeddiscs:
     unixtimestamp:
       - ripped
-      - !!python/name:shared.adapt_timestamp
+      - !!python/name:Applications.interfaces.adapt_timestamp
 
 _SELECTORS:
   bootlegalbums:

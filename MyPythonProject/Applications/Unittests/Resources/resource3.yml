@@ -1,5 +1,4 @@
-#
-bootleg:     
+bootleg:
   - AlbumArtist: Bruce Springsteen
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
@@ -27,8 +26,9 @@ bootleg:
     TrackLanguage: English
   - bootleg
   - - nugs
-  - false
-  - true
+    - updtrack
+    - updtotaltracks
+  - no_tags_processing
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
@@ -44,10 +44,136 @@ bootleg:
     deluxe: N
     foldersortcount: N
     genre: Rock
+    mediaprovider: nugs.net
+    totaltracks: !!python/str 35
+    tracknumber: !!python/str 14
     tracklanguage: English
     upc: !!python/none
 
-#
+bootleg1:
+  - AlbumArtist: Bruce Springsteen
+    AlbumArtistSort: Springsteen, Bruce
+    AlbumSortCount: !!python/str 1
+    Artist: Bruce Springsteen
+    ArtistSort: Springsteen, Bruce
+    BonusTrack: Y
+    Bootleg: Y
+    BootlegAlbumCity: Paris, France
+    BootlegAlbumProvider: Crystal Cat Records
+    BootlegAlbumTitle: Paris Night 2002
+    BootlegAlbumTour: The Rising Tour
+    BootlegAlbumYear: 2002 10 14
+    BootlegDiscReference: CC 123
+    BootlegTrackCity: London, England
+    BootlegTrackTour: The Rising Tour
+    BootlegTrackYear: 2002 10 16
+    Deluxe: N
+    Disc: 2/3
+    Encoder: FDK v0.1.3
+    Genre: Rock
+    InCollection: Y
+    LiveDisc: Y
+    LiveTrack: Y
+    Offset: !!python/str 13
+    Profile: SBootlegs
+    Source: CD (Lossless)
+    Title: Roll of the Dice
+    TotalTracks: !!python/str 35
+    Track: 5/7
+    TrackLanguage: English
+  - bootleg
+  - - sbootlegs
+    - updtrack
+    - updtotaltracks
+  - no_tags_processing
+  - albumartist: Bruce Springsteen And The E Street Band
+    albumsort: 2.20021014.1.02
+    artist: Bruce Springsteen
+    album: The Rising Tour - 2002.10.14 - [Paris, France]
+    bonustrack: Y
+    bootlegalbum_city: Paris, France
+    bootlegalbum_country: France
+    bootlegalbum_date: !!python/str 2002-10-14
+    bootlegalbum_day: !!python/str 14
+    bootlegalbum_month: !!python/str 10
+    bootlegalbum_provider: Crystal Cat Records
+    bootlegalbum_title: Paris Night 2002
+    bootlegalbum_tour: The Rising Tour
+    bootlegalbum_year: !!python/str 2002
+    bootlegdisc_reference: CC 123
+    bootlegtrack_city: London, England
+    bootlegtrack_country: England
+    bootlegtrack_date: !!python/str 2002-10-16
+    bootlegtrack_day: !!python/str 16
+    bootlegtrack_month: !!python/str 10
+    bootlegtrack_tour: The Rising Tour
+    bootlegtrack_year: !!python/str 2002
+    deluxe: N
+    discnumber: !!python/str 2
+    foldersortcount: N
+    genre: Rock
+    livedisc: Y
+    livetrack: Y
+    mediaprovider: !!python/none
+    titlesort: D2.T05.YYY
+    totaldiscs: !!python/str 3
+    totaltracks: !!python/str 35
+    tracknumber: !!python/str 18
+    tracklanguage: English
+    upc: !!python/none
+
+bootleg2:
+  - AlbumArtist: Bruce Springsteen
+    AlbumArtistSort: Springsteen, Bruce
+    AlbumSortCount: !!python/str 1
+    Artist: Bruce Springsteen
+    ArtistSort: Springsteen, Bruce
+    BonusTrack: N
+    Bootleg: Y
+    BootlegAlbumCity: East Rutherford, NJ
+    BootlegAlbumProvider: nugs.net
+    BootlegAlbumTour: The Other Tour
+    BootlegAlbumYear: 1993 06 24
+    Deluxe: N
+    Disc: 2/4
+    Encoder: FDK v0.1.3
+    Genre: Rock
+    InCollection: Y
+    LiveDisc: Y
+    LiveTrack: Y
+    Offset: !!python/str 13
+    Profile: Nugs
+    Source: CD (Lossless)
+    Title: Roll of the Dice
+    TotalTracks: !!python/str 35
+    Track: 1/7
+    TrackLanguage: English
+  - bootleg
+  - - nugs
+  - unittest_bootlegalbum
+  - albumartist: Bruce Springsteen And The E Street Band
+    albumsort: 2.19930624.1.02
+    artist: Bruce Springsteen
+    album: The Other Tour - 1993.06.24 - [East Rutherford, NJ]
+    bootlegalbum_city: East Rutherford, NJ
+    bootlegalbum_country: United States
+    bootlegalbum_date: !!python/str 1993-06-24
+    bootlegalbum_day: !!python/str 24
+    bootlegalbum_month: !!python/str 06
+    bootlegalbum_provider: nugs.net
+    bootlegalbum_tour: The Other Tour
+    bootlegalbum_year: !!python/str 1993
+    deluxe: N
+    discnumber: !!python/str 2
+    foldersortcount: N
+    genre: Rock
+    mediaprovider: nugs.net
+    totaldiscs: !!python/str 4
+    totaltracks: !!python/str 7
+    tracknumber: !!python/str 1
+    tracklanguage: English
+    upc: !!python/none
+
 default:
   - Album: MTV Unplugged
     AlbumArtist: Kiss
@@ -80,8 +206,7 @@ default:
     _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp1477.tmp\\16.bin
   - default
   - []
-  - true
-  - false
+  - unittest_defaultalbum
   - albumartist: Kiss
     albumsort: 1.19960000.1.13
     artist: Kiss
@@ -95,9 +220,12 @@ default:
     bootlegalbum_tour: !!python/none
     bootlegalbum_year: !!python/none
     deluxe: N
+    discnumber: !!python/str 1
     foldersortcount: N
     genre: Hard Rock
+    mediaprovider: !!python/none
     tracklanguage: English
+    tracknumber: !!python/str 1
     upc: !!python/str 731452895028
 
 default1:
@@ -131,8 +259,7 @@ default1:
     _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp3F79.tmp\\15.bin
   - default
   - []
-  - true
-  - false
+  - unittest_defaultalbum
   - albumartist: Kiss
     albumsort: 1.19750000.2.13
     artist: Kiss
@@ -146,13 +273,15 @@ default1:
     bootlegalbum_tour: !!python/none
     bootlegalbum_year: !!python/none
     deluxe: N
+    discnumber: !!python/str 2
     foldersortcount: Y
     genre: Hard Rock
+    mediaprovider: !!python/none
     tracklanguage: English
+    tracknumber: !!python/str 1
     upc: !!python/str 042282278029
 
-
-default4:
+default2:
   - Album: Alive III
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
@@ -183,8 +312,7 @@ default4:
     _albumart_1_Front Album Cover: "C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp8DFD.tmp\\5.bin"
   - default
   - []
-  - true
-  - false
+  - unittest_defaultalbum
   - albumartist: Kiss
     albumsort: 1.19930000.1.13
     artist: Kiss
@@ -198,12 +326,15 @@ default4:
     bootlegalbum_tour: !!python/none
     bootlegalbum_year: !!python/none
     deluxe: N
+    discnumber: !!python/str 1
     foldersortcount: N
     genre: Hard Rock
+    mediaprovider: !!python/none
     tracklanguage: English
+    tracknumber: !!python/str 1
     upc: !!python/str 731451482724
 
-default5:
+default3:
   - Album: Rock and Roll Over
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
@@ -235,8 +366,7 @@ default5:
     _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp3F43.tmp\\17.bin
   - default
   - []
-  - true
-  - false
+  - unittest_defaultalbum
   - albumartist: Kiss
     albumsort: 1.19760000.2.13
     artist: Kiss
@@ -250,7 +380,67 @@ default5:
     bootlegalbum_tour: !!python/none
     bootlegalbum_year: !!python/none
     deluxe: N
+    discnumber: !!python/str 1
     foldersortcount: Y
     genre: Hard Rock
+    mediaprovider: !!python/none
+    tracklanguage: English
+    tracknumber: !!python/str 1
+    upc: !!python/str 042282415028
+
+default4:
+  - Album: Some New Album
+    AlbumArtist: The Artist
+    AlbumArtistSort: Artist, The
+    AlbumSortCount: !!python/str 1
+    Artist: The Artist
+    ArtistSort: Artist, The
+    BonusTrack: N
+    Bootleg: N
+    Deluxe: N
+    Disc: 1/1
+    Encoder: (FLAC 1.3.0)
+    FolderSortCount: N
+    Genre: Rock
+    InCollection: Y
+    Label: Some Label
+    LiveDisc: N
+    LiveTrack: N
+    LossLess: !!python/str 2
+    Offset: !!python/str 0
+    OrigYear: !!python/str 2018
+    Profile: Default
+    Source: CD (Lossless)
+    Title: Some Title
+    TotalTracks: !!python/str 10
+    Track: 5/10
+    TrackLanguage: English
+    UPC: !!python/str 042282415028
+    Year: !!python/str 2018
+    _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp3F43.tmp\\17.bin
+  - default
+  - []
+  - unittest_defaultalbum
+  - albumartist: The Artist
+    albumsort: 1.20180000.1.13
+    artist: The Artist
+    album: Some New Album
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    discnumber: !!python/str 1
+    foldersortcount: N
+    genre: Rock
+    label: Some Label
+    mediaprovider: !!python/none
+    title: Some Title
+    totaltracks: !!python/str 10
+    tracknumber: !!python/str 5
     tracklanguage: English
     upc: !!python/str 042282415028

@@ -69,6 +69,20 @@ def close_database(conn):
     conn.close()
 
 
+def get_rawdata(table, db=DATABASE):
+    """
+
+    :param table:
+    :param db:
+    :return:
+    """
+    conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
+    curs = conn.cursor()
+    curs.execute("SELECT * FROM {0} ORDER BY rowid".format(table))
+    for record in curs.fetchall():
+        yield record
+
+
 # ===============================
 # Protected functions interfaces.
 # ===============================

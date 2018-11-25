@@ -23,18 +23,6 @@ handlers:
 
 loggers:
 
-# Logger for backup tasks.
-  Backup:
-    level: INFO
-    handlers: [file]
-    propagate: no
-
-# Logger for main scripts.
-  MyPythonProject:
-    level: INFO
-    handlers: [file]
-    propagate: no
-
 # Loggers for Audio CD processing Applications.
   Applications.AudioCD:
     level: INFO
@@ -46,15 +34,19 @@ loggers:
     level: INFO
     handlers: [file]
     propagate: no
-  Applications.Tables.Bootlegs:
-    level: INFO
-    handlers: [file]
-    propagate: no
   Applications.Tables.RippedDiscs:
     level: INFO
     handlers: [file]
     propagate: no
   Applications.Tables.Tasks:
+    level: INFO
+    handlers: [file]
+    propagate: no
+  Applications.Tables.XReferences:
+    level: INFO
+    handlers: [file]
+    propagate: no
+  Applications.Tables:
     level: INFO
     handlers: [file]
     propagate: no
@@ -67,6 +59,18 @@ loggers:
 
 # Logger for global shared classes and functions.
   Applications.shared:
+    level: INFO
+    handlers: [file]
+    propagate: no
+
+# Logger for backup tasks.
+#   Backup:
+#     level: INFO
+#     handlers: [file]
+#     propagate: no
+
+# Logger for main scripts.
+  MyPythonProject:
     level: INFO
     handlers: [file]
     propagate: no

@@ -1,18 +1,33 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import json
+import logging.config
 import os
 import sqlite3
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from operator import itemgetter
 
-from Applications.Tables.shared import convert_tobooleanvalue
+import yaml
+
 from Applications.Tables.XReferences.shared import get_database_albums, get_drive_albums
+from Applications.Tables.shared import convert_tobooleanvalue
+from Applications.shared import get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+# -----
+LOGGERS = ["Applications.Tables"]
+
+# -----
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=1), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    config = yaml.load(fp)
+for item in LOGGERS:
+    with suppress(KeyError):
+        config["loggers"][item]["level"] = "INFO"
+logging.config.dictConfig(config)
 
 # -----
 sqlite3.register_converter("boolean", convert_tobooleanvalue)

@@ -19,7 +19,7 @@ from Applications.shared import UTC, get_readabledate, localize_date, stringify,
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 # ==========
 # Variables.
@@ -42,8 +42,8 @@ def get_datetime(func):
         try:
             _, datobj, _ = func(timestamp)
         except ValueError:
-            return datetime.utcnow()
-        return datobj.astimezone(UTC).replace(tzinfo=None)
+            return UTC.localize(datetime.utcnow()).replace(microsecond=0, tzinfo=None)
+        return datobj.astimezone(UTC).replace(microsecond=0, tzinfo=None)
 
     return wrapper
 
@@ -98,36 +98,45 @@ class ParentFrame(wx.Frame):
         # --------------------------
         # Configure database picker.
         # --------------------------
-        self.m_Databases = wx.FilePickerCtrl(self, wx.ID_ANY, "Open database", "Select a file", "*.*", wx.DefaultPosition, wx.Size(200, -1),
-                                             wx.FLP_DEFAULT_STYLE | wx.FLP_FILE_MUST_EXIST | wx.FLP_OPEN | wx.FLP_USE_TEXTCTRL)
-        self.m_Databases.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
-        MainSizer.Add(self.m_Databases, 0, wx.ALL, 5)
+        self.m_database = wx.Button(self, wx.ID_ANY, "Database", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.m_database.SetMinSize(wx.Size(70, 30))
+        MainSizer.Add(self.m_database, 0, wx.ALL, 5)
 
         # ----------------
         # Configure lists.
         # ----------------
-        bSizer_1 = wx.BoxSizer(wx.HORIZONTAL)
-        self.m_Tables = wx.ListBox(self, wx.ID_ANY, wx.Point(-1, -1), wx.Size(200, -1), [], wx.LB_SINGLE)
-        bSizer_1.Add(self.m_Tables, 0, wx.ALL | wx.EXPAND, 5)
-        self.m_Collection = wx.ListCtrl(self, wx.ID_ANY, wx.Point(-1, -1), wx.DefaultSize, wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_VRULES)
-        bSizer_1.Add(self.m_Collection, 1, wx.BOTTOM | wx.EXPAND | wx.RIGHT | wx.TOP, 5)
-        MainSizer.Add(bSizer_1, 1, wx.EXPAND, 5)
+        Sizer1 = wx.BoxSizer(wx.HORIZONTAL)
+        self.m_tables = wx.ListBox(self, wx.ID_ANY, wx.Point(-1, -1), wx.Size(200, -1), [], wx.LB_SINGLE)
+        Sizer1.Add(self.m_tables, 0, wx.ALL | wx.EXPAND, 5)
+        self.m_data = wx.ListCtrl(self, wx.ID_ANY, wx.Point(-1, -1), wx.DefaultSize, wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_VRULES)
+        Sizer1.Add(self.m_data, 1, wx.BOTTOM | wx.EXPAND | wx.RIGHT | wx.TOP, 5)
 
         # ------------------
         # Configure buttons.
         # ------------------
-        bSizer_3 = wx.BoxSizer(wx.VERTICAL)
-        bSizer_2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.m_RefreshButton = wx.Button(self, wx.ID_ANY, "Refresh", wx.Point(-1, -1), wx.Size(70, 30), 0)
-        bSizer_2.Add(self.m_RefreshButton, 0, wx.ALL, 5)
-        self.mCloseButton = wx.Button(self, wx.ID_ANY, "Close", wx.Point(-1, -1), wx.Size(70, 30), 0)
-        bSizer_2.Add(self.mCloseButton, 0, wx.ALL, 5)
-        bSizer_3.Add(bSizer_2, 0, wx.ALIGN_RIGHT, 5)
-        MainSizer.Add(bSizer_3, 0, wx.EXPAND, 5)
+        Sizer2a = wx.BoxSizer(wx.HORIZONTAL)
+
+        # --> CSV File.
+        self.m_csv = wx.Button(self, wx.ID_ANY, "CSV File", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.m_csv.Enable(False)
+        Sizer2a.Add(self.m_csv, 0, wx.ALL, 5)
+
+        # --> Refresh.
+        self.m_refresh = wx.Button(self, wx.ID_ANY, "Refresh", wx.Point(-1, -1), wx.Size(70, 30), 0)
+        self.m_refresh.Enable(False)
+        Sizer2a.Add(self.m_refresh, 0, wx.ALL, 5)
+
+        # --> Close.
+        self.m_close = wx.Button(self, wx.ID_ANY, "Close", wx.Point(-1, -1), wx.Size(70, 30), 0)
+        Sizer2a.Add(self.m_close, 0, wx.ALL, 5)
 
         # ------------------
         # Initialize layout.
         # ------------------
+        Sizer2 = wx.BoxSizer(wx.VERTICAL)
+        Sizer2.Add(Sizer2a, 0, wx.ALIGN_RIGHT, 5)
+        MainSizer.Add(Sizer1, 1, wx.EXPAND, 0)
+        MainSizer.Add(Sizer2, 0, wx.EXPAND, 5)
         self.SetSizer(MainSizer)
         self.Layout()
         self.Centre(wx.BOTH)
@@ -135,12 +144,13 @@ class ParentFrame(wx.Frame):
         # -----------------
         # Configure events.
         # -----------------
-        self.m_Databases.Bind(wx.EVT_FILEPICKER_CHANGED, self._database_onchange)
-        self.m_Tables.Bind(wx.EVT_LISTBOX, self._tables_onclick)
-        self.m_Collection.Bind(wx.EVT_LIST_ITEM_SELECTED, self._record_onselect)
-        self.m_RefreshButton.Bind(wx.EVT_BUTTON, self._refreshbutton_onclick)
-        self.mCloseButton.Bind(wx.EVT_BUTTON, self._closebutton_onclick)
-        self.Bind(wx.EVT_LIST_COL_CLICK, self._header_onclick, self.m_Collection)
+        self.m_database.Bind(wx.EVT_BUTTON, self._database)
+        self.m_tables.Bind(wx.EVT_LISTBOX, self._table)
+        self.m_data.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._record)
+        self.m_refresh.Bind(wx.EVT_BUTTON, self._click_on_refresh)
+        self.m_close.Bind(wx.EVT_BUTTON, self._click_on_close)
+        self.m_csv.Bind(wx.EVT_BUTTON, self._click_on_csv)
+        self.Bind(wx.EVT_LIST_COL_CLICK, self._header_onclick, self.m_data)
 
     def _load_collection(self, collection) -> None:
         """
@@ -151,9 +161,9 @@ class ParentFrame(wx.Frame):
         collection = iter(collection)
         for item in collection:
             item = list(compress(item, self._selectors[self._table.lower()]))
-            self.m_Collection.InsertItem(index, item[0])
+            self.m_data.InsertItem(index, item[0])
             for column in range(1, self._number_of_fields):
-                self.m_Collection.SetItem(index, column, adapt_ifnone(stringify(item[column])))
+                self.m_data.SetItem(index, column, adapt_ifnone(stringify(item[column])))
             index += 1
 
     def _set_clicks(self, column: int) -> bool:
@@ -174,35 +184,39 @@ class ParentFrame(wx.Frame):
             self._clicks[column] = 0
         return reverse
 
-    def _database_onchange(self, event) -> None:
+    def _database(self, event) -> None:
         """
 
         :param event:
         :return:
         """
-        self.m_Collection.DeleteAllItems()
-        self.m_Collection.DeleteAllColumns()
-        self.m_Tables.Set([])
-        self._path = self.m_Databases.GetPath()
-        self.m_Tables.Set(self._tables.get(self._path, self._tables["default"]))
+        with wx.FileDialog(self, "Open database", wildcard="Database files (*.db)|*.db", style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fd:
+            if fd.ShowModal() == wx.ID_OK:
+                self._path = fd.GetPath()
+                self.m_data.DeleteAllItems()
+                self.m_data.DeleteAllColumns()
+                self.m_tables.Set([])
+                self.m_tables.Set(self._tables.get(self._path, self._tables["default"]))
+                self.m_csv.Enable(False)
+                self.m_refresh.Enable(False)
 
-    def _tables_onclick(self, event) -> None:
+    def _table(self, event) -> None:
         """
 
         :param event:
         :return:
         """
-        self.m_Collection.DeleteAllItems()
-        self.m_Collection.DeleteAllColumns()
+        self.m_data.DeleteAllItems()
+        self.m_data.DeleteAllColumns()
 
         # Load configuration.
-        self._table = self.m_Tables.GetString(self.m_Tables.GetSelection())
+        self._table = self.m_tables.GetString(self.m_tables.GetSelection())
         self._number_of_fields = self._fields.get(self._table.lower(), 0)
 
         # Load headers.
         _headers = self._headers.get(self._table.lower(), [])  # type: List[str]
         for header in range(len(_headers)):
-            self.m_Collection.InsertColumn(header, _headers[header])
+            self.m_data.InsertColumn(header, _headers[header])
 
         # Load data.
         column, columns = self._dftsortfields[self._table.lower()]  # type: int, List[int]
@@ -214,7 +228,11 @@ class ParentFrame(wx.Frame):
         self._load_collection(self._collection)
         self._column, self._columns = column, columns
 
-    def _record_onselect(self, event) -> None:
+        # Enable buttons.
+        self.m_csv.Enable(True)
+        self.m_refresh.Enable(True)
+
+    def _record(self, event) -> None:
         """
 
         :param event:
@@ -225,12 +243,12 @@ class ParentFrame(wx.Frame):
         _headers.append("AlbumID")
         if self._table.lower() in ["rippeddiscs"]:
             _headers.append("DiscID")
-        self._record = OrderedDict(zip(_headers, self._collection[self.m_Collection.GetNextSelected(-1)]))
+        self._record = OrderedDict(zip(_headers, self._collection[self.m_data.GetNextSelected(-1)]))
         window = self._classes[self._table.lower()](parent=self)
         window.Show()
         self.Hide()
 
-    def _closebutton_onclick(self, event) -> None:
+    def _click_on_close(self, event) -> None:
         """
 
         :param event:
@@ -238,7 +256,15 @@ class ParentFrame(wx.Frame):
         """
         self.Close(True)
 
-    def _refreshbutton_onclick(self, event) -> None:
+    def _click_on_refresh(self, event) -> None:
+        """
+
+        :param event:
+        :return:
+        """
+        self.Close(True)
+
+    def _click_on_csv(self, event) -> None:
         """
 
         :param event:
@@ -262,7 +288,7 @@ class ParentFrame(wx.Frame):
         # -----
         columns = self._sortfields[self._table.lower()].get(str(column), self._sortfields[self._table.lower()]["default"])  # type: List[int]
         reverse = self._set_clicks(column)
-        self.m_Collection.DeleteAllItems()
+        self.m_data.DeleteAllItems()
         self._collection = list(self._sort_collection(self._collection, column, *columns, reverse=reverse))
         self._load_collection(self._collection)
         self._column, self._columns, self._reverse = column, columns, reverse
@@ -374,7 +400,7 @@ class ParentFrame(wx.Frame):
 
     @property
     def listctrl(self):
-        return self.m_Collection
+        return self.m_data
 
     @listctrl.setter
     def listctrl(self, arg):
@@ -725,11 +751,11 @@ class Buttons(object):
         parent.m_close = wx.Button(parent, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
         parent.m_close.SetDefault()
         sizer.Add(parent.m_close, 0, wx.ALL, 5)
-        parent.m_close.Bind(wx.EVT_BUTTON, self._closebutton_onclick)
+        parent.m_close.Bind(wx.EVT_BUTTON, self._click_on_close)
 
         self._parent = parent
 
-    def _closebutton_onclick(self, event):
+    def _click_on_close(self, event):
         self._parent.parent.Show()
         self._parent.Destroy()
 
@@ -759,3 +785,207 @@ class Buttons(object):
                 v = func(v)
             data_after[k] = v
         return data_after
+
+
+class Interface04(wx.Frame):
+
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=wx.EmptyString, pos=wx.DefaultPosition, size=wx.Size(426, 403), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
+        self._init_interface()
+        self._insert, self._debug, self._console = False, True, True
+        self._tags, self._database = None, None
+        self._profile = "default"
+        self._albums, self._bootlegs, self._run_clicked = True, False, False
+
+    def _init_interface(self):
+        self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
+        self.SetFont(wx.Font(9, 74, 90, 90, False, "Arial"))
+        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DLIGHT))
+        MainBoxSizer = wx.BoxSizer(wx.VERTICAL)
+
+        # -------------------
+        # Configure controls.
+        # -------------------
+        Sizer1 = wx.FlexGridSizer(7, 2, 9, 25)
+        Sizer1.AddGrowableCol(0)
+        Sizer1.AddGrowableCol(1)
+        Sizer1.SetFlexibleDirection(wx.BOTH)
+        Sizer1.SetNonFlexibleGrowMode(wx.FLEX_GROWMODE_SPECIFIED)
+
+        # Audio tags file picker.
+        self.m_AudioTags_Label = wx.StaticText(self, wx.ID_ANY, "Audio Tags File", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_AudioTags_Label.Wrap(-1)
+        Sizer1.Add(self.m_AudioTags_Label, 0, wx.TOP, 15)
+        self.m_AudioTags = wx.FilePickerCtrl(self, wx.ID_ANY, wx.EmptyString, "Select an audio tags JSON file", "*.json", wx.Point(-1, -1), wx.DefaultSize,
+                                             wx.FLP_DEFAULT_STYLE | wx.FLP_FILE_MUST_EXIST | wx.FLP_OPEN)
+        Sizer1.Add(self.m_AudioTags, 0, wx.TOP, 10)
+
+        # Database picker.
+        self.m_Database_Label = wx.StaticText(self, wx.ID_ANY, "Database", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_Database_Label.Wrap(-1)
+        Sizer1.Add(self.m_Database_Label, 0, wx.TOP, 15)
+        self.m_Database = wx.FilePickerCtrl(self, wx.ID_ANY, wx.EmptyString, "Select a database", "*.db", wx.DefaultPosition, wx.DefaultSize, wx.FLP_DEFAULT_STYLE | wx.FLP_FILE_MUST_EXIST | wx.FLP_OPEN)
+        Sizer1.Add(self.m_Database, 0, wx.TOP, 10)
+
+        # Ripping profile choice box.
+        self.m_Profile_Label = wx.StaticText(self, wx.ID_ANY, "Profile", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_Profile_Label.Wrap(-1)
+        Sizer1.Add(self.m_Profile_Label, 0, wx.TOP, 15)
+        m_ProfileChoices = ["default", "bootleg"]
+        self.m_Profile = wx.Choice(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, m_ProfileChoices, 0)
+        self.m_Profile.SetSelection(0)
+        Sizer1.Add(self.m_Profile, 0, wx.TOP, 10)
+
+        # Albums radio button.
+        self.m_Albums = wx.RadioButton(self, wx.ID_ANY, "Albums", wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        Sizer1.Add(self.m_Albums, 0, wx.TOP, 10)
+
+        # Bootlegs radio button.
+        self.m_Bootlegs = wx.RadioButton(self, wx.ID_ANY, "Bootlegs", wx.DefaultPosition, wx.DefaultSize, 0)
+        Sizer1.Add(self.m_Bootlegs, 0, wx.TOP, 10)
+
+        # Debug checkbox.
+        self.m_Debug = wx.CheckBox(self, wx.ID_ANY, "Debug", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_Debug.SetValue(True)
+        Sizer1.Add(self.m_Debug, 0, wx.TOP, 10)
+
+        # Console checkbox.
+        self.m_Console = wx.CheckBox(self, wx.ID_ANY, "Console", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_Console.SetValue(True)
+        Sizer1.Add(self.m_Console, 0, wx.TOP, 10)
+
+        # Insert checkbox.
+        self.m_Insert = wx.CheckBox(self, wx.ID_ANY, "Insert", wx.DefaultPosition, wx.DefaultSize, 0)
+        Sizer1.Add(self.m_Insert, 0, wx.TOP, 10)
+        self.m_Dummy = wx.StaticText(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_Dummy.Wrap(-1)
+        Sizer1.Add(self.m_Dummy, 0, wx.TOP, 10)
+
+        # ------------------
+        # Configure buttons.
+        # ------------------
+        Sizer3 = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Run.
+        self.m_Run = wx.Button(self, wx.ID_ANY, "Run", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.m_Run.SetDefault()
+        Sizer3.Add(self.m_Run, 0, wx.RIGHT, 5)
+
+        # Cancel.
+        self.m_Cancel = wx.Button(self, wx.ID_ANY, "Cancel", wx.DefaultPosition, wx.Size(70, 30), 0)
+        Sizer3.Add(self.m_Cancel, 0, wx.RIGHT, 5)
+
+        # -----------------
+        # Configure layout.
+        # -----------------
+        MainBoxSizer.Add(Sizer1, 1, wx.ALL | wx.EXPAND, 10)
+        Sizer2 = wx.BoxSizer(wx.VERTICAL)
+        Sizer2.Add(Sizer3, 0, wx.ALIGN_RIGHT | wx.BOTTOM, 15)
+        MainBoxSizer.Add(Sizer2, 0, wx.ALL | wx.EXPAND, 5)
+        self.SetSizer(MainBoxSizer)
+        self.Layout()
+        self.Centre(wx.BOTH)
+
+        # -----------------
+        # Configure events.
+        # -----------------
+        self.m_AudioTags.Bind(wx.EVT_FILEPICKER_CHANGED, self._audiotags_onchange)
+        self.m_Database.Bind(wx.EVT_FILEPICKER_CHANGED, self._database)
+        self.m_Profile.Bind(wx.EVT_CHOICE, self._profile_onchoice)
+        self.m_Albums.Bind(wx.EVT_RADIOBUTTON, self._radio_oncheck)
+        self.m_Bootlegs.Bind(wx.EVT_RADIOBUTTON, self._radio_oncheck)
+        self.m_Insert.Bind(wx.EVT_CHECKBOX, self._box_oncheck)
+        self.m_Debug.Bind(wx.EVT_CHECKBOX, self._box_oncheck)
+        self.m_Console.Bind(wx.EVT_CHECKBOX, self._box_oncheck)
+        self.m_Run.Bind(wx.EVT_BUTTON, self._run_onclick)
+        self.m_Cancel.Bind(wx.EVT_BUTTON, self._cancel_onclick)
+
+    def _audiotags_onchange(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        self._tags = self.m_AudioTags.GetPath()
+
+    def _database(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        self._database = self.m_Database.GetPath()
+
+    def _profile_onchoice(self, event):
+        self._profile = self.m_Profile.GetString(self.m_Profile.GetCurrentSelection())
+
+    def _radio_oncheck(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        radio = event.GetEventObject()
+        setattr(self, f"_{radio.GetLabel().lower()}", radio.GetValue())
+
+    def _box_oncheck(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        chkb = event.GetEventObject()
+        setattr(self, f"_{chkb.GetLabel().lower()}", chkb.GetValue())
+
+    def _run_onclick(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        self._run_clicked = True
+        self.Close(True)
+
+    def _cancel_onclick(self, event):
+        """
+
+        :param event:
+        :return:
+        """
+        self.Close(True)
+
+    @property
+    def albums(self):
+        return self._albums
+
+    @property
+    def audiotags(self):
+        return self._tags
+
+    @property
+    def bootlegs(self):
+        return self._bootlegs
+
+    @property
+    def console(self):
+        return self._console
+
+    @property
+    def database(self):
+        return self._database
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @property
+    def insert(self):
+        return self._insert
+
+    @property
+    def profile(self):
+        return self._profile
+
+    @property
+    def run_clicked(self):
+        return self._run_clicked

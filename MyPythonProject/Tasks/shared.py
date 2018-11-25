@@ -1,24 +1,13 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-import logging.config
-import os
-import re
-from subprocess import PIPE, run
+from subprocess import run
 
-import yaml
-
-from Applications.shared import DATABASE, TESTDATABASE, prettyprint, valid_albumsort, valid_year
+from Applications.shared import DATABASE, TESTDATABASE, valid_albumsort, valid_year
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-# ========
-# Logging.
-# ========
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
 
 
 # ==========
@@ -52,48 +41,48 @@ def prompt_databases(template):
     return database
 
 
-def prompt_logs(template, *iterable):
-    """
-
-    :param template:
-    :param iterable:
-    :return:
-    """
-    pages, page, previous_page = len(iterable), 1, 0
-    collection, logs = [], []
-    while True:
-        if page != previous_page:
-            previous_page = page
-            logs = list(prettyprint(*filter(None, iterable[page - 1]))[1])
-
-        run("CLS", shell=True)
-        print(template.render(menu=[], logs=logs, title="Available logs."))
-        prompt, allowed = set_prompt1(page, pages, bool(len(collection)))
-        allowed.extend(map(str, range(1, len(logs) + 1)))
-        allowed = sorted(allowed)
-        answer = input(prompt)
-        if answer.upper() not in allowed:
-            continue
-        if answer.upper() == "D":
-            break
-        if answer.upper() == "N":
-            page += 1
-            continue
-        if answer.upper() == "P":
-            page -= 1
-            continue
-        if answer.upper() == "Q":
-            collection = []
-            break
-        try:
-            log = iterable[page - 1][int(answer) - 1][-1]
-        except (ValueError, IndexError):
-            continue
-        else:
-            if not int(answer):
-                continue
-            collection.append(log)
-    return collection
+# def prompt_logs(template, *iterable):
+#     """
+#
+#     :param template:
+#     :param iterable:
+#     :return:
+#     """
+#     pages, page, previous_page = len(iterable), 1, 0
+#     collection, logs = [], []
+#     while True:
+#         if page != previous_page:
+#             previous_page = page
+#             logs = list(prettyprint(*filter(None, iterable[page - 1]))[1])
+#
+#         run("CLS", shell=True)
+#         print(template.render(menu=[], logs=logs, title="Available logs."))
+#         prompt, allowed = set_prompt1(page, pages, bool(len(collection)))
+#         allowed.extend(map(str, range(1, len(logs) + 1)))
+#         allowed = sorted(allowed)
+#         answer = input(prompt)
+#         if answer.upper() not in allowed:
+#             continue
+#         if answer.upper() == "D":
+#             break
+#         if answer.upper() == "N":
+#             page += 1
+#             continue
+#         if answer.upper() == "P":
+#             page -= 1
+#             continue
+#         if answer.upper() == "Q":
+#             collection = []
+#             break
+#         try:
+#             log = iterable[page - 1][int(answer) - 1][-1]
+#         except (ValueError, IndexError):
+#             continue
+#         else:
+#             if not int(answer):
+#                 continue
+#             collection.append(log)
+#     return collection
 
 
 def set_prompt1(requested_page, total_pages, promptd):

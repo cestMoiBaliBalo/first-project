@@ -18,7 +18,7 @@ import yaml
 from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, ToBoolean, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, get_dirname, get_readabledate
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, get_dirname, get_readabledate, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -360,25 +360,44 @@ def get_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE) -> Tup
     return played, utc_played
 
 
-def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE) -> int:
+def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE, local_played: Optional[Any] = None) -> Tuple[int, int]:
     """
 
     :param albumid:
     :param discid:
     :param db:
+    :param local_played:
     :return:
     """
-    played = 0  # type: int
+    _local_played = LOCAL.localize(datetime.now())  # type: datetime
+    if local_played is not None:
+        try:
+            _, _local_played, _ = valid_datetime(local_played)
+        except ValueError:
+            return 0, 0
+
+    _utc_played, played = _local_played.astimezone(UTC).replace(microsecond=0, tzinfo=None), 0  # type: datetime, int
     with ExitStack() as stack:
         conn = stack.enter_context(DatabaseConnection(db))
         stack.enter_context(conn)
-        curs = conn.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
-        with suppress(TypeError):
-            (played,) = curs.fetchone()
-        played += 1
-        conn.execute("UPDATE playeddiscs SET utc_played=?, played=? WHERE albumid=? AND discid=?", (datetime.utcnow(), played, albumid, discid))
-        changes = conn.total_changes  # type: int
-    return changes
+
+        # Let's try to create the record.
+        # `played` is set to 0.
+        # `utc_played` is set to Null.
+        with suppress(sqlite3.IntegrityError):
+            conn.execute("INSERT INTO playeddiscs (albumid, discid, utc_created) VALUES (?, ?, ?)", (albumid, discid, datetime.utcnow().replace(microsecond=0)))
+        inserted = conn.total_changes
+
+        # Get played count.
+        curs = conn.cursor()
+        curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+        (played,) = curs.fetchone()
+
+        # Update both played count and played date.
+        conn.execute("UPDATE playeddiscs SET utc_played=?, played=?, utc_modified=? WHERE albumid=? AND discid=?", (_utc_played, played + 1, datetime.utcnow().replace(microsecond=0), albumid, discid))
+        updated = conn.total_changes - inserted
+
+    return inserted, updated
 
 
 def get_disc(db: str = DATABASE, albumid: Optional[str] = None, discid: Optional[int] = None):
@@ -809,25 +828,34 @@ def _insert_albums(*iterables) -> int:
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 # "rippeddiscs" table.
                 table = "rippeddiscs"
                 for track in filter(lambda i: i[0].lower() == "discs", filter(lambda i: i[5] == 1, tracks)):
+                    logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 # "bonuses" table.
                 table = "bonuses"
                 for track in filter(lambda i: i[8].bool, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
+                    logger.debug(table)
+                    logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 # "bootlegdiscs" table.
                 table = "bootlegdiscs"
                 for track in filter(lambda i: i[27] is not None, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
+                    logger.debug(table)
+                    logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 total_changes += conn.total_changes
                 logger.debug(total_changes)

@@ -12,7 +12,7 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Development"
 
 
-def drop_tables(db: str) -> None:
+def drop_tables(db: str) -> str:
     """
 
     :param db:
@@ -55,9 +55,10 @@ def drop_tables(db: str) -> None:
             conn.execute("DROP TABLE IF EXISTS countries")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS applications")
+    return db
 
 
-def create_tables(db: str) -> None:
+def create_tables(db: str) -> str:
     """
 
     :param db:
@@ -214,7 +215,7 @@ def create_tables(db: str) -> None:
                 "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
                 "utc_modified TIMESTAMP DEFAULT NULL, "
                 "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
-        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON discs (albumid ASC, discid ASC)")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON bootlegdiscs (albumid ASC, discid ASC)")
 
         # --> Bonus.
         conn.execute(
@@ -230,3 +231,5 @@ def create_tables(db: str) -> None:
                 "utc_modified TIMESTAMP DEFAULT NULL, "
                 "FOREIGN KEY (albumid, discid, trackid) REFERENCES tracks (albumid, discid, trackid))")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bonuses_idx ON bonuses (albumid ASC, discid ASC, trackid ASC)")
+
+    return db
