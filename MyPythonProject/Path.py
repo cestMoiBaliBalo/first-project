@@ -32,19 +32,19 @@ arguments = parser.parse_args()
 # ========
 
 # 1. Load logging configuration and adapt logger(s) level(s).
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "logging.yml"), encoding=UTF8) as fp:
     config = yaml.load(fp)
 for logger in LOGGERS:
     with suppress(KeyError):
         config["loggers"][logger]["level"] = DEBUG
 
 # 2. Set up a specific stream handler if required.
-if arguments.console:
-    for logger in LOGGERS:
-        with suppress(KeyError):
-            config["loggers"][logger]["handlers"] = ["file", "console"]
-    with suppress(KeyError):
-        config["handlers"]["console"]["level"] = DEBUG
+# if arguments.console:
+#     for logger in LOGGERS:
+#         with suppress(KeyError):
+#             config["loggers"][logger]["handlers"] = ["file", "console"]
+#     with suppress(KeyError):
+#         config["handlers"]["console"]["level"] = DEBUG
 
 # 3. Declare logging configuration.
 logging.config.dictConfig(config)
@@ -52,7 +52,7 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(__file__))[0]))
+logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]))
 for path in sys.path:
     logger.debug(path)
 logger.debug(TEMPLATE4)

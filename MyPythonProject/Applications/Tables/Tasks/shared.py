@@ -12,7 +12,7 @@ import yaml
 
 from ..shared import DatabaseConnection, close_database
 from ...parsers import tasks_parser
-from ...shared import DATABASE, UTC, UTF8
+from ...shared import DATABASE, UTC, UTF8, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     arguments = vars(tasks_parser.parse_args())
 
     # Configure logging.
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding=UTF8) as fp:
+    with open(os.path.join(get_dirname(os.path.abspath(__file__), level=4), "Resources", "logging.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp)
     for logger in ["Applications.Tables.Tasks"]:
         with suppress(KeyError):

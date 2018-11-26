@@ -12,14 +12,36 @@ __status__ = "Production"
 # ===============
 # Global Classes.
 # ===============
-class SetDatabase(argparse.Action):
+class SetDatabaseArg(argparse.Action):
     def __init__(self, option_strings, dest, **kwargs):
         super().__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
-        if values:
-            setattr(namespace, "db", getattr(namespace, "db", shared.DATABASE))
+        albums = getattr(namespace, "albums")
+        bootlegs = getattr(namespace, "bootlegs")
+        if all([not albums, not bootlegs]):
+            setattr(namespace, self.dest, None)
+
+
+class SetConsoleArg(argparse.Action):
+    def __init__(self, option_strings, dest, **kwargs):
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if not values:
+            setattr(namespace, "console", False)
+
+
+class SetDriveTags(argparse.Action):
+    def __init__(self, option_strings, dest, default="F:\\", **kwargs):
+        super().__init__(option_strings, dest, default, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if not getattr(namespace, "store_tags", False):
+            setattr(namespace, self.dest, None)
 
 
 # =================
@@ -179,15 +201,8 @@ parser_update.add_argument("--debug", action="store_true")
 #     ==========
 # 10. PARSER 10.
 #     ==========
-tags_grabber = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
-group = tags_grabber.add_mutually_exclusive_group()
-tags_grabber.add_argument("source", help="UTF-16-LE encoded TXT tags file", type=argparse.FileType(mode="r+", encoding="UTF_16LE"))
-tags_grabber.add_argument("profile", help="ripping profile")
+tags_grabber = argparse.ArgumentParser()
+tags_grabber.add_argument("source", help="UTF-16-LE encoded TXT audio tags file", type=argparse.FileType(mode="r+", encoding="UTF_16LE"))
+tags_grabber.add_argument("profile", help="ripping profile", choices=["default", "bootleg"])
 tags_grabber.add_argument("decorators", nargs="*", help="decorating profile(s)")
-group.add_argument("--albums", nargs="?", const=True, default=False, action=SetDatabase, help="prepare an UTF-8 encoded JSON file for inserting data into defaultalbums table")
-group.add_argument("--bootlegs", nargs="?", const=True, default=False, action=SetDatabase, help="prepare an UTF-8 encoded JSON file for inserting data into bootlegalbums table")
-tags_grabber.add_argument("--test", action="store_true", help="insert a tags sample into an UTF-8 encoded JSON file")
-tags_grabber.add_argument("--debug", action="store_true")
-tags_grabber.add_argument("--database", dest="db")
-tags_grabber.add_argument("--store_tags", action="store_true")
-tags_grabber.add_argument("--drive_tags", nargs="?", default="F:\\")
+tags_grabber.add_argument("--tags_processing", nargs="?", default="no_tags_processing", help="audio tags processing profile")

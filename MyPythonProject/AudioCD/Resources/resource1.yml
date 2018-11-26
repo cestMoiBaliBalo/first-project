@@ -1,0 +1,66 @@
+bootlegalbum:
+  albums: False
+  bootlegs: True
+  database: "g:\\computing\\mypythonproject\\resources\\database.db"
+  debug: True
+  console: False
+  save: True
+  root: "F:\\"
+  sample: True
+
+defaultalbum:
+  albums: True
+  bootlegs: False
+  database: "g:\\computing\\mypythonproject\\resources\\database.db"
+  debug: True
+  console: False
+  save: False
+  root: "F:\\"
+  sample: True
+
+test_bootlegalbum:
+  albums: False
+  bootlegs: True
+  database: "g:\\computing\\mypythonproject\\applications\\unittests\\resources\\database.db"
+  debug: True
+  console: True
+  save: False
+  root: !!python/none
+  sample: False
+
+test_defaultalbum:
+  albums: True
+  bootlegs: False
+  database: "g:\\computing\\mypythonproject\\applications\\unittests\\resources\\database.db"
+  debug: True
+  console: True
+  save: False
+  root: !!python/none
+  sample: False
+
+unittest_bootlegalbum:
+  albums: False
+  bootlegs: True
+  debug: False
+  console: False
+  save: False
+  root: !!python/none
+  sample: False
+
+unittest_defaultalbum:
+  albums: True
+  bootlegs: False
+  debug: False
+  console: False
+  save: False
+  root: !!python/none
+  sample: False
+
+no_tags_processing:
+  albums: False
+  bootlegs: False
+  debug: False
+  console: False
+  save: False
+  root: !!python/none
+  sample: False

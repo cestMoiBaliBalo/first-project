@@ -2,25 +2,28 @@
 # pylint: disable=invalid-name
 # Frame generated with wxFormBuilder (version Jun 17 2015)
 # http://www.wxformbuilder.org/
+import locale
 import logging.config
 import os
-from typing import Any, Mapping
 
 import wx  # type: ignore
 import yaml
 
+from Applications.interfaces import ParentFrame
 from Applications.shared import get_dirname
-from shared import ParentFrame
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 # ============
 # Main script.
 # ============
 that_file = os.path.abspath(__file__)
+
+# Define French environment.
+locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
 
 # Logging.
 with open(os.path.join(get_dirname(that_file, level=4), "Resources", "logging.yml"), encoding="UTF_8") as fp:
@@ -28,8 +31,9 @@ with open(os.path.join(get_dirname(that_file, level=4), "Resources", "logging.ym
 
 # Interface global configuration.
 with open(os.path.join(get_dirname(that_file, level=2), "Resources", "resource2.yml"), encoding="UTF_8") as fp:
-    global_config = yaml.load(fp)  # type: Mapping[str, Any]
+    global_config = yaml.load(fp)
 
+# Main interface.
 app = wx.App()
 interface = ParentFrame(None, **global_config)
 interface.Show()

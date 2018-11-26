@@ -44,7 +44,7 @@ REM  2. Tasks.
 REM     ------
 :MAIN
 IF "%~1" EQU "" (
-    REM PAUSE
+    PAUSE
     EXIT /B %ERRORLEVEL%
 )
 IF "%~1" EQU "1" GOTO STEP1

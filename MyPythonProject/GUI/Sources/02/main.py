@@ -24,101 +24,101 @@ __status__ = "Production"
 # ======
 class MainFrame(wx.Frame):
 
-    def __init__(self, parent, config) -> None:
+    def __init__(self, parent, **kwargs) -> None:
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Sync Mobile Devices", pos=wx.DefaultPosition, size=wx.Size(-1, -1), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
-        with open(config) as stream:
-            self._configuration = yaml.load(stream)
+        self._configuration = dict(kwargs)
         self._init_interface(*sorted(self._configuration.get("repositories")))
         self._init_variables()
         self._copy_audiofiles, self._command1, self._command2 = False, [], []  # type: bool, list, list
 
-    def _init_interface(self, *collection):
-
+    def _init_interface(self, *collection) -> None:
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         self.SetFont(wx.Font(9, 74, 90, 90, False, "Arial"))
         self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DLIGHT))
-        m_MainBox = wx.BoxSizer(wx.VERTICAL)
 
         # ---------------------
         # Configure checkboxes.
         # ---------------------
-        m_CheckBoxes = wx.BoxSizer(wx.HORIZONTAL)
 
         # --> Repositories.
-        m_Repositories = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Repositories"), wx.VERTICAL)
-        m_Repositories.SetMinSize(wx.Size(-1, 160))
+        SzRepositories = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Repositories"), wx.VERTICAL)
+        SzRepositories.SetMinSize(wx.Size(-1, 180))
         repositories: int = 0
         for repository in collection:
             repositories += 1
-            checkbox = wx.CheckBox(m_Repositories.GetStaticBox(), repositories, repository, wx.DefaultPosition, wx.DefaultSize, 0)
-            setattr(self, f"m_checkBox{repositories}", checkbox)
-            m_Repositories.Add(getattr(self, f"m_checkBox{repositories}"), 0, wx.ALL, 5)
+            checkbox = wx.CheckBox(SzRepositories.GetStaticBox(), repositories, repository, wx.DefaultPosition, wx.DefaultSize, 0)
+            setattr(self, f"checkbox{repositories}", checkbox)
+            SzRepositories.Add(getattr(self, f"checkbox{repositories}"), 0, wx.ALL, 5)
         self._repositories: int = repositories
 
         # --> Drives.
-        m_Drives = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Drives"), wx.VERTICAL)
-        m_Drives.SetMinSize(wx.Size(-1, 160))
+        SzDrives = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Drives"), wx.VERTICAL)
+        SzDrives.SetMinSize(wx.Size(-1, 180))
         drives: int = repositories
         for drive in map(lambda i: i[:-1], get_drives()):
             drives += 1
-            checkbox = wx.CheckBox(m_Drives.GetStaticBox(), drives, drive, wx.DefaultPosition, wx.DefaultSize, 0)
-            setattr(self, f"m_checkBox{drives}", checkbox)
-            m_Drives.Add(getattr(self, f"m_checkBox{drives}"), 0, wx.ALL, 5)
+            checkbox = wx.CheckBox(SzDrives.GetStaticBox(), drives, drive, wx.DefaultPosition, wx.DefaultSize, 0)
+            setattr(self, f"checkbox{drives}", checkbox)
+            SzDrives.Add(getattr(self, f"checkbox{drives}"), 0, wx.ALL, 5)
         self._drives: int = drives
 
         # --> Additional boxes.
 
         # °°° MP3 audio files.
-        self.m_checkBox_mp3 = wx.CheckBox(m_Repositories.GetStaticBox(), drives + 1, r"*.mp3", wx.DefaultPosition, wx.DefaultSize, 0)
-        self.m_checkBox_mp3.Hide()
-        m_Repositories.Add(self.m_checkBox_mp3, 0, wx.ALL, 5)
+        self.checkbox_mp3 = wx.CheckBox(SzRepositories.GetStaticBox(), drives + 1, r"*.mp3", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.checkbox_mp3.Hide()
+        SzRepositories.Add(self.checkbox_mp3, 0, wx.ALL, 5)
 
         # °°° M4A audio files.
-        self.m_checkbox_m4a = wx.CheckBox(m_Repositories.GetStaticBox(), drives + 2, r"*.m4a", wx.DefaultPosition, wx.DefaultSize, 0)
-        self.m_checkbox_m4a.Hide()
-        m_Repositories.Add(self.m_checkbox_m4a, 0, wx.ALL, 5)
+        self.checkbox_m4a = wx.CheckBox(SzRepositories.GetStaticBox(), drives + 2, r"*.m4a", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.checkbox_m4a.Hide()
+        SzRepositories.Add(self.checkbox_m4a, 0, wx.ALL, 5)
 
         # ------------------
         # Configure buttons.
         # ------------------
-        m_Buttons = wx.BoxSizer(wx.HORIZONTAL)
+        SzButtons = wx.BoxSizer(wx.HORIZONTAL)
 
         # --> "Run" button.
-        self.m_runbutton = wx.Button(self, wx.ID_ANY, "Run", wx.DefaultPosition, wx.Size(70, 30), 0)
-        m_Buttons.Add(self.m_runbutton, 0, wx.BOTTOM, 5)
+        self.run = wx.Button(self, wx.ID_ANY, "Run", wx.DefaultPosition, wx.Size(70, 30), 0)
+        SzButtons.Add(self.run, 0, wx.BOTTOM | wx.RIGHT, 5)
 
         # --> "Sync" button.
-        self.m_syncbutton = wx.Button(self, wx.ID_ANY, "Sync", wx.DefaultPosition, wx.Size(70, 30), 0)
-        m_Buttons.Add(self.m_syncbutton, 0, wx.BOTTOM | wx.LEFT, 5)
+        self.sync = wx.Button(self, wx.ID_ANY, "Sync", wx.DefaultPosition, wx.Size(70, 30), 0)
+        SzButtons.Add(self.sync, 0, wx.BOTTOM | wx.RIGHT, 5)
 
         # --> "Close" button.
-        self.m_closebutton = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
-        self.m_closebutton.SetDefault()
-        m_Buttons.Add(self.m_closebutton, 0, wx.BOTTOM | wx.LEFT, 5)
+        self.close = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.close.SetDefault()
+        SzButtons.Add(self.close, 0, wx.BOTTOM, 5)
 
         # -----------------
         # Configure layout.
         # -----------------
-        m_CheckBoxes.Add(m_Repositories, 1, wx.BOTTOM | wx.EXPAND, 20)
-        m_CheckBoxes.Add(m_Drives, 1, wx.BOTTOM | wx.EXPAND, 20)
-        m_MainBox.Add(m_CheckBoxes, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20)
-        m_MainBox.Add(m_Buttons, 0, wx.ALIGN_RIGHT | wx.RIGHT, 20)
-        self.SetSizer(m_MainBox)
+        Sizer2 = wx.BoxSizer(wx.VERTICAL)
+        Sizer2.Add(SzButtons, 1, wx.ALIGN_LEFT, 5)
+        Sizer1 = wx.BoxSizer(wx.HORIZONTAL)
+        Sizer1.Add(SzRepositories, 1, wx.RIGHT, 15)
+        Sizer1.Add(SzDrives, 1, 0, 0)
+        MainSizer = wx.BoxSizer(wx.VERTICAL)
+        MainSizer.Add(Sizer1, 1, wx.ALL, 15)
+        MainSizer.Add(Sizer2, 0, wx.LEFT, 15)
+        self.SetSizer(MainSizer)
         self.Layout()
-        m_MainBox.Fit(self)
+        MainSizer.Fit(self)
         self.Centre(wx.BOTH)
 
         # -----------------
         # Configure events.
         # -----------------
         for index in range(1, repositories + 1):
-            getattr(self, f"m_checkBox{index}").Bind(wx.EVT_CHECKBOX, self._check_repository)
+            getattr(self, f"checkbox{index}").Bind(wx.EVT_CHECKBOX, self._check_repository)
         for index in range(repositories + 1, drives + 1):
-            getattr(self, f"m_checkBox{index}").Bind(wx.EVT_CHECKBOX, self._check_drive)
-        self.m_checkbox_m4a.Bind(wx.EVT_CHECKBOX, self._check_m4a_audiofiles)
-        self.m_runbutton.Bind(wx.EVT_BUTTON, self._click_on_run)
-        self.m_syncbutton.Bind(wx.EVT_BUTTON, self._click_on_sync)
-        self.m_closebutton.Bind(wx.EVT_BUTTON, self._click_on_close)
+            getattr(self, f"checkbox{index}").Bind(wx.EVT_CHECKBOX, self._check_drive)
+        self.checkbox_m4a.Bind(wx.EVT_CHECKBOX, self._check_m4a_audiofiles)
+        self.run.Bind(wx.EVT_BUTTON, self._click_on_run)
+        self.sync.Bind(wx.EVT_BUTTON, self._click_on_sync)
+        self.close.Bind(wx.EVT_BUTTON, self._click_on_close)
 
     def _init_variables(self):
         """
@@ -128,12 +128,12 @@ class MainFrame(wx.Frame):
         self._is_repository_checked, self._is_drive_checked, self._m4a_audiofiles = False, False, False  # type: bool, bool, bool
         self._repository, self._compression, self._drive = "", "", ""  # type: str, str, str
         for index in range(1, self._drives + 1):
-            getattr(self, f"m_checkBox{index}").SetValue(False)
-            getattr(self, f"m_checkBox{index}").Enable(True)
-        self.m_checkBox_mp3.Show(False)
-        self.m_checkbox_m4a.Show(False)
-        self.m_syncbutton.Enable(False)
-        self.m_runbutton.Enable(False)
+            getattr(self, f"checkbox{index}").SetValue(False)
+            getattr(self, f"checkbox{index}").Enable(True)
+        self.checkbox_mp3.Show(False)
+        self.checkbox_m4a.Show(False)
+        self.sync.Enable(False)
+        self.run.Enable(False)
 
     def _check_repository(self, event) -> None:
         """
@@ -155,22 +155,22 @@ class MainFrame(wx.Frame):
             chkb.Enable(True)
             self._repository = self._configuration["repositories"][chkb.GetLabel()]
             self._compression = self._configuration["compression"][self._repository]
-            self.m_syncbutton.Enable(self._is_drive_checked)
+            self.sync.Enable(self._is_drive_checked)
             if self._compression.lower() == "lossy":
-                self.m_checkBox_mp3.Show(True)
-                self.m_checkBox_mp3.SetValue(True)
-                self.m_checkBox_mp3.Enable(False)
-                self.m_checkbox_m4a.Show(True)
-                self.m_checkbox_m4a.SetValue(False)
+                self.checkbox_mp3.Show(True)
+                self.checkbox_mp3.SetValue(True)
+                self.checkbox_mp3.Enable(False)
+                self.checkbox_m4a.Show(True)
+                self.checkbox_m4a.SetValue(False)
 
         # Repository has been unchecked.
         # Enable all repositories and disable "sync" button.
         # Disable additional boxes.
         elif not chkb.GetValue():
             self._toggle_checkboxes(1, self._repositories + 1, enable=True)
-            self.m_checkBox_mp3.Show(False)
-            self.m_checkbox_m4a.Show(False)
-            self.m_syncbutton.Enable(False)
+            self.checkbox_mp3.Show(False)
+            self.checkbox_m4a.Show(False)
+            self.sync.Enable(False)
 
         # Apply new layout.
         self.Layout()
@@ -182,7 +182,7 @@ class MainFrame(wx.Frame):
         :return:
         """
 
-        # Get drive label.
+        # Get drive value.
         chkb = event.GetEventObject()
         self._is_drive_checked = chkb.GetValue()
 
@@ -193,13 +193,13 @@ class MainFrame(wx.Frame):
             self._toggle_checkboxes(self._repositories + 1, self._drives + 1)
             chkb.Enable(True)
             self._drive = chkb.GetLabel()
-            self.m_syncbutton.Enable(self._is_repository_checked)
+            self.sync.Enable(self._is_repository_checked)
 
         # Drive has been unchecked.
         # Enable all drives and disable "sync" button.
         elif not chkb.GetValue():
             self._toggle_checkboxes(self._repositories + 1, self._drives + 1, enable=True)
-            self.m_syncbutton.Enable(False)
+            self.sync.Enable(False)
 
         # Apply new layout.
         self.Layout()
@@ -210,7 +210,7 @@ class MainFrame(wx.Frame):
         :param event:
         :return:
         """
-        self._m4a_audiofiles = self.m_checkbox_m4a.GetValue()
+        self._m4a_audiofiles = self.checkbox_m4a.GetValue()
 
     def _click_on_run(self, event) -> None:
         """
@@ -234,7 +234,7 @@ class MainFrame(wx.Frame):
         self._command1.extend((self._repository, pattern, f"{self._drive.upper()}:") for pattern in patterns)
         self._command2.append((f"{self._drive.upper()}:", self._repository))
         self._init_variables()
-        self.m_runbutton.Enable(True)
+        self.run.Enable(True)
         self.Layout()
 
     def _click_on_close(self, event) -> None:
@@ -254,7 +254,7 @@ class MainFrame(wx.Frame):
         :return:
         """
         for index in range(start, stop):
-            getattr(self, f"m_checkBox{index}").Enable(enable)
+            getattr(self, f"checkbox{index}").Enable(enable)
 
     @property
     def copy_audiofiles(self):
@@ -289,12 +289,16 @@ if __name__ == '__main__':
                         type=argparse.FileType("w", encoding="ISO-8859-1"),
                         nargs="?",
                         default=os.path.join(os.path.expandvars("%TEMP%"), "xxcopy.cmd"),
-                        help="DOS commands file running XXCOPY statements.")
+                        help="XXCOPY commands file")
     arguments = parser.parse_args()
+
+    # Load configuration.
+    with open(os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml")) as stream:
+        configuration = yaml.load(stream)
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml"))
+    interface = MainFrame(None, **configuration)
     interface.Show()
     app.MainLoop()
     if interface.copy_audiofiles:

@@ -43,5 +43,5 @@ N:  # Default disc.
 Y:  # Bootleg disc.
   default:  # ArtistSort.
     N:  # Default album naming.
-      !!str 1: "$artistsort_letter\\$artistsort\\2\\$bootlegalbum_year\\$bootlegalbum_month.$bootlegalbum_day - $bootlegalbum_city, $bootlegalbum_country"
-      !!str 9: "$artistsort_letter\\$artistsort\\2\\$bootlegalbum_year\\$bootlegalbum_month.$bootlegalbum_day - $bootlegalbum_city, $bootlegalbum_country\\CD$discnumber"
+      !!str 1: "$artistsort_letter\\$artistsort\\2\\$bootlegalbum_year\\$bootlegalbum_month.$bootlegalbum_day - $bootlegalbum_city"
+      !!str 9: "$artistsort_letter\\$artistsort\\2\\$bootlegalbum_year\\$bootlegalbum_month.$bootlegalbum_day - $bootlegalbum_city\\CD$discnumber"

@@ -5,13 +5,15 @@ import os
 import sys
 import unittest
 
-from ..parsers import database_parser, epochconverter, loglevel_parser, tasks_parser, zipfile
+from ..parsers import database_parser, epochconverter, loglevel_parser, tags_grabber, tasks_parser, zipfile
 from ..shared import GetPath, get_dirname, valid_path
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+that_file = os.path.abspath(__file__)
 
 
 def local_validpath(path):
@@ -220,3 +222,29 @@ class Test06(unittest.TestCase):
         self.assertEqual(arguments.taskid, 123456789)
         self.assertEqual(arguments.days, 20)
         self.assertEqual(arguments.debug, True)
+
+
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+class Test07(unittest.TestCase):
+    """
+
+    """
+
+    def test_t01(self):
+        arguments = tags_grabber.parse_args([os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource4.txt"), "default", "--tags_processing", "defaultalbum"])
+        self.assertEqual(arguments.profile, "default")
+        self.assertEqual(arguments.tags_processing, "defaultalbum")
+        self.assertListEqual(arguments.decorators, [])
+
+    def test_t02(self):
+        arguments = tags_grabber.parse_args([os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource4.txt"), "default"])
+        self.assertEqual(arguments.profile, "default")
+        self.assertEqual(arguments.tags_processing, "no_tags_processing")
+        self.assertListEqual(arguments.decorators, [])
+
+    def test_t03(self):
+        arguments = tags_grabber.parse_args(
+                [os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource4.txt"), "default", "deco1", "deco2", "deco3", "--tags_processing", "test_defaultalbum"])
+        self.assertEqual(arguments.profile, "default")
+        self.assertEqual(arguments.tags_processing, "test_defaultalbum")
+        self.assertListEqual(arguments.decorators, ["deco1", "deco2", "deco3"])

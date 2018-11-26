@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import locale
 import logging.config
 import os
 import sys
@@ -15,6 +16,11 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+# ==========================
+# Define French environment.
+# ==========================
+locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+
 # =================
 # Arguments parser.
 # =================
@@ -25,7 +31,7 @@ parser.add_argument("--debug", action="store_true")
 # ==========
 # Constants.
 # ==========
-LOGGERS = ["Applications"]
+LOGGERS = ["Applications.Tables.XReferences"]
 MAPPING = {True: "debug", False: "info"}
 
 # ================

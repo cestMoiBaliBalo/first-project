@@ -15,8 +15,8 @@ from typing import Any, Mapping, NamedTuple
 import yaml
 
 from Applications.AudioCD.shared import getmetadata
+from Applications.patterns import REGEX, RenameWithTitle, RightTrim
 from Applications.shared import get_dirname
-from patterns import REGEX, RenameWithTitle, RightTrim
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -42,7 +42,7 @@ MAPPING = {True: "debug", False: "info"}
 # ========
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     config = yaml.load(fp)
-for item in ["Applications.AudioCD", "MyPythonProject.AudioCD"]:
+for item in ["Applications.AudioCD", "MyPythonProject"]:
     with suppress(KeyError):
         config["loggers"][item]["level"] = MAPPING[argument.debug].upper()
 logging.config.dictConfig(config)
