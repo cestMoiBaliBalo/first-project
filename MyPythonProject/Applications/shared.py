@@ -14,6 +14,7 @@ from functools import singledispatch
 from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
+from pathlib import PurePath
 from string import Template
 from subprocess import PIPE, run
 from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
@@ -29,7 +30,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-that_file = os.path.abspath(__file__)
+that_file = PurePath(os.path.abspath(__file__))
 
 # ==================
 # Functions aliases.
@@ -52,10 +53,10 @@ UTF16BOM = "\ufeff"
 WRITE = "w"
 
 # Resources.
-ARECA = join(r"C:\Program Files", "Areca", "areca_cl.exe")
-DATABASE = join(dirname(dirname(that_file)), "Resources", "database.db")
-TESTDATABASE = join(dirname(that_file), "Unittests", "Resources", "database.db")
-XREFERENCES = join(dirname(dirname(that_file)), "Resources", "xreferences.db")
+ARECA = str(PurePath("C:/Program Files", "Areca", "areca_cl.exe"))
+DATABASE = str(PurePath(that_file.parent.parent, "Resources", "database.db"))
+TESTDATABASE = str(PurePath(that_file.parent, "Unittests", "Resources", "database.db"))
+XREFERENCES = str(PurePath(that_file.parent.parent, "Resources", "xreferences.db"))
 
 # Regular expressions.
 BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
@@ -87,8 +88,8 @@ TEMPLATE5 = "$Y-$m-$d"
 TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 
 # Local drives.
-IMAGES = "H:\\"
-MUSIC = "F:\\"
+IMAGES = str(PurePath("H:/"))
+MUSIC = str(PurePath("F:/"))
 
 # Miscellaneous containers.
 ACCEPTEDANSWERS = ["N", "Y"]
