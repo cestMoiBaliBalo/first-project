@@ -53,11 +53,11 @@ class RenameWithTitle(FileNameDecorator):
 # ==========
 # Pattern 2.
 # ==========
-# Pattern used by `AudioCD/Converter.py` from dBpoweramp Batch Converter.
+# Pattern used by `AudioCD/Converter/Main.py` from dBpoweramp Batch Converter.
 # Used for processing audio tags.
 class AudioTagsInterface(MutableMapping):
-    def __init__(self):
-        self._tags = {}
+    def __init__(self, **kwargs):
+        self._tags = dict(kwargs)
 
     def __setitem__(self, key, value):
         self._tags[key] = value
@@ -82,19 +82,19 @@ class AudioTagsInterface(MutableMapping):
                 match = regex.match(line)
                 if match:
                     mapping[match.group(1).rstrip().lower()] = match.group(2)
-        return cls(**SortedDict(**mapping))
+        return cls(**mapping)
 
 
 class AudioTags(AudioTagsInterface):
-    def __init__(self, **tags):
-        super(AudioTags, self).__init__()
-        self._tags = tags
+    def __init__(self, **kwargs):
+        super(AudioTags, self).__init__(**kwargs)
+        self._tags = SortedDict(self._tags)
 
 
 class TagsDecorator(AudioTagsInterface):
     def __init__(self, obj):
-        super(TagsDecorator, self).__init__()
-        self._tags = obj.tags
+        super(TagsDecorator, self).__init__(**dict(obj.items()))
+        self._tags = SortedDict(self._tags)
 
 
 class DefaultTags(TagsDecorator):
@@ -103,7 +103,7 @@ class DefaultTags(TagsDecorator):
         self._tags["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
         self._tags["encodingyear"] = datetime.now(tz=timezone(DFTTIMEZONE)).strftime("%Y")
         self._tags["taggingtime"] = format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3)
-        for tag in ["copyright", "description", "mediaprovider", "purchasedate"]:
+        for tag in ["copyright", "description", "mediaprovider", "profile", "purchasedate"]:
             with suppress(KeyError):
                 del self._tags[tag]
 
@@ -121,12 +121,12 @@ class EncodedFromLegalDSDFile(TagsDecorator):
 
 
 class AlbumSort(TagsDecorator):
-    CODECS = {"AAC": "02",
+    CODECS = {"FDK": "02",
               "LAME": "01"}
 
     def __init__(self, obj, codec):
         super(AlbumSort, self).__init__(obj)
-        albumsort = self.get("albumsort")
+        albumsort = self._tags.get("albumsort")
         if albumsort:
             try:
                 albumsort = valid_albumsort(albumsort[:-3])
