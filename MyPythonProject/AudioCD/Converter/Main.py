@@ -8,6 +8,7 @@ import re
 from contextlib import suppress
 from operator import itemgetter
 from pathlib import PurePath
+from typing import List, Mapping, Tuple
 
 import yaml
 from jinja2 import FileSystemLoader
@@ -26,7 +27,9 @@ locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
 # ==========
 # Constants.
 # ==========
-_THATFILE = PurePath(os.path.abspath(__file__))
+_MAPPING = {True: "debug", False: "info"}  # type: Mapping[bool, str]
+_REGEX = re.compile(DFTPATTERN, re.IGNORECASE)
+_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 
 # =================
 # Arguments parser.
@@ -38,37 +41,31 @@ parser.add_argument("profiles", nargs="+", help="decorating profile(s)")
 parser.add_argument("--debug", action="store_true")
 argument = parser.parse_args()
 
-# ==========
-# Constants.
-# ==========
-_MAPPING = {True: "debug", False: "info"}
-_REGEX = re.compile(DFTPATTERN, re.IGNORECASE)
-
 # ========
 # Logging.
 # ========
-with open(str(PurePath(_THATFILE.parent.parent.parent, "Resources", "logging.yml")), encoding="UTF_8") as fp:
+with open(os.fspath(_THATFILE.parents[2] / "Resources" / "logging.yml"), encoding="UTF_8") as fp:
     log_config = yaml.load(fp)
 with suppress(KeyError):
     log_config["loggers"]["MyPythonProject"]["level"] = _MAPPING[argument.debug].upper()
 logging.config.dictConfig(log_config)
-logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(os.path.splitext(os.path.basename(str(_THATFILE)))[0]))
+logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(_THATFILE.stem))
 
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(loader=FileSystemLoader(str(PurePath(_THATFILE.parent.parent, "Templates")))).environment.get_template("Tags")
+_template = TemplatingEnvironment(loader=FileSystemLoader(os.fspath(_THATFILE.parents[1] / "Templates"))).environment.get_template("Tags")
 
 # ============
 # Main script.
 # ============
-logger.debug(mainscript(str(_THATFILE)))
+logger.debug(mainscript(os.fspath(_THATFILE)))
 
 # Get audio tags from dBpoweramp Batch Converter.
 tags = patterns.AudioTags.fromfile(argument.tags)
 
 # Log input tags.
-pairs = sorted(tags.items(), key=itemgetter(0))
+pairs = sorted(tags.items(), key=itemgetter(0))  # type: List[Tuple[str, str]]
 if pairs:
     logger.debug("==========")
     logger.debug("INPUT Tags")
