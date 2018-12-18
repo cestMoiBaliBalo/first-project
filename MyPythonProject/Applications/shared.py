@@ -911,8 +911,8 @@ def find_files(directory: str, *, excluded=None):
         yield file
 
 
-def mainscript(strg: Union[PurePath, str], align: str = "^", fill: str = "=", length: int = 140) -> str:
-    return "{0:{fill}{align}{length}}".format(" {0} ".format(os.fspath(strg)), align=align, fill=fill, length=length)
+def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) -> str:
+    return "{0:{fill}{align}{length}}".format(" {0} ".format(strg), align=align, fill=fill, length=length)
 
 
 # def xsltransform(xml, xsl, html):

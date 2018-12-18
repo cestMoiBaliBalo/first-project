@@ -44,7 +44,7 @@ argument = parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(PurePath(_THATFILE.parents[2], "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(os.fspath(_THATFILE.parents[2] / "Resources" / "logging.yml"), encoding="UTF_8") as fp:
     log_config = yaml.load(fp)
 with suppress(KeyError):
     log_config["loggers"]["MyPythonProject"]["level"] = _MAPPING[argument.debug].upper()
@@ -54,12 +54,12 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(_THATF
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(loader=FileSystemLoader(str(PurePath(_THATFILE.parents[1], "Templates")))).environment.get_template("Tags")
+_template = TemplatingEnvironment(loader=FileSystemLoader(os.fspath(_THATFILE.parents[1] / "Templates"))).environment.get_template("Tags")
 
 # ============
 # Main script.
 # ============
-logger.debug(mainscript(_THATFILE))
+logger.debug(mainscript(os.fspath(_THATFILE)))
 
 # Get audio tags from dBpoweramp Batch Converter.
 tags = patterns.AudioTags.fromfile(argument.tags)
