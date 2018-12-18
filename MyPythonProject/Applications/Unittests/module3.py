@@ -5,6 +5,7 @@ import locale
 import re
 import sys
 import unittest
+from pathlib import PureWindowsPath
 
 from pytz import timezone
 
@@ -17,11 +18,11 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestRegexT01(unittest.TestCase):
 
     def test_t01(self):
-        found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(r"F:\K\Kiss\1\1975.2 - Alive_\CD2\1.Monkey's Audio\1.19750000.2.12.D2.T01.ape")
+        found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
+                PureWindowsPath("F:/") / "K" / "Kiss" / "1" / "1975.2 - Alive_" / "CD2" / "1.Monkey's Audio" / "1.19750000.2.12.D2.T01.ape")
         self.assertTrue(found)
         self.assertEqual(artistid, "Kiss")
         self.assertEqual(albumid, "1.19750000.2")
@@ -34,7 +35,7 @@ class TestRegexT01(unittest.TestCase):
 
     def test_t02(self):
         found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
-                r"F:\J\Judas Priest\1990 - Painkiller\1.Free Lossless Audio Codec\1.19900000.1.13.D1.T01.flac")
+                PureWindowsPath("F:/") / "J" / "Judas Priest" / "1990 - Painkiller" / "1.Free Lossless Audio Codec" / "1.19900000.1.13.D1.T01.flac")
         self.assertTrue(found)
         self.assertEqual(artistid, "Judas Priest")
         self.assertEqual(albumid, "1.19900000.1")
@@ -47,7 +48,7 @@ class TestRegexT01(unittest.TestCase):
 
     def test_t03(self):
         found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
-                r"F:\J\Judas Priest\1990 - Painkiller\1.Free Lossless Audio Codec\1.19900000.1.01.D1.T01.flac")
+                PureWindowsPath("F:/") / "J" / "Judas Priest" / "1990 - Painkiller" / "1.Free Lossless Audio Codec" / "1.19900000.1.01.D1.T01.flac")
         self.assertFalse(found)
         self.assertIsNone(artistid)
         self.assertIsNone(albumid)

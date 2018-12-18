@@ -13,6 +13,7 @@ from itertools import compress, groupby
 from operator import itemgetter
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
+from pathlib import PureWindowsPath
 
 import ftputil.error
 import mutagen.flac
@@ -1133,7 +1134,7 @@ def xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None,
         json.dump(sorted(sorted(sorted(_collection, key=itemgetter(6)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def get_xreferences(track: str) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
+def get_xreferences(track: Union[PureWindowsPath, str]) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
     """
     return artistid, albumid, artist_path, album_path, album, is_bootleg, track basename and track extension.
 
@@ -1160,14 +1161,14 @@ def get_xreferences(track: str) -> Tuple[bool, Tuple[Optional[str], Optional[str
     file = shared.CustomTemplate(shared.FILE).substitute(year="\\6", month="00", day="00", encoder="\\9")
 
     # Create regular expression object.
-    regex = re.compile(f"^{shared.LOOKDEFAULTALBUM}{lookextensions}(({shared.DRIVE}\\\\{shared.LETTER}\\\\{artist}\\\\){shared.FOLDER}{shared.DEFAULTALBUM}\\\\){shared.DISC}{shared.COMPRESSION}\\\\{file}$")
+    regex = re.compile(f"^{shared.LOOKDEFAULTALBUM}{lookextensions}(({shared.DRIVE}\\\\{shared.LETTER}\\\\{artist})\\\\{shared.FOLDER}{shared.DEFAULTALBUM})\\\\{shared.DISC}{shared.COMPRESSION}\\\\{file}$")
 
     # Extract capturing groups content if match is positive.
-    match = regex.match(track)
+    match = regex.match(os.fspath(track))
     if match:
         found = True
         group1 = tuple(match.group(4, 11))
-        group2 = (os.path.normpath(match.group(2)),) + (os.path.normpath(match.group(1)),)
+        group2 = (match.group(2),) + (match.group(1),)
         group3 = match.group(8)
         group4 = mapping.get(match.group(12), False)
         group5 = tuple(match.group(10, 13))
