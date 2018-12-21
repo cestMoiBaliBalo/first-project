@@ -67,7 +67,7 @@ TABS = 4
 # ================
 # Initializations.
 # ================
-status, codes,  = 100, []  # type: int, List[int]
+status, codes, = 100, []  # type: int, List[int]
 
 # ===============
 # Main algorithm.
@@ -118,17 +118,17 @@ for target in arguments.targets:
         continue
 
     # 2.c. Build backup command.
-    command: List[str] = [f'"{ARECA}"', "backup"]
+    command = [ARECA, "backup"]  # type: List[str]
     if arguments.full:
         command.append("-f")
     if arguments.check:
         command.append("-c")
-    command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", f'"{cfgfile}"'])
+    command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", "{0}".format(cfgfile)])
     logger.debug("Backup command.")
     logger.debug('\t%s.'.expandtabs(TABS), " ".join(command))
 
     #  2.d. Run backup command.
-    code: int = 0
+    code = 0  # type: int
     if not arguments.test:
         process = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
         code = process.returncode
