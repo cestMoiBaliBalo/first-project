@@ -14,7 +14,7 @@ from functools import singledispatch
 from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
-from pathlib import PurePath
+from pathlib import PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
 from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
@@ -30,7 +30,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-that_file = PurePath(os.path.abspath(__file__))
+_THATFILE = PurePath(os.path.abspath(__file__))
 
 # ==================
 # Functions aliases.
@@ -54,9 +54,9 @@ WRITE = "w"
 
 # Resources.
 ARECA = str(PurePath("C:/Program Files", "Areca", "areca_cl.exe"))
-DATABASE = str(PurePath(that_file.parent.parent, "Resources", "database.db"))
-TESTDATABASE = str(PurePath(that_file.parent, "Unittests", "Resources", "database.db"))
-XREFERENCES = str(PurePath(that_file.parent.parent, "Resources", "xreferences.db"))
+DATABASE = str(_THATFILE.parents[1] / "Resources" / "database.db")
+TESTDATABASE = str(_THATFILE.parent / "Unittests" / "Resources" / "database.db")
+XREFERENCES = str(_THATFILE.parents[1] / "Resources" / "xreferences.db")
 
 # Regular expressions.
 BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
@@ -88,8 +88,8 @@ TEMPLATE5 = "$Y-$m-$d"
 TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 
 # Local drives.
-IMAGES = str(PurePath("H:/"))
-MUSIC = str(PurePath("F:/"))
+IMAGES = PurePath("H:/")
+MUSIC = PurePath("F:/")
 
 # Miscellaneous containers.
 ACCEPTEDANSWERS = ["N", "Y"]
@@ -218,7 +218,7 @@ class TitleCaseBaseConverter(ABC):
     """
 
     # Define class-level configuration.
-    with open(join(dirname(that_file), "Resources", "resource1.yml"), encoding=UTF8) as fp:
+    with open(join(_THATFILE.parent / "Resources" / "resource1.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp)
 
     # Define class-level regular expressions.
@@ -712,7 +712,7 @@ def customformatterfactory(pattern=LOGPATTERN):
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(join(dirname(dirname(dirname(that_file))), "Log", "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return RotatingFileHandler(join(_THATFILE.parents[2] / "Log" / "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
 def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
@@ -1067,7 +1067,7 @@ def get_artists(directory: str = MUSIC) -> Iterable[Tuple[str, str]]:
         yield _artist, _artist_path
 
 
-def get_albums(directory: str) -> Iterable[Tuple[str, str, str, bool]]:
+def get_albums(directory: Union[PureWindowsPath, WindowsPath, str]) -> Iterable[Tuple[str, str, str, bool]]:
     """
     Get albums composing an artist folder.
     Yield 3-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
@@ -1081,7 +1081,7 @@ def get_albums(directory: str) -> Iterable[Tuple[str, str, str, bool]]:
     regex4 = re.compile(BOOTLEGALBUM)
     regex5 = re.compile(r"\b\\([12])\\({0})\\{1}".format(DFTYEARREGEX, BOOTLEGALBUM))
     isbootleg = {"1": False, "2": True}
-    for _name, _path in get_folders(directory):
+    for _name, _path in get_folders(os.fspath(directory)):
         if not os.path.isdir(_path):
             continue
         if _name in ["1", "2"]:

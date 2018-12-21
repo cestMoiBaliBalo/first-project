@@ -28,6 +28,7 @@ suite.addTests(loader.loadTestsFromModule(module1))
 suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
 suite.addTests(loader.loadTestsFromModule(module4))
-suite.addTests(loader.loadTestsFromModule(module5))
+if sys.platform.startswith("win"):
+    suite.addTests(loader.loadTestsFromModule(module5))
 suite.run(result)
 sys.exit(exit_code[result.wasSuccessful()])
