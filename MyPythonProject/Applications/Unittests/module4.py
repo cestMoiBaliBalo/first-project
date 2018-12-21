@@ -9,8 +9,9 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from functools import partial
+from pathlib import PureWindowsPath
 from tempfile import TemporaryDirectory
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import yaml
 
@@ -18,15 +19,15 @@ from ..AudioCD.shared import RippedDisc, upsert_audiotags
 from ..Tables.Albums.shared import insert_albums_fromjson, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
-from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_dirname, get_readabledate
+from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-that_file = os.path.abspath(__file__)
-basename, join = os.path.basename, os.path.join
+_THATFILE = PureWindowsPath(os.path.abspath(__file__))  # type: PureWindowsPath
+basename, exists, join = os.path.basename, os.path.exists, os.path.join
 
 
 class Changes(object):
@@ -172,11 +173,11 @@ class Changes(object):
 class TestRippedDisc(unittest.TestCase):
 
     def setUp(self):
-        with open(os.path.join(os.path.dirname(that_file), "Resources", "resource3.yml"), encoding=UTF8) as stream:
-            self.testcases = yaml.load(stream)
-        with open(join(get_dirname(that_file, level=3), "AudioCD", "Resources", "resource1.yml"), encoding=UTF8) as stream:
-            self.config = yaml.load(stream)
-        with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as stream:
+        with open(str(_THATFILE.parent / "Resources" / "resource3.yml"), encoding=UTF8) as stream:
+            self.test_cases = yaml.load(stream)
+        with open(str(_THATFILE.parents[2] / "AudioCD" / "Resources" / "resource1.yml"), encoding=UTF8) as stream:
+            self.test_config = yaml.load(stream)
+        with open(str(_THATFILE.parents[2] / "Resources" / "logging.yml"), encoding=UTF8) as stream:
             self.log_config = yaml.load(stream)
 
     def test_t01(self):
@@ -185,7 +186,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            for key, value in self.testcases.items():
+            for key, value in self.test_cases.items():
                 source, profile, decorators, _, expected = value
 
                 # -----
@@ -214,12 +215,12 @@ class TestRippedDisc(unittest.TestCase):
             database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
-            for key, value in self.testcases.items():
+            for key, value in self.test_cases.items():
                 items += 1
                 source, profile, decorators, tags_processing, _ = value
 
                 # -----
-                _tags_processing = any([self.config.get(tags_processing, {}).get("albums", False), self.config.get(tags_processing, {}).get("bootlegs", False)])
+                _tags_processing = any([self.test_config.get(tags_processing, {}).get("albums", False), self.test_config.get(tags_processing, {}).get("bootlegs", False)])
                 if _tags_processing:
                     if int(source["Track"].split("/")[0]) == 1:
                         rippeddiscs += 1
@@ -230,7 +231,7 @@ class TestRippedDisc(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.config.get(tags_processing, {}).items()))
+                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, **config)
 
@@ -258,12 +259,12 @@ class TestRippedDisc(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            for key, value in self.testcases.items():
+            for key, value in self.test_cases.items():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
-                _db_album = self.config.get(tags_processing, {}).get("albums", False)
-                _db_bootleg = self.config.get(tags_processing, {}).get("bootlegs", False)
+                _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
+                _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
                 _tags_processing = any([_db_album, _db_bootleg])
                 if _tags_processing:
                     kwargs = {k.lower(): v for k, v in source.items()}
@@ -282,7 +283,7 @@ class TestRippedDisc(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.config.get(tags_processing, {}).items()))
+                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, **config)
 
@@ -311,12 +312,12 @@ class TestRippedDisc(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             create_tables(drop_tables(database))
             changes = Changes(db=database)
-            for key, value in self.testcases.items():
+            for key, value in self.test_cases.items():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
-                _db_album = self.config.get(tags_processing, {}).get("albums", False)
-                _db_bootleg = self.config.get(tags_processing, {}).get("bootlegs", False)
+                _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
+                _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
                 _tags_processing = any([_db_album, _db_bootleg])
                 if _tags_processing:
                     kwargs = {k.lower(): v for k, v in source.items()}
@@ -335,7 +336,7 @@ class TestRippedDisc(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, save=True, root=tempdir, **config)
 
@@ -355,11 +356,11 @@ class TestRippedDisc(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            source, profile, decorators, tags_processing, expected = self.testcases["default4"]
+            source, profile, decorators, tags_processing, expected = self.test_cases["default4"]
 
             # -----
-            _db_album = self.config.get(tags_processing, {}).get("albums", False)
-            _db_bootleg = self.config.get(tags_processing, {}).get("bootlegs", False)
+            _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
+            _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
             _tags_processing = any([_db_album, _db_bootleg])
             if _tags_processing:
                 kwargs = {k.lower(): v for k, v in source.items()}
@@ -378,7 +379,7 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, save=True, root=tempdir, **config)
 
@@ -396,7 +397,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg1"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg1"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -404,15 +405,15 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2")))
+            self.assertTrue(exists(join(tempdir, "S")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "2002")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2")))
 
     def test_t07(self):
         """
@@ -422,7 +423,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg1"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg1"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -430,13 +431,13 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "input_tags.json")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "input_tags.yml")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "output_tags.json")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "output_tags.yml")))
+            self.assertTrue(exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "input_tags.json")))
+            self.assertTrue(exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "input_tags.yml")))
+            self.assertTrue(exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "output_tags.json")))
+            self.assertTrue(exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "output_tags.yml")))
             self.assertListEqual(list(fnmatch.filter(os.listdir(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2")), "*.json")),
                                  ["input_tags.json", "output_tags.json"])
             self.assertListEqual(list(fnmatch.filter(os.listdir(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2")), "*.yml")),
@@ -449,7 +450,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -457,16 +458,16 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "input_tags.json")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "input_tags.yml")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "output_tags.json")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "output_tags.yml")))
-            self.assertListEqual(list(fnmatch.filter(os.listdir(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")), "*.json")),
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "input_tags.json")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "input_tags.yml")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "output_tags.json")))
+            self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "output_tags.yml")))
+            self.assertListEqual(list(fnmatch.filter(os.listdir(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")), "*.json")),
                                  ["input_tags.json", "output_tags.json"])
-            self.assertListEqual(list(fnmatch.filter(os.listdir(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")), "*.yml")),
+            self.assertListEqual(list(fnmatch.filter(os.listdir(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")), "*.yml")),
                                  ["input_tags.yml", "output_tags.yml"])
 
     def test_t09(self):
@@ -476,7 +477,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -484,16 +485,16 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=False, root=None, **config)
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir)))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce")))
+            self.assertFalse(exists(join(tempdir, "S")))
+            self.assertTrue(exists(tempdir))
 
     def test_t10(self):
         """
@@ -502,7 +503,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -510,16 +511,16 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=None, **config)
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir)))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce")))
+            self.assertFalse(exists(join(tempdir, "S")))
+            self.assertTrue(exists(tempdir))
 
     def test_t11(self):
         """
@@ -528,7 +529,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.testcases["bootleg"]
+            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -536,16 +537,16 @@ class TestRippedDisc(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=False, root=tempdir, **config)
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S", "Springsteen, Bruce")))
-            self.assertFalse(os.path.exists(os.path.join(tempdir, "S")))
-            self.assertTrue(os.path.exists(os.path.join(tempdir)))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2")))
+            self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce")))
+            self.assertFalse(exists(join(tempdir, "S")))
+            self.assertTrue(exists(tempdir))
 
 
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")

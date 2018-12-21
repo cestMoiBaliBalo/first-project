@@ -17,11 +17,11 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 THAT_FILE = PurePath(os.path.abspath(__file__))  # type: PurePath
-USERPROFILE = PurePath("C:/Users/Xavier")  # type: PurePath
-BACKUP = str(PurePath("Y:/Backup"))  # type: str
-MYDOCUMENTS = str(PurePath(USERPROFILE, "Documents"))  # type: str
-ONEDRIVE = str(PurePath(USERPROFILE, "OneDrive"))  # type: str
-TEMP = str(PurePath(USERPROFILE, "AppData", "Local", "Temp"))  # type: str
+USERPROFILE = PurePath("C:/") / "Users" / "Xavier"  # type: PurePath
+BACKUP = str(PurePath("Y:/") / "Backup")  # type: str
+MYDOCUMENTS = str(USERPROFILE / "Documents")  # type: str
+ONEDRIVE = str(USERPROFILE / "OneDrive")  # type: str
+TEMP = str(USERPROFILE / "AppData" / "Local" / "Temp")  # type: str
 DESTINATIONS = {"backup": BACKUP, "documents": MYDOCUMENTS, "onedrive": ONEDRIVE, "temp": TEMP}  # type: Mapping[str, str]
 
 
