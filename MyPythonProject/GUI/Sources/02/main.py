@@ -5,13 +5,15 @@
 import argparse
 import os
 import sys
-from typing import List, Optional
+from itertools import filterfalse, repeat
+from pathlib import PurePath
+from typing import List, Tuple
 
 import jinja2
 import wx  # type: ignore
 import yaml
 
-from Applications.shared import TemplatingEnvironment, get_dirname, get_drives
+from Applications.shared import TemplatingEnvironment, get_drives
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -29,7 +31,7 @@ class MainFrame(wx.Frame):
         self._configuration = dict(kwargs)
         self._init_interface(*sorted(self._configuration.get("repositories")))
         self._init_variables()
-        self._copy_audiofiles, self._command1, self._command2 = False, [], []  # type: bool, list, list
+        self._copy_audiofiles, self._collection = False, []  # type: bool, List[Tuple[str, str, str]]
 
     def _init_interface(self, *collection) -> None:
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
@@ -227,12 +229,10 @@ class MainFrame(wx.Frame):
         :param event:
         :return:
         """
-        patterns: List = self._configuration["patterns"][self._compression]
-        extra_patterns: Optional[List] = self._configuration["extra_patterns"].get(self._compression)
-        if self._m4a_audiofiles:
-            patterns.extend(extra_patterns)
-        self._command1.extend((self._repository, pattern, f"{self._drive.upper()}:") for pattern in patterns)
-        self._command2.append((f"{self._drive.upper()}:", self._repository))
+        extensions = self._configuration["patterns"][self._compression]  # type: List[str]
+        extensions.extend(self._configuration["m4a_audiofiles"].get(self._m4a_audiofiles, []))
+        extensions = list(filterfalse(lambda i: i is None, extensions))
+        self._collection.extend(list(zip(repeat(self._repository), extensions, repeat(f"{self._drive.upper()}:"))))
         self._init_variables()
         self.run.Enable(True)
         self.Layout()
@@ -261,12 +261,8 @@ class MainFrame(wx.Frame):
         return self._copy_audiofiles
 
     @property
-    def command1(self):
-        return self._command1
-
-    @property
-    def command2(self):
-        return self._command2
+    def collection(self):
+        return self._collection
 
 
 # ============
@@ -274,13 +270,13 @@ class MainFrame(wx.Frame):
 # ============
 if __name__ == '__main__':
 
-    that_script = os.path.abspath(__file__)
+    _THATFILE = PurePath(os.path.abspath(__file__))
 
     # Define variables.
     level = 100  # type: int
 
     # Define template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(get_dirname(that_script)))
+    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(_THATFILE.parent)))
     template.set_template(T1="T01")
 
     # Parse input arguments.
@@ -293,7 +289,7 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
 
     # Load configuration.
-    with open(os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml")) as stream:
+    with open(_THATFILE.parents[1] / "Resources" / "resource1.yml") as stream:
         configuration = yaml.load(stream)
 
     # Run interface.
@@ -303,7 +299,7 @@ if __name__ == '__main__':
     app.MainLoop()
     if interface.copy_audiofiles:
         level = 0
-        arguments.outfile.write(getattr(template, "T1").render(command1=interface.command1, command2=interface.command2))
+        arguments.outfile.write(getattr(template, "T1").render(collection=iter(interface.collection)))
 
     # Exit script.
     sys.exit(level)
