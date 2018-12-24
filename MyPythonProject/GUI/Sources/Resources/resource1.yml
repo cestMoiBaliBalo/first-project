@@ -10,14 +10,14 @@ compression:
 
 patterns:
   lossless:
-    - "*\\?*\\*.dsf"
-    - "*\\?*\\*.flac"
+    - dsf
+    - flac
   lossy:
-    - "*\\?*\\*.mp3"
+    - mp3
 
-extra_patterns:
-  lossy:
-    - "*\\?*\\*.m4a"
+m4a_audiofiles:
+  True:
+    - m4a
 
 extensions:
   lossless:
