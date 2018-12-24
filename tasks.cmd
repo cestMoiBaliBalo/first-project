@@ -310,7 +310,7 @@ IF ERRORLEVEL 16 (
     )
     PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" (
-        REM CALL "%_xxcopy%"
+        CALL "%_xxcopy%"
     )
     ECHO:
     ECHO:
