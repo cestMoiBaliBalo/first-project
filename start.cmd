@@ -26,10 +26,10 @@ REM Initializations 2.
 REM ==================
 SET _areca=C:/Program Files/Areca/areca_cl.exe
 SET _cp=1252
-SET _exclusions1=G:\Computing\Resources\exclusions1.txt
+SET _exclusions=G:\Computing\Resources\exclusions2.txt
 SET _lossless=G:\Music\Lossless
 SET _lossy=G:\Music\Lossy
-SET _sdcard=%_COMPUTING%\Resources\SDCard-content.txt
+SET _sdcard=%_COMPUTING%\Resources\daily_backup.txt
 SET _videos=%USERPROFILE%\videos
 
 
@@ -44,7 +44,7 @@ REM  2. Tasks.
 REM     ------
 :MAIN
 IF "%~1" EQU "" (
-    PAUSE
+    REM PAUSE
     EXIT /B %ERRORLEVEL%
 )
 IF "%~1" EQU "1" GOTO STEP1
@@ -126,7 +126,7 @@ REM     /DB#14: removes files older than or equal to 14 days.
 REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
 IF EXIST y:\Computing XXCOPY y:\Computing\ /S /RS /FC /DB#14 /R /H /Y /PD0
-XXCOPY %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions1%" /IA /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions%" /IA /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
