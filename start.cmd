@@ -123,7 +123,7 @@ REM     ------------------------------
 REM  6. Backup "G:\Computing" content.
 REM     ------------------------------
 REM     /DB#14: removes files older than or equal to 14 days.
-REM     /IA   : copies file(s) only if destination directory doesn't exist.
+REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
 IF EXIST y:\Computing XXCOPY y:\Computing\ /S /RS /FC /DB#14 /R /H /Y /PD0
 XXCOPY %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions1%" /IA /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -136,7 +136,7 @@ REM  7. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5"
 REM     -------------------------------------------------------------------------
 REM     Extra files are deleted.
 :STEP7
-XXCOPY "\\Diskstation\backup\Images\Samsung S5\" "G:\Videos\Samsung S5\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY "\\Diskstation\backup\Images\Samsung S5\" "G:\Videos\Samsung S5\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -145,13 +145,8 @@ REM    --------------------
 REM 8. Clone PDF documents.
 REM    --------------------
 :STEP9
-IF EXIST "z:\Z123456789" XXCOPY "%_MYDOCUMENTS%\Administratif\*\*.pdf" "z:\Z123456789\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
-IF EXIST "%_CLOUDSTATION%\Documents\Administratif" XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "%_CLOUDSTATION%\Documents\Administratif\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
-REM IF [%2] EQU [] (
-REM     ECHO:
-REM     ECHO:
-REM     PAUSE
-REM )
+XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "z:\Z123456789\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "%_CLOUDSTATION%\Documents\Administratif\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -160,7 +155,7 @@ REM    -----------------
 REM 9. Clone album arts.
 REM    -----------------
 :STEP10
-IF EXIST "z:\Z123456790" XXCOPY "%_MYDOCUMENTS%\Album Art\*\*.jpg" "z:\Z123456790\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY "%_MYDOCUMENTS%\Album Art\*\*?\*.jpg" "z:\Z123456790\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -169,7 +164,7 @@ REM     ---------------------------
 REM 10. Clone MP3Tag configuration.
 REM     ---------------------------
 :STEP11
-IF EXIST "z:\Z123456791" XXCOPY "%APPDATA%\MP3Tag\" "z:\Z123456791\" /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY "%APPDATA%\MP3Tag\" "z:\Z123456791\" /IP /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -178,7 +173,7 @@ REM     -----------------
 REM 11. Clone MP4 videos.
 REM     -----------------
 :STEP12
-IF EXIST "z:\Z123456792" XXCOPY "%_CLOUDSTATION%\Vidéos\*.mp4" "z:\Z123456792\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY "%_CLOUDSTATION%\Vidéos\*.mp4" "z:\Z123456792\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -219,7 +214,7 @@ REM     -----------------------------------------------
 REM 13. Copy audio FLAC files to "\\Diskstation\music".
 REM     -----------------------------------------------
 :STEP20
-XXCOPY "F:\%~2\?*\2\%~3\*\*.flac" "\\Diskstation\music\%~2\" /KS /BI /FF /I /Y /oA:%_XXCOPYLOG%
+XXCOPY /EC "F:\%~2\?*\2\%~3\*\*.flac" "\\Diskstation\music\%~2\" /KS /BI /FF /I /Y /oA:%_XXCOPYLOG%
 XXCOPY /CE "\\Diskstation\music\" "F:\" /X:*recycle\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 SHIFT
 SHIFT
@@ -272,9 +267,7 @@ REM     ----------------------------
 REM 16. Backup AVCHD videos to "X:".
 REM     ----------------------------
 :STEP24
-SHIFT
-GOTO MAIN
-XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 

@@ -119,7 +119,7 @@ REM ----------------------------------------
 REM Springsteen 200* bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 28 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1222562470
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1222562470
     GOTO MENU
 )
 
@@ -128,7 +128,7 @@ REM ----------------------------------------
 REM Springsteen 2009 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 27 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1068554868
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1068554868
     GOTO MENU
 )
 
@@ -137,7 +137,7 @@ REM ----------------------------------------
 REM Springsteen 201* bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 26 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1306312508
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1306312508
     GOTO MENU
 )
 
@@ -146,7 +146,7 @@ REM ----------------------------------------
 REM Springsteen 2016 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 25 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
     GOTO MENU
 )
 
@@ -167,9 +167,7 @@ IF ERRORLEVEL 24 (
         GOTO MENU
     )
     PUSHD "%TEMP%"
-    IF EXIST "%_xxcopy%" (
-        CALL "%_xxcopy%"
-    )
+    IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
@@ -309,9 +307,7 @@ IF ERRORLEVEL 16 (
         GOTO MENU
     )
     PUSHD "%TEMP%"
-    IF EXIST "%_xxcopy%" (
-        CALL "%_xxcopy%"
-    )
+    IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
@@ -406,7 +402,7 @@ REM ----------------------------------------
 REM Springsteen 2017 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 8 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 743321650
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 743321650
     GOTO MENU
 )
 
@@ -415,7 +411,7 @@ REM --------------------------------------
 REM Pearl Jam 2011 bootlegs series backup.
 REM --------------------------------------
 IF ERRORLEVEL 7 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1484552884
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1484552884
     GOTO MENU
 )
 
@@ -424,7 +420,7 @@ REM --------------------------------------
 REM Pearl Jam 2010 bootlegs series backup.
 REM --------------------------------------
 IF ERRORLEVEL 6 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 445045058
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 445045058
     GOTO MENU
 )
 
@@ -433,7 +429,7 @@ REM --------------------------------------
 REM Pearl Jam 2006 bootlegs series backup.
 REM --------------------------------------
 IF ERRORLEVEL 5 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1404261019
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1404261019
     GOTO MENU
 )
 
@@ -442,7 +438,7 @@ REM --------------------------------------
 REM Pearl Jam 2003 bootlegs series backup.
 REM --------------------------------------
 IF ERRORLEVEL 4 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1557918403
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1557918403
     GOTO MENU
 )
 
@@ -451,7 +447,7 @@ REM --------------------------------------
 REM Pearl Jam 2000 bootlegs series backup.
 REM --------------------------------------
 IF ERRORLEVEL 3 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155
     GOTO MENU
 )
 
@@ -460,7 +456,7 @@ REM --------------------------
 REM Pearl Jam bootlegs backup.
 REM --------------------------
 IF ERRORLEVEL 2 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155 1557918403 1404261019 445045058 1484552884
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155 1557918403 1404261019 445045058 1484552884
     GOTO MENU
 )
 
@@ -469,7 +465,7 @@ REM ---------------------------
 REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
-    "C:\Program Files (x86)\Python35-32\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
+    "C:\Program Files\Python36\python.exe" %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
     GOTO MENU
 )
 
