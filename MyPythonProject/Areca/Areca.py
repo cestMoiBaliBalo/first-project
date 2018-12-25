@@ -4,10 +4,12 @@ import argparse
 import json
 import logging.config
 import operator
+import os
 import subprocess
 import sys
-from os.path import basename, exists, expandvars, join, normpath, splitext
-from typing import List
+from os.path import exists, expandvars, join, normpath, splitext
+from pathlib import PureWindowsPath
+from typing import List, Mapping
 from xml.etree.ElementTree import parse
 
 import yaml
@@ -22,8 +24,8 @@ __status__ = "Production"
 # ===============
 # Backup targets.
 # ===============
-with open(join(expandvars("%_PYTHONPROJECT%"), "Areca", "Areca.json")) as fp:
-    targets = {item["target"]: item["workspace"] for item in json.load(fp)}  # "item" est un dictionnaire.
+with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Areca" / "Areca.json", encoding="UTF_8") as fp:
+    targets = {item["target"]: item["workspace"] for item in json.load(fp)}  # type: Mapping[str, str]
 
 
 # ========
@@ -55,9 +57,9 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 # Logging.
 # ========
-with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+with open(PureWindowsPath(expandvars("%_COMPUTING%")) / "Resources" / "logging.yml", encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
-logger = logging.getLogger("MyPythonProject.Areca.{0}".format(splitext(basename(__file__))[0]))
+logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(PureWindowsPath(os.path.abspath(__file__)).stem)))
 
 # ==========
 # Constants.
@@ -67,7 +69,7 @@ TABS = 4
 # ================
 # Initializations.
 # ================
-status, codes,  = 100, []  # type: int, List[int]
+status, codes, = 100, []  # type: int, List[int]
 
 # ===============
 # Main algorithm.
@@ -118,17 +120,17 @@ for target in arguments.targets:
         continue
 
     # 2.c. Build backup command.
-    command: List[str] = [f'"{ARECA}"', "backup"]
+    command = [ARECA, "backup"]  # type: List[str]
     if arguments.full:
         command.append("-f")
     if arguments.check:
         command.append("-c")
-    command.extend(["-wdir", '"{0}"'.format(join(expandvars("%TEMP%"), "tmp-Xavier")), "-config", f'"{cfgfile}"'])
+    command.extend(["-wdir", '"{0}"'.format(str(PureWindowsPath(expandvars("%TEMP%")) / "tmp-Xavier")), "-config", cfgfile])
     logger.debug("Backup command.")
     logger.debug('\t%s.'.expandtabs(TABS), " ".join(command))
 
     #  2.d. Run backup command.
-    code: int = 0
+    code = 0  # type: int
     if not arguments.test:
         process = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
         code = process.returncode
