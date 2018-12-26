@@ -2,15 +2,16 @@
 # pylint: disable=invalid-name
 # Frame generated with wxFormBuilder (version Jun 17 2015)
 # http://www.wxformbuilder.org/
-import datetime
 import locale
 import os
 from collections import OrderedDict
+from datetime import datetime
 from functools import partial
 from itertools import repeat
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional, Tuple
 
 import wx  # type: ignore
+from pandas import DataFrame
 from pytz import timezone
 
 from Applications.shared import LOCAL, TEMPLATE4, UTC, adjust_datetime, convert_timestamp, get_readabledate
@@ -41,31 +42,21 @@ class MainFrame(wx.Frame):
     SECONDS = sorted(item.zfill(2) for item in map(str, range(0, 60)))
 
     def __init__(self, parent) -> None:
-        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=wx.EmptyString, pos=wx.DefaultPosition, size=wx.Size(775, 519), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
-        self._init_interface()
-        self._compute_dates = False  # type: bool
-        self._csv_file = True  # type: bool
-        self._timezones = ["Europe/Paris"]  # type: List[str]
-        self._from_timestamp, self._to_timestamp = 0, 0  # type: int, int
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=wx.EmptyString, pos=wx.DefaultPosition, size=wx.Size(775, 532), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
+        self._timezones = None  # type: Optional[List[str]]
+        self._from_timestamp, self._to_timestamp = None, None  # type: Optional[int], Optional[int]
         self._data = None  # type: Optional[Any]
-        self._pathname = os.path.join(os.path.expandvars("%TEMP%"), "toto.csv")
-        self._separator = self.PIPE
+        self._pathname = None  # type: Optional[str]
+        self._separator = None  # type: Optional[str]
+        self._init_interface()
+        self._reset_interface(caller="__init__")
+        self.Layout()
 
     def _init_interface(self) -> None:
         """
 
         :return:
         """
-        _now = UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL)  # type: datetime
-        _year = _now.strftime("%Y")  # type: str
-        _month = _now.strftime("%m")  # type: str
-        _day = _now.strftime("%d")  # type: str
-        _hour = _now.strftime("%H")  # type: str
-        _minutes = _now.strftime("%M")  # type: str
-        _seconds = _now.strftime("%S")  # type: str
-        _years = range(int(_year) - 5, int(_year) + 1)
-
-        # -----
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         self.SetFont(wx.Font(9, 74, 90, 90, False, "Arial"))
         self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DLIGHT))
@@ -122,34 +113,22 @@ class MainFrame(wx.Frame):
         self.m_staticText8.Wrap(-1)
         Sizer1a.Add(self.m_staticText8, 0, wx.ALIGN_CENTER | wx.ALL, 5)
 
-        from_yearChoices = sorted(map(str, _years))
-        self.from_year = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_yearChoices, wx.CB_SORT)
-        self.from_year.SetSelection(from_yearChoices.index(_year))
+        self.from_year = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), sorted(map(str, self._now()[-1])), wx.CB_SORT)
         Sizer1a.Add(self.from_year, 0, wx.ALL, 5)
 
-        from_monthChoices = self.MONTHS
-        self.from_month = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_monthChoices, wx.CB_SORT)
-        self.from_month.SetSelection(from_monthChoices.index(_month))
+        self.from_month = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MONTHS, wx.CB_SORT)
         Sizer1a.Add(self.from_month, 0, wx.ALL, 5)
 
-        from_dayChoices = self.DAYS
-        self.from_day = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_dayChoices, wx.CB_SORT)
-        self.from_day.SetSelection(from_dayChoices.index(_day))
+        self.from_day = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.DAYS, wx.CB_SORT)
         Sizer1a.Add(self.from_day, 0, wx.ALL, 5)
 
-        from_hourChoices = self.HOURS
-        self.from_hour = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_hourChoices, wx.CB_SORT)
-        self.from_hour.SetSelection(from_hourChoices.index(_hour))
+        self.from_hour = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.HOURS, wx.CB_SORT)
         Sizer1a.Add(self.from_hour, 0, wx.ALL, 5)
 
-        from_minutesChoices = self.MINUTES
-        self.from_minutes = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_minutesChoices, wx.CB_SORT)
-        self.from_minutes.SetSelection(from_minutesChoices.index(_minutes))
+        self.from_minutes = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MINUTES, wx.CB_SORT)
         Sizer1a.Add(self.from_minutes, 0, wx.ALL, 5)
 
-        from_secondsChoices = self.SECONDS
-        self.from_seconds = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), from_secondsChoices, wx.CB_SORT)
-        self.from_seconds.SetSelection(from_secondsChoices.index(_seconds))
+        self.from_seconds = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.SECONDS, wx.CB_SORT)
         Sizer1a.Add(self.from_seconds, 0, wx.ALL, 5)
 
         # --> TO date.
@@ -157,34 +136,22 @@ class MainFrame(wx.Frame):
         self.m_staticText9.Wrap(-1)
         Sizer1a.Add(self.m_staticText9, 0, wx.ALIGN_CENTER | wx.ALL, 5)
 
-        to_yearChoices = sorted(map(str, _years))
-        self.to_year = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_yearChoices, wx.CB_SORT)
-        self.to_year.SetSelection(to_yearChoices.index(_year))
+        self.to_year = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), sorted(map(str, self._now()[-1])), wx.CB_SORT)
         Sizer1a.Add(self.to_year, 0, wx.ALL, 5)
 
-        to_monthChoices = self.MONTHS
-        self.to_month = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_monthChoices, wx.CB_SORT)
-        self.to_month.SetSelection(to_monthChoices.index(_month))
+        self.to_month = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MONTHS, wx.CB_SORT)
         Sizer1a.Add(self.to_month, 0, wx.ALL, 5)
 
-        to_dayChoices = self.DAYS
-        self.to_day = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_dayChoices, wx.CB_SORT)
-        self.to_day.SetSelection(to_dayChoices.index(_day))
+        self.to_day = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.DAYS, wx.CB_SORT)
         Sizer1a.Add(self.to_day, 0, wx.ALL, 5)
 
-        to_hourChoices = self.HOURS
-        self.to_hour = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_hourChoices, wx.CB_SORT)
-        self.to_hour.SetSelection(to_hourChoices.index(_hour))
+        self.to_hour = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.HOURS, wx.CB_SORT)
         Sizer1a.Add(self.to_hour, 0, wx.ALL, 5)
 
-        to_minutesChoices = self.MINUTES
-        self.to_minutes = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_minutesChoices, wx.CB_SORT)
-        self.to_minutes.SetSelection(to_minutesChoices.index(_minutes))
+        self.to_minutes = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MINUTES, wx.CB_SORT)
         Sizer1a.Add(self.to_minutes, 0, wx.ALL, 5)
 
-        to_secondsChoices = self.SECONDS
-        self.to_seconds = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), to_secondsChoices, wx.CB_SORT)
-        self.to_seconds.SetSelection(to_secondsChoices.index(_seconds))
+        self.to_seconds = wx.Choice(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.SECONDS, wx.CB_SORT)
         Sizer1a.Add(self.to_seconds, 0, wx.ALL, 5)
 
         # ---------------------
@@ -201,7 +168,6 @@ class MainFrame(wx.Frame):
 
         # -----
         self.csv = wx.CheckBox(Sizer3.GetStaticBox(), wx.ID_ANY, "CSV", wx.DefaultPosition, wx.DefaultSize, 0)
-        self.csv.SetValue(True)
         Sizer3.Add(self.csv, 0, wx.BOTTOM | wx.LEFT | wx.TOP, 20)
 
         # -----
@@ -210,7 +176,6 @@ class MainFrame(wx.Frame):
 
         # -----
         self.separator1 = wx.RadioButton(Sizer3.GetStaticBox(), wx.ID_ANY, "| (pipe)", wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
-        self.separator1.SetValue(True)
         Sizer3.Add(self.separator1, 0, wx.BOTTOM | wx.LEFT | wx.TOP, 20)
 
         # -----
@@ -227,13 +192,17 @@ class MainFrame(wx.Frame):
         Sizer4a = wx.BoxSizer(wx.HORIZONTAL)
 
         # --> OK.
-        self.ok_button = wx.Button(self, wx.ID_ANY, "OK", wx.DefaultPosition, wx.Size(70, 30), 0)
-        self.ok_button.SetDefault()
-        Sizer4a.Add(self.ok_button, 0, 0, 0)
+        self.ok = wx.Button(self, wx.ID_ANY, "OK", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.ok.SetDefault()
+        Sizer4a.Add(self.ok, 0, 0, 0)
 
         # --> Close.
-        self.close_button = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
-        Sizer4a.Add(self.close_button, 0, wx.LEFT, 5)
+        self.close = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
+        Sizer4a.Add(self.close, 0, wx.LEFT, 5)
+
+        # --> Reset.
+        self.reset = wx.Button(self, wx.ID_ANY, "Reset", wx.DefaultPosition, wx.Size(70, 30), 0)
+        Sizer4a.Add(self.reset, 0, wx.LEFT, 5)
 
         # -----------------
         # Configure layout.
@@ -247,19 +216,55 @@ class MainFrame(wx.Frame):
         MainSizer.Add(Sizer3, 0, wx.ALL | wx.EXPAND, 10)
         MainSizer.Add(Sizer4, 0, wx.BOTTOM | wx.EXPAND | wx.TOP, 10)
         self.SetSizer(MainSizer)
-        self.Layout()
         self.Centre(wx.BOTH)
 
         # -----------------
         # Configure events.
         # -----------------
-        self.close_button.Bind(wx.EVT_BUTTON, self._cancel_clicked)
-        self.ok_button.Bind(wx.EVT_BUTTON, self._ok_clicked)
+        self.reset.Bind(wx.EVT_BUTTON, self._reset_clicked)
+        self.close.Bind(wx.EVT_BUTTON, self._cancel_clicked)
+        self.ok.Bind(wx.EVT_BUTTON, self._ok_clicked)
         self.select_button.Bind(wx.EVT_BUTTON, self._select_clicked)
         self.csv.Bind(wx.EVT_CHECKBOX, self._csv_checked)
         self.separator1.Bind(wx.EVT_RADIOBUTTON, self._pipe_selected)
         self.separator2.Bind(wx.EVT_RADIOBUTTON, self._semicolon_selected)
         self.separator3.Bind(wx.EVT_RADIOBUTTON, self._backapostrophe_selected)
+
+    def _reset_interface(self, *, caller):
+        _year, _month, _day, _hour, _minutes, _seconds, _years = self._now()
+        self._timezones = ["Europe/Paris"]
+        self._from_timestamp, self._to_timestamp = 0, 0
+        self._data = None
+        self._pathname = os.path.join(os.path.expandvars("%TEMP%"), "timezones.csv")
+        self.csv.SetValue(False)
+        self.select_button.Enable(False)
+        self.separator1.SetValue(True)
+        self.separator1.Enable(False)
+        self.separator2.Enable(False)
+        self.separator3.Enable(False)
+        self._separator = self.PIPE
+        self.from_year.SetSelection(sorted(map(str, _years)).index(_year))
+        self.to_year.SetSelection(sorted(map(str, _years)).index(_year))
+        self.from_month.SetSelection(self.MONTHS.index(_month))
+        self.to_month.SetSelection(self.MONTHS.index(_month))
+        self.from_day.SetSelection(self.DAYS.index(_day))
+        self.to_day.SetSelection(self.DAYS.index(_day))
+        self.from_hour.SetSelection(self.HOURS.index(_hour))
+        self.to_hour.SetSelection(self.HOURS.index(_hour))
+        self.from_minutes.SetSelection(self.MINUTES.index(_minutes))
+        self.to_minutes.SetSelection(self.MINUTES.index(_minutes))
+        self.from_seconds.SetSelection(self.SECONDS.index(_seconds))
+        self.to_seconds.SetSelection(self.SECONDS.index(_seconds))
+        for index in range(self.timezones.GetCount()):
+            self.timezones.Check(index, check=False)
+
+    def _reset_clicked(self, event) -> None:
+        """
+
+        :param event:
+        :return:
+        """
+        self._reset_interface(caller="_reset_clicked")
 
     def _cancel_clicked(self, event) -> None:
         """
@@ -287,15 +292,20 @@ class MainFrame(wx.Frame):
             self._timezones.append(self.timezones.GetString(index))
         self._data = OrderedDict((tz, list(map(get_readabledate, map(convert_timestamp, range(self._from_timestamp, self._to_timestamp + 1), repeat(timezone(tz)))))) for tz in sorted(set(self._timezones)))
         self._headers = list(self._data)
-        window = ChildFrame(parent=self)
-        window.Show()
-        self.Hide()
-        # with ZonesDialog(self) as zdlg:
-        #     if zdlg.ShowModal() == wx.ID_OK:
-        #         for index in self.timezones.GetCheckedItems():
-        #             self.timezones.Check(index, False)
-        # self._reset_frame()
-        # return
+
+        # Results are displayed into a child frame.
+        if not self.csv.IsChecked():
+            window = ChildFrame(parent=self)
+            window.Show()
+            self.Hide()
+
+        # Results are displayed into a plain text file with separator.
+        elif self.csv.IsChecked():
+            DataFrame(self._data).to_csv(self._pathname, sep=self._separator, columns=self._headers)
+            wx.MessageBox("CSV file created successfully", "", style=wx.OK | wx.ICON_INFORMATION)
+
+        # Reset interface to default values.
+        self._reset_interface(caller="_ok_clicked")
 
     def _select_clicked(self, event) -> None:
         """
@@ -307,25 +317,23 @@ class MainFrame(wx.Frame):
             if fileDialog.ShowModal() == wx.ID_OK:
                 self._pathname = fileDialog.GetPath()
 
-    def _csv_checked(self, event):
+    def _csv_checked(self, event) -> None:
         """
 
         :param event:
         :return:
         """
-        self._csv_file = False
         self.select_button.Enable(False)
         self.separator1.Enable(False)
         self.separator2.Enable(False)
         self.separator3.Enable(False)
         if self.csv.IsChecked():
-            self._csv_file = True
             self.select_button.Enable(True)
             self.separator1.Enable(True)
             self.separator2.Enable(True)
             self.separator3.Enable(True)
 
-    def _pipe_selected(self, event):
+    def _pipe_selected(self, event) -> None:
         """
 
         :param event:
@@ -333,7 +341,7 @@ class MainFrame(wx.Frame):
         """
         self._separator = self.PIPE
 
-    def _semicolon_selected(self, event):
+    def _semicolon_selected(self, event) -> None:
         """
 
         :param event:
@@ -341,13 +349,18 @@ class MainFrame(wx.Frame):
         """
         self._separator = self.SEMICOLON
 
-    def _backapostrophe_selected(self, event):
+    def _backapostrophe_selected(self, event) -> None:
         """
 
         :param event:
         :return:
         """
         self._separator = self.BACKAPOSTROPHE
+
+    @staticmethod
+    def _now() -> Tuple[str, str, str, str, str, str, Iterable[int]]:
+        now = UTC.localize(datetime.utcnow()).astimezone(LOCAL)  # type: datetime
+        return now.strftime("%Y"), now.strftime("%m"), now.strftime("%d"), now.strftime("%H"), now.strftime("%M"), now.strftime("%S"), range(int(now.strftime("%Y")) - 5, int(now.strftime("%Y")) + 1)
 
     @property
     def data(self):
@@ -356,34 +369,6 @@ class MainFrame(wx.Frame):
     @property
     def headers(self):
         return self._headers
-
-    # @property
-    # def compute_dates(self) -> bool:
-    #     return self._compute_dates
-    #
-    # @property
-    # def csv_file(self) -> bool:
-    #     return self._csv_file
-    #
-    # @property
-    # def from_timestamp(self) -> int:
-    #     return self._from_timestamp
-    #
-    # @property
-    # def pathname(self) -> str:
-    #     return self._pathname
-    #
-    # @property
-    # def separator(self) -> str:
-    #     return self._separator
-    #
-    # @property
-    # def timezones(self) -> List[str]:
-    #     return sorted(set(self._timezones))
-    #
-    # @property
-    # def to_timestamp(self) -> int:
-    #     return self._to_timestamp
 
 
 class ChildFrame(wx.Frame):
@@ -396,6 +381,8 @@ class ChildFrame(wx.Frame):
         self._parent = parent
         self._data = VirtualList(self, parent.headers, *[value for key, value in parent.data.items()])
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
+        self.SetFont(wx.Font(9, 74, 90, 90, False, "Arial"))
+        self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DLIGHT))
         MainSizer = wx.BoxSizer(wx.VERTICAL)
 
         # -----
@@ -403,7 +390,8 @@ class ChildFrame(wx.Frame):
 
         # -----
         Sizer1 = wx.BoxSizer(wx.VERTICAL)
-        self.ok = wx.Button(self, wx.ID_ANY, "OK", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.ok = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
+        self.ok.SetDefault()
         Sizer1.Add(self.ok, 0, wx.ALIGN_LEFT, 0)
 
         # -----
@@ -453,7 +441,3 @@ if __name__ == '__main__':
     interface = MainFrame(None)
     interface.Show()
     app.MainLoop()
-    # if interface.compute_dates:
-    #     df = DataFrame(OrderedDict((tz, list(map(get_readabledate, map(convert_timestamp, range(interface.from_timestamp, interface.to_timestamp + 1), repeat(timezone(tz)))))) for tz in interface.timezones))
-    #     if interface.csv_file:
-    #         df.to_csv(interface.pathname, sep=interface.separator, columns=interface.timezones)

@@ -4,6 +4,7 @@ import os
 import re
 import sys
 from itertools import chain
+from pathlib import PurePath
 from subprocess import run
 
 from jinja2 import Environment, FileSystemLoader
@@ -19,11 +20,12 @@ __status__ = "Production"
 # Constants.
 # ==========
 COLUMN = 56
+THATFILE = PurePath(os.path.abspath(__file__))
 
 # ===================
 # Jinja2 environment.
 # ===================
-environment = Environment(loader=FileSystemLoader(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Manager"), encoding=DFTENCODING),
+environment = Environment(loader=FileSystemLoader(str(THATFILE.parents[1] / "Manager"), encoding=DFTENCODING),
                           trim_blocks=True,
                           lstrip_blocks=True,
                           keep_trailing_newline=True)
@@ -48,7 +50,7 @@ y, choice = [], 99
 # ===============
 
 # 1. Load tasks, numbers and return codes.
-with open(os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Tasks", "Resources", "Menu.json")) as fp:
+with open(THATFILE.parents[1] / "Resources" / "Menu.json") as fp:
     tasks = json.load(fp)
 
 codes = dict([(str(number), code) for task, number, code in tasks])

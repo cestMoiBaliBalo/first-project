@@ -6,13 +6,14 @@ import datetime
 import locale
 import os
 from collections import OrderedDict
+from collections.abc import MutableMapping
 from contextlib import ExitStack
 from functools import partial
 from itertools import compress, groupby, repeat
 from operator import itemgetter
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import wx
+import wx  # type: ignore
 
 from Applications.Tables.Albums.shared import update_playeddisccount
 from Applications.Tables.shared import DatabaseConnection
@@ -24,7 +25,7 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-class DigitalAlbums(object):
+class DigitalAlbums(MutableMapping):
 
     def __init__(self, db: str = DATABASE) -> None:
         self._mapping = OrderedDict()  # type: Dict[str, Tuple[str, int]]
@@ -43,10 +44,20 @@ class DigitalAlbums(object):
                 _discs = [discid for (discid,) in map(lambda i: compress(i, [0, 0, 1, 0]), _group)]
             self._mapping.update(dict(zip(_albums, zip(repeat(_albumid), _discs))))
 
-    @property
-    def discs(self):
-        for k, v in self._mapping.items():
-            yield k, v
+    def __delitem__(self, key):
+        del self._mapping[key]
+
+    def __getitem__(self, key):
+        return self._mapping[key]
+
+    def __iter__(self):
+        return iter(self._mapping.items())
+
+    def __len__(self):
+        return len(self._mapping)
+
+    def __setitem__(self, key, arg):
+        self._mapping[key] = arg
 
 
 # ======
@@ -61,19 +72,14 @@ class MainFrame(wx.Frame):
 
     def __init__(self, parent) -> None:
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Digital Albums", pos=wx.DefaultPosition, size=wx.Size(866, 519), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
-        self._init_interface()
         self._database = None  # type: Optional[str]
         self._total_albums = 0  # type: int
+        self._init_interface()
+        self._reset_interface()
+        self._set_statusbar("Choose database.", "")
+        self.Layout()
 
     def _init_interface(self) -> None:
-        _now = UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL)  # type: datetime
-        _year = _now.strftime("%Y")  # type: str
-        _month = _now.strftime("%m")  # type: str
-        _day = _now.strftime("%d")  # type: str
-        _hour = _now.strftime("%H")  # type: str
-        _minutes = _now.strftime("%M")  # type: str
-        _seconds = _now.strftime("%S")  # type: str
-        _years = range(int(_year) - 5, int(_year) + 1)
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         self.SetFont(wx.Font(9, 74, 90, 90, False, "Arial"))
         self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DLIGHT))
@@ -89,8 +95,7 @@ class MainFrame(wx.Frame):
         # Albums.
         # -------
         Sizer1 = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Discs"), wx.HORIZONTAL)
-        albumsChoices = []
-        self.albums = wx.CheckListBox(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(-1, -1), albumsChoices, 0)
+        self.albums = wx.CheckListBox(Sizer1.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(-1, -1), [], 0)
         Sizer1.Add(self.albums, 1, wx.ALL | wx.EXPAND, 5)
 
         # ------------
@@ -137,44 +142,31 @@ class MainFrame(wx.Frame):
         Sizer2a.Add(self.m_staticText7, 0, wx.ALIGN_CENTER | wx.ALL, 5)
 
         # --> Year.
-        yearChoices = sorted(map(str, _years))
-        self.year = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), yearChoices, wx.CB_SORT)
-        self.year.SetSelection(yearChoices.index(_year))
+        self.year = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), sorted(map(str, self.now()[-1])), wx.CB_SORT)
         Sizer2a.Add(self.year, 0, wx.ALL, 5)
 
         # --> Month.
-        monthChoices = self.MONTHS
-        self.month = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), monthChoices, wx.CB_SORT)
-        self.month.SetSelection(monthChoices.index(_month))
+        self.month = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MONTHS, wx.CB_SORT)
         Sizer2a.Add(self.month, 0, wx.ALL, 5)
 
         # --> Day.
-        dayChoices = self.DAYS
-        self.day = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), dayChoices, wx.CB_SORT)
-        self.day.SetSelection(dayChoices.index(_day))
+        self.day = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.DAYS, wx.CB_SORT)
         Sizer2a.Add(self.day, 0, wx.ALL, 5)
 
         # --> Hours.
-        hourChoices = self.HOURS
-        self.hour = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), hourChoices, wx.CB_SORT)
-        self.hour.SetSelection(hourChoices.index(_hour))
+        self.hour = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.HOURS, wx.CB_SORT)
         Sizer2a.Add(self.hour, 0, wx.ALL, 5)
 
         # --> Minutes.
-        minutesChoices = self.MINUTES
-        self.minutes = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), minutesChoices, wx.CB_SORT)
-        self.minutes.SetSelection(minutesChoices.index(_minutes))
+        self.minutes = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.MINUTES, wx.CB_SORT)
         Sizer2a.Add(self.minutes, 0, wx.ALL, 5)
 
         # --> Seconds.
-        secondsChoices = self.SECONDS
-        self.seconds = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), secondsChoices, wx.CB_SORT)
-        self.seconds.SetSelection(secondsChoices.index(_seconds))
+        self.seconds = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), self.SECONDS, wx.CB_SORT)
         Sizer2a.Add(self.seconds, 0, wx.ALL, 5)
 
         # --> Time zone.
         self.zone = wx.Choice(Sizer2.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.Size(100, -1), ["Local", "GMT"], 0)
-        self.zone.SetSelection(0)
         Sizer2a.Add(self.zone, 0, wx.ALL, 5)
 
         # ------------------
@@ -184,13 +176,15 @@ class MainFrame(wx.Frame):
 
         # --> OK.
         self.ok = wx.Button(self, wx.ID_ANY, "OK", wx.DefaultPosition, wx.Size(70, 30), 0)
-        self.ok.Enable(False)
-        self.ok.SetDefault()
         Sizer3a.Add(self.ok, 0, 0, 0)
 
-        # --> Cancel.
-        self.cancel = wx.Button(self, wx.ID_ANY, "Cancel", wx.DefaultPosition, wx.Size(70, 30), 0)
+        # --> Close.
+        self.cancel = wx.Button(self, wx.ID_ANY, "Close", wx.DefaultPosition, wx.Size(70, 30), 0)
         Sizer3a.Add(self.cancel, 0, wx.LEFT, 5)
+
+        # --> Refresh.
+        self.refresh = wx.Button(self, wx.ID_ANY, "Refresh", wx.DefaultPosition, wx.Size(70, 30), 0)
+        Sizer3a.Add(self.refresh, 0, wx.LEFT, 5)
 
         # -----------------
         # Configure layout.
@@ -202,7 +196,7 @@ class MainFrame(wx.Frame):
         MainSizer.Add(Sizer2, 0, wx.ALL | wx.EXPAND, 10)
         MainSizer.Add(Sizer3, 0, wx.BOTTOM | wx.EXPAND | wx.TOP, 10)
         self.SetSizer(MainSizer)
-        self.Layout()
+        self.wStatusBar = self.CreateStatusBar(2)
         self.Centre(wx.BOTH)
 
         # -----------------
@@ -212,6 +206,37 @@ class MainFrame(wx.Frame):
         self.albums.Bind(wx.EVT_CHECKLISTBOX, self._check_album)
         self.ok.Bind(wx.EVT_BUTTON, self._click_on_ok)
         self.cancel.Bind(wx.EVT_BUTTON, self._click_on_cancel)
+        self.refresh.Bind(wx.EVT_BUTTON, self._click_on_refresh)
+
+    def _set_statusbar(self, *status):
+        if len(status) > 0:
+            for index in range(len(status)):
+                self.wStatusBar.SetStatusText(status[index], index)
+
+    def _reset_interface(self) -> None:
+        """
+
+        :return:
+        """
+
+        # ----- Uncheck all discs.
+        for index in range(self.albums.GetCount()):
+            self.albums.Check(index, check=False)
+
+        # ----- Set current date and time
+        _year, _month, _day, _hour, _minutes, _seconds, _years = self.now()
+        self.year.SetSelection(sorted(map(str, _years)).index(_year))
+        self.month.SetSelection(self.MONTHS.index(_month))
+        self.day.SetSelection(self.DAYS.index(_day))
+        self.hour.SetSelection(self.HOURS.index(_hour))
+        self.minutes.SetSelection(self.MINUTES.index(_minutes))
+        self.seconds.SetSelection(self.SECONDS.index(_seconds))
+        self.zone.SetSelection(0)
+        self.ok.Enable(False)
+        self.ok.SetDefault()
+
+        # ----- Disable OK button.
+        self.ok.Enable(False)
 
     def _select_database(self, event) -> None:
         """
@@ -222,10 +247,11 @@ class MainFrame(wx.Frame):
         with wx.FileDialog(self, "Open database", wildcard="Database files (*.db)|*.db", style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fd:
             if fd.ShowModal() == wx.ID_OK:
                 self._database = fd.GetPath()
-                self._discs = list(DigitalAlbums(self._database).discs)
+                self._discs = list(DigitalAlbums(self._database))
                 self._albums = [album_name for album_name, _ in self._discs]
                 self.albums.Set(self._albums)
                 self._total_albums = self.albums.GetCount()
+                self._set_statusbar(self._database, "Check recently listened discs and set both date and time. Then click OK button.")
 
     def _check_album(self, event) -> None:
         """
@@ -263,10 +289,8 @@ class MainFrame(wx.Frame):
             playeddate = UTC.localize(datobj).astimezone(LOCAL)
         update = partial(update_playeddisccount, db=self._database, local_played=playeddate)
         changes = sum([updated for _, updated in map(update, albums, map(int, discs))])
-        wx.MessageBox("{0:>3d} records updated".format(changes), "playeddiscs Table", style=wx.OK | wx.ICON_INFORMATION)
-        for index in self.albums.GetCheckedItems():
-            self.albums.Check(index, check=False)
-        self._enable_ok()
+        wx.MessageBox("{0:>3d} record(s) updated".format(changes), "playeddiscs Table", style=wx.OK | wx.ICON_INFORMATION)
+        self._reset_interface()
         self.Layout()
 
     def _click_on_cancel(self, event) -> None:
@@ -276,6 +300,20 @@ class MainFrame(wx.Frame):
         :return:
         """
         self.Close()
+
+    def _click_on_refresh(self, event) -> None:
+        """
+
+        :param event:
+        :return:
+        """
+        self._reset_interface()
+        self.Layout()
+
+    @staticmethod
+    def now() -> Tuple[str, str, str, str, str, str, Iterable[int]]:
+        _now = UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL)
+        return _now.strftime("%Y"), _now.strftime("%m"), _now.strftime("%d"), _now.strftime("%H"), _now.strftime("%M"), _now.strftime("%S"), range(int(_now.strftime("%Y")) - 5, int(_now.strftime("%Y")) + 1)
 
 
 # ============
