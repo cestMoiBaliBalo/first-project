@@ -7,7 +7,7 @@ import operator
 import os
 import subprocess
 import sys
-from os.path import exists, expandvars, join, normpath, splitext
+from os.path import exists, expandvars, join, normpath
 from pathlib import PureWindowsPath
 from typing import List, Mapping
 from xml.etree.ElementTree import parse
@@ -57,7 +57,7 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 # Logging.
 # ========
-with open(PureWindowsPath(expandvars("%_COMPUTING%")) / "Resources" / "logging.yml", encoding="UTF_8") as fp:
+with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding="UTF_8") as fp:
     logging.config.dictConfig(yaml.load(fp))
 logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(PureWindowsPath(os.path.abspath(__file__)).stem)))
 
