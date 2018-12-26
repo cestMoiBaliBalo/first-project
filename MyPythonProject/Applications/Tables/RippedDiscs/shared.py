@@ -18,46 +18,30 @@ __status__ = "Production"
 # =============
 # Named tuples.
 # =============
-DefaultAlbum = NamedTuple("DefaultAlbum", [("rowid", int),
-                                           ("albumid", str),
-                                           ("ripped", datetime),
-                                           ("year_ripped", int),
-                                           ("month_ripped", int),
-                                           ("artistsort", str),
-                                           ("albumsort", str),
-                                           ("artist", str),
-                                           ("genre", str),
-                                           ("application", str),
-                                           ("disc", int),
-                                           ("tracks", int),
-                                           ("created_date", datetime),
-                                           ("bootleg", bool),
-                                           ("origyear", int),
-                                           ("year", int),
-                                           ("album", str),
-                                           ("label", str),
-                                           ("upc", str),
-                                           ("modified_date", datetime)])
-BootlegAlbum = NamedTuple("BootlegAlbum", [("rowid", int),
-                                           ("albumid", str),
-                                           ("ripped", datetime),
-                                           ("year_ripped", int),
-                                           ("month_ripped", int),
-                                           ("artistsort", str),
-                                           ("albumsort", str),
-                                           ("artist", str),
-                                           ("genre", str),
-                                           ("application", str),
-                                           ("disc", int),
-                                           ("tracks", int),
-                                           ("created_date", datetime),
-                                           ("bootleg", bool),
-                                           ("album", str),
-                                           ("bootleg_date", date),
-                                           ("bootleg_city", str),
-                                           ("bootleg_country", str),
-                                           ("bootleg_tour", str),
-                                           ("modified_date", datetime)])
+Album = NamedTuple("Album", [("rowid", int),
+                             ("albumid", str),
+                             ("ripped", datetime),
+                             ("year_ripped", int),
+                             ("month_ripped", int),
+                             ("artistsort", str),
+                             ("albumsort", str),
+                             ("artist", str),
+                             ("genre", str),
+                             ("application", str),
+                             ("disc", int),
+                             ("tracks", int),
+                             ("created_date", datetime),
+                             ("bootleg", bool),
+                             ("origyear", int),
+                             ("year", int),
+                             ("album", str),
+                             ("label", str),
+                             ("upc", str),
+                             ("bootleg_date", date),
+                             ("bootleg_city", str),
+                             ("bootleg_country", str),
+                             ("bootleg_tour", str),
+                             ("modified_date", datetime)])
 
 # ==========
 # Constants.
@@ -313,15 +297,18 @@ def _get_rippeddiscs(db: str, **kwargs):
     in_logger.debug(args)
 
     #  6. Run SQL statement.
+    #     Callers are in charge of filtering fields depending on the returned albums quality (default or bootleg).
+    #     Shared function main role consists only in returning all fields without applying any segmentation.
     rows = []
     with DatabaseConnection(db) as conn:
         for row in conn.execute(sql, args):
-            is_bootleg = row["is_bootleg"]
-            row = list(compress(row, FIELDS_SELECTORS[is_bootleg]))
-            if not is_bootleg:
-                rows.append(DefaultAlbum._make(row))
-            else:
-                rows.append(BootlegAlbum._make(row))  # type: ignore
+            # is_bootleg = row["is_bootleg"]
+            # row = list(compress(row, FIELDS_SELECTORS[is_bootleg]))
+            # if not is_bootleg:
+                # rows.append(DefaultAlbum._make(row))
+            # else:
+                # rows.append(BootlegAlbum._make(row))  # type: ignore
+            rows.append(Album._make(row))
             log_record(row)
     for row in rows:
         yield row

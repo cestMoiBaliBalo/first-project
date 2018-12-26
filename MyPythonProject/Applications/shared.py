@@ -11,9 +11,10 @@ from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import singledispatch
-from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
+from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
+from operator import itemgetter
 from pathlib import PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
@@ -739,6 +740,39 @@ def grouper(iterable, n, *, fillvalue=None):
     """
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
+
+
+def advanced_grouper(collection, *, key: Optional[int] = None, subkey: Optional[int] = None):
+    if key is None:
+        for item in collection:
+            yield item
+    elif key is not None:
+        group_by = [(key, 0), (subkey, 1)]
+        if subkey is None:
+            group_by = [(key, 0)]
+        group_by = iter(group_by)
+        while True:
+            try:
+                key, index = next(group_by)
+            except StopIteration:
+                break
+            if index == 0:
+                collection = alternative_grouper(*collection, index=key)
+            elif index > 0:
+                templist1, templist2 = [], []
+                for _key, _group in collection:
+                    for _sub_key, _sub_group in alternative_grouper(*_group, index=key):
+                        templist1.append((_sub_key, _sub_group))
+                    templist2.append((_key, templist1))
+                    templist1 = []
+                collection = list(templist2)
+        for item in collection:
+            yield item
+
+
+def alternative_grouper(*collection, index: int = 0):
+    for k, group in groupby(collection, key=itemgetter(index)):
+        yield k, list(group)
 
 
 def partitioner(iterable, *, predicate=None):

@@ -17,73 +17,94 @@ __status__ = "Production"
 # ==========
 # Functions.
 # ==========
-def audiofileslist(obj):
-    root = ET.Element("Files", attrib={"css": "DigitalAudioFiles.css", "title": "Digital Audio Files"})
+# def audiofileslist(obj):
+    # root = ET.Element("Files", attrib={"css": "DigitalAudioFiles.css", "title": "Digital Audio Files"})
 
-    #  1.a. Last update date.
-    se = ET.SubElement(root, "Updated")
-    se.text = now()
+    # #  1.a. Last update date.
+    # se = ET.SubElement(root, "Updated")
+    # se.text = now()
 
-    #  1.b. Scanned directory.
-    se = ET.SubElement(root, "Directory")
-    se.text = obj.folder
+    # #  1.b. Scanned directory.
+    # se = ET.SubElement(root, "Directory")
+    # se.text = obj.folder
 
-    #  2. "FilesList" element.
-    se = ET.SubElement(root, "FilesList")
-    for file, ctime in sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)):
-        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
-        sse.text = file
+    # #  2. "FilesList" element.
+    # se = ET.SubElement(root, "FilesList")
+    # for file, ctime in sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)):
+        # sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
+        # sse.text = file
 
-    # 3. "RecentFiles" element.
-    se = ET.SubElement(root, "RecentFilesList")
-    for file, ctime in sorted(sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)), key=itemgetter(1), reverse=True)[:50]:
-        sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
-        sse.text = file
+    # # 3. "RecentFiles" element.
+    # se = ET.SubElement(root, "RecentFilesList")
+    # for file, ctime in sorted(sorted([(item[0], int(item[3])) for item in obj.reflist], key=itemgetter(0)), key=itemgetter(1), reverse=True)[:50]:
+        # sse = ET.SubElement(se, "File", attrib={"seconds": str(ctime), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(ctime)))})
+        # sse.text = file
 
-    # 4. "FilesByArtist" element.
-    se = ET.SubElement(root, "FilesByArtist")
-    for artist, groups in obj.groupedby_artist:
-        groups = list(groups)
-        sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
-        for group in groups:
-            ssse = ET.SubElement(sse, "File", attrib={"seconds": str(int(group[3])), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(group[3])))})
-            ssse.text = group[0]
+    # # 4. "FilesByArtist" element.
+    # se = ET.SubElement(root, "FilesByArtist")
+    # for artist, groups in obj.groupedby_artist:
+        # groups = list(groups)
+        # sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
+        # for group in groups:
+            # ssse = ET.SubElement(sse, "File", attrib={"seconds": str(int(group[3])), "converted": format_date(LOCAL.localize(datetime.fromtimestamp(group[3])))})
+            # ssse.text = group[0]
 
-    # 5. "ExtensionsList" element.
-    se = ET.SubElement(root, "ExtensionsList")
-    for extension, count in obj.countby_extension:
-        sse = ET.SubElement(se, "Extension", attrib={"name": extension.upper()})
-        sse.text = str(count)
+    # # 5. "ExtensionsList" element.
+    # se = ET.SubElement(root, "ExtensionsList")
+    # for extension, count in obj.countby_extension:
+        # sse = ET.SubElement(se, "Extension", attrib={"name": extension.upper()})
+        # sse.text = str(count)
 
-    # 6. "ArtistsList" element.
-    se = ET.SubElement(root, "ArtistsList")
-    for artist, groups in obj.groupedby_artist:
-        groups = list(groups)
-        sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
-        groups = [(art, ext, len(list(groups))) for (art, ext), groups in obj.groupedby_artist_extension if art == artist]
-        for _, extension, count in groups:
-            ssse = ET.SubElement(sse, "Extension", attrib={"name": extension.upper()})
-            ssse.text = str(count)
+    # # 6. "ArtistsList" element.
+    # se = ET.SubElement(root, "ArtistsList")
+    # for artist, groups in obj.groupedby_artist:
+        # groups = list(groups)
+        # sse = ET.SubElement(se, "Artist", attrib={"name": artist, "count": str(len(groups))})
+        # groups = [(art, ext, len(list(groups))) for (art, ext), groups in obj.groupedby_artist_extension if art == artist]
+        # for _, extension, count in groups:
+            # ssse = ET.SubElement(sse, "Extension", attrib={"name": extension.upper()})
+            # ssse.text = str(count)
 
-    return root
+    # return root
+
+# SORT = {"default": [(4, False), (3, False), (1, True), (2, True)], "artistsort": [(1, False), (4, False), (3, False)]}
+# GROUPBY = {"default": 2, "artistsort": 3}
+# collection = [(disc.discid,
+#                disc.ripped,
+#                f"{disc.year_ripped}{disc.month_ripped}",
+#                disc.artistsort,
+#                disc.albumsort,
+#                disc.origyear,
+#                disc.year,
+#                disc.genre,
+#                disc.album,
+#                disc.upc,
+#                disc.disc,
+#                disc.tracks,
+#                disc.bootleg)
+#              for disc in get_rippeddiscs(db=database)]
+# for index, reverse in SORT.get(profile, SORT["default"]):
+#     collection = sorted(collection, key=itemgetter(index), reverse=reverse)
+# ET.ElementTree(rippeddiscs_view1(collection = itertools.groupby(collection, key=itemgetter(GROUPBY.get(profile, GROUPBY["default"])))).write(output, encoding=UTF8, xml_declaration=True)
 
 
-def rippeddiscs_view1(reflist):
+def rippeddiscs(collection):
     """
 
-    :param reflist:
+    :param collection:
     :return:
     """
-    RippedDisc = namedtuple("RippedDisc", "rowid readable_date readable_month ripped artist year album upc genre application albumsort artistsort disc")
+    RippedDisc = namedtuple("RippedDisc", "rowid ripped readable_year readable_month artistsort albumsort origyear tear genre album upc disc tracks bootleg")
     root = ET.Element("rippeddiscs")
     se = ET.SubElement(root, "created")
     se.text = now()
 
-    for key, group in itertools.groupby(reflist, key=itemgetter(2)):
+    collection = iter(collection)
+    for key, group in collection:
         group = list(group)
-        se = ET.SubElement(root, "month", attrib={"label": format_date(date(int(key[:4]), int(key[-2:]), 1), template="$month $Y"), "count": str(len(group))})
+        se = ET.SubElement(root, "key", attrib={"label": format_date(date(int(key[:4]), int(key[-2:]), 1), template="$month $Y"), "count": str(len(group))})
         for row in map(RippedDisc._make, group):
-            sse = ET.SubElement(se, "rippeddiscs", attrib={"uid": str(row.rowid)})
+            sse = ET.SubElement(se, "disc", attrib={"uid": str(row.rowid)})
 
             # ArtistSort.
             element = ET.SubElement(sse, "artistsort")
@@ -93,22 +114,6 @@ def rippeddiscs_view1(reflist):
             element = ET.SubElement(sse, "albumsort")
             element.text = row.albumsort
 
-            # Disc ID.
-            element = ET.SubElement(sse, "discid")
-            element.text = str(row.disc)
-
-            # Artist.
-            element = ET.SubElement(sse, "artist")
-            element.text = row.artist
-
-            # Year.
-            element = ET.SubElement(sse, "year")
-            element.text = str(row.year)
-
-            # Album.
-            element = ET.SubElement(sse, "album")
-            element.text = row.album
-
             # Genre.
             element = ET.SubElement(sse, "genre")
             element.text = row.genre
@@ -117,6 +122,22 @@ def rippeddiscs_view1(reflist):
             element = ET.SubElement(sse, "upc")
             element.text = str(row.upc)
 
+            # Album.
+            element = ET.SubElement(sse, "album")
+            element.text = row.album
+
+            # Disc ID.
+            element = ET.SubElement(sse, "discid")
+            element.text = str(row.disc)
+
+            # Origyear.
+            element = ET.SubElement(sse, "origyear")
+            element.text = str(row.origyear)
+
+            # Year.
+            element = ET.SubElement(sse, "year")
+            element.text = str(row.year)
+
             # Ripped date.
             element = ET.SubElement(sse, "ripped", attrib=dict(ts=str(row.readable_date[1])))
             element.text = row.readable_date[0]
@@ -124,56 +145,56 @@ def rippeddiscs_view1(reflist):
     return root
 
 
-def rippeddiscs_view2(reflist):
-    """
+# def rippeddiscs_view2(reflist):
+    # """
 
-    :param reflist:
-    :return:
-    """
-    root = ET.Element("rippeddiscs")
-    se = ET.SubElement(root, "created")
-    se.text = now()
+    # :param reflist:
+    # :return:
+    # """
+    # root = ET.Element("rippeddiscs")
+    # se = ET.SubElement(root, "created")
+    # se.text = now()
 
-    for rowid, readable_date, _, artist, year, album, upc, genre, _, albumsort, artistsort, disc in reflist:
-        sse = ET.SubElement(root, "rippeddiscs", attrib={"uid": str(rowid)})
+    # for rowid, readable_date, _, artist, year, album, upc, genre, _, albumsort, artistsort, disc in reflist:
+        # sse = ET.SubElement(root, "rippeddiscs", attrib={"uid": str(rowid)})
 
-        # ArtistSort.
-        element = ET.SubElement(sse, "artistsort")
-        element.text = artistsort
+        # # ArtistSort.
+        # element = ET.SubElement(sse, "artistsort")
+        # element.text = artistsort
 
-        # AlbumSort.
-        element = ET.SubElement(sse, "albumsort")
-        element.text = albumsort
+        # # AlbumSort.
+        # element = ET.SubElement(sse, "albumsort")
+        # element.text = albumsort
 
-        # Disc ID.
-        element = ET.SubElement(sse, "discid")
-        element.text = str(disc)
+        # # Disc ID.
+        # element = ET.SubElement(sse, "discid")
+        # element.text = str(disc)
 
-        # Artist.
-        element = ET.SubElement(sse, "artist")
-        element.text = artist
+        # # Artist.
+        # element = ET.SubElement(sse, "artist")
+        # element.text = artist
 
-        # Year.
-        element = ET.SubElement(sse, "year")
-        element.text = str(year)
+        # # Year.
+        # element = ET.SubElement(sse, "year")
+        # element.text = str(year)
 
-        # Album.
-        element = ET.SubElement(sse, "album")
-        element.text = album
+        # # Album.
+        # element = ET.SubElement(sse, "album")
+        # element.text = album
 
-        # Genre.
-        element = ET.SubElement(sse, "genre")
-        element.text = genre
+        # # Genre.
+        # element = ET.SubElement(sse, "genre")
+        # element.text = genre
 
-        # UPC.
-        element = ET.SubElement(sse, "upc")
-        element.text = str(upc)
+        # # UPC.
+        # element = ET.SubElement(sse, "upc")
+        # element.text = str(upc)
 
-        # Ripped date.
-        element = ET.SubElement(sse, "ripped", attrib=dict(ts=str(readable_date[1])))
-        element.text = readable_date[0]
+        # # Ripped date.
+        # element = ET.SubElement(sse, "ripped", attrib=dict(ts=str(readable_date[1])))
+        # element.text = readable_date[0]
 
-    return root
+    # return root
 
 # def rippinglog_in(source):
 #     """
