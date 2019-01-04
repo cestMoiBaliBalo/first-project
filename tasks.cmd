@@ -85,7 +85,7 @@ REM -----------------------
 IF ERRORLEVEL 35 (
     PUSHD "%_PYTHONPROJECT%\GUI\Sources\03"
     python main.py
-    PUSHD
+    POPD
     GOTO MENU
 )
 
