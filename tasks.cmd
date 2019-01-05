@@ -196,10 +196,22 @@ IF ERRORLEVEL 23 (
     IF [!_answer!] EQU [N] GOTO FIN23
     CLS
 
-    REM -->  1. Clone "\\DISKSTATION\Images\Collection" to local drive H. Don't delete extra files and directories!
+    REM -->  1. Check if new files were inserted since the previous sync.
+    XXCOPY "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO:
+        ECHO:
+        ECHO No new files inserted: syncing is not required. Task is going to end.
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO FIN23
+    )
+
+    REM -->  2. Clone "\\DISKSTATION\Images\Collection" to local drive H. Don't delete extra files and directories!
     XXCOPY /EC "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /CLONE /Z0 /oA:%_XXCOPYLOG%
 
-    REM -->  2. Reverse both source and destination. Then remove brand new files but preserve some folders content.
+    REM -->  3. Reverse both source and destination. Then remove brand new files in order to preserve some folders content.
     REM         - "RECYCLER".
     REM         - "$RECYCLE.BIN".
     REM         - "SYSTEM VOLUME INFORMATION".
@@ -207,7 +219,7 @@ IF ERRORLEVEL 23 (
     REM         - "RECOVER".
     XXCOPY /CE "H:\" "\\DISKSTATION\backup\Images\Collection\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 
-    REM -->  3. Then pause.
+    REM -->  4. Then pause.
     ECHO:
     ECHO:
     PAUSE
