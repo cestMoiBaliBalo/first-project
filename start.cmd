@@ -57,7 +57,6 @@ IF "%~1" EQU "7" GOTO STEP7
 IF "%~1" EQU "9" GOTO STEP9
 IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
-IF "%~1" EQU "12" GOTO STEP12
 IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "19" GOTO STEP19
@@ -79,18 +78,19 @@ REM     /H    Deletes even a hidden/system file.
 REM     /PD0  Suppresses the prompt which would appear on a directory.
 REM     /Y    Suppresses the prompt prior to each file-delete.
 REM     /ED1  Preserves 1 level of empty directories. All subdirectories under %TEMP% are removed.
+REM           Will remove all empty directories under %TEMP%!
 :STEP1
 XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
 
-REM     -------------------------------------------------
-REM  4. Remove plain text files from Clear AppData\Local.
-REM     -------------------------------------------------
+REM     ---------------------------------------------------------
+REM  4. Remove plain text files from %USERPROFILE%\AppData\Local.
+REM     ---------------------------------------------------------
 REM     /ED   Preserves the directory even if it becomes empty.
 :STEP2
-XXCOPY /EC C:\Users\Xavier\AppData\Local\*.txt /RS /DB#1 /R /H /Y /PD0 /ED /oA:%_XXCOPYLOG%
+XXCOPY /EC %USERPROFILE%\AppData\Local\*.txt /RS /DB#1 /R /H /Y /PD0 /ED /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -177,17 +177,8 @@ SHIFT
 GOTO MAIN
 
 
-REM     -----------------
-REM 12. Clone MP4 videos.
-REM     -----------------
-:STEP12
-XXCOPY "%_CLOUDSTATION%\Vidéos\*.mp4" "z:\Z123456792\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
-SHIFT
-GOTO MAIN
-
-
 REM     -------------------------------
-REM 13. Delete GNUCash sandbox content.
+REM 12. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
 SET _taskid=123456798
@@ -198,7 +189,7 @@ GOTO MAIN
 
 
 REM     -----------------
-REM 14. Backup documents.
+REM 13. Backup documents.
 REM     -----------------
 REM     Incremental backup.
 REM     Target Group : "workspace.documents".
@@ -222,7 +213,7 @@ GOTO MAIN
 
 
 REM     ----------------------------------
-REM 15. Move videos to local CloudStation.
+REM 14. Move videos to local CloudStation.
 REM     ----------------------------------
 :STEP19
 SET _taskid=123456801
@@ -243,7 +234,7 @@ GOTO MAIN
 
 
 REM     ----------------------------
-REM 16. Backup AVCHD videos to "X:".
+REM 15. Backup AVCHD videos to "X:".
 REM     ----------------------------
 :STEP24
 XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -252,7 +243,7 @@ GOTO MAIN
 
 
 REM     --------------------------
-REM 17. Sync xreferences database.
+REM 16. Sync xreferences database.
 REM     --------------------------
 :STEP5
 PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"

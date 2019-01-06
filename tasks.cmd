@@ -196,7 +196,7 @@ IF ERRORLEVEL 23 (
     IF [!_answer!] EQU [N] GOTO FIN23
     CLS
 
-    REM -->  1. Check if new files were inserted since the previous sync.
+    REM -->  1. Check if new files have been inserted since the previous sync.
     XXCOPY "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO:
