@@ -3,7 +3,6 @@
 import fnmatch
 import logging.config
 import os
-import sys
 import unittest
 from collections import defaultdict
 from contextlib import suppress
@@ -169,7 +168,6 @@ class Changes(object):
         return self._changes
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestRippedDisc(unittest.TestCase):
 
     def setUp(self):
@@ -184,7 +182,7 @@ class TestRippedDisc(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            for key, value in self.test_cases.items():
+            for _, value in self.test_cases.items():
                 source, profile, decorators, _, expected = value
 
                 # -----
@@ -213,7 +211,7 @@ class TestRippedDisc(unittest.TestCase):
             database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
-            for key, value in self.test_cases.items():
+            for _, value in self.test_cases.items():
                 items += 1
                 source, profile, decorators, tags_processing, _ = value
 
@@ -251,7 +249,7 @@ class TestRippedDisc(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            for key, value in self.test_cases.items():
+            for _, value in self.test_cases.items():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
@@ -298,7 +296,7 @@ class TestRippedDisc(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             create_tables(drop_tables(database))
             changes = Changes(db=database)
-            for key, value in self.test_cases.items():
+            for _, value in self.test_cases.items():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
@@ -370,7 +368,7 @@ class TestRippedDisc(unittest.TestCase):
                 upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, save=True, root=tempdir, **config)
 
             # -----
-            inserted = 0
+            # inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
                 insert = insert_albums_fromjson(stream)
             self.assertEqual(insert, changes.total_changes)
@@ -535,7 +533,6 @@ class TestRippedDisc(unittest.TestCase):
             self.assertTrue(exists(tempdir))
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest01(unittest.TestCase):
     _count = 10
 
@@ -614,7 +611,6 @@ class DatabaseFunctionsTest01(unittest.TestCase):
         self.assertEqual(played, self._played)
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest02(unittest.TestCase):
 
     def setUp(self):
