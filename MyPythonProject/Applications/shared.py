@@ -914,7 +914,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
     :param timestamp: facultative input local timestamp.
     :return: ripping application.
     """
-    application = {"1546340400": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    application = {"1548975600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
     ts: Optional[int] = timestamp
     if timestamp is None:
         ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())

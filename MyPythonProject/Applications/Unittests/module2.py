@@ -247,21 +247,28 @@ class Test06(unittest.TestCase):
     """
 
     """
+    resource = str(PurePath(THAT_FILE.parent, "Resources", "resource4.txt"))
+
+    def setUp(self):
+        self.arguments = None
 
     def test_t01(self):
-        arguments = tags_grabber.parse_args([str(PurePath(THAT_FILE.parent, "Resources", "resource4.txt")), "default", "--tags_processing", "defaultalbum"])
-        self.assertEqual(arguments.profile, "default")
-        self.assertEqual(arguments.tags_processing, "defaultalbum")
-        self.assertListEqual(arguments.decorators, [])
+        self.arguments = tags_grabber.parse_args([self.resource, "default", "--tags_processing", "defaultalbum"])
+        self.assertEqual(self.arguments.profile, "default")
+        self.assertEqual(self.arguments.tags_processing, "defaultalbum")
+        self.assertListEqual(self.arguments.decorators, [])
 
     def test_t02(self):
-        arguments = tags_grabber.parse_args([str(PurePath(THAT_FILE.parent, "Resources", "resource4.txt")), "default"])
-        self.assertEqual(arguments.profile, "default")
-        self.assertEqual(arguments.tags_processing, "no_tags_processing")
-        self.assertListEqual(arguments.decorators, [])
+        self.arguments = tags_grabber.parse_args([self.resource, "default"])
+        self.assertEqual(self.arguments.profile, "default")
+        self.assertEqual(self.arguments.tags_processing, "no_tags_processing")
+        self.assertListEqual(self.arguments.decorators, [])
 
     def test_t03(self):
-        arguments = tags_grabber.parse_args([str(PurePath(THAT_FILE.parent, "Resources", "resource4.txt")), "default", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
-        self.assertEqual(arguments.profile, "default")
-        self.assertEqual(arguments.tags_processing, "test_defaultalbum")
-        self.assertListEqual(arguments.decorators, ["decorator1", "decorator2", "decorator3"])
+        self.arguments = tags_grabber.parse_args([self.resource, "default", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
+        self.assertEqual(self.arguments.profile, "default")
+        self.assertEqual(self.arguments.tags_processing, "test_defaultalbum")
+        self.assertListEqual(self.arguments.decorators, ["decorator1", "decorator2", "decorator3"])
+
+    def tearDown(self):
+        self.arguments.source.close()
