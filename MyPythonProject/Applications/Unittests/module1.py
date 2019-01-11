@@ -181,7 +181,10 @@ class TestGetRippingApplication(unittest.TestCase):
         self.assertEqual(get_rippingapplication(timestamp=1541702820), "dBpoweramp 15.1")
 
     def test_t03(self):
-        self.assertEqual(get_rippingapplication(timestamp=1547146020), "dBpoweramp 16.5")
+        self.assertEqual(get_rippingapplication(timestamp=1547146020), "dBpoweramp 15.1")
 
     def test_t04(self):
         self.assertEqual(get_rippingapplication(timestamp=1357843620), "dBpoweramp 14.1")
+
+    def test_t05(self):
+        self.assertEqual(get_rippingapplication(timestamp=1548976600), "dBpoweramp 16.5")

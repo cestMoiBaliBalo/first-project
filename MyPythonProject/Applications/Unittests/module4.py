@@ -177,8 +177,6 @@ class TestRippedDisc(unittest.TestCase):
             self.test_cases = yaml.load(stream)
         with open(str(_THATFILE.parents[2] / "AudioCD" / "Resources" / "resource1.yml"), encoding=UTF8) as stream:
             self.test_config = yaml.load(stream)
-        with open(str(_THATFILE.parents[2] / "Resources" / "logging.yml"), encoding=UTF8) as stream:
-            self.log_config = yaml.load(stream)
 
     def test_t01(self):
         """
@@ -247,12 +245,6 @@ class TestRippedDisc(unittest.TestCase):
         Use production database duplicated into the working temporary folder.
         """
 
-        # Configure logging.
-        for item in ["Applications.Tables.Albums"]:
-            with suppress(KeyError):
-                self.log_config["loggers"][item]["level"] = "DEBUG"
-        logging.config.dictConfig(self.log_config)
-
         # Run tests cases.
         with TemporaryDirectory() as tempdir:
             database = copy(DATABASE, tempdir)
@@ -298,12 +290,6 @@ class TestRippedDisc(unittest.TestCase):
         Test that total database changes is coherent.
         Create an empty database into the working temporary directory.
         """
-
-        # Configure logging.
-        for item in ["Applications.Tables.Albums"]:
-            with suppress(KeyError):
-                self.log_config["loggers"][item]["level"] = "DEBUG"
-        logging.config.dictConfig(self.log_config)
 
         # Run tests cases.
         with TemporaryDirectory() as tempdir:

@@ -19,7 +19,7 @@ __status__ = "Production"
 # ==========
 # Constants.
 # ==========
-LOGGERS = ["Applications.shared", "Applications.AudioCD", "MyPythonProject"]
+LOGGERS = ["Applications.shared", "Applications.AudioCD", "Applications.Tables.Albums", "MyPythonProject"]
 MAPPING = {True: "debug", False: "info"}
 
 # =================
