@@ -1,11 +1,6 @@
 @ECHO off
 
 
-REM An ambitious DOS script performing computing tasks (such as backup files or syncing local/remote resources).
-REM A menu brought by a python script is displayed allowing to choose among some configured tasks.
-REM DOS then performs both configuration of the execution environment and execution of the task itself.
-
-
 REM __author__ = 'Xavier ROSSET'
 REM __maintainer__ = 'Xavier ROSSET'
 REM __email__ = 'xavier.python.computing@protonmail.com'
@@ -129,9 +124,13 @@ REM ----------------------------------------
 REM Springsteen 2009 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 27 (
+    CLS
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1068554868
     POPD
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
@@ -151,9 +150,13 @@ REM ----------------------------------------
 REM Springsteen 2016 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 25 (
+    CLS
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
     POPD
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
@@ -194,9 +197,9 @@ IF ERRORLEVEL 23 (
     SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive H." _answer
     IF [!_answer!] EQU [N] GOTO FIN23
-    CLS
 
     REM -->  1. Check if new files have been inserted since the previous sync.
+    CLS
     XXCOPY "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO:
@@ -209,17 +212,24 @@ IF ERRORLEVEL 23 (
     )
 
     REM -->  2. Clone "\\DISKSTATION\Images\Collection" to local drive H. Don't delete extra files and directories!
+    CLS
     XXCOPY /EC "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /CLONE /Z0 /oA:%_XXCOPYLOG%
 
-    REM -->  3. Reverse both source and destination. Then remove brand new files in order to preserve some folders content.
+    REM -->  3. Then pause.
+    ECHO:
+    ECHO:
+    PAUSE
+
+    REM -->  4. Reverse both source and destination. Then remove brand new files in order to preserve some folders content.
     REM         - "RECYCLER".
     REM         - "$RECYCLE.BIN".
     REM         - "SYSTEM VOLUME INFORMATION".
     REM         - "IPHONE".
     REM         - "RECOVER".
+    CLS
     XXCOPY /CE "H:\" "\\DISKSTATION\backup\Images\Collection\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 
-    REM -->  4. Then pause.
+    REM -->  5. Then pause.
     ECHO:
     ECHO:
     PAUSE
@@ -254,7 +264,17 @@ IF ERRORLEVEL 21 (
 
 IF ERRORLEVEL 20 (
     CLS
-    python -m unittest -v Applications.Unittests.module3
+    python -m unittest -v Applications.Unittests.module3.TestRegexT01 Applications.Unittests.module3.TestRegexT02 Applications.Unittests.module3.TestRegexT03
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
+
+
+IF ERRORLEVEL 19 (
+    CLS
+    python -m unittest -v Applications.Unittests.module3.TestValidYear Applications.Unittests.module3.TestValidAlbumsort Applications.Unittests.module3.TestValidGenre Applications.Unittests.module3.TestAdjustDatetime Applications.Unittests.module3.TestFormatDate Applications.Unittests.module3.TestFormatDate Applications.Unittests.module3.ValidDatetime
     ECHO:
     ECHO:
     PAUSE
@@ -383,112 +403,97 @@ IF ERRORLEVEL 12 (
 )
 
 
-REM ---------------------
-REM Images renaming task.
-REM ---------------------
-IF ERRORLEVEL 11 (
-    REM CALL "G:\Computing\images.cmd"
-    GOTO MENU
-)
-
-
 REM -----------------------
 REM Display folder content.
 REM -----------------------
-IF ERRORLEVEL 10 (
-    PUSHD "%_PYTHONPROJECT%\Tasks\03"
-    python main.py
-    POPD
-    GOTO MENU
+REM IF ERRORLEVEL 10 (
+REM     PUSHD "%_PYTHONPROJECT%\Tasks\03"
+REM     python main.py
+REM     POPD
+REM     GOTO MENU
 
-)
+REM )
 
 
 REM -----------------------
 REM Update python packages.
 REM -----------------------
 IF ERRORLEVEL 9 (
-    CLS
-    pip install -U --upgrade-strategy="only-if-needed" -r "%_COMPUTING%\pip-commands.txt"
-    ECHO:
-    ECHO:
-    PAUSE
+    REM CLS
+    REM pip install -U --upgrade-strategy="only-if-needed" -r "%_COMPUTING%\pip-commands.txt"
+    REM ECHO:
+    REM ECHO:
+    REM PAUSE
     GOTO MENU
 )
 
 
-REM ----------------------------------------
-REM Springsteen 2017 bootlegs series backup.
-REM ----------------------------------------
+REM -----------------------------------------
+REM Bruce Springsteen bootlegs series backup.
+REM -----------------------------------------
 IF ERRORLEVEL 8 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 743321650
-    POPD
     GOTO MENU
 )
 
 
-REM --------------------------------------
-REM Pearl Jam 2011 bootlegs series backup.
-REM --------------------------------------
+REM ---------------------------------
+REM Pearl Jam bootlegs series backup.
+REM ---------------------------------
 IF ERRORLEVEL 7 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1484552884
-    POPD
     GOTO MENU
 )
 
 
-REM --------------------------------------
-REM Pearl Jam 2010 bootlegs series backup.
-REM --------------------------------------
+REM --------------
+REM Artists [U-Z].
+REM --------------
 IF ERRORLEVEL 6 (
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 445045058
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 204959095
     POPD
     GOTO MENU
 )
 
 
-REM --------------------------------------
-REM Pearl Jam 2006 bootlegs series backup.
-REM --------------------------------------
+REM --------------
+REM Artists [P-T].
+REM --------------
 IF ERRORLEVEL 5 (
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1404261019
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1535780732
     POPD
     GOTO MENU
 )
 
 
-REM --------------------------------------
-REM Pearl Jam 2003 bootlegs series backup.
-REM --------------------------------------
+REM --------------
+REM Artists [K-O].
+REM --------------
 IF ERRORLEVEL 4 (
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1557918403
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1196865155
     POPD
     GOTO MENU
 )
 
 
-REM --------------------------------------
-REM Pearl Jam 2000 bootlegs series backup.
-REM --------------------------------------
+REM --------------
+REM Artists [F-J].
+REM --------------
 IF ERRORLEVEL 3 (
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1674209532
     POPD
     GOTO MENU
 )
 
 
-REM --------------------------
-REM Pearl Jam bootlegs backup.
-REM --------------------------
+REM --------------
+REM Artists [A-E].
+REM --------------
 IF ERRORLEVEL 2 (
     PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1460302155 1557918403 1404261019 445045058 1484552884
+    python %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030
     POPD
     GOTO MENU
 )
@@ -689,215 +694,215 @@ REM Specific parts for images processing.
 REM =====================================
 
 
-:IMAGES
-SET _run=
-SET _dirs=
-SET _keywords=
-SET _command=
+REM :IMAGES
+REM SET _run=
+REM SET _dirs=
+REM SET _keywords=
+REM SET _command=
 
 
-REM    ----------
-REM A. Main menu.
-REM    ----------
-:DISPLAY
-SET _menu_images=Read;Rename;Write
-CLS
-ECHO:
-ECHO: =========================
-ECHO: =   IMAGES PROCESSING   =
-ECHO: =========================
-ECHO:
-SET /A "_num=0"
-FOR /F "usebackq delims=|" %%A IN ("%_menu_images%") DO (
-    SET /A "_num+=1"
-    ECHO:  !_num!. %%A.
-)
-ECHO:
-ECHO:
-SET /P _choice=Please enter choice or press ENTER to quit. || GOTO END_DISPLAY
-IF %_choice% GTR %_num% GOTO DISPLAY
-IF %_choice% EQU 1 GOTO FILES
-IF %_choice% EQU 2 GOTO FILES
-IF %_choice% EQU 3 GOTO END_DISPLAY
-:END_DISPLAY
-GOTO END_IMAGES
+REM REM    ----------
+REM REM A. Main menu.
+REM REM    ----------
+REM :DISPLAY
+REM SET _menu_images=Read;Rename;Write
+REM CLS
+REM ECHO:
+REM ECHO: =========================
+REM ECHO: =   IMAGES PROCESSING   =
+REM ECHO: =========================
+REM ECHO:
+REM SET /A "_num=0"
+REM FOR /F "usebackq delims=|" %%A IN ("%_menu_images%") DO (
+REM     SET /A "_num+=1"
+REM     ECHO:  !_num!. %%A.
+REM )
+REM ECHO:
+REM ECHO:
+REM SET /P _choice=Please enter choice or press ENTER to quit. || GOTO END_DISPLAY
+REM IF %_choice% GTR %_num% GOTO DISPLAY
+REM IF %_choice% EQU 1 GOTO FILES
+REM IF %_choice% EQU 2 GOTO FILES
+REM IF %_choice% EQU 3 GOTO END_DISPLAY
+REM :END_DISPLAY
+REM GOTO END_IMAGES
 
 
-REM    --------------------------------
-REM B. Set single files or directories.
-REM    --------------------------------
-:FILES
-SET /A "_num=0"
+REM REM    --------------------------------
+REM REM B. Set single files or directories.
+REM REM    --------------------------------
+REM :FILES
+REM SET /A "_num=0"
 
-:STEP1
-CALL:HEADER1 %_choice%
-ECHO:
-ECHO:
-SET /P _dir=Please enter files. Directories are accepted too. Press ENTER to quit. || GOTO STEP2
-FOR /F "usebackq delims=|" %%D IN ('%_dir%') DO SET _dir=%%~D
-ECHO:
-ECHO:
-IF NOT EXIST "%_dir%" (
-    ECHO "%_dir%" doesn't exist!
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO STEP1
-)
-SET /A "_num+=1"
-SET _dirs[%_num%]="%_dir%"
-GOTO STEP1
+REM :STEP1
+REM CALL:HEADER1 %_choice%
+REM ECHO:
+REM ECHO:
+REM SET /P _dir=Please enter files. Directories are accepted too. Press ENTER to quit. || GOTO STEP2
+REM FOR /F "usebackq delims=|" %%D IN ('%_dir%') DO SET _dir=%%~D
+REM ECHO:
+REM ECHO:
+REM IF NOT EXIST "%_dir%" (
+REM     ECHO "%_dir%" doesn't exist!
+REM     ECHO:
+REM     ECHO:
+REM     PAUSE
+REM     GOTO STEP1
+REM )
+REM SET /A "_num+=1"
+REM SET _dirs[%_num%]="%_dir%"
+REM GOTO STEP1
 
-:STEP2
-FOR /L %%I IN (1, 1, %_num%) DO (
-    SET _command=!_command!!_dirs[%%I]! 
-)
-IF NOT DEFINED _command GOTO END_FILES
-IF %_choice% EQU 1 GOTO INDEX
-IF %_choice% EQU 2 GOTO KEYWORDS
+REM :STEP2
+REM FOR /L %%I IN (1, 1, %_num%) DO (
+REM     SET _command=!_command!!_dirs[%%I]! 
+REM )
+REM IF NOT DEFINED _command GOTO END_FILES
+REM IF %_choice% EQU 1 GOTO INDEX
+REM IF %_choice% EQU 2 GOTO KEYWORDS
 
-:END_FILES
-GOTO END_IMAGES
-
-
-REM    ---------------------------
-REM C. Set keyword(s) to write to.
-REM    ---------------------------
-REM    Facultative.
-:KEYWORDS
-SET /A "_num=0"
-
-:STEP3
-CALL:HEADER1 %_choice%
-ECHO:
-ECHO:
-SET /P _keyword=Enter keyword or press ENTER to quit: || GOTO STEP4
-SET /A "_num+=1"
-FOR /F "usebackq delims=|" %%K IN ('%_keyword%') DO SET _keywords[%_num%]="%%~K"
-GOTO STEP3
-
-:STEP4
-FOR /L %%I IN (1, 1, %_num%) DO (
-    SET _command=!_command!--keyword !_keywords[%%I]! 
-    SET /A "_run=1"
-)
-GOTO COPYRIGHT
-
-:END_KEYWORDS
-GOTO END_IMAGES
+REM :END_FILES
+REM GOTO END_IMAGES
 
 
-REM    --------------------------
-REM D. Set Copyright to write to.
-REM    --------------------------
-REM    Facultative.
-:COPYRIGHT
-CALL:HEADER1 %_choice%
-ECHO:
-ECHO:
-CHOICE /C YN /T 20 /N /d N /M "Would you like to set copyright? Press [Y] for Yes or [N] for No."
-IF %ERRORLEVEL% EQU 1 (
-    SET _command=!_command!--copyright
-    SET /A "_run=1"
-)
-GOTO LOCATION
-:END_COPYRIGHT
-GOTO END_IMAGES
+REM REM    ---------------------------
+REM REM C. Set keyword(s) to write to.
+REM REM    ---------------------------
+REM REM    Facultative.
+REM :KEYWORDS
+REM SET /A "_num=0"
+
+REM :STEP3
+REM CALL:HEADER1 %_choice%
+REM ECHO:
+REM ECHO:
+REM SET /P _keyword=Enter keyword or press ENTER to quit: || GOTO STEP4
+REM SET /A "_num+=1"
+REM FOR /F "usebackq delims=|" %%K IN ('%_keyword%') DO SET _keywords[%_num%]="%%~K"
+REM GOTO STEP3
+
+REM :STEP4
+REM FOR /L %%I IN (1, 1, %_num%) DO (
+REM     SET _command=!_command!--keyword !_keywords[%%I]! 
+REM     SET /A "_run=1"
+REM )
+REM GOTO COPYRIGHT
+
+REM :END_KEYWORDS
+REM GOTO END_IMAGES
 
 
-REM    -------------------------
-REM E. Set Location to write to.
-REM    -------------------------
-:LOCATION
-CALL:HEADER1 %_choice%
-ECHO:
-ECHO:
-SET /P _location=Please enter location || GOTO COMMAND
-FOR /F "usebackq delims=|" %%L IN ('%_location%') DO SET _location="%%~L"
-SET _command=!_command!--location %_location%
-SET /A "_run=1"
-GOTO COMMAND
-:END_LOCATION
-GOTO END_IMAGES
+REM REM    --------------------------
+REM REM D. Set Copyright to write to.
+REM REM    --------------------------
+REM REM    Facultative.
+REM :COPYRIGHT
+REM CALL:HEADER1 %_choice%
+REM ECHO:
+REM ECHO:
+REM CHOICE /C YN /T 20 /N /d N /M "Would you like to set copyright? Press [Y] for Yes or [N] for No."
+REM IF %ERRORLEVEL% EQU 1 (
+REM     SET _command=!_command!--copyright
+REM     SET /A "_run=1"
+REM )
+REM GOTO LOCATION
+REM :END_COPYRIGHT
+REM GOTO END_IMAGES
 
 
-REM    -------------------------------
-REM F. Starting index for rename mode.
-REM    -------------------------------
-:INDEX
-SET _tempvar=
-SET _ok=1
-CALL:HEADER1 %_choice%
-ECHO:
-ECHO:
-SET /P _index=Please enter starting index : || GOTO COMMAND
-FOR /F "usebackq delims=|" %%I IN ('%_index%') DO SET _index=%%~I
-FOR /F "usebackq delims=0123456789 tokens=*" %%I IN ('%_index%') DO SET _tempvar=%%I
-IF DEFINED _tempvar GOTO INDEX
-IF %_index% EQU 0 SET _ok=0
-IF %_ok% EQU 0 GOTO INDEX
-SET _command=!_command!--index "%_index%"
-SET /A "_run=1"
-GOTO COMMAND
-:END_INDEX
-GOTO END_IMAGES
+REM REM    -------------------------
+REM REM E. Set Location to write to.
+REM REM    -------------------------
+REM :LOCATION
+REM CALL:HEADER1 %_choice%
+REM ECHO:
+REM ECHO:
+REM SET /P _location=Please enter location || GOTO COMMAND
+REM FOR /F "usebackq delims=|" %%L IN ('%_location%') DO SET _location="%%~L"
+REM SET _command=!_command!--location %_location%
+REM SET /A "_run=1"
+REM GOTO COMMAND
+REM :END_LOCATION
+REM GOTO END_IMAGES
 
 
-REM    ------------
-REM G. Run command.
-REM    ------------
-:COMMAND
-IF DEFINED _command (
-    IF DEFINED _run (
-        CALL:HEADER1 %_choice%
-        ECHO:
-        ECHO:
-        CALL:FUNCTION1 %_choice% _command
-        SET _command=python script.py !_command!
-        CHOICE /M "The following command will be run: !_command!. Do you agree?"
-        IF ERRORLEVEL 2 GOTO END_COMMAND
-        CLS
-        PUSHD %_PYTHONPROJECT%
-        !_command!
-        POPD
-        ECHO:
-        ECHO:
-        PAUSE
-    )
-)
-:END_COMMAND
-GOTO END_IMAGES
+REM REM    -------------------------------
+REM REM F. Starting index for rename mode.
+REM REM    -------------------------------
+REM :INDEX
+REM SET _tempvar=
+REM SET _ok=1
+REM CALL:HEADER1 %_choice%
+REM ECHO:
+REM ECHO:
+REM SET /P _index=Please enter starting index : || GOTO COMMAND
+REM FOR /F "usebackq delims=|" %%I IN ('%_index%') DO SET _index=%%~I
+REM FOR /F "usebackq delims=0123456789 tokens=*" %%I IN ('%_index%') DO SET _tempvar=%%I
+REM IF DEFINED _tempvar GOTO INDEX
+REM IF %_index% EQU 0 SET _ok=0
+REM IF %_ok% EQU 0 GOTO INDEX
+REM SET _command=!_command!--index "%_index%"
+REM SET /A "_run=1"
+REM GOTO COMMAND
+REM :END_INDEX
+REM GOTO END_IMAGES
 
 
-REM    ------------------
-REM H. Back to main menu.
-REM    ------------------
-:END_IMAGES
-GOTO MENU
+REM REM    ------------
+REM REM G. Run command.
+REM REM    ------------
+REM :COMMAND
+REM IF DEFINED _command (
+REM     IF DEFINED _run (
+REM         CALL:HEADER1 %_choice%
+REM         ECHO:
+REM         ECHO:
+REM         CALL:FUNCTION1 %_choice% _command
+REM         SET _command=python script.py !_command!
+REM         CHOICE /M "The following command will be run: !_command!. Do you agree?"
+REM         IF ERRORLEVEL 2 GOTO END_COMMAND
+REM         CLS
+REM         PUSHD %_PYTHONPROJECT%
+REM         !_command!
+REM         POPD
+REM         ECHO:
+REM         ECHO:
+REM         PAUSE
+REM     )
+REM )
+REM :END_COMMAND
+REM GOTO END_IMAGES
+
+
+REM REM    ------------------
+REM REM H. Back to main menu.
+REM REM    ------------------
+REM :END_IMAGES
+REM GOTO MENU
 
 
 REM =================
 REM Common functions.
 REM =================
-:HEADER1
-CLS
-ECHO:
-IF [%1] EQU [1] (
-    ECHO: =========================
-    ECHO: =      RENAME MODE      =
-    ECHO: =========================
-)
-IF [%1] EQU [2] (
-    ECHO: =========================
-    ECHO: =      WRITE MODE       =
-    ECHO: =========================
-)
-IF [%1] EQU [3] (
-    ECHO: =========================
-    ECHO: =       READ MODE       =
-    ECHO: =========================
-)
-EXIT /B 0
+REM :HEADER1
+REM CLS
+REM ECHO:
+REM IF [%1] EQU [1] (
+REM     ECHO: =========================
+REM     ECHO: =      RENAME MODE      =
+REM     ECHO: =========================
+REM )
+REM IF [%1] EQU [2] (
+REM     ECHO: =========================
+REM     ECHO: =      WRITE MODE       =
+REM     ECHO: =========================
+REM )
+REM IF [%1] EQU [3] (
+REM     ECHO: =========================
+REM     ECHO: =       READ MODE       =
+REM     ECHO: =========================
+REM )
+REM EXIT /B 0
 
 
 :HEADER2
@@ -909,30 +914,30 @@ ECHO: ========================================
 EXIT /B 0
 
 
-:HEADER4
-CLS
-ECHO:
-ECHO: ===============================================
-ECHO: =   BACKUP PERSONAL FILES TO SD MEMORY CARD   =
-ECHO: ===============================================
-EXIT /B 0
+REM :HEADER4
+REM CLS
+REM ECHO:
+REM ECHO: ===============================================
+REM ECHO: =   BACKUP PERSONAL FILES TO SD MEMORY CARD   =
+REM ECHO: ===============================================
+REM EXIT /B 0
 
 
-:FUNCTION1
-SETLOCAL ENABLEDELAYEDEXPANSION
-(
-    ENDLOCAL
-    IF [%1] EQU [1] (
-        SET %2=rename !%~2!
-    )
-    IF [%1] EQU [2] (
-        SET %2=write !%~2!
-    )
-    IF [%1] EQU [3] (
-        SET %2=read !%~2!
-    )
-)
-EXIT /B 0
+REM :FUNCTION1
+REM SETLOCAL ENABLEDELAYEDEXPANSION
+REM (
+REM     ENDLOCAL
+REM     IF [%1] EQU [1] (
+REM         SET %2=rename !%~2!
+REM     )
+REM     IF [%1] EQU [2] (
+REM         SET %2=write !%~2!
+REM     )
+REM     IF [%1] EQU [3] (
+REM         SET %2=read !%~2!
+REM     )
+REM )
+REM EXIT /B 0
 
 
 :QUESTION
@@ -944,15 +949,15 @@ IF ERRORLEVEL 2 SET %5=N
 EXIT /B 0
 
 
-:TOKENIZE
-SETLOCAL
-SET _options=usebackq
-IF ["%~1"] NEQ [""] SET _options="%_options% tokens=%~1 delims=\"
-IF ["%~1"] EQU [""] SET _options="%_options% delims="
-FOR /F %_options% %%I IN ("%_copied%") DO (
-    IF ["%~1"] NEQ [""] SET _file=%%J
-    IF ["%~1"] EQU [""] SET _file=%%~nxI
-    ECHO !_file!>> "%_tobearchived%"
-)
-ENDLOCAL
-EXIT /B 0
+REM :TOKENIZE
+REM SETLOCAL
+REM SET _options=usebackq
+REM IF ["%~1"] NEQ [""] SET _options="%_options% tokens=%~1 delims=\"
+REM IF ["%~1"] EQU [""] SET _options="%_options% delims="
+REM FOR /F %_options% %%I IN ("%_copied%") DO (
+REM     IF ["%~1"] NEQ [""] SET _file=%%J
+REM     IF ["%~1"] EQU [""] SET _file=%%~nxI
+REM     ECHO !_file!>> "%_tobearchived%"
+REM )
+REM ENDLOCAL
+REM EXIT /B 0

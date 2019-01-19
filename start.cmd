@@ -61,7 +61,6 @@ IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
 IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
-IF "%~1" EQU "19" GOTO STEP19
 IF "%~1" EQU "21" GOTO STEP21
 IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "24" GOTO STEP24
@@ -79,7 +78,7 @@ REM     /R    Deletes even a read-only file.
 REM     /H    Deletes even a hidden/system file.
 REM     /PD0  Suppresses the prompt which would appear on a directory.
 REM     /Y    Suppresses the prompt prior to each file-delete.
-REM     /ED1  Preserves 1 level of empty directories. All subdirectories under %TEMP% are removed.
+REM     /ED1  Preserves 1 level of empty directories. All subdirectories under %TEMP% are REMoved.
 REM           Will remove all empty directories under %TEMP%!
 :STEP1
 XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /oA:%_XXCOPYLOG%
@@ -105,14 +104,12 @@ REM     /BI: backs up incrementally. Different, by time/size, files only.
 :STEP3
 IF EXIST "y:" (
     SET _first=1
-    FOR /F "usebackq delims=| tokens=1,2" %%F IN ("%_dailybkp%") DO (
-        IF ["%%~G"] EQU [""] (
-            SET _switch=/CE
-            IF !_first! EQU 1 SET _switch=/EC
-            SET _first=0
-            CALL SET _file=%%~F
-            XXCOPY !_switch! "!_file!" "y:\" /KS /Y /BI /FF /oA:%_XXCOPYLOG%
-        )
+    FOR /F "usebackq tokens=*" %%F IN ("%_dailybkp%") DO (
+        SET _switch=/CE
+        IF !_first! EQU 1 SET _switch=/EC
+        SET _first=0
+        CALL SET _file=%%~F
+        XXCOPY !_switch! "!_file!" "y:\" /KS /Y /BI /FF /oA:%_XXCOPYLOG%
     )
 )
 SHIFT
@@ -124,7 +121,7 @@ REM  6. Remove Areca log files.
 REM     -----------------------
 REM     /DB#14: removes files older than or equal to 14 days.
 :STEP4
-IF EXIST %_BACKUP% XXCOPY %_BACKUP%\*\*.log /RS /DB#14 /R /H /Y /PD0 /ED
+IF EXIST %_BACKUP% XXCOPY %_BACKUP%\*\?*\*.log /RS /DB#14 /R /H /Y /PD0 /ED
 SHIFT
 GOTO MAIN
 
@@ -197,40 +194,29 @@ REM     Incremental backup.
 REM     Target Group : "workspace.documents".
 REM     Target : "Documents (USB Drive)".
 :STEP18
+SET _directory=%TEMP%\tmp-Xavier
 IF EXIST "y:" (
+    ECHO:
+    ECHO:
+    ECHO ---------------------------------------
+    ECHO Backup personal documents to USB drive.
+    ECHO ---------------------------------------
     SET _taskid=123456802
     SET _workspace=%_BACKUP%/workspace.documents/34258241.bcfg
-    set _directory=%TEMP%\tmp-Xavier
     "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!"
     python -m Applications.Tables.Tasks.shared select !_taskid! --days 20 --debug
     IF !ERRORLEVEL! EQU 0 "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && python -m Applications.Tables.Tasks.shared update !_taskid! --debug
 )
-IF [%2] EQU [] (
+IF EXIST "z:" (
     ECHO:
     ECHO:
-    PAUSE
+    ECHO -----------------------------------------------
+    ECHO Backup personal documents to external WD drive.
+    ECHO -----------------------------------------------
+    SET _workspace=%_BACKUP%/workspace.documents/1282856126.bcfg
+    "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!"
 )
-SHIFT
-GOTO MAIN
-
-
-REM     ----------------------------------
-REM 14. Move videos to local CloudStation.
-REM     ----------------------------------
-:STEP19
-SET _taskid=123456801
-python -m Applications.Tables.Tasks.shared select %_taskid% --days 5 --debug
-IF %ERRORLEVEL% EQU 0 (
-    PUSHD "%_PYTHONPROJECT%\Tasks\04"
-    python main.py
-    IF ERRORLEVEL 1 (
-        POPD
-        SHIFT
-        GOTO MAIN
-    )
-    POPD
-    python -m Applications.Tables.Tasks.shared update %_taskid% --debug
-)
+SET _directory=
 SHIFT
 GOTO MAIN
 
