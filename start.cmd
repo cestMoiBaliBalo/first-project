@@ -249,18 +249,23 @@ ECHO:
 ECHO ----------------------------
 ECHO Sync audio cross-references.
 ECHO ----------------------------
+SET _elapsed=
+SET _inserted=
+SET _removed=
 ECHO It can take a while.
 PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
 python main.py
-IF EXIST "some_file.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("some_file.txt") DO (
+PUSHD "%TEMP%"
+IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
     SET _elapsed=%%I
     SET _inserted=%%J
     SET _removed=%%K
 )
 POPD
+POPD
 ECHO Done.
-ECHO %_inserted% albums inserted.
-ECHO %_removed% albums removed.
+IF DEFINED _inserted ECHO %_inserted% albums inserted.
+IF DEFINED _removed ECHO %_removed% albums removed.
 SHIFT
 GOTO MAIN
 

@@ -78,7 +78,7 @@ if removed_albums:
 # -----
 dt_end = LOCAL.localize(datetime.now())
 elapsed = dt_end - dt_beg
-with open("some_file.txt", mode="w", encoding="ISO-8859-1") as stream:
+with open(os.path.join(os.path.expandvars("%TEMP%"), "tempfile.txt"), mode="w", encoding="ISO-8859-1") as stream:
     stream.write(f"{int(elapsed.total_seconds())}|{inserted}|{removed}\n")
 
 # -----
