@@ -4,6 +4,7 @@ import locale
 import logging.config
 import os
 import sys
+from datetime import datetime
 from itertools import compress, groupby
 from operator import itemgetter
 from typing import Set, Tuple
@@ -11,7 +12,7 @@ from typing import Set, Tuple
 import yaml
 
 from Applications.Tables.XReferences.shared import get_database_albums, get_drive_albums, insert_albums, remove_albums
-from Applications.shared import get_dirname
+from Applications.shared import LOCAL, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -27,6 +28,9 @@ with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resourc
 logger = logging.getLogger("MyPythonProject.Tasks.XReferences.main")
 
 # -----
+dt_beg = LOCAL.localize(datetime.now())
+
+# -----
 albums_drive = set(get_drive_albums())  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 albums_database = set(get_database_albums())  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 
@@ -34,7 +38,10 @@ albums_database = set(get_database_albums())  # type: Set[Tuple[str, str, str, s
 changes = 0  # type: int
 
 # -----
+inserted = 0  # type: int
+removed = 0  # type: int
 
+# -----
 # Were some albums/tracks inserted into the local audio drive?
 new_albums = albums_drive.difference(albums_database)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if new_albums:
@@ -49,7 +56,9 @@ if new_albums:
             logger.info("\tFile     : %s".expandtabs(4), file)
             logger.info("\tExtension: %s".expandtabs(4), extension)
     changes += insert_albums(*new_albums)
+    inserted = changes
 
+# -----
 # Were some albums/tracks removed from the local audio drive?
 removed_albums = albums_database.difference(albums_drive)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if removed_albums:
@@ -64,6 +73,13 @@ if removed_albums:
             logger.info("\tFile     : %s".expandtabs(4), file)
             logger.info("\tExtension: %s".expandtabs(4), extension)
     changes += remove_albums(*removed_albums)
+    removed = changes
+
+# -----
+dt_end = LOCAL.localize(datetime.now())
+elapsed = dt_end - dt_beg
+with open("some_file.txt", mode="w", encoding="ISO-8859-1") as stream:
+    stream.write(f"{int(elapsed.total_seconds())}|{inserted}|{removed}\n")
 
 # -----
 logger.info(changes)

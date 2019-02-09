@@ -3,6 +3,8 @@
 # Frame generated with wxFormBuilder (version Jun 17 2015)
 # http://www.wxformbuilder.org/
 import argparse
+import functools
+import operator
 import os
 import sys
 from itertools import filterfalse, repeat
@@ -231,7 +233,7 @@ class MainFrame(wx.Frame):
         """
         extensions = self._configuration["patterns"][self._compression]  # type: List[str]
         extensions.extend(self._configuration["m4a_audiofiles"].get(self._m4a_audiofiles, []))
-        extensions = list(filterfalse(lambda i: i is None, extensions))
+        extensions = list(filterfalse(functools.partial(operator.is_, None), extensions))
         self._collection.extend(list(zip(repeat(self._repository), extensions, repeat(f"{self._drive.upper()}:"))))
         self._init_variables()
         self.run.Enable(True)

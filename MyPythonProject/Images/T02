@@ -1,0 +1,7 @@
+{% extends "T00" %}
+{% block rename %}
+    {% for src, dst in collection %}
+RENAME "{{ src }}" "{{ dst }}"
+    {% endfor %}
+{% endblock %}
+{% block move %}{% endblock %}

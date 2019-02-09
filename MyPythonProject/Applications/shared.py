@@ -3,6 +3,7 @@
 import argparse
 import calendar
 import logging
+import operator
 import os
 import re
 from abc import ABC, abstractmethod
@@ -10,7 +11,7 @@ from base64 import b85decode, b85encode
 from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
-from functools import singledispatch
+from functools import partial, singledispatch
 from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
@@ -87,10 +88,14 @@ TEMPLATE3 = "$d/$m/$Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE4 = "$day $d $month $Y $H:$M:$S $Z (UTC$z)"
 TEMPLATE5 = "$Y-$m-$d"
 TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
+TEMPLATE7 = "$Y$m${d}_$H$M$S"
 
 # Local drives.
 IMAGES = PurePath("H:/")
 MUSIC = PurePath("F:/")
+
+# Distant directories.
+IMAGES_COLLECTION = r"\\Diskstation\backup\Images\Collection"
 
 # Miscellaneous containers.
 ACCEPTEDANSWERS = ["N", "Y"]
@@ -375,6 +380,29 @@ class LocalParser(parserinfo):
 
     def __init__(self, dayfirst=False, yearfirst=False):
         super().__init__(dayfirst, yearfirst)
+
+
+# ===========
+# Decorators.
+# ===========
+def getitem_(index=0):
+    def wrapper(f):
+        def sub_wrapper1(arg):
+            return f(arg[index])
+
+        return sub_wrapper1
+
+    return wrapper
+
+
+def partial_(*args, **kwargs):
+    def wrapper(f):
+        def sub_wrapper2(arg):
+            return partial(f, *args, **kwargs)(arg)
+
+        return sub_wrapper2
+
+    return wrapper
 
 
 # ===========================
@@ -703,6 +731,27 @@ def valid_genre(genre: str) -> str:
     except AttributeError:
         raise ValueError('"{0}" {1}'.format(genre, msg))
     return genre
+
+
+# ====================
+# Filtering functions.
+# ====================
+def contains_(a, b) -> bool:
+    return operator.contains(a, b)
+
+
+def eq_integer(a: int, b: int) -> bool:
+    return operator.eq(a, b)
+
+
+def eq_string(a: str, b: str, sensitive: bool = False) -> bool:
+    if not sensitive:
+        return operator.eq(a.lower(), b.lower())
+    return operator.eq(a, b)
+
+
+def is_(a, b) -> bool:
+    return operator.is_(a, b)
 
 
 # ========================

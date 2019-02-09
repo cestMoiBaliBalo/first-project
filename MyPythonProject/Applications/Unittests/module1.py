@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
+import itertools
 import json
 import os
 import unittest
@@ -10,7 +11,7 @@ from operator import eq, gt, lt
 
 from pytz import timezone
 
-from Applications.shared import TitleCaseConverter, UTF8, get_readabledate, get_rippingapplication
+from Applications.shared import TitleCaseConverter, UTF8, contains_, eq_integer, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -157,6 +158,7 @@ class TestTitleCaseConverter(unittest.TestCase):
                 self.assertEqual(title_out, TitleCaseConverter().convert(title_in))
 
 
+@unittest.skip
 class TestGetReadableDate(unittest.TestCase):
 
     def setUp(self):
@@ -188,3 +190,71 @@ class TestGetRippingApplication(unittest.TestCase):
 
     def test_t05(self):
         self.assertEqual(get_rippingapplication(timestamp=1548976600), "dBpoweramp 16.5")
+
+
+class TestDecorator01(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = ["Alternative Rock", "Black Metal", "Hard Rock", "Rock"]
+
+    def test_t01(self):
+        decorated_function = getitem_()(partial_("alternative rock")(eq_string))
+        self.assertTrue(decorated_function(self.iterable))
+
+    def test_t02(self):
+        decorated_function = getitem_(index=1)(partial_("black metal")(eq_string))
+        self.assertTrue(decorated_function(self.iterable))
+
+    def test_t03(self):
+        decorated_function = getitem_(index=1)(partial_("Black Metal", sensitive=True)(eq_string))
+        self.assertTrue(decorated_function(self.iterable))
+
+    def test_t04(self):
+        decorated_function = getitem_(index=1)(partial_("black metal", sensitive=True)(eq_string))
+        self.assertFalse(decorated_function(self.iterable))
+
+    def test_t05(self):
+        decorated_function = getitem_(index=2)(partial_("black metal")(eq_string))
+        self.assertFalse(decorated_function(self.iterable))
+
+
+class TestDecorator02(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = [(1, "first string"), (2, "second string"), (3, "third string")]
+
+    def test_t01(self):
+        decorated_function = getitem_()(partial_(3)(eq_integer))
+        self.assertListEqual(list(filter(decorated_function, self.iterable)), [(3, "third string")])
+
+    def test_t02(self):
+        decorated_function = getitem_()(partial_(2)(eq_integer))
+        self.assertListEqual(list(filter(decorated_function, self.iterable)), [(2, "second string")])
+
+
+class TestDecorator03(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = [("console", "AA"), ("database", "BB"), ("debug", "CC"), ("foo", "DD"), ("bar", "EE")]
+
+    def test_t01(self):
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("foo", "DD"), ("bar", "EE")])
+
+    def test_t02(self):
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
+
+    @unittest.skip
+    def test_t03(self):
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])

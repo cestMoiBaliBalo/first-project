@@ -20,19 +20,11 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
-REM SET _xmldigitalaudiobase=%TEMP%\digitalaudiobase.xml
-REM SET _digitalaudiobase=%_COMPUTING%\digitalaudiobase\digitalaudiobase
-SET _AUDIOCD=%_PYTHONPROJECT%\AudioCD
-SET _RESOURCES=%_COMPUTING%\Resources
-SET _cloud_avchd=\\DISKSTATION\backup\AVCHD VidÃ©os
-SET _copied=%TEMP%\copied.lst
+SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
 SET _cp=1252
 SET _echo=0
 SET _local_avchd=G:\Videos\AVCHD Videos
 SET _exclusions=%_RESOURCES%\exclusions1.txt
-SET _sdcard=%_RESOURCES%\SDCard-content.txt
-SET _sdcard_password=%_RESOURCES%\SDCard-password.txt
-SET _tobearchived=%TEMP%\tobearchived.lst
 SET _xxcopy=xxcopy.cmd
 
 
@@ -101,6 +93,7 @@ REM Python arguments parsers unit tests.
 REM ------------------------------------
 IF ERRORLEVEL 29 (
     CLS
+    ECHO:
     python -m unittest -v Applications.Unittests.module2
     ECHO:
     ECHO:
@@ -242,6 +235,7 @@ IF ERRORLEVEL 23 (
 
 IF ERRORLEVEL 22 (
     CLS
+    ECHO:
     PUSHD %_PYTHONPROJECT%
     python textrunner.py
     POPD
@@ -254,6 +248,7 @@ IF ERRORLEVEL 22 (
 
 IF ERRORLEVEL 21 (
     CLS
+    ECHO:
     python -m unittest -v Applications.Unittests.module5
     ECHO:
     ECHO:
@@ -263,21 +258,29 @@ IF ERRORLEVEL 21 (
 
 
 IF ERRORLEVEL 20 (
+    SET _command=python -m unittest -v
+    FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests2.txt") DO SET _command=!_command! %%A
     CLS
-    python -m unittest -v Applications.Unittests.module3.TestRegexT01 Applications.Unittests.module3.TestRegexT02 Applications.Unittests.module3.TestRegexT03
+    ECHO:
+    !_command!
     ECHO:
     ECHO:
     PAUSE
+    SET _command=
     GOTO MENU
 )
 
 
 IF ERRORLEVEL 19 (
+    SET _command=python -m unittest -v
+    FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests1.txt") DO SET _command=!_command! %%A
     CLS
-    python -m unittest -v Applications.Unittests.module3.TestValidYear Applications.Unittests.module3.TestValidAlbumsort Applications.Unittests.module3.TestValidGenre Applications.Unittests.module3.TestAdjustDatetime Applications.Unittests.module3.TestFormatDate Applications.Unittests.module3.TestFormatDate Applications.Unittests.module3.ValidDatetime
+    ECHO:
+    !_command!
     ECHO:
     ECHO:
     PAUSE
+    SET _command=
     GOTO MENU
 )
 
@@ -287,6 +290,7 @@ REM MyCloud full video sync.
 REM ------------------------
 REM Delete extra files.
 IF ERRORLEVEL 18 (
+    GOTO MENU
     CLS
 
 :MENU18
@@ -312,6 +316,7 @@ REM MyCloud full audio sync.
 REM ------------------------
 REM Delete extra files.
 IF ERRORLEVEL 17 (
+    GOTO MENU
     CLS
 
 :MENU17
@@ -356,10 +361,16 @@ IF ERRORLEVEL 16 (
 )
 
 
+REM ----------------
+REM Images renaming.
+REM ----------------
+IF ERRORLEVEL 15 GOTO P01
+
+
 REM ---------------------------
 REM MyCloud partial audio sync.
 REM ---------------------------
-IF ERRORLEVEL 14 GOTO P00
+IF ERRORLEVEL 14 GOTO MENU
 
 
 REM ------------------------------
@@ -395,6 +406,7 @@ REM GOTO MENU
 
 IF ERRORLEVEL 12 (
     CLS
+    ECHO:
     python -m unittest -v Applications.Unittests.module4
     ECHO:
     ECHO:
@@ -689,220 +701,105 @@ PAUSE
 GOTO MENU
 
 
-REM =====================================
-REM Specific parts for images processing.
-REM =====================================
+REM ===================================
+REM Specific parts for renaming images.
+REM ===================================
+:P01
+rem PUSHD %_PYTHONPROJECT%
+rem python some_interface.py
+rem IF ERRORLEVEL 1 (
+rem     SET _argument=%ERRORLEVEL%
+rem     GOTO P01A
+rem )
+rem IF ERRORLEVEL 0 (
+rem     POPD
+rem     GOTO MENU
+rem )
+SET _argument=2018
 
 
-REM :IMAGES
-REM SET _run=
-REM SET _dirs=
-REM SET _keywords=
-REM SET _command=
+:P01A
+SET _images=
+SET _cmdfile=
+DEL "cmdfile.txt" 2> NUL
+CLS
+ECHO Script is scanning MyCloud collection. Please be patient as it may take some time.
+PUSHD "%_PYTHONPROJECT%\Images"
+python Numbering.py "%_argument%" --debug
 
 
-REM REM    ----------
-REM REM A. Main menu.
-REM REM    ----------
-REM :DISPLAY
-REM SET _menu_images=Read;Rename;Write
-REM CLS
-REM ECHO:
-REM ECHO: =========================
-REM ECHO: =   IMAGES PROCESSING   =
-REM ECHO: =========================
-REM ECHO:
-REM SET /A "_num=0"
-REM FOR /F "usebackq delims=|" %%A IN ("%_menu_images%") DO (
-REM     SET /A "_num+=1"
-REM     ECHO:  !_num!. %%A.
-REM )
-REM ECHO:
-REM ECHO:
-REM SET /P _choice=Please enter choice or press ENTER to quit. || GOTO END_DISPLAY
-REM IF %_choice% GTR %_num% GOTO DISPLAY
-REM IF %_choice% EQU 1 GOTO FILES
-REM IF %_choice% EQU 2 GOTO FILES
-REM IF %_choice% EQU 3 GOTO END_DISPLAY
-REM :END_DISPLAY
-REM GOTO END_IMAGES
+REM --------------
+REM Rename images.
+REM --------------
+IF ERRORLEVEL 11 (
+    PUSHD "%TEMP%"
+    IF EXIST "cmdfile.txt" (
+        FOR /F "usebackq delims=| tokens=1,2" %%A IN ("cmdfile.txt") DO (
+            SET _images=%%~A
+            SET _cmdfile=%%~B
+        )
+        ECHO:
+        ECHO:
+        ECHO !_images! image^(s^) need^(s^) to be renamed. Here is the renaming script:
+        ECHO:
+        ECHO:
+        TYPE "!_cmdfile!"
+        CALL :QUESTION "YN" "60" "N" "Please confirm you want to run this script." _answer
+        IF [!_answer!] EQU [N] GOTO P01B
+        CLS
+        "!_cmdfile!"
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO P01B
+    )
+)
 
 
-REM REM    --------------------------------
-REM REM B. Set single files or directories.
-REM REM    --------------------------------
-REM :FILES
-REM SET /A "_num=0"
-
-REM :STEP1
-REM CALL:HEADER1 %_choice%
-REM ECHO:
-REM ECHO:
-REM SET /P _dir=Please enter files. Directories are accepted too. Press ENTER to quit. || GOTO STEP2
-REM FOR /F "usebackq delims=|" %%D IN ('%_dir%') DO SET _dir=%%~D
-REM ECHO:
-REM ECHO:
-REM IF NOT EXIST "%_dir%" (
-REM     ECHO "%_dir%" doesn't exist!
-REM     ECHO:
-REM     ECHO:
-REM     PAUSE
-REM     GOTO STEP1
-REM )
-REM SET /A "_num+=1"
-REM SET _dirs[%_num%]="%_dir%"
-REM GOTO STEP1
-
-REM :STEP2
-REM FOR /L %%I IN (1, 1, %_num%) DO (
-REM     SET _command=!_command!!_dirs[%%I]! 
-REM )
-REM IF NOT DEFINED _command GOTO END_FILES
-REM IF %_choice% EQU 1 GOTO INDEX
-REM IF %_choice% EQU 2 GOTO KEYWORDS
-
-REM :END_FILES
-REM GOTO END_IMAGES
+REM ------------
+REM Move images.
+REM ------------
+IF ERRORLEVEL 10 (
+    PUSHD "%TEMP%"
+    IF EXIST "cmdfile.txt" (
+        FOR /F "usebackq delims=| tokens=1,2" %%A IN ("cmdfile.txt") DO (
+            SET _images=%%~A
+            SET _cmdfile=%%~B
+        )
+        ECHO:
+        ECHO:
+        ECHO !_images! image^(s^) need^(s^) at first to be moved. Here is the moving script:
+        ECHO:
+        ECHO:
+        TYPE "!_cmdfile!"
+        CALL :QUESTION "YN" "60" "N" "Please confirm you want to run this script." _answer
+        IF [!_answer!] EQU [N] GOTO P01B
+        CLS
+        "!_cmdfile!"
+        ECHO:
+        ECHO:
+        PAUSE
+        POPD
+        POPD
+        GOTO P01A
+    )
+)
 
 
-REM REM    ---------------------------
-REM REM C. Set keyword(s) to write to.
-REM REM    ---------------------------
-REM REM    Facultative.
-REM :KEYWORDS
-REM SET /A "_num=0"
-
-REM :STEP3
-REM CALL:HEADER1 %_choice%
-REM ECHO:
-REM ECHO:
-REM SET /P _keyword=Enter keyword or press ENTER to quit: || GOTO STEP4
-REM SET /A "_num+=1"
-REM FOR /F "usebackq delims=|" %%K IN ('%_keyword%') DO SET _keywords[%_num%]="%%~K"
-REM GOTO STEP3
-
-REM :STEP4
-REM FOR /L %%I IN (1, 1, %_num%) DO (
-REM     SET _command=!_command!--keyword !_keywords[%%I]! 
-REM     SET /A "_run=1"
-REM )
-REM GOTO COPYRIGHT
-
-REM :END_KEYWORDS
-REM GOTO END_IMAGES
+REM ----------------
+REM No images found.
+REM ----------------
+IF ERRORLEVEL 0 (
+    ECHO:
+    ECHO:
+    ECHO Any images to rename haven't been found. Script will exit. && PAUSE && POPD && GOTO MENU
+)
 
 
-REM REM    --------------------------
-REM REM D. Set Copyright to write to.
-REM REM    --------------------------
-REM REM    Facultative.
-REM :COPYRIGHT
-REM CALL:HEADER1 %_choice%
-REM ECHO:
-REM ECHO:
-REM CHOICE /C YN /T 20 /N /d N /M "Would you like to set copyright? Press [Y] for Yes or [N] for No."
-REM IF %ERRORLEVEL% EQU 1 (
-REM     SET _command=!_command!--copyright
-REM     SET /A "_run=1"
-REM )
-REM GOTO LOCATION
-REM :END_COPYRIGHT
-REM GOTO END_IMAGES
-
-
-REM REM    -------------------------
-REM REM E. Set Location to write to.
-REM REM    -------------------------
-REM :LOCATION
-REM CALL:HEADER1 %_choice%
-REM ECHO:
-REM ECHO:
-REM SET /P _location=Please enter location || GOTO COMMAND
-REM FOR /F "usebackq delims=|" %%L IN ('%_location%') DO SET _location="%%~L"
-REM SET _command=!_command!--location %_location%
-REM SET /A "_run=1"
-REM GOTO COMMAND
-REM :END_LOCATION
-REM GOTO END_IMAGES
-
-
-REM REM    -------------------------------
-REM REM F. Starting index for rename mode.
-REM REM    -------------------------------
-REM :INDEX
-REM SET _tempvar=
-REM SET _ok=1
-REM CALL:HEADER1 %_choice%
-REM ECHO:
-REM ECHO:
-REM SET /P _index=Please enter starting index : || GOTO COMMAND
-REM FOR /F "usebackq delims=|" %%I IN ('%_index%') DO SET _index=%%~I
-REM FOR /F "usebackq delims=0123456789 tokens=*" %%I IN ('%_index%') DO SET _tempvar=%%I
-REM IF DEFINED _tempvar GOTO INDEX
-REM IF %_index% EQU 0 SET _ok=0
-REM IF %_ok% EQU 0 GOTO INDEX
-REM SET _command=!_command!--index "%_index%"
-REM SET /A "_run=1"
-REM GOTO COMMAND
-REM :END_INDEX
-REM GOTO END_IMAGES
-
-
-REM REM    ------------
-REM REM G. Run command.
-REM REM    ------------
-REM :COMMAND
-REM IF DEFINED _command (
-REM     IF DEFINED _run (
-REM         CALL:HEADER1 %_choice%
-REM         ECHO:
-REM         ECHO:
-REM         CALL:FUNCTION1 %_choice% _command
-REM         SET _command=python script.py !_command!
-REM         CHOICE /M "The following command will be run: !_command!. Do you agree?"
-REM         IF ERRORLEVEL 2 GOTO END_COMMAND
-REM         CLS
-REM         PUSHD %_PYTHONPROJECT%
-REM         !_command!
-REM         POPD
-REM         ECHO:
-REM         ECHO:
-REM         PAUSE
-REM     )
-REM )
-REM :END_COMMAND
-REM GOTO END_IMAGES
-
-
-REM REM    ------------------
-REM REM H. Back to main menu.
-REM REM    ------------------
-REM :END_IMAGES
-REM GOTO MENU
-
-
-REM =================
-REM Common functions.
-REM =================
-REM :HEADER1
-REM CLS
-REM ECHO:
-REM IF [%1] EQU [1] (
-REM     ECHO: =========================
-REM     ECHO: =      RENAME MODE      =
-REM     ECHO: =========================
-REM )
-REM IF [%1] EQU [2] (
-REM     ECHO: =========================
-REM     ECHO: =      WRITE MODE       =
-REM     ECHO: =========================
-REM )
-REM IF [%1] EQU [3] (
-REM     ECHO: =========================
-REM     ECHO: =       READ MODE       =
-REM     ECHO: =========================
-REM )
-REM EXIT /B 0
+:P01B
+POPD
+POPD
+GOTO MENU
 
 
 :HEADER2
@@ -914,50 +811,10 @@ ECHO: ========================================
 EXIT /B 0
 
 
-REM :HEADER4
-REM CLS
-REM ECHO:
-REM ECHO: ===============================================
-REM ECHO: =   BACKUP PERSONAL FILES TO SD MEMORY CARD   =
-REM ECHO: ===============================================
-REM EXIT /B 0
-
-
-REM :FUNCTION1
-REM SETLOCAL ENABLEDELAYEDEXPANSION
-REM (
-REM     ENDLOCAL
-REM     IF [%1] EQU [1] (
-REM         SET %2=rename !%~2!
-REM     )
-REM     IF [%1] EQU [2] (
-REM         SET %2=write !%~2!
-REM     )
-REM     IF [%1] EQU [3] (
-REM         SET %2=read !%~2!
-REM     )
-REM )
-REM EXIT /B 0
-
-
 :QUESTION
 SET %5=Y
 ECHO:
 ECHO:
-CHOICE /C %~1 /T %~2 /N /d %~3 /M "%~4 Press [Y] for Yes or [N] for No."
+CHOICE /C %~1 /T %~2 /N /D %~3 /M "%~4 Press [Y] for Yes or [N] for No."
 IF ERRORLEVEL 2 SET %5=N
 EXIT /B 0
-
-
-REM :TOKENIZE
-REM SETLOCAL
-REM SET _options=usebackq
-REM IF ["%~1"] NEQ [""] SET _options="%_options% tokens=%~1 delims=\"
-REM IF ["%~1"] EQU [""] SET _options="%_options% delims="
-REM FOR /F %_options% %%I IN ("%_copied%") DO (
-REM     IF ["%~1"] NEQ [""] SET _file=%%J
-REM     IF ["%~1"] EQU [""] SET _file=%%~nxI
-REM     ECHO !_file!>> "%_tobearchived%"
-REM )
-REM ENDLOCAL
-REM EXIT /B 0

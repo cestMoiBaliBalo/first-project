@@ -6,17 +6,20 @@ import json
 import logging.config
 import os
 import re
+import sys
+from collections import OrderedDict
 from collections.abc import MutableSequence
 from contextlib import suppress
 from itertools import filterfalse, groupby, repeat, tee
 from operator import itemgetter
-from shutil import move
+from pathlib import PureWindowsPath
 from subprocess import PIPE, run
 from tempfile import TemporaryFile
 
+import jinja2
 import yaml
 
-from Applications.shared import DFTMONTHREGEX, DFTYEARREGEX, IMAGES
+from Applications.shared import DFTMONTHREGEX, DFTYEARREGEX, IMAGES_COLLECTION, TEMPLATE7, TemplatingEnvironment, UTF8, WRITE, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -42,7 +45,7 @@ class ImagesCollection(MutableSequence):
         - Move images.
         - Rename images.
     """
-    logger = logging.getLogger("MyPythonProject.Images.{0}.ImagesCollection".format(splitext(basename(__file__))[0]))
+    logger = logging.getLogger("MyPythonProject.Images.{0}.ImagesCollection".format(str(PureWindowsPath(__file__).stem)))
 
     def __delitem__(self, key):
         del self._collection[key]
@@ -70,7 +73,7 @@ class ImagesCollection(MutableSequence):
             self.logger.debug(" ---------------- ")
             for path, _ in sorted(self._collection, key=itemgetter(0)):
                 self.logger.debug("\t%s".expandtabs(3), normpath(path))
-            with open(join(expandvars("%TEMP%"), "images.yml"), mode="w", encoding="UTF_8") as stream:
+            with open(join(expandvars("%TEMP%"), "collection.yml"), mode=WRITE, encoding=UTF8) as stream:
                 yaml.dump(self._collection, stream, indent=2, default_flow_style=False)
 
     def __len__(self):
@@ -104,74 +107,43 @@ class ImagesCollection(MutableSequence):
         """
         self._collection = list(self.get_images(*self._directories))
 
-    def move(self, test=True, load=True):
+    def move(self):
         """
         Move an image to the right directory in order to be compliant with the storing convention.
         Image original month is used to compute the right directory.
 
-        :param test: test mode. Log a list of all moving commands but doesn't run them.
-        :param load: load images collection again in order to have an up-to-date collection.
-        :return: number of moved images as an integer object.
+        :return: None.
         """
-        images = 0
-        for path, datetimeoriginal in filter(self.filter, self._collection):
-            path = normpath(path)
-            dst = normpath(join(IMAGES, datetimeoriginal))
-            os.makedirs(dst, exist_ok=True)
-            self.logger.debug(" ----------- ")
-            self.logger.debug(" Move image. ")
-            self.logger.debug(" ----------- ")
-            self.logger.debug("\tSource     : %s".expandtabs(5), path)
-            self.logger.debug("\tDestination: %s".expandtabs(5), dst)
-            if not test:
-                move(src=path, dst=dst)
-                self.logger.info("Image moved.")
-                images += 1
+        for src, dst in ((normpath(path), normpath(join(IMAGES_COLLECTION, datetimeoriginal))) for path, datetimeoriginal in filter(self.filter, self._collection)):
+            yield src, dst
 
-        self.logger.info("%s images moved.", images)
-        if load:
-            self.load()
-        return images
-
-    def rename(self, test=True):
+    def rename(self):
         """
         Rename an image in order to be compliant with the naming convention.
 
-        :param test: test mode. Log a list of all renaming commands but doesn't run them.
-        :return: number of renamed images as an integer object.
+        :return: None.
         """
-        images = 0
+        collection = []
         coll_true, coll_false = self.partition(self._collection, self.predicate)
 
         # Extract the five digits unique number from all images compliant with the naming convention.
         numbers = sorted(map(self.get_numbers, coll_true))
 
         # Extract all images non-compliant with the naming convention.
-        coll_false = sorted(coll_false)
+        coll_false = list(coll_false)
 
         # Compute expected numbers.
-        template = range(1, 1 + len(coll_false))
+        _template = range(1, 1 + len(coll_false))
         end = 0
         if numbers:
-            template = range(1, 1 + len(numbers))
+            _template = range(1, 1 + len(numbers))
             end = numbers[-1]
-        self.logger.debug(list(template))
+        self.logger.debug(list(_template))
         self.logger.debug(end)
-        for (path, datetimeoriginal), number in zip(coll_false, self.adjust_numbers(self.set_numbers(numbers, template), len(coll_false), start=end + 1)):
-            path = normpath(path)
-            dst = normpath(join(IMAGES, str(datetimeoriginal), "{0}_{1:>05d}{2}".format(str(datetimeoriginal), number, splitext(path)[1])))
-            self.logger.info(" ------------- ")
-            self.logger.info(" Rename image. ")
-            self.logger.info(" ------------- ")
-            self.logger.info("\tSource     : %s.".expandtabs(5), path)
-            self.logger.info("\tDestination: %s.".expandtabs(5), dst)
-            if not test:
-                rename(src=path, dst=dst)
-                self.logger.info("Image renamed.")
-                images += 1
-
-        self.logger.info("%s images renamed.", images)
-        return images
+        for (path, datetimeoriginal), number in zip(coll_false, self.adjust_numbers(self.set_numbers(numbers, _template), len(coll_false), start=end + 1)):
+            collection.append((normpath(path), basename(normpath(join(IMAGES_COLLECTION, str(datetimeoriginal), "{0}_{1:>05d}{2}".format(datetimeoriginal, number, splitext(path)[1].upper()))))))
+        for image, new_name in collection:
+            yield image, new_name
 
     @property
     def directories(self):
@@ -199,7 +171,7 @@ class ImagesCollection(MutableSequence):
         :param year: year as a four digits number. Integer or string object allowed.
         :return: ImagesCollection object.
         """
-        return cls(*fnmatch.filter(map(join, repeat(IMAGES), listdir(IMAGES)), "{0}*".format(join(IMAGES, str(year)))))
+        return cls(*fnmatch.filter(map(join, repeat(IMAGES_COLLECTION), listdir(IMAGES_COLLECTION)), "{0}*".format(join(IMAGES_COLLECTION, str(year)))))
 
     @staticmethod
     def adjust_numbers(numbers, items, *, start=1):
@@ -234,7 +206,7 @@ class ImagesCollection(MutableSequence):
         :return: boolean value.
         """
         path, datetimeoriginal = item
-        return not re.match(normpath(join(IMAGES, str(datetimeoriginal))).replace("\\", "\\\\"), normpath(dirname(path)), re.IGNORECASE)
+        return not re.match(normpath(join(IMAGES_COLLECTION, str(datetimeoriginal))).replace("\\", "\\\\"), normpath(dirname(path)), re.IGNORECASE)
 
     @staticmethod
     def get_images(*directories):
@@ -245,8 +217,20 @@ class ImagesCollection(MutableSequence):
         :param directories: list of directories scanned by Exiftool application.
         :return: iterator object.
         """
-        in_logger = logging.getLogger("MyPythonProject.Images.{0}.get_images".format(splitext(basename(__file__))[0]))
-        args, collection = [join(expandvars("%_RESOURCES%"), "exiftool.exe"), "-r", "-d", "%Y%m", "-j", "-charset", "Latin1", "-DateTimeOriginal", "-fileOrder", "DateTimeOriginal", "-ext", "jpg"], {}
+        in_logger = logging.getLogger("MyPythonProject.Images.{0}.get_images".format(str(PureWindowsPath(__file__).stem)))
+        collection = OrderedDict()
+        args = [str(PureWindowsPath(expandvars("%_RESOURCES%")) / "exiftool.exe"),
+                "-r",
+                "-d",
+                "%Y%m%d%H%M%S",
+                "-j",
+                "-charset",
+                "Latin1",
+                "-DateTimeOriginal",
+                "-fileOrder",
+                "DateTimeOriginal",
+                "-ext",
+                "jpg"]
         if directories:
             args.extend(sorted(directories))
             with TemporaryFile(mode="r+", encoding="UTF_8") as stream:
@@ -258,9 +242,11 @@ class ImagesCollection(MutableSequence):
                         in_logger.debug("%s.", line.lstrip())
                     stream.seek(0)
                     for item in json.load(stream):
+                        in_logger.debug(item["DateTimeOriginal"])
+                        in_logger.debug(item["SourceFile"])
                         with suppress(KeyError):
                             key = item["SourceFile"]
-                            value = item["DateTimeOriginal"]
+                            value = int(str(item["DateTimeOriginal"])[:6])
                             collection[key] = value
         for item in collection.items():
             yield item
@@ -337,6 +323,8 @@ def validyear(yea):
 # ============
 if __name__ == "__main__":
 
+    THAT_SCRIPT = PureWindowsPath(os.path.abspath(__file__))
+
     # Local constants.
     LOGGERS = ["MyPythonProject"]
     MAPPING = {True: "debug", False: "info"}
@@ -346,15 +334,15 @@ if __name__ == "__main__":
     parser.set_defaults(console=True)
     parser.add_argument("year", type=validyear)
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--test", action="store_true")
     arguments = vars(parser.parse_args())
 
-    # Get test mode.
-    l_test = arguments.get("test", False)
-
     # Logging.
-    with open(join(expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    with open(THAT_SCRIPT.parents[1] / "Resources" / "logging.yml", encoding=UTF8) as fp:
         config = yaml.load(fp)
+
+    # Template.
+    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Images")))
+    template.set_template(T1="T01", T2="T02")
 
     # -----
     for logger in LOGGERS:
@@ -362,28 +350,45 @@ if __name__ == "__main__":
             config["loggers"][logger]["level"] = MAPPING[arguments.get("debug", False)].upper()
 
     # -----
-    if arguments.get("console", False):
-
-        # Set up a specific stream handler.
-        for logger in LOGGERS:
-            with suppress(KeyError):
-                config["loggers"][logger]["handlers"] = ["file", "console"]
-        with suppress(KeyError):
-            config["handlers"]["console"]["level"] = "DEBUG"
-
-        # Set up a specific filter for logging from "MyPythonProject.Images" only.
-        localfilter = {"class": "logging.Filter", "name": "MyPythonProject.Images"}
-        config["filters"]["localfilter"] = localfilter
-        config["handlers"]["console"]["filters"] = ["localfilter"]
+    # if arguments.get("console", False):
+    #
+    #     # Set up a specific stream handler.
+    #     for logger in LOGGERS:
+    #         with suppress(KeyError):
+    #             config["loggers"][logger]["handlers"] = ["file", "console"]
+    #     with suppress(KeyError):
+    #         config["handlers"]["console"]["level"] = "DEBUG"
+    #
+    #     # Set up a specific filter for logging from "MyPythonProject.Images" only.
+    #     localfilter = {"class": "logging.Filter", "name": "MyPythonProject.Images"}
+    #     config["filters"]["localfilter"] = localfilter
+    #     config["handlers"]["console"]["filters"] = ["localfilter"]
 
     # -----
     logging.config.dictConfig(config)
 
     # -----
-    run("CLS", shell=True)
     mycollection = ImagesCollection.fromyear(arguments.get("year"))
+
+    # Move images if required.
     if mycollection.filestomove:
-        mycollection.move(test=l_test)
-    mycollection.rename(test=l_test)
-    mycollection.load()
-    mycollection.display()
+        _collection = list(mycollection.move())
+        cmdfile = join(expandvars("%TEMP%"), "move_{0}.cmd".format(now(template=TEMPLATE7)))
+        with open(cmdfile, WRITE, encoding="ISO-8859-1") as stream1:
+            stream1.write(getattr(template, "T1").render(collection=_collection))
+            with open(join(expandvars("%TEMP%"), "cmdfile.txt"), WRITE, encoding="ISO-8859-1") as stream2:
+                stream2.write(f"{len(_collection)}|{cmdfile}\n")
+        sys.exit(10)
+
+    # Rename images.
+    _collection = list(mycollection.rename())
+    if _collection:
+        cmdfile = join(expandvars("%TEMP%"), "rename_{0}.cmd".format(now(template=TEMPLATE7)))
+        with open(cmdfile, WRITE, encoding="ISO-8859-1") as stream1:
+            stream1.write(getattr(template, "T2").render(collection=_collection))
+            with open(join(expandvars("%TEMP%"), "cmdfile.txt"), WRITE, encoding="ISO-8859-1") as stream2:
+                stream2.write(f"{len(_collection)}|{cmdfile}\n")
+        sys.exit(11)
+
+    # No action required.
+    sys.exit(0)

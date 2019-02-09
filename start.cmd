@@ -1,8 +1,8 @@
 @ECHO off
 
 
-REM  1. ExÃ©cutÃ© depuis le scheduler windows : "G:\Computing\start.cmd" 1 3 4 6 7 9 10 11 13.
-REM  2. ExÃ©cutÃ© manuellement : "G:\Computing\start.cmd" 5 9.
+REM  1. Exécuté depuis le scheduler windows : "G:\Computing\start.cmd" 1 3 4 6 7 9 10 11 13.
+REM  2. Exécuté manuellement : "G:\Computing\start.cmd" 5 9.
 
 
 REM __author__ = 'Xavier ROSSET'
@@ -31,6 +31,7 @@ SET _exclusions=%_COMPUTING%\\Resources\exclusions2.txt
 SET _lossless=G:\Music\Lossless
 SET _lossy=G:\Music\Lossy
 SET _videos=%USERPROFILE%\videos
+SET _xxcopy=xxcopy.cmd
 
 
 REM ===============
@@ -64,6 +65,7 @@ IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "21" GOTO STEP21
 IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "24" GOTO STEP24
+IF "%~1" EQU "25" GOTO STEP25
 SHIFT
 GOTO MAIN
 
@@ -196,25 +198,33 @@ REM     Target : "Documents (USB Drive)".
 :STEP18
 SET _directory=%TEMP%\tmp-Xavier
 IF EXIST "y:" (
-    ECHO:
-    ECHO:
-    ECHO ---------------------------------------
-    ECHO Backup personal documents to USB drive.
-    ECHO ---------------------------------------
-    SET _taskid=123456802
     SET _workspace=%_BACKUP%/workspace.documents/34258241.bcfg
-    "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!"
-    python -m Applications.Tables.Tasks.shared select !_taskid! --days 20 --debug
-    IF !ERRORLEVEL! EQU 0 "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && python -m Applications.Tables.Tasks.shared update !_taskid! --debug
+    SET _backupid=123456803
+    python -m Applications.Tables.Tasks.shared select !_backupid! --days 4 --debug
+    IF !ERRORLEVEL! EQU 0 (
+        ECHO:
+        ECHO:
+        ECHO ---------------------------------------
+        ECHO Backup personal documents to USB drive.
+        ECHO ---------------------------------------
+        "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!" && python -m Applications.Tables.Tasks.shared update !_backupid! --debug
+        SET _mergeid=123456802
+        python -m Applications.Tables.Tasks.shared select !_mergeid! --days 20 --debug
+        IF !ERRORLEVEL! EQU 0 "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && python -m Applications.Tables.Tasks.shared update !_mergeid! --debug
+    )
 )
 IF EXIST "z:" (
-    ECHO:
-    ECHO:
-    ECHO -----------------------------------------------
-    ECHO Backup personal documents to external WD drive.
-    ECHO -----------------------------------------------
     SET _workspace=%_BACKUP%/workspace.documents/1282856126.bcfg
-    "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!"
+    SET _backupid=123456804
+    python -m Applications.Tables.Tasks.shared select !_backupid! --days 4 --debug
+    IF !ERRORLEVEL! EQU 0 (
+        ECHO:
+        ECHO:
+        ECHO -----------------------------------------------
+        ECHO Backup personal documents to external WD drive.
+        ECHO -----------------------------------------------
+        "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!" && python -m Applications.Tables.Tasks.shared update !_backupid! --debug
+    )
 )
 SET _directory=
 SHIFT
@@ -234,8 +244,85 @@ REM     --------------------------
 REM 16. Sync xreferences database.
 REM     --------------------------
 :STEP5
+ECHO:
+ECHO:
+ECHO ----------------------------
+ECHO Sync audio cross-references.
+ECHO ----------------------------
+ECHO It can take a while.
 PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
 python main.py
+IF EXIST "some_file.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("some_file.txt") DO (
+    SET _elapsed=%%I
+    SET _inserted=%%J
+    SET _removed=%%K
+)
 POPD
+ECHO Done.
+ECHO %_inserted% albums inserted.
+ECHO %_removed% albums removed.
+SHIFT
+GOTO MAIN
+
+
+REM     ----------------------------------------
+REM 17. Backup personal files to SD Memory Card.
+REM     ----------------------------------------
+REM     Every 28 days.
+:STEP25
+SET _config=%_PYTHONPROJECT%\Tasks\Resources\toto.yml
+SET _last_date=
+SET _last_backup=%TEMP%\last_backup.txt
+SET _run_backup=0
+DEL "%_last_backup%" 2> NUL
+IF EXIST "%_config%" (
+    PUSHD %_PYTHONPROJECT%\Tasks
+    python toto.py "%_config%" "my_documents"
+    SET _run_backup=!ERRORLEVEL!
+)
+IF [%_run_backup%] EQU [0] (
+    POPD
+    GOTO FIN
+)
+CLS
+IF EXIST "%_last_backup%" FOR /F "usebackq delims=|" %%I IN ("%_last_backup%") DO (
+    ECHO Last backup to SD Memory Card was run on %%I
+    ECHO:
+)
+CHOICE /N /C YN /T 30 /D N /M "Would you like to refresh the backup? Press [Y] for Yes or [N] for No."
+IF ERRORLEVEL 2 GOTO DELAY
+CLS
+ECHO Insert SD Memory Card then press any key to run the backup... && PAUSE > NUL
+CLS
+DEL "%TEMP%\%_xxcopy%" 2> NUL
+PUSHD %_PYTHON_SECONDPROJECT%
+python backup.py
+IF ERRORLEVEL 1 (
+    POPD
+    POPD
+    GOTO FIN
+)
+PUSHD "%TEMP%"
+IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
+GOTO UPDATE
+
+:DELAY
+python toto.py "%_config%" "my_documents" --update 5
+POPD
+GOTO FIN
+
+:UPDATE
+PUSHD %_PYTHONPROJECT%
+python toto.py "%_config%" "my_documents" --update
+ECHO:
+ECHO:
+PAUSE
+POPD
+POPD
+POPD
+POPD
+GOTO FIN
+
+:FIN
 SHIFT
 GOTO MAIN
