@@ -8,6 +8,7 @@ import operator
 import os
 import sys
 from itertools import filterfalse, repeat
+from operator import itemgetter
 from pathlib import PurePath
 from typing import List, Tuple
 
@@ -33,7 +34,7 @@ class MainFrame(wx.Frame):
         self._configuration = dict(kwargs)
         self._init_interface(*sorted(self._configuration.get("repositories")))
         self._init_variables()
-        self._copy_audiofiles, self._collection = False, []  # type: bool, List[Tuple[str, str, str]]
+        self._copy_audiofiles, self._collection1, self._testmode = False, [], True  # type: bool, List[Tuple[str, str, str]], bool
 
     def _init_interface(self, *collection) -> None:
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
@@ -78,6 +79,10 @@ class MainFrame(wx.Frame):
         self.checkbox_m4a.Hide()
         SzRepositories.Add(self.checkbox_m4a, 0, wx.ALL, 5)
 
+        # °°° Test mode.
+        self.testmode_chkb = wx.CheckBox(self, wx.ID_ANY, "Test mode", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.testmode_chkb.SetValue(True)
+
         # ------------------
         # Configure buttons.
         # ------------------
@@ -99,6 +104,8 @@ class MainFrame(wx.Frame):
         # -----------------
         # Configure layout.
         # -----------------
+        Sizer3 = wx.BoxSizer(wx.HORIZONTAL)
+        Sizer3.Add(self.testmode_chkb, 1, wx.BOTTOM | wx.LEFT, 10)
         Sizer2 = wx.BoxSizer(wx.VERTICAL)
         Sizer2.Add(SzButtons, 1, wx.ALIGN_LEFT, 5)
         Sizer1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -106,7 +113,8 @@ class MainFrame(wx.Frame):
         Sizer1.Add(SzDrives, 1, 0, 0)
         MainSizer = wx.BoxSizer(wx.VERTICAL)
         MainSizer.Add(Sizer1, 1, wx.ALL, 15)
-        MainSizer.Add(Sizer2, 0, wx.LEFT, 15)
+        MainSizer.Add(Sizer3, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15)
+        MainSizer.Add(Sizer2, 0, wx.LEFT | wx.RIGHT | wx.TOP, 15)
         self.SetSizer(MainSizer)
         self.Layout()
         MainSizer.Fit(self)
@@ -119,6 +127,7 @@ class MainFrame(wx.Frame):
             getattr(self, f"checkbox{index}").Bind(wx.EVT_CHECKBOX, self._check_repository)
         for index in range(repositories + 1, drives + 1):
             getattr(self, f"checkbox{index}").Bind(wx.EVT_CHECKBOX, self._check_drive)
+        self.testmode_chkb.Bind(wx.EVT_CHECKBOX, self._check_testmode)
         self.checkbox_m4a.Bind(wx.EVT_CHECKBOX, self._check_m4a_audiofiles)
         self.run.Bind(wx.EVT_BUTTON, self._click_on_run)
         self.sync.Bind(wx.EVT_BUTTON, self._click_on_sync)
@@ -216,6 +225,14 @@ class MainFrame(wx.Frame):
         """
         self._m4a_audiofiles = self.checkbox_m4a.GetValue()
 
+    def _check_testmode(self, event) -> None:
+        """
+
+        :param event:
+        :return:
+        """
+        self._testmode = self.testmode_chkb.GetValue()
+
     def _click_on_run(self, event) -> None:
         """
 
@@ -234,7 +251,7 @@ class MainFrame(wx.Frame):
         extensions = self._configuration["patterns"][self._compression]  # type: List[str]
         extensions.extend(self._configuration["m4a_audiofiles"].get(self._m4a_audiofiles, []))
         extensions = list(filterfalse(functools.partial(operator.is_, None), extensions))
-        self._collection.extend(list(zip(repeat(self._repository), extensions, repeat(f"{self._drive.upper()}:"))))
+        self._collection1.extend(list(zip(repeat(self._repository), extensions, repeat(f"{self._drive.upper()}:"))))
         self._init_variables()
         self.run.Enable(True)
         self.Layout()
@@ -263,8 +280,16 @@ class MainFrame(wx.Frame):
         return self._copy_audiofiles
 
     @property
-    def collection(self):
-        return self._collection
+    def collection1(self):
+        return self._collection1
+
+    @property
+    def collection2(self):
+        return sorted(sorted(set((repository, drive) for repository, extension, drive in self._collection1), key=itemgetter(0)), key=itemgetter(1))
+
+    @property
+    def test_mode(self):
+        return self._testmode
 
 
 # ============
@@ -291,7 +316,7 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
 
     # Load configuration.
-    with open(_THATFILE.parents[1] / "Resources" / "resource1.yml") as stream:
+    with open(_THATFILE.parents[1] / "Resources" / "audio_config.yml") as stream:
         configuration = yaml.load(stream)
 
     # Run interface.
@@ -300,8 +325,9 @@ if __name__ == '__main__':
     interface.Show()
     app.MainLoop()
     if interface.copy_audiofiles:
-        level = 0
-        arguments.outfile.write(getattr(template, "T1").render(collection=iter(interface.collection)))
+        arguments.outfile.write(getattr(template, "T1").render(collection1=iter(interface.collection1), collection2=iter(interface.collection2)))
+        if not interface.test_mode:
+            level = 0
 
     # Exit script.
     sys.exit(level)

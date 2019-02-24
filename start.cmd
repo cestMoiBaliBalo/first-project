@@ -1,10 +1,6 @@
 @ECHO off
 
 
-REM  1. Exécuté depuis le scheduler windows : "G:\Computing\start.cmd" 1 3 4 6 7 9 10 11 13.
-REM  2. Exécuté manuellement : "G:\Computing\start.cmd" 5 9.
-
-
 REM __author__ = 'Xavier ROSSET'
 REM __maintainer__ = 'Xavier ROSSET'
 REM __email__ = 'xavier.python.computing@protonmail.com'
@@ -28,8 +24,6 @@ SET _areca=C:/Program Files/Areca/areca_cl.exe
 SET _cp=1252
 SET _dailybkp=%_COMPUTING%\Resources\daily_backup.txt
 SET _exclusions=%_COMPUTING%\\Resources\exclusions2.txt
-SET _lossless=G:\Music\Lossless
-SET _lossy=G:\Music\Lossy
 SET _videos=%USERPROFILE%\videos
 SET _xxcopy=xxcopy.cmd
 
@@ -128,9 +122,9 @@ SHIFT
 GOTO MAIN
 
 
-REM     ------------------------------
-REM  7. Backup "G:\Computing" content.
-REM     ------------------------------
+REM     ----------------------------
+REM  7. Backup %_COMPUTING% content.
+REM     ----------------------------
 REM     /DB#14: removes files older than or equal to 14 days.
 REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
@@ -182,9 +176,16 @@ REM     -------------------------------
 REM 12. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
+SET _errorlevel=
 SET _taskid=123456798
-python -m Applications.Tables.Tasks.shared select %_taskid% --days 8 --debug
-IF %ERRORLEVEL% EQU 0 "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && python -m Applications.Tables.Tasks.shared update %_taskid% --debug
+CALL :CHECK_TASK %_taskid% "8" _errorlevel
+IF [%_errorlevel%] EQU [1] (
+    ECHO -------------------------------
+    ECHO Delete GNUCash sandbox content.
+    ECHO -------------------------------
+    "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && ECHO GNUCash sandbox content successfully removed.
+    CALL :UPDATE_TASK %_taskid% _errorlevel
+)
 SHIFT
 GOTO MAIN
 
@@ -192,48 +193,52 @@ GOTO MAIN
 REM     -----------------
 REM 13. Backup documents.
 REM     -----------------
-REM     Incremental backup.
-REM     Target Group : "workspace.documents".
-REM     Target : "Documents (USB Drive)".
 :STEP18
 SET _directory=%TEMP%\tmp-Xavier
 IF EXIST "y:" (
+    SET _errorlevel=
+    SET _taskid=123456803
     SET _workspace=%_BACKUP%/workspace.documents/34258241.bcfg
-    SET _backupid=123456803
-    python -m Applications.Tables.Tasks.shared select !_backupid! --days 4 --debug
-    IF !ERRORLEVEL! EQU 0 (
+    CALL :CHECK_TASK !_taskid! "4" _errorlevel
+    IF [!_errorlevel!] EQU [1] (
         ECHO:
         ECHO:
         ECHO ---------------------------------------
         ECHO Backup personal documents to USB drive.
         ECHO ---------------------------------------
-        "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!" && python -m Applications.Tables.Tasks.shared update !_backupid! --debug
-        SET _mergeid=123456802
-        python -m Applications.Tables.Tasks.shared select !_mergeid! --days 20 --debug
-        IF !ERRORLEVEL! EQU 0 "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && python -m Applications.Tables.Tasks.shared update !_mergeid! --debug
+        "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
+        SET _errorlevel=
+        SET _taskid=123456802
+        CALL :CHECK_TASK !_taskid! "20" _errorlevel
+        IF [!_errorlevel!] EQU [1] "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && CALL :UPDATE_TASK !_taskid! _errorlevel
     )
+    SET _workspace=
+    SET _taskid=
 )
 IF EXIST "z:" (
+    SET _errorlevel=
+    SET _taskid=123456804
     SET _workspace=%_BACKUP%/workspace.documents/1282856126.bcfg
-    SET _backupid=123456804
-    python -m Applications.Tables.Tasks.shared select !_backupid! --days 4 --debug
-    IF !ERRORLEVEL! EQU 0 (
+    CALL :CHECK_TASK !_taskid! "4" _errorlevel
+    IF [!_errorlevel!] EQU [1] (
         ECHO:
         ECHO:
         ECHO -----------------------------------------------
         ECHO Backup personal documents to external WD drive.
         ECHO -----------------------------------------------
-        "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!" && python -m Applications.Tables.Tasks.shared update !_backupid! --debug
+        "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
     )
+    SET _workspace=
+    SET _taskid=
 )
 SET _directory=
 SHIFT
 GOTO MAIN
 
 
-REM     ----------------------------
-REM 15. Backup AVCHD videos to "X:".
-REM     ----------------------------
+REM     -------------------------
+REM 15. Backup AVCHD videos to X.
+REM     -------------------------
 :STEP24
 XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
@@ -271,63 +276,67 @@ GOTO MAIN
 
 
 REM     ----------------------------------------
-REM 17. Backup personal files to SD Memory Card.
+REM 17. Backup personal files to SD memory card.
 REM     ----------------------------------------
 REM     Every 28 days.
 :STEP25
-SET _config=%_PYTHONPROJECT%\Tasks\Resources\toto.yml
-SET _last_date=
-SET _last_backup=%TEMP%\last_backup.txt
-SET _run_backup=0
-DEL "%_last_backup%" 2> NUL
-IF EXIST "%_config%" (
-    PUSHD %_PYTHONPROJECT%\Tasks
-    python toto.py "%_config%" "my_documents"
-    SET _run_backup=!ERRORLEVEL!
+SET _errorlevel=
+SET _taskid=123456800
+CALL :CHECK_TASK %_taskid% "28" _errorlevel
+IF [!_errorlevel!] EQU [1] (
+    CLS
+    CHOICE /N /C YN /T 30 /D N /M "Would you like to refresh the backup? Press [Y] for Yes or [N] for No."
+    IF ERRORLEVEL 2 GOTO DELAY
+    CLS
+    ECHO Insert SD Memory Card then press any key to run the backup... && PAUSE > NUL
+    CLS
+    DEL "%TEMP%\%_xxcopy%" 2> NUL
+    PUSHD %_PYTHON_SECONDPROJECT%
+    python backup.py
+    IF ERRORLEVEL 1 (
+        POPD
+        GOTO FIN
+    )
+    PUSHD "%TEMP%"
+    IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
+    GOTO UPDATE
 )
-IF [%_run_backup%] EQU [0] (
-    POPD
-    GOTO FIN
-)
-CLS
-IF EXIST "%_last_backup%" FOR /F "usebackq delims=|" %%I IN ("%_last_backup%") DO (
-    ECHO Last backup to SD Memory Card was run on %%I
-    ECHO:
-)
-CHOICE /N /C YN /T 30 /D N /M "Would you like to refresh the backup? Press [Y] for Yes or [N] for No."
-IF ERRORLEVEL 2 GOTO DELAY
-CLS
-ECHO Insert SD Memory Card then press any key to run the backup... && PAUSE > NUL
-CLS
-DEL "%TEMP%\%_xxcopy%" 2> NUL
-PUSHD %_PYTHON_SECONDPROJECT%
-python backup.py
-IF ERRORLEVEL 1 (
-    POPD
-    POPD
-    GOTO FIN
-)
-PUSHD "%TEMP%"
-IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
-GOTO UPDATE
+GOTO FIN
 
 :DELAY
-python toto.py "%_config%" "my_documents" --update 5
-POPD
+CALL :DELAY_TASK %_taskid% "sub" "23" _errorlevel
 GOTO FIN
 
 :UPDATE
-PUSHD %_PYTHONPROJECT%
-python toto.py "%_config%" "my_documents" --update
+POPD
+POPD
+CALL :UPDATE_TASK %_taskid% _errorlevel
 ECHO:
 ECHO:
 PAUSE
-POPD
-POPD
-POPD
-POPD
 GOTO FIN
 
 :FIN
 SHIFT
 GOTO MAIN
+
+
+REM -----------------
+REM Shared functions.
+REM -----------------
+:CHECK_TASK
+python -m Applications.Tables.Tasks.shared "%~1" check --delta "%~2"
+SET %~3=%ERRORLEVEL%
+EXIT /B 0
+
+
+:UPDATE_TASK
+python -m Applications.Tables.Tasks.shared "%~1" update
+SET %~2=%ERRORLEVEL%
+EXIT /B 0
+
+
+:DELAY_TASK
+python -m Applications.Tables.Tasks.shared "%~1" update %~2 "%~3"
+SET %~4=%ERRORLEVEL%
+EXIT /B 0

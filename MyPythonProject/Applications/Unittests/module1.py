@@ -3,6 +3,7 @@
 import itertools
 import json
 import os
+import sys
 import unittest
 from collections.abc import MutableSequence
 from datetime import datetime
@@ -11,7 +12,8 @@ from operator import eq, gt, lt
 
 from pytz import timezone
 
-from Applications.shared import TitleCaseConverter, UTF8, contains_, eq_integer, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
+from Applications.Tables.Albums.shared import get_genres
+from Applications.shared import DATABASE, TitleCaseConverter, UTF8, contains_, eq_integer, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -148,7 +150,7 @@ class Test03(unittest.TestCase):
 
 class TestTitleCaseConverter(unittest.TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "resource2.json"), encoding=UTF8) as stream:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "titles.json"), encoding=UTF8) as stream:
             self.titles = json.load(stream)
 
     def test_t01(self):
@@ -171,6 +173,7 @@ class TestGetReadableDate(unittest.TestCase):
         self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)
 
 
+@unittest.skip
 class TestGetRippingApplication(unittest.TestCase):
     """
 
@@ -258,3 +261,20 @@ class TestDecorator03(unittest.TestCase):
     def test_t03(self):
         decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
+
+
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+class TestDecorator04(unittest.TestCase):
+    """
+
+    """
+
+    def test_t01(self):
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(getitem_()(partial_("hard rock")(eq_string)), get_genres(DATABASE)))
+        self.assertEqual(genreid1, genreid2)
+
+    def test_t02(self):
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(getitem_()(partial_("rock")(eq_string)), get_genres(DATABASE)))
+        self.assertNotEqual(genreid1, genreid2)

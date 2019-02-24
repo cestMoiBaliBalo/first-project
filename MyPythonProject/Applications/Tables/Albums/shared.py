@@ -18,7 +18,7 @@ import yaml
 from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, ToBoolean, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, get_dirname, get_readabledate, valid_datetime
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, eq_string, get_dirname, get_readabledate, getitem_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -167,13 +167,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = list(filter(lambda i: i[0].lower() == row["genre"].lower(), get_genres(db)))[0]
+                    _, genreid = next(filter(getitem_()(partial_(row["genre"])(eq_string)), get_genres(db)))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = list(filter(lambda i: i[0].lower() == row["titlelanguage"].lower(), get_languages(db)))[0]
+                    _, languageid = next(filter(getitem_()(partial_(row["titlelanguage"])(eq_string)), get_languages(db)))
                 except TypeError:
                     continue
 
@@ -1115,7 +1115,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(iter(filter(lambda i: i[0].lower() == genre.lower(), genres)))
+        _, genreid = next(filter(getitem_()(partial_(genre.lower())(eq_string)), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 

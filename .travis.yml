@@ -6,6 +6,7 @@ before_install:
 install:
   - pip install python-dateutil
   - pip install ftputil
+  - pip install iso8601
   - pip install jinja2
   - pip install mutagen
   - pip install pandas

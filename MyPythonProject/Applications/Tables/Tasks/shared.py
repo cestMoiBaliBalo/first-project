@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import logging.config
+import operator
 import os
 import sqlite3
 import sys
@@ -8,11 +9,12 @@ from contextlib import ExitStack, suppress
 from datetime import datetime, timedelta
 from typing import Iterable, Optional, Tuple
 
+import iso8601
 import yaml
 
 from ..shared import DatabaseConnection, close_database
 from ...parsers import tasks_parser
-from ...shared import DATABASE, UTC, UTF8, get_dirname
+from ...shared import DATABASE, LOCAL, UTC, UTF8, eq_integer, get_dirname, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -50,7 +52,6 @@ def update_task(taskid: int, *, db: str = DATABASE, dtobj: datetime = datetime.u
     :param dtobj:
     :return:
     """
-    changes: int = 0
 
     # Record exists: it is updated.
     if exist_task(taskid, db=db):
@@ -70,19 +71,19 @@ def delete_task(taskid: int, *, db: str = DATABASE) -> int:
     return _delete_task(taskid, db=db)
 
 
-def run_task(taskid: int, *, db: str = DATABASE, days: int = 10) -> bool:
+def run_task(taskid: int, *, db: str = DATABASE, delta: int = 10) -> bool:
     """
 
     :param taskid:
     :param db:
-    :param days:
+    :param delta:
     :return:
     """
     in_logger = logging.getLogger("Applications.Tables.Tasks.shared.run_task")
     in_logger.debug("Database: %s", db)
     if exist_task(taskid, db=db):
         _, utc_run = _get_task(taskid, db=db)
-        return not UTC.localize(datetime.utcnow()) - UTC.localize(utc_run) < timedelta(days=days)
+        return UTC.localize(datetime.utcnow()) - UTC.localize(utc_run) >= timedelta(days=delta)
     in_logger.debug("%s task(s) inserted.", _insert_task(taskid, db=db))
     return True
 
@@ -98,7 +99,7 @@ def _get_tasks(db: str = DATABASE) -> Iterable[Tuple[int, datetime]]:
 
 def _get_task(taskid: int, *, db: str = DATABASE) -> Tuple[int, Optional[datetime]]:
     uid, utc_run = 0, None  # type: int, Optional[datetime]
-    it = iter(filter(lambda i: i[0] == taskid, _get_tasks(db)))
+    it = filter(getitem_()(partial_(taskid)(eq_integer)), _get_tasks(db))
     with suppress(StopIteration):
         uid, utc_run = next(it)
     return uid, utc_run
@@ -197,7 +198,7 @@ if __name__ == "__main__":
 
     # Local constants.
     LOG_LEVELS = {False: "info", True: "debug"}
-    EXIT = {False: 1, True: 0}
+    EXIT = {False: 0, True: 1}
 
     # Get arguments.
     arguments = vars(tasks_parser.parse_args())
@@ -210,13 +211,21 @@ if __name__ == "__main__":
             config["loggers"][logger]["level"] = LOG_LEVELS[arguments.get("debug", False)].upper()
     logging.config.dictConfig(config)
 
-    # Select task: can it be run?
-    if arguments.get("action") == "select":
-        sys.exit(EXIT[run_task(arguments.get("taskid", 0),
+    # Check task: can it be run?
+    if arguments.get("action") == "check":
+        sys.exit(EXIT[run_task(arguments["taskid"],
                                db=arguments.get("db", DATABASE),
-                               days=arguments.get("days", 10))])
+                               delta=arguments.get("delta", 10))])
 
-    # Update last run datetime task.
-    elif arguments.get("action") == "update":
-        sys.exit(update_task(arguments.get("taskid", 0),
-                             db=arguments.get("db", DATABASE)))
+    # Update task.
+    if arguments.get("action") == "update":
+        datobj = datetime.utcnow()
+        timestamp = arguments.get("timestamp", 0)
+        datstring = arguments.get("datstring", "")
+        if timestamp:
+            datobj = LOCAL.localize(datetime.fromtimestamp(timestamp)).astimezone(UTC).replace(tzinfo=None)
+        elif datstring:
+            datobj = LOCAL.localize(iso8601.parse_date(datstring).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None)
+        sys.exit(update_task(arguments["taskid"],
+                             db=arguments.get("db", DATABASE),
+                             dtobj=arguments.get("func", operator.add)(datobj, timedelta(days=arguments.get("days", 0)))))

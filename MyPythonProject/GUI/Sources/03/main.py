@@ -30,7 +30,7 @@ with open(os.path.join(get_dirname(that_file, level=4), "Resources", "logging.ym
     logging.config.dictConfig(yaml.load(fp))
 
 # Interface global configuration.
-with open(os.path.join(get_dirname(that_file, level=2), "Resources", "resource2.yml"), encoding="UTF_8") as fp:
+with open(os.path.join(get_dirname(that_file, level=2), "Resources", "tables_config.yml"), encoding="UTF_8") as fp:
     global_config = yaml.load(fp)
 
 # Main interface.

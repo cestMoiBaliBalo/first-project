@@ -30,7 +30,7 @@ abspath, basename, join, expandvars, splitext = os.path.abspath, os.path.basenam
 arguments = vars(tags_grabber.parse_args())
 
 # Get audio tags processing profile.
-with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "resource1.yml"), encoding="UTF_8") as stream:
+with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "profiles.yml"), encoding="UTF_8") as stream:
     tags_config = yaml.load(stream)[arguments.get("tags_processing", "no_tags_processing")]
 
 # Configure logging.

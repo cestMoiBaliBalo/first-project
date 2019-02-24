@@ -173,7 +173,7 @@ class TestRippedDisc(unittest.TestCase):
     def setUp(self):
         with open(str(_THATFILE.parent / "Resources" / "resource3.yml"), encoding=UTF8) as stream:
             self.test_cases = yaml.load(stream)
-        with open(str(_THATFILE.parents[2] / "AudioCD" / "Resources" / "resource1.yml"), encoding=UTF8) as stream:
+        with open(str(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml"), encoding=UTF8) as stream:
             self.test_config = yaml.load(stream)
 
     def test_t01(self):

@@ -77,6 +77,51 @@ IF ERRORLEVEL 35 (
 )
 
 
+REM --------------------------
+REM Backup files to USB drive.
+REM --------------------------
+IF ERRORLEVEL 34 (
+    CLS
+    "C:/Program Files/Areca/areca_cl.exe" backup -f -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
+
+
+IF ERRORLEVEL 33 (
+:STEP_33
+    CLS
+    TYPE %_COMPUTING%\digital_bootlegs_audiotags_bs.txt
+    ECHO:
+    ECHO:
+    ECHO:
+    SET /P _answer="Enter action : "
+    IF [!_answer!] EQU [99] GOTO MENU
+    IF [!_answer!] EQU [2] (
+        IF EXIST %TEMP%\%_xxcopy% (
+            CLS
+            TYPE %TEMP%\%_xxcopy%
+            ECHO:
+            ECHO:
+            PAUSE
+        )
+        GOTO STEP_33
+    )
+    IF [!_answer!] EQU [1] (
+        IF EXIST %TEMP%\%_xxcopy% (
+            CLS
+            CALL %TEMP%\%_xxcopy%
+            ECHO:
+            ECHO:
+            PAUSE
+        )
+        GOTO STEP_33
+    )
+)
+
+
 REM --------------------------------
 REM Update audio albums played date.
 REM --------------------------------
@@ -155,7 +200,7 @@ IF ERRORLEVEL 25 (
 
 
 REM ----------------------------------------
-REM Backup personal files to SD Memory Card.
+REM Backup personal files to SD memory card.
 REM ----------------------------------------
 IF ERRORLEVEL 24 (
     CLS
@@ -346,7 +391,6 @@ IF ERRORLEVEL 16 (
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
-        PAUSE
         POPD
         GOTO MENU
     )
@@ -414,28 +458,41 @@ IF ERRORLEVEL 12 (
     GOTO MENU
 )
 
+REM -------------------------------
+REM Python installed packages list.
+REM -------------------------------
+IF ERRORLEVEL 11 (
+    CLS
+    pip list
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
 
-REM -----------------------
-REM Display folder content.
-REM -----------------------
-REM IF ERRORLEVEL 10 (
-REM     PUSHD "%_PYTHONPROJECT%\Tasks\03"
-REM     python main.py
-REM     POPD
-REM     GOTO MENU
 
-REM )
+REM ------------------------------
+REM Python outdated packages list.
+REM ------------------------------
+IF ERRORLEVEL 10 (
+    CLS
+    pip list -o
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
+)
 
 
-REM -----------------------
-REM Update python packages.
-REM -----------------------
+REM ------------
+REM Upgrade pip.
+REM ------------
 IF ERRORLEVEL 9 (
-    REM CLS
-    REM pip install -U --upgrade-strategy="only-if-needed" -r "%_COMPUTING%\pip-commands.txt"
-    REM ECHO:
-    REM ECHO:
-    REM PAUSE
+    CLS
+    python -m pip install --upgrade pip
+    ECHO:
+    ECHO:
+    PAUSE
     GOTO MENU
 )
 
