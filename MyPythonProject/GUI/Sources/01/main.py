@@ -240,14 +240,15 @@ class MainFrame(wx.Frame):
         if self.m_artists.IsChecked(chkb_id):
 
             # Get artist full path.
-            artist = self._artists[self.m_artists.GetString(chkb_id)]  # type: str
-            self._destination = os.path.join(self._repository, os.path.splitdrive(artist)[1][1:])
+            artist_name = self.m_artists.GetString(chkb_id)  # type: str
+            artist_path = self._artists[artist_name]  # type: str
+            self._destination = os.path.join(self._repository, os.path.splitdrive(artist_path)[1][1:])
 
             # Get albums with files matching extensions.
-            self._albums = OrderedDict((album, (album_path, albumid)) for _, albumid, _, album, album_path in sorted(get_albums(artist, *self._extensions), key=itemgetter(2)))
+            self._albums = OrderedDict((album, (album_path, albumid)) for _, albumid, _, album, album_path in sorted(get_albums(artist_name, *self._extensions), key=itemgetter(2)))
             self.m_albums.Set(list(self._albums))
             self._total_albums = self.m_albums.GetCount()
-            self._set_statusbar(self._repository, artist, f"{self._total_albums} album(s)")
+            self._set_statusbar(self._repository, artist_name, f"{self._total_albums} album(s)")
 
         # Box has been unchecked.
         elif not self.m_artists.IsChecked(chkb_id):
@@ -396,7 +397,7 @@ if __name__ == '__main__':
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "resource1.yml"))
+    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "audio_config.yml"))
     interface.Show()
     app.MainLoop()
     if interface.sync_audiofiles:

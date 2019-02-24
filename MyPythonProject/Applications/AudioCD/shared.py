@@ -849,7 +849,7 @@ def get_tagsfile(obj):
     in_logger.debug(tags)
 
     # -----
-    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "resource1.yml"), encoding=shared.UTF8) as stream:
+    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "Templates.yml"), encoding=shared.UTF8) as stream:
         templates = yaml.load(stream)
     in_logger.debug(templates)
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
+import datetime
+import operator
 import os
 import sys
 import unittest
@@ -8,8 +10,10 @@ from pathlib import PurePath
 from typing import Mapping
 from unittest.mock import Mock, patch
 
-from ..parsers import database_parser, loglevel_parser, tags_grabber, zipfile
-from ..shared import GetPath, get_dirname
+import iso8601
+
+from ..parsers import database_parser, loglevel_parser, tags_grabber, tasks_parser, zipfile
+from ..shared import GetPath, LOCAL, UTC, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -272,3 +276,114 @@ class Test06(unittest.TestCase):
 
     def tearDown(self):
         self.arguments.source.close()
+
+
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+class Test07(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.taskid = "123456800"
+
+    def test_t01(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--timestamp", "1549913936"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertEqual(arguments.get("timestamp"), 1549913936)
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("delta"))
+
+    def test_t02(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56+01:00")
+        self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
+        self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+
+    def test_t03(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56")
+        self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
+        self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+
+    def test_t04(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("delta"))
+
+    def test_t05(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "add", "5"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("func"), operator.add)
+        self.assertEqual(arguments.get("days"), 5)
+
+    def test_t06(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "sub", "23"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("func"), operator.sub)
+        self.assertEqual(arguments.get("days"), 23)
+
+    def test_t07(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "check"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertEqual(arguments.get("delta"), 10)
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("func"))
+        self.assertIsNone(arguments.get("days"))
+
+    def test_t08(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "check", "--delta", "28"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertEqual(arguments.get("delta"), 28)
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("datstring"))
+        self.assertIsNone(arguments.get("func"))
+        self.assertIsNone(arguments.get("days"))
+
+    def test_t09(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "5"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56+01:00")
+        self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
+        self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+        self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
+                         datetime.datetime(2019, 2, 16, 19, 38, 56))
+
+    def test_t10(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "28"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56+01:00")
+        self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
+        self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+        self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
+                         datetime.datetime(2019, 3, 11, 19, 38, 56))
+
+    def test_t11(self):
+        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "sub", "10"]))
+        self.assertEqual(arguments.get("taskid"), int(self.taskid))
+        self.assertIsNone(arguments.get("timestamp"))
+        self.assertIsNone(arguments.get("delta"))
+        self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56+01:00")
+        self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
+        self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+        self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
+                         datetime.datetime(2019, 2, 1, 19, 38, 56))

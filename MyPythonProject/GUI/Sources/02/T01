@@ -2,7 +2,7 @@
 SETLOCAL
 SET _cp=1252
 FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp%
-{% for source, extension, drive in collection %}
+{% for source, extension, drive in collection1 %}
     {% set switch = "CE" %}
     {% if loop.first %}
         {% set switch = "EC" %}
@@ -10,6 +10,11 @@ FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 
 REM  {{loop.index }}. Sync *.{{ extension|lower() }} files.
 XXCOPY.EXE /{{ switch }} "{{ source }}\*\?*\*{{ extension }}" "{{ drive }}\" /KS /BI /FF /Y /oA:%_XXCOPYLOG%
+{% endfor %}
+
+REM Remove extra files.
+{% for source, drive in collection2 %}
+XXCOPY.EXE /CE "{{ drive }}\" "{{ source }}\" /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
 {% endfor %}
 
 ENDLOCAL

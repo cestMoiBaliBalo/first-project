@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import operator
 
 from . import shared
 
@@ -110,12 +111,6 @@ group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path 
 group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
 
 #     =========
-#  4. PARSER 4.
-#     =========
-# readtable = argparse.ArgumentParser(parents=[database_parser])
-# readtable.add_argument("table", choices=["tasks"], help="Read table")
-
-#     =========
 #  5. PARSER 5.
 #     =========
 loglevel_parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, add_help=False)
@@ -134,15 +129,22 @@ subset_parser.add_argument("--artist", nargs="*", help="Subset digital albums by
 #     =========
 tasks_parser = argparse.ArgumentParser()
 tasks_parser.set_defaults(table="tasks")
-subparser = tasks_parser.add_subparsers(dest="action")
-parser_select = subparser.add_parser("select", argument_default=argparse.SUPPRESS, parents=[database_parser])
-parser_select.add_argument("taskid", type=int)
-parser_select.add_argument("--days", default=10, type=int)
-parser_select.add_argument("--debug", action="store_true")
-parser_select.add_argument("--dontcreate", action="store_true")
-parser_update = subparser.add_parser("update", argument_default=argparse.SUPPRESS, parents=[database_parser])
-parser_update.add_argument("taskid", type=int)
-parser_update.add_argument("--debug", action="store_true")
+tasks_parser.set_defaults(debug=True)
+tasks_parser.add_argument("taskid", type=int)
+subparser1 = tasks_parser.add_subparsers(dest="action")
+parser_check = subparser1.add_parser("check", argument_default=argparse.SUPPRESS, parents=[database_parser])
+parser_check.add_argument("--delta", default="10", type=int)
+parser_update = subparser1.add_parser("update", argument_default=argparse.SUPPRESS, parents=[database_parser])
+group = parser_update.add_mutually_exclusive_group()
+group.add_argument("--timestamp", type=int)
+group.add_argument("--datstring")
+subparser2 = parser_update.add_subparsers(dest="operation")
+parser_add = subparser2.add_parser("add", argument_default=argparse.SUPPRESS)
+parser_add.set_defaults(func=operator.add)
+parser_add.add_argument("days", type=int)
+parser_sub = subparser2.add_parser("sub", argument_default=argparse.SUPPRESS)
+parser_sub.set_defaults(func=operator.sub)
+parser_sub.add_argument("days", type=int)
 
 #     =========
 #  8. PARSER 8.
