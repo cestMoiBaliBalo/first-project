@@ -46,7 +46,7 @@ def exclude_allbut_checked_extensions(curdir: str, *files: str, extensions: Opti
 # ======
 class MainFrame(wx.Frame):
 
-    def __init__(self, parent, config) -> None:
+    def __init__(self, parent, config, repository) -> None:
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Sync Audio Repository", pos=wx.DefaultPosition, size=wx.Size(-1, -1), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
 
         # -----
@@ -71,6 +71,15 @@ class MainFrame(wx.Frame):
         self._enable_sync()
         self._enable_run()
         self._set_statusbar("Choose repository", "", "")
+
+        # ----- A repository has been forced.
+        if repository:
+            self.m_repositories.SetCheckedStrings([repository])
+            self._repositoryid = next(iter(self.m_repositories.GetCheckedItems()))
+            self._get_artists(repository)
+            self._enable_checkall()
+            self._enable_sync()
+            self._enable_run()
 
     def _init_interface(self) -> None:
         """
@@ -175,6 +184,9 @@ class MainFrame(wx.Frame):
         """
         if self._repositoryid is not None:
             self.m_repositories.Check(self._repositoryid, False)
+            self._init_variables()
+            self._init_albums()
+            self._init_artists()
 
         # Get box ID.
         chkb_id = event.GetInt()  # type: int
@@ -182,26 +194,7 @@ class MainFrame(wx.Frame):
 
         # Box has been checked: display artists respective to the repository.
         if self.m_repositories.IsChecked(chkb_id):
-
-            # Get repository full path.
-            self._repository = self._configuration["repositories"][self.m_repositories.GetString(chkb_id)]
-
-            # Get compression type.
-            compression = self._configuration["compression"][self._repository]  # type: str
-
-            # Get allowed extensions.
-            self._extensions = self._configuration["extensions"][compression]  # type: List[str]
-
-            # Get artists with files matching allowed extensions.
-            self._artists = OrderedDict(sorted(get_artists(*self._extensions), key=itemgetter(0)))
-            self.m_artists.Set(list(self._artists))
-            self._total_artists = self.m_artists.GetCount()
-
-            # Set status bar.
-            status2 = "Choose an artist"
-            if self._synced:
-                status2 = "Choose an artist or click Run button"
-            self._set_statusbar(self._repository, status2, "")
+            self._get_artists(self.m_repositories.GetString(chkb_id))
 
         # Box has been unchecked.
         elif not self.m_repositories.IsChecked(chkb_id):
@@ -363,6 +356,33 @@ class MainFrame(wx.Frame):
         for index in range(self._total_albums):
             self.m_albums.Check(index, check=check)
 
+    def _get_artists(self, repository) -> None:
+        """
+
+        :param repository:
+        :return:
+        """
+
+        # Get repository full path.
+        self._repository = self._configuration["repositories"][repository]
+
+        # Get compression type.
+        compression = self._configuration["compression"][self._repository]  # type: str
+
+        # Get allowed extensions.
+        self._extensions = self._configuration["extensions"][compression]  # type: List[str]
+
+        # Get artists with files matching allowed extensions.
+        self._artists = OrderedDict(sorted(get_artists(*self._extensions), key=itemgetter(0)))
+        self.m_artists.Set(list(self._artists))
+        self._total_artists = self.m_artists.GetCount()
+
+        # Set status bar.
+        status2 = "Choose an artist"
+        if self._synced:
+            status2 = "Choose an artist or click Run button"
+        self._set_statusbar(self._repository, status2, "")
+
     @property
     def sync_audiofiles(self):
         return self._sync
@@ -393,11 +413,12 @@ if __name__ == '__main__':
                         nargs="?",
                         default=os.path.join(os.path.expandvars("%TEMP%"), "xxcopy.cmd"),
                         help="DOS commands file running XXCOPY statements.")
+    parser.add_argument("--repository")
     arguments = parser.parse_args()
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "audio_config.yml"))
+    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "audio_config.yml"), arguments.repository)
     interface.Show()
     app.MainLoop()
     if interface.sync_audiofiles:

@@ -151,7 +151,7 @@ REM ----------------------------------------
 REM Springsteen 200* bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 28 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1222562470
     POPD
     GOTO MENU
@@ -163,7 +163,7 @@ REM Springsteen 2009 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 27 (
     CLS
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1068554868
     POPD
     ECHO:
@@ -177,7 +177,7 @@ REM ----------------------------------------
 REM Springsteen 201* bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 26 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1306312508
     POPD
     GOTO MENU
@@ -189,7 +189,7 @@ REM Springsteen 2016 bootlegs series backup.
 REM ----------------------------------------
 IF ERRORLEVEL 25 (
     CLS
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
     POPD
     ECHO:
@@ -330,9 +330,9 @@ IF ERRORLEVEL 19 (
 )
 
 
-REM ------------------------
-REM MyCloud full video sync.
-REM ------------------------
+REM -------------------
+REM MyCloud video sync.
+REM -------------------
 REM Delete extra files.
 IF ERRORLEVEL 18 (
     GOTO MENU
@@ -356,27 +356,17 @@ IF ERRORLEVEL 18 (
 )
 
 
-REM ------------------------
-REM MyCloud full audio sync.
-REM ------------------------
-REM Delete extra files.
+REM -------------------
+REM MyCloud audio sync.
+REM -------------------
 IF ERRORLEVEL 17 (
-    GOTO MENU
     CLS
-
-:MENU17
-    SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy local FLAC audio files to MyCloud." _answer
-    IF [!_answer!] EQU [N] GOTO FIN18
-    CLS
-    XXCOPY "F:\*\?*\*.flac" "\\DISKSTATION\music\" /EX:"%_exclusions%" /CLONE /PZ0 /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$.lst" /FM:L /oA:%_XXCOPYLOG%
-    ECHO:
-    ECHO:
-    PAUSE
-
-:FIN17
+    DEL "%TEMP%\%_xxcopy%" 2> NUL
+    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
+    python main.py --repository MyCloud
+    IF NOT ERRORLEVEL 1 CALL :TOTO
+    POPD
     GOTO MENU
-
 )
 
 
@@ -411,12 +401,6 @@ REM ----------------
 IF ERRORLEVEL 15 GOTO P01
 
 
-REM ---------------------------
-REM MyCloud partial audio sync.
-REM ---------------------------
-IF ERRORLEVEL 14 GOTO MENU
-
-
 REM ------------------------------
 REM Sync local audio repositories.
 REM ------------------------------
@@ -425,16 +409,7 @@ IF ERRORLEVEL 13 (
     DEL "%TEMP%\%_xxcopy%" 2> NUL
     PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
     python main.py
-    IF !ERRORLEVEL! EQU 0 (
-        PUSHD "%TEMP%"
-        IF EXIST "%_xxcopy%" (
-            CALL "%_xxcopy%"
-            ECHO:
-            ECHO:
-            PAUSE
-        )
-        POPD
-    )
+    IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
 )
@@ -517,7 +492,7 @@ REM --------------
 REM Artists [U-Z].
 REM --------------
 IF ERRORLEVEL 6 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 204959095
     POPD
     GOTO MENU
@@ -528,7 +503,7 @@ REM --------------
 REM Artists [P-T].
 REM --------------
 IF ERRORLEVEL 5 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1535780732
     POPD
     GOTO MENU
@@ -539,7 +514,7 @@ REM --------------
 REM Artists [K-O].
 REM --------------
 IF ERRORLEVEL 4 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1196865155
     POPD
     GOTO MENU
@@ -550,7 +525,7 @@ REM --------------
 REM Artists [F-J].
 REM --------------
 IF ERRORLEVEL 3 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 1674209532
     POPD
     GOTO MENU
@@ -561,7 +536,7 @@ REM --------------
 REM Artists [A-E].
 REM --------------
 IF ERRORLEVEL 2 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030
     POPD
     GOTO MENU
@@ -572,7 +547,7 @@ REM ---------------------------
 REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
-    PUSHD "G:\Computing\MyPythonProject\venv36\Scripts"
+    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
     python %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
     POPD
     GOTO MENU
@@ -585,177 +560,6 @@ REM ==========
 :EXIT
 CLS
 EXIT /B 0
-
-
-REM ==============================================================
-REM Specific parts for partially syncing MyCloud with audio files.
-REM ==============================================================
-
-
-:P00
-SET _tempvar=
-CALL:HEADER2
-ECHO:
-ECHO:
-ECHO: Available options:
-ECHO:
-ECHO:  1. By parent folder (default^).
-ECHO:  2. By artist folder.
-ECHO:
-ECHO:
-SET /P _choice=Please choose an option or press ENTER to choose the default option: || SET _choice=1
-
-REM 1. %_choice% must be an integer number.
-FOR /F "tokens=* delims=12" %%A IN ("%_choice%") DO SET _tempvar=%%A
-IF DEFINED _tempvar GOTO P00
-
-REM 3. Go to the respective script.
-SET _chosenopt=%_choice%
-GOTO P0
-
-:END_P00
-GOTO MENU
-
-
-:P0
-SET _key=
-SET _choice=
-SET _difference=
-CALL:HEADER2
-ECHO:
-IF %_chosenopt% EQU 1 GOTO P1
-IF %_chosenopt% EQU 2 GOTO P2
-:END_P0
-GOTO MENU
-
-
-:P1
-SET _tempvar=
-ECHO: Available parent folders:
-ECHO:
-PUSHD "F:\"
-SET /A "_num=0"
-FOR /D %%G IN ("*") DO (
-    SET /A "_num+=1"
-    SET _folder=%%G
-    SET _elem[!_num!]=!_folder!
-    IF !_num! LEQ 9 ECHO:  !_num!. !_folder!
-    IF !_num! GTR 9 ECHO: !_num!. !_folder!
-)
-POPD
-ECHO:
-ECHO:
-SET /P _choice=Please choose a folder or press ENTER to quit: || GOTO END_P1
-
-REM 1. %_choice% must be an integer number.
-FOR /F "tokens=* delims=0123456789" %%A IN ("%_choice%") DO SET _tempvar=%%A
-IF DEFINED _tempvar GOTO P1
-
-REM 2. %_choice% must be lower or equal than the number of available letters.
-SET _ok=1
-IF %_choice% LSS 1 SET _ok=0
-IF %_choice% GTR %_num% SET _ok=0
-IF %_ok% EQU 0 GOTO P1
-
-REM 3. Grab folder once %_choice% is checked as valid.
-FOR %%C IN (%_choice%) DO SET _key=!_elem[%%C]!
-
-GOTO P3
-:END_P1
-GOTO MENU
-
-
-:P2
-SET _tempvar=
-ECHO: Available artist folders:
-ECHO:
-PUSHD "F:\"
-SET /A "_num=0"
-FOR /D %%G IN ("*") DO (
-    SET _curdir=
-    POPD
-    FOR %%H IN ("F:\%%G") DO SET _curdir=%%~fH
-    PUSHD !_curdir!
-    FOR /D %%I IN ("*") DO (
-        SET /A "_num+=1"
-        SET _folder=%%I
-        SET _elem[!_num!]=!_folder!
-        IF !_num! LEQ 9 ECHO:  !_num!. !_folder!
-        IF !_num! GTR 9 ECHO: !_num!. !_folder!
-    )
-)
-POPD
-ECHO:
-ECHO:
-SET /P _choice=Please choose a folder or press ENTER to quit: || GOTO END_P2
-python %_AUDIOCD%\Shared\check_choice.py %_choice% %_num%
-IF ERRORLEVEL 1 GOTO P2
-FOR %%C IN (%_choice%) DO SET _key=!_elem[%%C]!
-
-GOTO P3
-:END_P2
-GOTO MENU
-
-
-:P3
-
-REM 1. Check modified files.
-CALL:HEADER2
-SET _answer=
-CALL :QUESTION "YN" "20" "N" "Would you like to check if sync is required?" _answer
-
-REM 2 Don't check modified files.
-IF [%_answer%] EQU [N] GOTO P4
-
-REM 3. Check modified files.
-CLS
-SET _src="F:\?*\%_key%\*\?*\*.flac"
-SET _dst="\\DISKSTATION\music\"
-SET _answer=
-IF %_chosenopt% EQU 1 (
-    SET _src="F:\%_key%\*\?*\*.flac"
-    SET _dst="\\DISKSTATION\music\%_key%\"
-)
-XXCOPY %_src% %_dst% /EX:"%_exclusions%" /BI /FF /L /oA:%_XXCOPYLOG%
-IF %ERRORLEVEL% EQU 0 SET /A _difference=1
-ECHO:
-ECHO:
-
-REM 4. Sync is not required.
-IF NOT DEFINED _difference (
-    CALL :QUESTION "YN" "20" "N" "Sync is not required. Would you like to continue?" _answer
-    IF [!_answer!] EQU [N] GOTO END_P3
-)
-
-REM 5. Sync is required.
-IF DEFINED _difference (
-    CALL :QUESTION "YN" "20" "N" "Sync is required. Would you like to continue?" _answer
-    IF [!_answer!] EQU [N] GOTO END_P3
-)
-
-GOTO P4
-:END_P3
-GOTO MENU
-
-
-REM 6. Continue flow by confirming or aborting.
-:P4
-CALL:HEADER2
-ECHO:
-ECHO:
-SET _answer=
-CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy local Hi-Res audio files to MyCloud." _answer
-IF [%_answer%] EQU [N] GOTO END_P4
-CLS
-ECHO:
-XXCOPY /EC %_src% %_dst% /EX:"%_exclusions%" /BI /FF /Y /KS /Fo:"%_COMPUTING%\Log\copied_/$YMMDD_K_HHNNSS$.lst" /FM:L /oA:%_XXCOPYLOG%
-XXCOPY /CE "\\DISKSTATION\music\" "F:\" /X:*recycle\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
-
-ECHO:
-ECHO:
-PAUSE
-:END_P4
-GOTO MENU
 
 
 REM ===================================
@@ -859,19 +663,33 @@ POPD
 GOTO MENU
 
 
-:HEADER2
-CLS
-ECHO:
-ECHO: ========================================
-ECHO: =   MYCLOUD PARTIAL AUDIO FILES SYNC   =
-ECHO: ========================================
-EXIT /B 0
-
-
 :QUESTION
 SET %5=Y
 ECHO:
 ECHO:
 CHOICE /C %~1 /T %~2 /N /D %~3 /M "%~4 Press [Y] for Yes or [N] for No."
 IF ERRORLEVEL 2 SET %5=N
+EXIT /B 0
+
+
+:TOTO
+PUSHD "%TEMP%"
+IF EXIST "%_xxcopy%" (
+    CLS
+    ECHO The following XXCOPY commands will be run:
+    ECHO:
+    ECHO:
+    FOR /F "usebackq delims=. tokens=1,*" %%I IN ("%_xxcopy%") DO IF [%%I] EQU [XXCOPY] CALL ECHO %%I.%%J
+    ECHO:
+    ECHO:
+    CALL :QUESTION "YN" "90" "N" "Would you like to continue? " _answer
+    IF [!_answer!] EQU [Y] (
+        CLS
+        CALL "%_xxcopy%"
+        ECHO:
+        ECHO:
+        PAUSE
+    )
+)
+POPD
 EXIT /B 0
