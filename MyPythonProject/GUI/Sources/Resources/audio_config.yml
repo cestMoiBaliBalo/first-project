@@ -2,11 +2,13 @@ repositories:
   "Lossless audio files 1": "G:\\Music\\Lossless1"
   "Lossless audio files 2": "G:\\Music\\Lossless2"
   "Lossy audio files": "G:\\Music\\Lossy"
+  "MyCloud": "\\\\diskstation\\music"
 
 compression:
   "G:\\Music\\Lossless1": lossless
   "G:\\Music\\Lossless2": lossless
   "G:\\Music\\Lossy": lossy
+  "\\\\diskstation\\music": lossless
 
 patterns:
   lossless:
