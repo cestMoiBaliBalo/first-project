@@ -122,6 +122,19 @@ IF ERRORLEVEL 33 (
 )
 
 
+IF ERRORLEVEL 32 (
+    IF EXIST "\\diskstation\music" (
+        IF EXIST "%_COMPUTING%\rippedtracks.cmd" (
+            CLS
+            PUSHD "G:\Computing\MyPythonProject\AudioCD\Grabber"
+            python DigitalAudioFilesCopy.py
+            POPD
+        )
+    )
+    GOTO MENU
+)
+
+
 REM --------------------------------
 REM Update audio albums played date.
 REM --------------------------------
