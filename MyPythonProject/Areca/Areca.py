@@ -14,8 +14,6 @@ from xml.etree.ElementTree import parse
 
 import yaml
 
-from Applications.shared import ARECA
-
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
@@ -64,6 +62,7 @@ logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(PureWindowsPat
 # ==========
 # Constants.
 # ==========
+ARECA = str(PureWindowsPath("C:/Program Files", "Areca", "areca_cl.exe"))
 TABS = 4
 
 # ================

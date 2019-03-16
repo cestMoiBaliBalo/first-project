@@ -1044,7 +1044,7 @@ def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3
 
 
     :how to use it:
-    collection = list(format_collection(somecollection, None, group=15))
+    collection = list(format_collection(somecollection, group=15))
     template.render(collection=collection[somepage])
     """
     out_collection = []  # type: Iterable[Tuple[Any, ...]]

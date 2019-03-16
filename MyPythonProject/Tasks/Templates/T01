@@ -1,0 +1,29 @@
+
+       {{ root }} content
+
+
+{% for file in dirs %}
+{{ loop.index|rjustify }}. {{ file }}
+{% endfor %}
+
+
+
+{% for key, value in extensions %}
+{{ loop.index|rjustify }}. {{ key|upper }}: {{ value }}
+{% endfor %}
+
+
+
+{% for key, value in directories %}
+{{ loop.index|rjustify }}. {{ key }}: {{ value }}
+{% endfor %}
+{% if empty_dirs %}
+
+
+
+    {% for directory in empty_directories %}
+{{ loop.index|rjustify }}. {{ directory }}
+    {% endfor %}
+{% endif %}
+
+
