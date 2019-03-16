@@ -93,11 +93,11 @@ IF ERRORLEVEL 34 (
 IF ERRORLEVEL 33 (
 :STEP_33
     CLS
-    TYPE %_COMPUTING%\digital_bootlegs_audiotags_bs.txt
+    TYPE %_RESOURCES%\digital_bootlegs_audiotags_bs.txt
     ECHO:
     ECHO:
     ECHO:
-    SET /P _answer="Enter action : "
+    SET /P _answer=Enter requested action number: 
     IF [!_answer!] EQU [99] GOTO MENU
     IF [!_answer!] EQU [2] (
         IF EXIST %TEMP%\%_xxcopy% (
@@ -123,14 +123,21 @@ IF ERRORLEVEL 33 (
 
 
 IF ERRORLEVEL 32 (
+    SET _commandsfile=rippedtracks.cmd
+    SET _tracksfile=rippedtracks.txt
     IF EXIST "\\diskstation\music" (
-        IF EXIST "%_COMPUTING%\rippedtracks.cmd" (
+        PUSHD %_RESOURCES%
+        IF EXIST !_commandsfile! (
             CLS
-            PUSHD "G:\Computing\MyPythonProject\AudioCD\Grabber"
-            python DigitalAudioFilesCopy.py
-            POPD
+            CALL !_commandsfile! && DEL !_commandsfile! && DEL !_tracksfile! 2> NUL
+            ECHO:
+            ECHO:
+            PAUSE
         )
+        POPD
     )
+    SET _commandsfile=
+    SET _tracksfile=
     GOTO MENU
 )
 
@@ -160,55 +167,48 @@ IF ERRORLEVEL 29 (
 )
 
 
-REM ----------------------------------------
-REM Springsteen 200* bootlegs series backup.
-REM ----------------------------------------
+REM ------------------------
+REM Additional backup tasks.
+REM ------------------------
 IF ERRORLEVEL 28 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1222562470
-    POPD
-    GOTO MENU
-)
+    SET _error=0
 
-
-REM ----------------------------------------
-REM Springsteen 2009 bootlegs series backup.
-REM ----------------------------------------
-IF ERRORLEVEL 27 (
+:TARGETS
     CLS
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1068554868
+    SET _answer=
+    SET _target=
+    PUSHD %_RESOURCES%
+    TYPE backup_menu.txt
+    SET /P _answer= || GOTO TARGETS
+    IF [!_answer!] EQU [99] (
+        POPD
+        GOTO END_TARGETS
+    )
+    FOR /F "usebackq delims=| tokens=1,2" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
+    IF NOT DEFINED _target (
+        POPD
+        SET /A "_error+=1"
+        GOTO TARGETS
+    )
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music !_target!
+    POPD
+    CALL "%_COMPUTING%\environment.cmd" D
+    POPD
     POPD
     ECHO:
     ECHO:
     PAUSE
+    GOTO TARGETS
+
+:END_TARGETS
+    SET _answer=
+    SET _error=
+    SET _target=
     GOTO MENU
-)
 
-
-REM ----------------------------------------
-REM Springsteen 201* bootlegs series backup.
-REM ----------------------------------------
-IF ERRORLEVEL 26 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1306312508
-    POPD
-    GOTO MENU
-)
-
-
-REM ----------------------------------------
-REM Springsteen 2016 bootlegs series backup.
-REM ----------------------------------------
-IF ERRORLEVEL 25 (
-    CLS
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1066663185
-    POPD
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
 )
 
 
@@ -485,18 +485,17 @@ IF ERRORLEVEL 9 (
 )
 
 
-REM -----------------------------------------
-REM Bruce Springsteen bootlegs series backup.
-REM -----------------------------------------
+REM -------------------------------------
+REM Toggle to python virtual environment.
+REM -------------------------------------
 IF ERRORLEVEL 8 (
-    GOTO MENU
-)
-
-
-REM ---------------------------------
-REM Pearl Jam bootlegs series backup.
-REM ---------------------------------
-IF ERRORLEVEL 7 (
+    CLS
+    SET /P _answer=Please enter virtual environment name: 
+    IF EXIST "%_PYTHONPROJECT%\VirtualEnv\!_answer!" (
+        CALL "%_COMPUTING%\environment.cmd" A !_answer!
+        CMD /K PROMPT [!_answer! environment]$G
+        CALL "%_COMPUTING%\environment.cmd" D
+    )
     GOTO MENU
 )
 
@@ -505,9 +504,12 @@ REM --------------
 REM Artists [U-Z].
 REM --------------
 IF ERRORLEVEL 6 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 204959095
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 204959095
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -516,9 +518,12 @@ REM --------------
 REM Artists [P-T].
 REM --------------
 IF ERRORLEVEL 5 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1535780732
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 1535780732
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -527,9 +532,12 @@ REM --------------
 REM Artists [K-O].
 REM --------------
 IF ERRORLEVEL 4 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1196865155
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 1196865155
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -538,9 +546,12 @@ REM --------------
 REM Artists [F-J].
 REM --------------
 IF ERRORLEVEL 3 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 1674209532
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 1674209532
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -549,9 +560,12 @@ REM --------------
 REM Artists [A-E].
 REM --------------
 IF ERRORLEVEL 2 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030
+    CLS
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 854796030
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -560,9 +574,11 @@ REM ---------------------------
 REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
-    PUSHD "%_PYTHONPROJECT%\venv36\Scripts"
-    python %_PYTHONPROJECT%\Areca\Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
+    CALL "%_COMPUTING%\environment.cmd" A venv36
+    PUSHD %_PYTHONPROJECT%\Areca
+    python Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
     POPD
+    CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
 )
 
@@ -593,87 +609,9 @@ SET _argument=2018
 
 
 :P01A
-SET _images=
-SET _cmdfile=
-DEL "cmdfile.txt" 2> NUL
-CLS
-ECHO Script is scanning MyCloud collection. Please be patient as it may take some time.
-PUSHD "%_PYTHONPROJECT%\Images"
-python Numbering.py "%_argument%" --debug
-
-
-REM --------------
-REM Rename images.
-REM --------------
-IF ERRORLEVEL 11 (
-    PUSHD "%TEMP%"
-    IF EXIST "cmdfile.txt" (
-        FOR /F "usebackq delims=| tokens=1,2" %%A IN ("cmdfile.txt") DO (
-            SET _images=%%~A
-            SET _cmdfile=%%~B
-        )
-        ECHO:
-        ECHO:
-        ECHO !_images! image^(s^) need^(s^) to be renamed. Here is the renaming script:
-        ECHO:
-        ECHO:
-        TYPE "!_cmdfile!"
-        CALL :QUESTION "YN" "60" "N" "Please confirm you want to run this script." _answer
-        IF [!_answer!] EQU [N] GOTO P01B
-        CLS
-        "!_cmdfile!"
-        ECHO:
-        ECHO:
-        PAUSE
-        GOTO P01B
-    )
-)
-
-
-REM ------------
-REM Move images.
-REM ------------
-IF ERRORLEVEL 10 (
-    PUSHD "%TEMP%"
-    IF EXIST "cmdfile.txt" (
-        FOR /F "usebackq delims=| tokens=1,2" %%A IN ("cmdfile.txt") DO (
-            SET _images=%%~A
-            SET _cmdfile=%%~B
-        )
-        ECHO:
-        ECHO:
-        ECHO !_images! image^(s^) need^(s^) at first to be moved. Here is the moving script:
-        ECHO:
-        ECHO:
-        TYPE "!_cmdfile!"
-        CALL :QUESTION "YN" "60" "N" "Please confirm you want to run this script." _answer
-        IF [!_answer!] EQU [N] GOTO P01B
-        CLS
-        "!_cmdfile!"
-        ECHO:
-        ECHO:
-        PAUSE
-        POPD
-        POPD
-        GOTO P01A
-    )
-)
-
-
-REM ----------------
-REM No images found.
-REM ----------------
-IF ERRORLEVEL 0 (
-    ECHO:
-    ECHO:
-    ECHO Any images to rename haven't been found. Script will exit. && PAUSE && POPD && GOTO MENU
-)
-
-
-:P01B
-POPD
-POPD
-GOTO MENU
+CALL %_RESOURCES%\images.cmd %_argument%
+IF ERRORLEVEL 11 GOTO MENU
+IF ERRORLEVEL 10 GOTO P01A
 
 
 :QUESTION

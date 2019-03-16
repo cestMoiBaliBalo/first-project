@@ -208,7 +208,8 @@ def _insert_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
                 logobj.info("{0:>3d} album(s) inserted.".format(_albums_changes))
 
             # Insert file.
-            _conn.execute("INSERT INTO files (artistid, albumid, file, extension, utc_created) VALUES (?, ?, ?, ?, ?)", (artistid, albumid, file, extension, datetime.utcnow()))
+            with suppress(sqlite3.IntegrityError):
+                _conn.execute("INSERT INTO files (artistid, albumid, file, extension, utc_created) VALUES (?, ?, ?, ?, ?)", (artistid, albumid, file, extension, datetime.utcnow()))
             _files_changes = _conn.total_changes - _total_changes - _albums_changes - _artists_changes
             _total_changes = _conn.total_changes
             if logobj:
@@ -232,24 +233,26 @@ def _remove_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
         _conn = _stack.enter_context(DatabaseConnection(os.path.expandvars("%_XREFERENCES%")))
         _stack.enter_context(_conn)
         _collection = iter(collection)
+        _total_changes = 0  # type: int
         for artistid, albumid, _, _, _, _, _, _ in _collection:
             # Delete file(s).
             _conn.execute("DELETE FROM files WHERE artistid=? AND albumid=?", (artistid, albumid))
-            _files_changes = _conn.total_changes
+            _files_changes = _conn.total_changes - _total_changes
             if logobj:
                 logobj.info("{0:>3d} file(s) removed.".format(_files_changes))
 
             # Delete album(s).
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("DELETE FROM albums WHERE artistid=? AND albumid=?", (artistid, albumid))
-            _albums_changes = _conn.total_changes - _files_changes
+            _albums_changes = _conn.total_changes - _files_changes - _total_changes
             if logobj:
                 logobj.info("{0:>3d} album(s) removed.".format(_albums_changes))
 
             # Delete artist.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("DELETE FROM artists WHERE artistid=?", (artistid,))
-            _artists_changes = _conn.total_changes - _albums_changes - _files_changes
+            _artists_changes = _conn.total_changes - _albums_changes - _files_changes - _total_changes
+            _total_changes = _conn.total_changes
             if logobj:
                 logobj.info("{0:>3d} artist(s) removed.".format(_artists_changes))
 

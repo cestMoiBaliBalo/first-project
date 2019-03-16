@@ -269,8 +269,8 @@ IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.
 POPD
 POPD
 ECHO Done.
-IF DEFINED _inserted ECHO %_inserted% albums inserted.
-IF DEFINED _removed ECHO %_removed% albums removed.
+IF DEFINED _inserted ECHO %_inserted% album(s^) inserted.
+IF DEFINED _removed ECHO %_removed% album(s^) removed.
 SHIFT
 GOTO MAIN
 

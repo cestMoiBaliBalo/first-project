@@ -41,5 +41,5 @@ arguments = parser.parse_args()
 path = PureWindowsPath(arguments.audiofile)
 parts = len(list(path.parents))
 dst = PureWindowsPath("//diskstation/music") / path.parents[parts - 3].parts[1] / path.parents[parts - 3].parts[2] / path.name[:12]
-with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "rippedtracks.txt"), "a", encoding="UTF-8") as stream:
-    stream.write(f"{arguments.audiofile}|{dst}\r\n")
+with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "rippedtracks.txt"), mode="a", encoding="UTF-8") as stream:
+    stream.write(f"{arguments.audiofile}|{dst}\n")

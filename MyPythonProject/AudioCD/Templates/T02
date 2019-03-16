@@ -1,0 +1,17 @@
+@ECHO off
+SETLOCAL
+SET _count=0
+SET _cp=1252
+FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp%
+{% for src, dst in collection %}
+    {% set switch = "CE" %}
+    {% if loop.first %}
+        {% set switch = "EC" %}
+    {% endif %}
+XXCOPY.EXE /{{ switch }} "{{ src }}" "{{ dst }}" /I /Y /oA:%_XXCOPYLOG% && SET /A "_count+=1"
+{% endfor %}
+ECHO:
+ECHO:
+ECHO: %_count% file(s^) successfully copied.
+ENDLOCAL
+EXIT /B 0

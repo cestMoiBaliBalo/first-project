@@ -34,18 +34,19 @@ with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resourc
 # Constants.
 # ==========
 COMPUTING = os.path.join(os.path.expandvars("%_COMPUTING%"))
+RIPPEDTRACKS = "rippedtracks"
 
 # ============
 # Main script.
 # ============
 
 # Define template.
-template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(that_file.parents[0])))
-template.set_template(T1="T01")
+template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(that_file.parents[1] / "Templates")))
+template.set_template(template="T02")
 
 # Set copy commands file.
 with ExitStack() as stack:
-    fr = stack.enter_context(open(os.path.join(COMPUTING, "rippedtracks.txt"), encoding="UTF-8"))
-    fw = stack.enter_context(open(os.path.join(COMPUTING, "rippedtracks.cmd"), mode="w", encoding="UTF-8"))
+    fr = stack.enter_context(open(os.path.join(COMPUTING, "Resources", f"{RIPPEDTRACKS}.txt"), encoding="UTF-8"))
+    fw = stack.enter_context(open(os.path.join(COMPUTING, "Resources", f"{RIPPEDTRACKS}.cmd"), mode="w", encoding="UTF-8"))
     tracks = filter(None, itertools.chain.from_iterable([line.splitlines() for line in fr]))
-    fw.write(getattr(template, "T1").render(collection=(track.split("|") for track in tracks)))
+    fw.write(getattr(template, "template").render(collection=(track.split("|") for track in tracks)))
