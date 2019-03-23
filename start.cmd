@@ -31,7 +31,7 @@ SET _xxcopy=xxcopy.cmd
 REM ===============
 REM Main algorithm.
 REM ===============
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp%
+FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
 
 
 REM     ------
@@ -56,8 +56,7 @@ IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
 IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
-IF "%~1" EQU "21" GOTO STEP21
-IF "%~1" EQU "22" GOTO STEP22
+IF "%~1" EQU "23" GOTO STEP23
 IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
 SHIFT
@@ -122,8 +121,38 @@ SHIFT
 GOTO MAIN
 
 
+REM     --------------------------
+REM  7. Sync xreferences database.
+REM     --------------------------
+:STEP5
+ECHO:
+ECHO:
+ECHO ============================
+ECHO Sync audio cross-references.
+ECHO ============================
+SET _elapsed=
+SET _inserted=
+SET _removed=
+ECHO It can take a while.
+PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
+python main.py
+PUSHD "%TEMP%"
+IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
+    SET _elapsed=%%I
+    SET _inserted=%%J
+    SET _removed=%%K
+)
+POPD
+POPD
+ECHO Done.
+IF DEFINED _inserted ECHO %_inserted% album(s) inserted.
+IF DEFINED _removed ECHO %_removed% album(s) removed.
+SHIFT
+GOTO MAIN
+
+
 REM     ----------------------------
-REM  7. Backup %_COMPUTING% content.
+REM  8. Backup %_COMPUTING% content.
 REM     ----------------------------
 REM     /DB#14: removes files older than or equal to 14 days.
 REM     /IA   : copies files only if destination directory doesn't exist.
@@ -135,7 +164,7 @@ GOTO MAIN
 
 
 REM     -------------------------------------------------------------------------
-REM  8. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
+REM  9. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
 REM     -------------------------------------------------------------------------
 REM     Extra files are deleted.
 :STEP7
@@ -145,7 +174,7 @@ GOTO MAIN
 
 
 REM     --------------------
-REM  9. Clone PDF documents.
+REM 10. Clone PDF documents.
 REM     --------------------
 :STEP9
 XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "z:\Z123456789\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -155,7 +184,7 @@ GOTO MAIN
 
 
 REM     -----------------
-REM 10. Clone album arts.
+REM 11. Clone album arts.
 REM     -----------------
 :STEP10
 XXCOPY "%_MYDOCUMENTS%\Album Art\*\*?\*.jpg" "z:\Z123456790\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -164,7 +193,7 @@ GOTO MAIN
 
 
 REM     ---------------------------
-REM 11. Clone MP3Tag configuration.
+REM 12. Clone MP3Tag configuration.
 REM     ---------------------------
 :STEP11
 XXCOPY "%APPDATA%\MP3Tag\" "z:\Z123456791\" /IP /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -173,16 +202,16 @@ GOTO MAIN
 
 
 REM     -------------------------------
-REM 12. Delete GNUCash sandbox content.
+REM 13. Delete GNUCash sandbox content.
 REM     -------------------------------
 :STEP13
 SET _errorlevel=
 SET _taskid=123456798
 CALL :CHECK_TASK %_taskid% "8" _errorlevel
 IF [%_errorlevel%] EQU [1] (
-    ECHO -------------------------------
+    ECHO ===============================
     ECHO Delete GNUCash sandbox content.
-    ECHO -------------------------------
+    ECHO ===============================
     "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && ECHO GNUCash sandbox content successfully removed.
     CALL :UPDATE_TASK %_taskid% _errorlevel
 )
@@ -191,7 +220,7 @@ GOTO MAIN
 
 
 REM     -----------------
-REM 13. Backup documents.
+REM 14. Backup documents.
 REM     -----------------
 :STEP18
 SET _directory=%TEMP%\tmp-Xavier
@@ -203,9 +232,9 @@ IF EXIST "y:" (
     IF [!_errorlevel!] EQU [1] (
         ECHO:
         ECHO:
-        ECHO ---------------------------------------
+        ECHO =======================================
         ECHO Backup personal documents to USB drive.
-        ECHO ---------------------------------------
+        ECHO =======================================
         "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
         SET _errorlevel=
         SET _taskid=123456802
@@ -223,9 +252,9 @@ IF EXIST "z:" (
     IF [!_errorlevel!] EQU [1] (
         ECHO:
         ECHO:
-        ECHO -----------------------------------------------
+        ECHO ===============================================
         ECHO Backup personal documents to external WD drive.
-        ECHO -----------------------------------------------
+        ECHO ===============================================
         "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
     )
     SET _workspace=
@@ -236,41 +265,36 @@ SHIFT
 GOTO MAIN
 
 
-REM     -------------------------
-REM 15. Backup AVCHD videos to X.
-REM     -------------------------
-:STEP24
-XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
+REM     --------------------------------------
+REM 15. Count extensions in local Audio drive.
+REM     --------------------------------------
+:STEP23
+ECHO:
+ECHO:
+ECHO ======================================
+ECHO Count extensions in local Audio drive.
+ECHO ======================================
+SET _count=counts.txt
+PUSHD %TEMP%
+DEL %_count% 2> NUL
+PUSHD G:\Computing\MyPythonProject\Tasks
+python toto.py "F:/" && python toto1.py --only_differences
+IF ERRORLEVEL 1 (
+    POPD
+    IF EXIST %_count% TYPE %_count%
+)
+IF NOT ERRORLEVEL 1 ECHO No differences found since the previous count.
+POPD
+SET _count=
 SHIFT
 GOTO MAIN
 
 
-REM     --------------------------
-REM 16. Sync xreferences database.
-REM     --------------------------
-:STEP5
-ECHO:
-ECHO:
-ECHO ----------------------------
-ECHO Sync audio cross-references.
-ECHO ----------------------------
-SET _elapsed=
-SET _inserted=
-SET _removed=
-ECHO It can take a while.
-PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
-python main.py
-PUSHD "%TEMP%"
-IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
-    SET _elapsed=%%I
-    SET _inserted=%%J
-    SET _removed=%%K
-)
-POPD
-POPD
-ECHO Done.
-IF DEFINED _inserted ECHO %_inserted% album(s^) inserted.
-IF DEFINED _removed ECHO %_removed% album(s^) removed.
+REM     -------------------------
+REM 16. Backup AVCHD videos to X.
+REM     -------------------------
+:STEP24
+XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 

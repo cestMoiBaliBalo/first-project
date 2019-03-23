@@ -16,7 +16,6 @@ from pathlib import PureWindowsPath
 from subprocess import PIPE, run
 from tempfile import TemporaryFile
 
-import jinja2
 import yaml
 
 from Applications.shared import DFTMONTHREGEX, DFTYEARREGEX, IMAGES_COLLECTION, TEMPLATE7, TemplatingEnvironment, UTF8, WRITE, now
@@ -341,7 +340,7 @@ if __name__ == "__main__":
         config = yaml.load(fp)
 
     # Template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Images")))
+    template = TemplatingEnvironment(path=PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Images")
     template.set_template(T1="T01", T2="T02")
 
     # -----

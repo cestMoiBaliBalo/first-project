@@ -1,0 +1,14 @@
+{% set collection, total, only_differences = collection %}
+{% if only_differences %}
+The following differences have been found since the previous count:
+{% endif %}
+
+---------      -----     ------   ----------
+Extension      After     Before   Difference
+---------      -----     ------   ----------
+{% for extension, current, previous, difference in collection %}
+{{ extension }}   {{ current }}   {{ previous }}   {{ difference }}
+{% endfor %}
+                                  ----------
+{{ total }}
+

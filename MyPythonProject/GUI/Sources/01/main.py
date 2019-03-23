@@ -12,7 +12,6 @@ from functools import partial
 from operator import itemgetter
 from typing import List, Optional, Set, Tuple
 
-import jinja2
 import wx  # type: ignore
 import yaml
 
@@ -403,7 +402,7 @@ if __name__ == '__main__':
     collection, level = [], 100  # type: List[Tuple[str, str]], int
 
     # Define template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(get_dirname(that_script)))
+    template = TemplatingEnvironment(path=get_dirname(that_script))
     template.set_template(T1="T01")
 
     # Parse input arguments.

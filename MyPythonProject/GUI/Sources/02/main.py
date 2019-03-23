@@ -12,7 +12,6 @@ from operator import itemgetter
 from pathlib import PurePath
 from typing import List, Tuple
 
-import jinja2
 import wx  # type: ignore
 import yaml
 
@@ -303,7 +302,7 @@ if __name__ == '__main__':
     level = 100  # type: int
 
     # Define template.
-    template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(_THATFILE.parent)))
+    template = TemplatingEnvironment(path=_THATFILE.parent)
     template.set_template(T1="T01")
 
     # Parse input arguments.
