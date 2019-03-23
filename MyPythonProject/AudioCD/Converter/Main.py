@@ -11,7 +11,6 @@ from pathlib import PurePath
 from typing import List, Mapping, Tuple
 
 import yaml
-from jinja2 import FileSystemLoader
 
 from Applications import patterns
 from Applications.AudioCD.shared import DFTPATTERN
@@ -54,7 +53,7 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(_THATF
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(loader=FileSystemLoader(os.fspath(_THATFILE.parents[1] / "Templates"))).environment.get_template("Tags")
+_template = TemplatingEnvironment(path=os.fspath(_THATFILE.parents[1] / "Templates")).environment.get_template("Tags")
 
 # ============
 # Main script.

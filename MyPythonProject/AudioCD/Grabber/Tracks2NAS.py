@@ -7,7 +7,6 @@ import os
 from contextlib import ExitStack
 from pathlib import PurePath
 
-import jinja2
 import yaml
 
 from Applications.shared import TemplatingEnvironment, get_dirname
@@ -41,7 +40,7 @@ RIPPEDTRACKS = "rippedtracks"
 # ============
 
 # Define template.
-template = TemplatingEnvironment(loader=jinja2.FileSystemLoader(str(that_file.parents[1] / "Templates")))
+template = TemplatingEnvironment(path=that_file.parents[1] / "Templates")
 template.set_template(template="T02")
 
 # Set copy commands file.

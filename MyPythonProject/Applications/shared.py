@@ -7,7 +7,6 @@ import operator
 import os
 import re
 from abc import ABC, abstractmethod
-from base64 import b85decode, b85encode
 from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
@@ -206,8 +205,8 @@ class ChangeLocalCurrentDirectory(ContextDecorator):
     Context manager to change the current directory of a local system.
     """
 
-    def __init__(self, directory):
-        self._dir = directory
+    def __init__(self, directory: Union[str, PurePath]):
+        self._dir = str(directory)
         self._cwd = os.getcwd()
 
     def __enter__(self):
@@ -527,8 +526,8 @@ class SetEndSeconds(argparse.Action):
 # Jinja2 environment.
 # ===================
 class TemplatingEnvironment(object):
-    def __init__(self, keep_trailing_newline=True, trim_blocks=True, lstrip_blocks=True, **kwargs):
-        self._environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=kwargs.get("loader"))
+    def __init__(self, path, keep_trailing_newline=True, trim_blocks=True, lstrip_blocks=True):
+        self._environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=jinja2.FileSystemLoader(str(path)))
 
     def set_environment(self, **kwargs):
         globalvars = kwargs.get("globalvars", {})
@@ -1127,12 +1126,21 @@ def left_justify(iterable: Iterable[Any]) -> Iterable[str]:
         yield item
 
 
-def base85_encode(strg, encoding="UTF-8"):
-    return b85encode(strg.encode(encoding=encoding))
+def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Tuple[str, str]:
+    sequence = list(iterable)  # type: List[Tuple[str, int]]
+    keys, values = zip(*sequence)
+    keys = list(left_justify(map(str, keys)))
+    values = ["{0: >{1}d}".format(value, length) for value in values]
+    for item in zip(keys, values):
+        yield item
 
 
-def base85_decode(bytobj, encoding="UTF-8"):
-    return b85decode(bytobj).decode(encoding=encoding)
+# def base85_encode(strg, encoding="UTF-8"):
+#     return b85encode(strg.encode(encoding=encoding))
+#
+#
+# def base85_decode(bytobj, encoding="UTF-8"):
+#     return b85decode(bytobj).decode(encoding=encoding)
 
 
 # ============================

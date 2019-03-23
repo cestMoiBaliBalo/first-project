@@ -20,6 +20,7 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
+SET _cp=1252
 SET _images=
 SET _cmdfile=
 
@@ -27,6 +28,9 @@ SET _cmdfile=
 REM ============
 REM Main script.
 REM ============
+FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
+
+
 :MAIN
 CLS
 PUSHD %TEMP%

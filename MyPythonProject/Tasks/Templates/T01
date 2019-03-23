@@ -1,29 +1,61 @@
 
-       {{ root }} content
+       {{ root }} content.
 
 
+          ===========
+       A. Files list.
+          ===========
 {% for file in dirs %}
 {{ loop.index|rjustify }}. {{ file }}
 {% endfor %}
 
 
 
+{%- if extensions %}
+
+
+          ==================
+       B. Extensions counts.
+          ==================
 {% for key, value in extensions %}
 {{ loop.index|rjustify }}. {{ key|upper }}: {{ value }}
 {% endfor %}
+{% endif %}
 
 
 
+{%- if directories %}
+    {% set letter = "B" %}
+    {% if extensions %}
+        {% set letter = "C" %}
+    {% endif %}
+
+
+          ===============
+       {{ letter}}. Folders counts.
+          ===============
 {% for key, value in directories %}
 {{ loop.index|rjustify }}. {{ key }}: {{ value }}
 {% endfor %}
-{% if empty_dirs %}
+{% endif %}
 
 
 
+{%- if empty_dirs %}
+    {% set letter = "B" %}
+    {% if extensions %}
+        {% set letter = "C" %}
+    {% endif %}
+    {% if directories %}
+        {% set letter = "D" %}
+    {% endif %}
+
+
+          ==================
+       {{ letter}}. Empty directories.
+          ==================
     {% for directory in empty_directories %}
 {{ loop.index|rjustify }}. {{ directory }}
     {% endfor %}
 {% endif %}
-
 
