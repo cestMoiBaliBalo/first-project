@@ -18,7 +18,7 @@ import yaml
 from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, ToBoolean, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, eq_string, get_dirname, get_readabledate, getitem_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, eq_integer, eq_string, get_attribute, get_dirname, get_readabledate, getitem_, gt_, is_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -96,6 +96,44 @@ def merge(item):
     """
     table, track = item
     return (table,) + track
+
+
+# ====================
+# Decorated functions.
+# ====================
+@getitem_(5)
+@partial_(1)
+def is_firsttrack(a, b):
+    return eq_integer(a, b)
+
+
+@getitem_(0)
+@partial_("discs")
+def discs_record(a, b, sensitive=False):
+    return eq_string(a, b, sensitive=sensitive)
+
+
+@getitem_(1)
+@partial_("bootlegalbums")
+def bootlegalbums_record(a, b, sensitive=False):
+    return eq_string(a, b, sensitive=sensitive)
+
+
+@getitem_(27)
+@partial_(None)
+def bootlegdiscs_record(a, b):
+    return not is_(b, a)
+
+
+@get_attribute("played")
+@partial_(0)
+def hasbeen_played(a, b):
+    return gt_(a, b)
+
+
+@getitem_(8)
+def bonuses_record(arg):
+    return arg.bool
 
 
 # ==========
@@ -339,7 +377,7 @@ def get_playeddiscs(db: str = DATABASE):
                                ("utc_played", datetime),
                                ("played", int)])
     discs = set((row.artistsort, row.albumsort, row.discid, row.genre, row.is_bootleg, row.is_live_disc, row.in_collection, row.language, row.utc_created, row.utc_played, row.played) for row in
-                filter(lambda row: row.played > 0, _get_albums(db)))
+                filter(hasbeen_played, _get_albums(db)))
     for disc in (Disc._make(row) for row in discs):
         yield disc
 
@@ -832,7 +870,7 @@ def _insert_albums(*iterables) -> int:
 
                 # "rippeddiscs" table.
                 table = "rippeddiscs"
-                for track in filter(lambda i: i[0].lower() == "discs", filter(lambda i: i[5] == 1, tracks)):
+                for track in filter(discs_record, filter(is_firsttrack, tracks)):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
@@ -841,7 +879,7 @@ def _insert_albums(*iterables) -> int:
 
                 # "bonuses" table.
                 table = "bonuses"
-                for track in filter(lambda i: i[8].bool, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
+                for track in filter(bonuses_record, filter(bootlegalbums_record, tracks)):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
@@ -850,7 +888,7 @@ def _insert_albums(*iterables) -> int:
 
                 # "bootlegdiscs" table.
                 table = "bootlegdiscs"
-                for track in filter(lambda i: i[27] is not None, filter(lambda i: i[1].lower() == "bootlegalbums", tracks)):
+                for track in filter(bootlegdiscs_record, filter(bootlegalbums_record, tracks)):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):

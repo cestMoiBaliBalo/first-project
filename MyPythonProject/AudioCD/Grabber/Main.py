@@ -10,12 +10,20 @@ import yaml
 
 from Applications.AudioCD.shared import upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import get_dirname, mainscript
+from Applications.shared import contains_, get_dirname, getitem_, mainscript, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+
+# Function for setting additional keywords arguments.
+@getitem_(index=0)
+@partial_(["debug", "console"])
+def set_kwargs(a, b):
+    return not contains_(a, b.lower())
+
 
 # Define French environment.
 locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
@@ -64,5 +72,6 @@ if tags_config.get("debug", False):
 # Process tags from input file.
 sys.exit(upsert_audiotags(arguments["profile"],
                           arguments["source"],
+                          arguments["encoder"],
                           *arguments.get("decorators", ()),
-                          **dict(filter(lambda i: i[0].lower() not in ["debug", "console"], tags_config.items()))))
+                          **dict(filter(set_kwargs, tags_config.items()))))

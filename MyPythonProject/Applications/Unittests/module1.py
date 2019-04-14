@@ -173,14 +173,13 @@ class TestGetReadableDate(unittest.TestCase):
         self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)
 
 
-@unittest.skip
 class TestGetRippingApplication(unittest.TestCase):
     """
 
     """
 
     def test_t01(self):
-        self.assertEqual(get_rippingapplication(), "dBpoweramp 15.1")
+        self.assertEqual(get_rippingapplication(), "dBpoweramp 16.5")
 
     def test_t02(self):
         self.assertEqual(get_rippingapplication(timestamp=1541702820), "dBpoweramp 15.1")
@@ -192,7 +191,10 @@ class TestGetRippingApplication(unittest.TestCase):
         self.assertEqual(get_rippingapplication(timestamp=1357843620), "dBpoweramp 14.1")
 
     def test_t05(self):
-        self.assertEqual(get_rippingapplication(timestamp=1548976600), "dBpoweramp 16.5")
+        self.assertEqual(get_rippingapplication(timestamp=1548976600), "dBpoweramp 15.1")
+
+    def test_t06(self):
+        self.assertEqual(get_rippingapplication(timestamp=1554026400), "dBpoweramp 16.5")
 
 
 class TestDecorator01(unittest.TestCase):

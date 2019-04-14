@@ -1,0 +1,10 @@
+@ECHO off
+SETLOCAL
+PUSHD %_PYTHONPROJECT%\Tasks\Directories
+python main.py "%~1"
+POPD
+ENDLOCAL
+ECHO:
+ECHO:
+PAUSE
+EXIT /B 0

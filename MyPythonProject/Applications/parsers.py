@@ -10,41 +10,6 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-# ===============
-# Global Classes.
-# ===============
-# class SetDatabaseArg(argparse.Action):
-#     def __init__(self, option_strings, dest, **kwargs):
-#         super().__init__(option_strings, dest, **kwargs)
-#
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         setattr(namespace, self.dest, values)
-#         albums = getattr(namespace, "albums")
-#         bootlegs = getattr(namespace, "bootlegs")
-#         if all([not albums, not bootlegs]):
-#             setattr(namespace, self.dest, None)
-#
-#
-# class SetConsoleArg(argparse.Action):
-#     def __init__(self, option_strings, dest, **kwargs):
-#         super().__init__(option_strings, dest, **kwargs)
-#
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         setattr(namespace, self.dest, values)
-#         if not values:
-#             setattr(namespace, "console", False)
-#
-#
-# class SetDriveTags(argparse.Action):
-#     def __init__(self, option_strings, dest, default="F:\\", **kwargs):
-#         super().__init__(option_strings, dest, default, **kwargs)
-#
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         setattr(namespace, self.dest, values)
-#         if not getattr(namespace, "store_tags", False):
-#             setattr(namespace, self.dest, None)
-
-
 # =================
 # Global Functions.
 # =================
@@ -206,5 +171,6 @@ parser_sub.add_argument("days", type=int)
 tags_grabber = argparse.ArgumentParser()
 tags_grabber.add_argument("source", help="UTF-16-LE encoded TXT audio tags file", type=argparse.FileType(mode="r+", encoding="UTF_16LE"))
 tags_grabber.add_argument("profile", help="ripping profile", choices=["default", "bootleg"])
+tags_grabber.add_argument("encoder", help="encoder code")
 tags_grabber.add_argument("decorators", nargs="*", help="decorating profile(s)")
 tags_grabber.add_argument("--tags_processing", nargs="?", default="no_tags_processing", help="audio tags processing profile")

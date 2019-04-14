@@ -42,50 +42,49 @@ WRITE = "w"
 # ==========
 # Variables.
 # ==========
-collection, counts, path, previous_counts = [], {}, {}, {}
-mode = WRITE
+collection, counts, path, current_counts = [], {}, {}, {}
 
 # ======================
 # Get file opening mode.
 # ======================
+mode = WRITE
 if os.path.exists(f"{REPOSITORY}.yml"):
-    with open(f"{REPOSITORY}.yml", encoding="UTF_8") as stream:
-        data = yaml.load(stream)
-        _, previous_counts = data
-        if previous_counts.get(arguments.path) is not None:
-            mode = UPDATE
+    mode = UPDATE
 
 # ===============
 # Main algorithm.
 # ===============
 
-#  1. Get extensions collection.
+#  1. Get collection.
 with ChangeLocalCurrentDirectory(PurePath(arguments.path)):
     for root, directories, files in os.walk("."):
         collection.extend([PurePath(file).suffix[1:].upper() for file in files])
 collection = list(filter(None, collection))
 
-#  2. Update extensions collection.
 if collection:
+
+    #  2. Update YML collection.
     path[arguments.path] = dict(Counter(collection))
+    counts["Previous"] = {key: 0 for key in Counter(collection).keys()}
     counts["Current"] = dict(Counter(collection))
     with open(f"{REPOSITORY}.yml", mode=mode, encoding="UTF_8") as stream:
+
+        # Get previous collection.
         if mode == UPDATE:
-            # Get previous collection.
             data = yaml.load(stream)
             _, current_counts = data
-            counts["Previous"] = current_counts[arguments.path]
-
-            # Create DataFrame.
-            counts["Previous"] = pandas.Series(counts["Previous"], index=sorted(counts["Previous"]))
-            counts["Current"] = pandas.Series(counts["Current"], index=sorted(counts["Current"]))
-            df = pandas.DataFrame(counts)
-            df.index.name = "Extensions"
-            df.to_csv(f"{REPOSITORY}.csv", encoding="UTF_8")
+            counts["Previous"] = current_counts.get(arguments.path, counts["Previous"])
 
         # Store current collection.
         with suppress(KeyError):
-            del previous_counts[arguments.path]
+            del current_counts[arguments.path]
         stream.seek(0)
         stream.truncate()
-        yaml.dump([format_date(LOCAL.localize(datetime.datetime.now())), {**path, **previous_counts}], stream, indent=2, default_flow_style=False)
+        yaml.dump([format_date(LOCAL.localize(datetime.datetime.now())), {**path, **current_counts}], stream, indent=2, default_flow_style=False)
+
+    #  3. Update CSV collection.
+    counts["Previous"] = pandas.Series(counts["Previous"], index=sorted(counts["Previous"]))
+    counts["Current"] = pandas.Series(counts["Current"], index=sorted(counts["Current"]))
+    df = pandas.DataFrame(counts)
+    df.index.name = "Extensions"
+    df.to_csv(f"{REPOSITORY}.csv", encoding="UTF_8")

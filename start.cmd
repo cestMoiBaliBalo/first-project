@@ -41,6 +41,7 @@ REM     ------
 IF "%~1" EQU "" (
     ECHO:
     ECHO:
+    ECHO:
     PAUSE
     EXIT /B %ERRORLEVEL%
 )
@@ -59,6 +60,7 @@ IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "23" GOTO STEP23
 IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
+IF "%~1" EQU "26" GOTO STEP26
 SHIFT
 GOTO MAIN
 
@@ -277,8 +279,8 @@ ECHO ======================================
 SET _count=counts.txt
 PUSHD %TEMP%
 DEL %_count% 2> NUL
-PUSHD G:\Computing\MyPythonProject\Tasks
-python toto.py "F:/" && python toto1.py --only_differences
+PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
+python main.py "F:/" && python print.py --only_differences
 IF ERRORLEVEL 1 (
     POPD
     IF EXIST %_count% TYPE %_count%
@@ -341,6 +343,31 @@ PAUSE
 GOTO FIN
 
 :FIN
+SHIFT
+GOTO MAIN
+
+
+REM     ---------------------------------------
+REM 18. Count extensions in local Images drive.
+REM     ---------------------------------------
+:STEP26
+ECHO:
+ECHO:
+ECHO =======================================
+ECHO Count extensions in local Images drive.
+ECHO =======================================
+SET _count=counts.txt
+PUSHD %TEMP%
+DEL %_count% 2> NUL
+PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
+python main.py "H:/" && python print.py --only_differences
+IF ERRORLEVEL 1 (
+    POPD
+    IF EXIST %_count% TYPE %_count%
+)
+IF NOT ERRORLEVEL 1 ECHO No differences found since the previous count.
+POPD
+SET _count=
 SHIFT
 GOTO MAIN
 

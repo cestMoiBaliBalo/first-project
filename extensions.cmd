@@ -6,8 +6,8 @@ SET _drive=%~1
 SET _drive=%_drive:\=/%
 PUSHD %TEMP%
 DEL %_count% 2> NUL
-PUSHD G:\Computing\MyPythonProject\Tasks
-python toto.py "%_drive%" && python toto1.py
+PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
+python main.py "%_drive%" && python print.py
 IF ERRORLEVEL 1 (
     POPD
     IF EXIST %_count% TYPE %_count%

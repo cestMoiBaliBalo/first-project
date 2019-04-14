@@ -2,7 +2,7 @@
   {
     "code": "13",
     "folder": "1.Free Lossless Audio Codec",
-    "name": "(FLAC 1.3.0)",
+    "name": "(FLAC 1.3.3 beta)",
     "extension": "flac"
   },
   {
@@ -26,7 +26,7 @@
   {
     "code": "01",
     "folder": "0.MPEG 1 Layer III",
-    "name": "Lame 3.99.5",
+    "name": "Lame 3.100.0",
     "extension": "mp3"
   }
 ]

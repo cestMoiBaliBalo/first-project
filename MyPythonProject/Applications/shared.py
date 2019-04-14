@@ -384,22 +384,32 @@ class LocalParser(parserinfo):
 # ===========
 # Decorators.
 # ===========
-def getitem_(index=0):
+def getitem_(index: int = 0):
     def wrapper(f):
-        def sub_wrapper1(arg):
+        def sub_wrapper(arg):
             return f(arg[index])
 
-        return sub_wrapper1
+        return sub_wrapper
 
     return wrapper
 
 
 def partial_(*args, **kwargs):
     def wrapper(f):
-        def sub_wrapper2(arg):
+        def sub_wrapper(arg):
             return partial(f, *args, **kwargs)(arg)
 
-        return sub_wrapper2
+        return sub_wrapper
+
+    return wrapper
+
+
+def get_attribute(name: str):
+    def wrapper(f):
+        def sub_wrapper(obj):
+            return f(getattr(obj, name))
+
+        return sub_wrapper
 
     return wrapper
 
@@ -743,14 +753,22 @@ def eq_integer(a: int, b: int) -> bool:
     return operator.eq(a, b)
 
 
-def eq_string(a: str, b: str, sensitive: bool = False) -> bool:
+def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
     if not sensitive:
         return operator.eq(a.lower(), b.lower())
     return operator.eq(a, b)
 
 
+def gt_(a: int, b: int) -> bool:
+    return operator.gt(b, a)
+
+
 def is_(a, b) -> bool:
     return operator.is_(a, b)
+
+
+def le_(a: int, b: int) -> bool:
+    return operator.le(b, a)
 
 
 # ========================
@@ -962,7 +980,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
     :param timestamp: facultative input local timestamp.
     :return: ripping application.
     """
-    application = {"1548975600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    application = {"1553943600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
     ts: Optional[int] = timestamp
     if timestamp is None:
         ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
@@ -995,30 +1013,6 @@ def find_files(directory: str, *, excluded=None):
 
 def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) -> str:
     return "{0:{fill}{align}{length}}".format(" {0} ".format(strg), align=align, fill=fill, length=length)
-
-
-# def xsltransform(xml, xsl, html):
-#     process = subprocess.run(["java", "-cp", expandvars("%_SAXON%"), "net.sf.saxon.Transform",
-#                               "-s:{0}".format(xml),
-#                               "-xsl:{0}".format(xsl),
-#                               "-o:{0}".format(html)])
-#     return process.returncode
-
-
-# def get_input(prompt, *, cls=True, template=None, **kwargs):
-#     """
-#
-#     :param prompt:
-#     :param cls:
-#     :param template:
-#     :param kwargs:
-#     :return:
-#     """
-#     if cls:
-#         run("CLS", shell=True)
-#     if template:
-#         print(template.render(**kwargs))
-#     return input(prompt)
 
 
 def get_drives() -> Iterable[str]:
@@ -1135,12 +1129,13 @@ def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Tuple[str, str
         yield item
 
 
-# def base85_encode(strg, encoding="UTF-8"):
-#     return b85encode(strg.encode(encoding=encoding))
-#
-#
-# def base85_decode(bytobj, encoding="UTF-8"):
-#     return b85decode(bytobj).decode(encoding=encoding)
+def sort_by_insertion(iterable: Iterable[Any], *, reverse: bool = False) -> Iterable[Any]:
+    if not reverse:
+        for item in _sort_by_insertion(iterable):
+            yield item
+    elif reverse:
+        for item in _sortreverse_by_insertion(iterable):
+            yield item
 
 
 # ============================
@@ -1326,15 +1321,15 @@ def repeat_element(elem, n):
         yield i
 
 
-def cjustify(strg: str, width: int, char: str = "") -> str:
+def cjustify(strg: str, width: int, *, char: str = "") -> str:
     return "{0:{2}^{1}}".format(strg, width, char)
 
 
-def rjustify(strg: str, width: int, char: str = "") -> str:
+def rjustify(strg: str, width: int, *, char: str = "") -> str:
     return "{0:{2}>{1}}".format(str(strg), width, char)
 
 
-def ljustify(strg: str, width: int, char: str = "") -> str:
+def ljustify(strg: str, width: int, *, char: str = "") -> str:
     return "{0:{2}<{1}}".format(strg, width, char)
 
 
@@ -1458,3 +1453,35 @@ def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
 
     # 7. Return output data.
     return out_separators, out_headers, iter(zip(*[v for _, v in out_collection.items()]))
+
+
+def _sort_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:
+    """
+
+    :param iterable:
+    :return:
+    """
+    sequence = list(iterable)
+    length = len(sequence)
+    for i in range(1, length):
+        for j in range(i, 0, -1):
+            if sequence[j - 1] > sequence[j]:
+                sequence[j - 1], sequence[j] = sequence[j], sequence[j - 1]
+    for item in sequence:
+        yield item
+
+
+def _sortreverse_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:
+    """
+
+    :param iterable:
+    :return:
+    """
+    sequence = list(iterable)
+    length = len(sequence)
+    for i in range(length - 2, -1, -1):
+        for j in range(i, length - 1):
+            if sequence[j + 1] > sequence[j]:
+                sequence[j + 1], sequence[j] = sequence[j], sequence[j + 1]
+    for item in sequence:
+        yield item

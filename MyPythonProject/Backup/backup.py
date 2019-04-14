@@ -22,8 +22,8 @@ __status__ = "Production"
 # ===============
 # Backup targets.
 # ===============
-with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Areca" / "Areca.json", encoding="UTF_8") as fp:
-    targets = {item["target"]: item["workspace"] for item in json.load(fp)}  # type: Mapping[str, str]
+with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding="UTF_8") as stream:
+    targets = {item["target"]: item["workspace"] for item in json.load(stream)}  # type: Mapping[str, str]
 
 
 # ========
@@ -55,8 +55,8 @@ parser.add_argument("-t", "--test", action="store_true")
 # ========
 # Logging.
 # ========
-with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp))
+with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding="UTF_8") as stream:
+    logging.config.dictConfig(yaml.load(stream))
 logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(PureWindowsPath(os.path.abspath(__file__)).stem)))
 
 # ==========

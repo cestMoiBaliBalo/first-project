@@ -8,7 +8,7 @@ import sys
 from operator import itemgetter
 from pathlib import PurePath
 
-from Applications.shared import TemplatingEnvironment
+from Applications.shared import TemplatingEnvironment, eq_integer, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -16,6 +16,16 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 that_file = os.path.abspath(__file__)
+
+
+# ==========
+# Functions.
+# ==========
+@getitem_(4)
+@partial_(0)
+def get_differences(a, b):
+    return not eq_integer(b, a)
+
 
 # ==========================
 # Define French environment.
@@ -38,7 +48,7 @@ REPOSITORY = os.path.join(os.path.expandvars("%_COMPUTING%"), "counts")
 # Variables.
 # ==========
 collection, extensions, status, total = [], [], 0, 0
-template = TemplatingEnvironment(path=PurePath(that_file).parent / "Templates")
+template = TemplatingEnvironment(path=PurePath(that_file).parents[1] / "Templates")
 
 # ===============
 # Main algorithm.
@@ -58,12 +68,12 @@ for extension, current, previous in sorted(extensions, key=itemgetter(0)):
     _previous = "{0: >8d}".format(previous)
     _difference = "{0: >+10d}".format(current - previous)
     total += current - previous
-    collection.append((_extension, _current, _previous, _difference))
+    collection.append((_extension, _current, _previous, _difference, current - previous))
 if arguments.only_differences:
-    collection = list(filter(lambda i: itemgetter(3)(i) != 0, collection))
+    collection = list(filter(get_differences, collection))
 if collection:
+    status = 1
     with open(os.path.join(os.path.expandvars("%TEMP%"), "counts.txt"), mode="w", encoding="ISO-8859-1") as stream:
         stream.write(getattr(template, "template").render(collection=[collection, "{0: >+44d}".format(total), arguments.only_differences]))
-    status = 1
 
 sys.exit(status)
