@@ -57,6 +57,7 @@ IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
 IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
+IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "23" GOTO STEP23
 IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
@@ -267,8 +268,17 @@ SHIFT
 GOTO MAIN
 
 
+REM     -----------------------------
+REM 15. Ripped discs Excel dashboard.
+REM     -----------------------------
+:STEP22
+python "%_PYTHONPROJECT%\AudioCD\Grabber\RippedDiscs.py"
+SHIFT
+GOTO MAIN
+
+
 REM     --------------------------------------
-REM 15. Count extensions in local Audio drive.
+REM 16. Count extensions in local Audio drive.
 REM     --------------------------------------
 :STEP23
 ECHO:
@@ -276,24 +286,48 @@ ECHO:
 ECHO ======================================
 ECHO Count extensions in local Audio drive.
 ECHO ======================================
-SET _count=counts.txt
+SET _audioextensions=audioextensions.csv
+SET _csvcount=counts.csv
+SET _txtcount=counts.txt
+
+REM -----
 PUSHD %TEMP%
-DEL %_count% 2> NUL
-PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
-python main.py "F:/" && python print.py --only_differences
+DEL %_txtcount% 2> NUL
+
+REM -----
+PUSHD %_COMPUTING%
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\main.py" "F:/"
+IF ERRORLEVEL 1 GOTO FIN23
+
+REM -----
+IF EXIST %_csvcount% COPY /Y %_csvcount% %_audioextensions% 2> NUL
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\print.py" --only_differences
 IF ERRORLEVEL 1 (
-    POPD
-    IF EXIST %_count% TYPE %_count%
+    ECHO No differences found since the previous count.
+    GOTO FIN23
 )
-IF NOT ERRORLEVEL 1 ECHO No differences found since the previous count.
 POPD
-SET _count=
+IF EXIST %_txtcount% TYPE %_txtcount%
+PUSHD %_COMPUTING%
+
+REM -----
+:FIN23
+DEL %_csvcount% 2> NUL
+POPD
+POPD
+SET _audioextensions=
+SET _csvcount=
+SET _txtcount=
 SHIFT
 GOTO MAIN
 
 
 REM     -------------------------
-REM 16. Backup AVCHD videos to X.
+REM 17. Backup AVCHD videos to X.
 REM     -------------------------
 :STEP24
 XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -302,7 +336,7 @@ GOTO MAIN
 
 
 REM     ----------------------------------------
-REM 17. Backup personal files to SD memory card.
+REM 18. Backup personal files to SD memory card.
 REM     ----------------------------------------
 REM     Every 28 days.
 :STEP25
@@ -348,7 +382,7 @@ GOTO MAIN
 
 
 REM     ---------------------------------------
-REM 18. Count extensions in local Images drive.
+REM 19. Count extensions in local Images drive.
 REM     ---------------------------------------
 :STEP26
 ECHO:
@@ -356,18 +390,37 @@ ECHO:
 ECHO =======================================
 ECHO Count extensions in local Images drive.
 ECHO =======================================
-SET _count=counts.txt
+SET _csvcount=counts.csv
+SET _txtcount=counts.txt
+
+REM -----
 PUSHD %TEMP%
-DEL %_count% 2> NUL
-PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
-python main.py "H:/" && python print.py --only_differences
+DEL %_txtcount% 2> NUL
+
+REM -----
+PUSHD %_COMPUTING%
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\main.py" "H:/"
+IF ERRORLEVEL 1 GOTO FIN26
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\print.py" --only_differences
 IF ERRORLEVEL 1 (
-    POPD
-    IF EXIST %_count% TYPE %_count%
+    ECHO No differences found since the previous count.
+    GOTO FIN26
 )
-IF NOT ERRORLEVEL 1 ECHO No differences found since the previous count.
 POPD
-SET _count=
+IF EXIST %_txtcount% TYPE %_txtcount%
+PUSHD %_COMPUTING%
+
+REM -----
+:FIN26
+DEL %_csvcount% 2> NUL
+POPD
+POPD
+SET _csvcount=
+SET _txtcount=
 SHIFT
 GOTO MAIN
 

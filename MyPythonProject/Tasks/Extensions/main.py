@@ -4,6 +4,7 @@ import argparse
 import datetime
 import locale
 import os
+import sys
 from collections import Counter
 from contextlib import suppress
 from pathlib import PurePath
@@ -42,7 +43,7 @@ WRITE = "w"
 # ==========
 # Variables.
 # ==========
-collection, counts, path, current_counts = [], {}, {}, {}
+collection, counts, path, current_counts, status = [], {}, {}, {}, 1
 
 # ======================
 # Get file opening mode.
@@ -83,8 +84,11 @@ if collection:
         yaml.dump([format_date(LOCAL.localize(datetime.datetime.now())), {**path, **current_counts}], stream, indent=2, default_flow_style=False)
 
     #  3. Update CSV collection.
+    status = 0
     counts["Previous"] = pandas.Series(counts["Previous"], index=sorted(counts["Previous"]))
     counts["Current"] = pandas.Series(counts["Current"], index=sorted(counts["Current"]))
     df = pandas.DataFrame(counts)
     df.index.name = "Extensions"
     df.to_csv(f"{REPOSITORY}.csv", encoding="UTF_8")
+
+sys.exit(status)

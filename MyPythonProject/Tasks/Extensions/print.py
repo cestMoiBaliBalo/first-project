@@ -47,7 +47,7 @@ REPOSITORY = os.path.join(os.path.expandvars("%_COMPUTING%"), "counts")
 # ==========
 # Variables.
 # ==========
-collection, extensions, status, total = [], [], 0, 0
+collection, extensions, status, total = [], [], 1, 0
 template = TemplatingEnvironment(path=PurePath(that_file).parents[1] / "Templates")
 
 # ===============
@@ -72,7 +72,7 @@ for extension, current, previous in sorted(extensions, key=itemgetter(0)):
 if arguments.only_differences:
     collection = list(filter(get_differences, collection))
 if collection:
-    status = 1
+    status = 0
     with open(os.path.join(os.path.expandvars("%TEMP%"), "counts.txt"), mode="w", encoding="ISO-8859-1") as stream:
         stream.write(getattr(template, "template").render(collection=[collection, "{0: >+44d}".format(total), arguments.only_differences]))
 
