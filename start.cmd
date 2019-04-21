@@ -137,19 +137,20 @@ SET _elapsed=
 SET _inserted=
 SET _removed=
 ECHO It can take a while.
-PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
-python main.py
 PUSHD "%TEMP%"
+python "%_PYTHONPROJECT%\Tasks\XReferences\main.py"
 IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
     SET _elapsed=%%I
     SET _inserted=%%J
     SET _removed=%%K
 )
 POPD
-POPD
 ECHO Done.
 IF DEFINED _inserted ECHO %_inserted% album(s) inserted.
 IF DEFINED _removed ECHO %_removed% album(s) removed.
+SET _elapsed=
+SET _inserted=
+SET _removed=
 SHIFT
 GOTO MAIN
 
@@ -302,7 +303,7 @@ python "%_PYTHONPROJECT%\Tasks\Extensions\main.py" "F:/"
 IF ERRORLEVEL 1 GOTO FIN23
 
 REM -----
-IF EXIST %_csvcount% COPY /Y %_csvcount% %_audioextensions% 2> NUL
+IF EXIST %_csvcount% COPY /Y %_csvcount% %_audioextensions% >NUL 2>&1
 
 REM -----
 python "%_PYTHONPROJECT%\Tasks\Extensions\print.py" --only_differences

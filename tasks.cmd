@@ -217,9 +217,9 @@ REM Backup personal files to SD memory card.
 REM ----------------------------------------
 IF ERRORLEVEL 24 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD %_PYTHON_SECONDPROJECT%
-    python backup.py
+    PUSHD "%TEMP%"
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHON_SECONDPROJECT%\backup.py"
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
@@ -227,12 +227,10 @@ IF ERRORLEVEL 24 (
         POPD
         GOTO MENU
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
-    POPD
     POPD
     GOTO MENU
 )
@@ -374,9 +372,9 @@ REM MyCloud audio sync.
 REM -------------------
 IF ERRORLEVEL 17 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
-    python main.py --repository MyCloud
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py" --repository MyCloud
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
@@ -388,21 +386,19 @@ REM Sync mobile devices from local audio repositories.
 REM --------------------------------------------------
 IF ERRORLEVEL 16 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\02"
-    python main.py
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\02\main.py"
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
         POPD
         GOTO MENU
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
-    POPD
     POPD
     GOTO MENU
 )
@@ -419,9 +415,9 @@ REM Sync local audio repositories.
 REM ------------------------------
 IF ERRORLEVEL 13 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
-    python main.py
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py"
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
