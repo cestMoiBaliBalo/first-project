@@ -196,7 +196,8 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
                   "title",
                   "artistsort",
                   "artist",
-                  "is_incollection"]
+                  "is_incollection",
+                  "applicationid"]
     with ExitStack() as stack:
         files = [stack.enter_context(open(file, encoding="UTF_8_SIG")) for file in txtfiles]
         for file in files:
@@ -238,7 +239,8 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
                                row["title"],
                                row["artistsort"],
                                row["artist"],
-                               row["is_incollection"]))
+                               row["is_incollection"],
+                               row["applicationid"]))
 
     return _insert_albums(*tracks)
 

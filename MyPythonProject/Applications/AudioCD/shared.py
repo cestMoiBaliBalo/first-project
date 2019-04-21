@@ -981,7 +981,8 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      track.title,
                      track.artistsort,
                      track.artist,
-                     track.incollection
+                     track.incollection,
+                     2
                      ))
     iterable = list(set(iterable))
     for track in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
@@ -1093,7 +1094,8 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
                      track.incollection,
                      providers[track.bootlegalbum_provider],
                      track.bootlegdisc_reference,
-                     track.bootlegalbum_title
+                     track.bootlegalbum_title,
+                     2
                      ))
     iterable = list(set(iterable))
     for track in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
@@ -1115,7 +1117,7 @@ def dump_audiotags_tojson(obj: AudioCDTags,
     :param encoding:
     :return:
     """
-    for fil, sequences in groupby(func(obj, fil=jsonfile, db=database, encoding=encoding), key=itemgetter(0)):
+    for fil, sequences in groupby(func(obj, **dict(fil=jsonfile, db=database, encoding=encoding)), key=itemgetter(0)):
         dump_sequence_tojson(fil, *list(sequence for _, sequence in sequences), encoding=encoding)
 
 
