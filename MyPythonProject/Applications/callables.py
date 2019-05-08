@@ -71,8 +71,8 @@ def exclude_allbutlosslessaudiofiles(curdir, *files):
 #     pdf = fnmatch.filter(files, "*.pdf")
 #     txt = fnmatch.filter(files, "*.txt")
 #     return set(files) - (set(pdf) | set(txt))
-#
-#
+
+
 def exclude_allbutaudiofiles(curdir, *files):
     """
 

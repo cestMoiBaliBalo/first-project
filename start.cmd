@@ -349,17 +349,17 @@ IF [!_errorlevel!] EQU [1] (
     CHOICE /N /C YN /T 30 /D N /M "Would you like to refresh the backup? Press [Y] for Yes or [N] for No."
     IF ERRORLEVEL 2 GOTO DELAY
     CLS
-    ECHO Insert SD Memory Card then press any key to run the backup... && PAUSE > NUL
+    ECHO Insert SD Memory Card then press any key to run the backup... & PAUSE > NUL
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD %_PYTHON_SECONDPROJECT%
-    python backup.py
+    PUSHD %TEMP%
+    DEL "%_xxcopy%" 2> NUL
+    python "%_PYTHON_SECONDPROJECT%\backup.py"
     IF ERRORLEVEL 1 (
         POPD
         GOTO FIN
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
+    POPD
     GOTO UPDATE
 )
 GOTO FIN
@@ -369,8 +369,6 @@ CALL :DELAY_TASK %_taskid% "sub" "23" _errorlevel
 GOTO FIN
 
 :UPDATE
-POPD
-POPD
 CALL :UPDATE_TASK %_taskid% _errorlevel
 ECHO:
 ECHO:

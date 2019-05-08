@@ -15,10 +15,9 @@ from string import Template
 from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
-from dateutil.parser import parse
 
-from ..shared import DatabaseConnection, ToBoolean, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, TEMPLATE4, UTC, eq_integer, eq_string, get_attribute, get_dirname, get_readabledate, getitem_, gt_, is_, partial_, valid_datetime
+from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_integer, eq_string, get_attribute, get_dirname, getitem_, gt_, is_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -36,15 +35,25 @@ sqlite3.register_adapter(ToBoolean, adapt_booleanvalue)
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
 
 
-# ========================
-# Miscellaneous functions.
-# ========================
-def datetime_converter(bytstr):
-    chrstr = bytstr.decode("ascii")
-    datobj = parse(chrstr)
-    with suppress(ValueError):
-        datobj = UTC.localize(parse(chrstr))
-    return get_readabledate(datobj.astimezone(LOCAL), template=TEMPLATE4)
+# ===========
+# Decorators.
+# ===========
+def booleanify_sequence(func):
+    def wrapper(*args):
+        return tuple(map(func, args))
+
+    return wrapper
+
+
+# ==========
+# Functions.
+# ==========
+# def datetime_converter(bytstr):
+#     chrstr = bytstr.decode("ascii")
+#     datobj = parse(chrstr)
+#     with suppress(ValueError):
+#         datobj = UTC.localize(parse(chrstr))
+#     return get_readabledate(datobj.astimezone(LOCAL), template=TEMPLATE4)
 
 
 def check_defaultalbum(item):
@@ -67,27 +76,6 @@ def check_bootlegalbum(item):
     return True
 
 
-def toboolean(*args):
-    """
-
-    :param args:
-    :return:
-    """
-
-    def wrapper(arg):
-        returned = arg
-        try:
-            lower_arg = arg.lower()
-        except AttributeError:
-            pass
-        else:
-            if lower_arg in ["n", "y"]:
-                returned = ToBoolean(arg)
-        return returned
-
-    return tuple(map(wrapper, args))
-
-
 def merge(item):
     """
 
@@ -101,6 +89,11 @@ def merge(item):
 # ====================
 # Decorated functions.
 # ====================
+@booleanify_sequence
+def _booleanify(arg):
+    return booleanify(arg)
+
+
 @getitem_(5)
 @partial_(1)
 def is_firsttrack(a, b):
@@ -851,7 +844,7 @@ def _insert_albums(*iterables) -> int:
     iterables = iter(iterables)  # type: ignore
     total_changes: int = 0
     for profile, group in groupby(sorted(sorted(iterables, key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(0)):
-        primary_group = starmap(toboolean, list(filter(FUNCTIONS[profile], group)))
+        primary_group = starmap(_booleanify, filter(FUNCTIONS[profile], group))
         for database, secondary_group in groupby(primary_group, key=itemgetter(1)):
             with ExitStack() as stack:
                 conn = stack.enter_context(DatabaseConnection(database))

@@ -17,15 +17,6 @@ from ..shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX
 # ========
 # Classes.
 # ========
-class ToBoolean(object):
-    def __init__(self, arg):
-        self.bool = False
-        if arg.lower() == "y":
-            self.bool = True
-        if arg.lower() == "yes":
-            self.bool = True
-
-
 class DatabaseConnection(ContextDecorator):
     def __init__(self, db: str = DATABASE) -> None:
         self.database = db

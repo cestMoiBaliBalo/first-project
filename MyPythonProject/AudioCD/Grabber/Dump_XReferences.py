@@ -2,7 +2,7 @@
 # pylint: disable=invalid-name
 import argparse
 
-from Applications.AudioCD.shared import get_xreferences, xreferences
+from Applications.AudioCD.shared import dump_xreferences, get_xreferences
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -17,4 +17,4 @@ parser.add_argument("track")
 argument = parser.parse_args()
 found, references = get_xreferences(argument.track)
 if found:
-    xreferences(references)
+    dump_xreferences(references)

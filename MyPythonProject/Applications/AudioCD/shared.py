@@ -612,7 +612,7 @@ class RippedDisc(ContextDecorator):
     _tabs = 4
     _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
-    def __init__(self, rippingprofile, file, encoder, *decoratingprofiles):
+    def __init__(self, rippingprofile, file, *decoratingprofiles):
         self._audiotracktags = None
         self._decorators = None
         self._encoder = None
@@ -620,7 +620,7 @@ class RippedDisc(ContextDecorator):
         self._intags = None
         self._tags = None
         self.decorators = decoratingprofiles
-        self.encoder = encoder
+        # self.encoder = encoder
         self.profile = rippingprofile
         self.tags = file
 
@@ -635,13 +635,13 @@ class RippedDisc(ContextDecorator):
             raise ValueError('"{0}" isn\'t allowed.'.format(arg))
         self._profile = arg
 
-    @property
-    def encoder(self):
-        return self._encoder
-
-    @encoder.setter
-    def encoder(self, arg):
-        self._encoder = arg
+    # @property
+    # def encoder(self):
+    #     return self._encoder
+    #
+    # @encoder.setter
+    # def encoder(self, arg):
+    #     self._encoder = arg
 
     @property
     def decorators(self):
@@ -797,12 +797,11 @@ class RippedDisc(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, encoder: str, *decorators: str, **kwargs: Any) -> int:
+def upsert_audiotags(profile: str, source: IO, *decorators: str, **kwargs: Any) -> int:
     """
 
     :param profile:
     :param source:
-    :param encoder:
     :param decorators:
     :param kwargs:
     :return:
@@ -814,7 +813,7 @@ def upsert_audiotags(profile: str, source: IO, encoder: str, *decorators: str, *
     in_logger.debug(profile)
     in_logger.debug(source.name)
     try:
-        track = stack.enter_context(RippedDisc(profile, source, encoder, *decorators))
+        track = stack.enter_context(RippedDisc(profile, source, *decorators))
     except ValueError as err:
         in_logger.debug(err)
         value = 100
@@ -1149,7 +1148,7 @@ def contains_not_(a, b) -> bool:
     return not shared.contains_(a, b)
 
 
-def xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
+def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
     _collection = []  # type: List[Sequence[Union[bool, str]]]
     if not fil:
         fil = os.path.join(os.path.expandvars("%TEMP%"), "xreferences.json")

@@ -139,6 +139,8 @@ LOCALMONTHS = ["Janvier",
 #         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
 #         #     return True
 #         return False
+
+
 class CustomTemplate(Template):
     delimiter = "@"
     idpattern = r"([a-z][a-z0-9]+)"
@@ -379,6 +381,15 @@ class LocalParser(parserinfo):
 
     def __init__(self, dayfirst=False, yearfirst=False):
         super().__init__(dayfirst, yearfirst)
+
+
+class ToBoolean(object):
+    def __init__(self, arg):
+        self.bool = False
+        if arg.lower() == "y":
+            self.bool = True
+        if arg.lower() == "yes":
+            self.bool = True
 
 
 # ===========
@@ -1224,13 +1235,15 @@ def get_folders(directory: str) -> Iterable[Tuple[str, str]]:
 # ==========================
 # Single dispatch functions.
 # ==========================
+
+# 1. Convert argument to a string object.
 @singledispatch
-def stringify(arg, **kwargs):
+def stringify(arg):
     return arg
 
 
 @stringify.register(int)
-def _(arg: int, **kwargs) -> str:
+def _(arg: int) -> str:
     return str(arg)
 
 
@@ -1244,6 +1257,7 @@ def _(arg: date, *, template: str = "%d/%m/%Y") -> str:
     return arg.strftime(template)
 
 
+# 2. Convert argument to a datetime object.
 @singledispatch
 def valid_datetime(arg):
     """
@@ -1307,6 +1321,19 @@ def _(arg: datetime) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int,
         _arg = LOCAL.localize(arg)
     _arg.astimezone(LOCAL)
     return int(_arg.timestamp()), _arg, _arg.timetuple()
+
+
+# 3. Convert argument to a boolean object.
+@singledispatch
+def booleanify(arg):
+    return arg
+
+
+@booleanify.register(str)  # type: ignore
+def _(arg: str):
+    if arg.lower() in ["n", "y"]:
+        return ToBoolean(arg)
+    return arg
 
 
 # ======================

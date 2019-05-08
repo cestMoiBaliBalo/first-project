@@ -72,6 +72,5 @@ if tags_config.get("debug", False):
 # Process tags from input file.
 sys.exit(upsert_audiotags(arguments["profile"],
                           arguments["source"],
-                          arguments["encoder"],
                           *arguments.get("decorators", ()),
                           **dict(filter(set_kwargs, tags_config.items()))))

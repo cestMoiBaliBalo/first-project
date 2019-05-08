@@ -1,4 +1,4 @@
- @ECHO off
+@ECHO off
 
 
 REM __author__ = 'Xavier ROSSET'
@@ -42,14 +42,14 @@ ECHO = %DATE% - %TIME% =================================================>> %_idt
 TYPE "%~1">> %_idtags%
 
 REM Alter tags.
-PUSHD "%_PYTHONPROJECT%\AudioCD\Grabber"
 :LOOP
 IF [%~5] NEQ [] (
     SET _decorators=!_decorators!%5 
     SHIFT /5
     GOTO LOOP
 )
-python Main.py "%~1" %~2 "%~3" %_decorators%--tags_processing %~4
+PUSHD "%_PYTHONPROJECT%\AudioCD\Grabber"
+python Main.py "%~1" %~2 %_decorators%--tags_processing %~4
 POPD
 
 REM Exit script.
