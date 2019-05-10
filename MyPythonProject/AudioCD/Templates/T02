@@ -3,15 +3,29 @@ SETLOCAL
 SET _count=0
 SET _cp=1252
 FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
-{% for src, dst in collection %}
-    {% set switch = "CE" %}
-    {% if loop.first %}
-        {% set switch = "EC" %}
+{% for key, group in collection %}
+
+    {% if loop.index < 10 %}
+REM  {{ loop.index }}. Copy "{{ key }}" folder content to NAS.
     {% endif %}
+    {% if loop.index >= 10 %}
+REM {{ loop.index }}. Copy "{{ key }}" folder content to NAS.
+    {% endif %}
+PUSHD "{{ key }}"
+    {% for _, src, dst in group %}
+        {% set switch = "CE" %}
+        {% if loop.first %}
+            {% set switch = "EC" %}
+        {% endif %}
 XXCOPY.EXE /{{ switch }} "{{ src }}" "{{ dst }}" /I /Y /oA:%_XXCOPYLOG% && SET /A "_count+=1"
+    {% endfor %}
+POPD
 {% endfor %}
+
 ECHO:
 ECHO:
 ECHO: %_count% file(s) successfully copied.
+SET _count=
+SET _cp=
 ENDLOCAL
 EXIT /B 0

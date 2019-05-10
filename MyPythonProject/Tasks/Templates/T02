@@ -6,7 +6,7 @@ The following differences have been found since the previous count:
 ---------      -----     ------   ----------
 Extension      After     Before   Difference
 ---------      -----     ------   ----------
-{% for extension, current, previous, difference in collection %}
+{% for extension, current, previous, difference, _ in collection %}
 {{ extension }}   {{ current }}   {{ previous }}   {{ difference }}
 {% endfor %}
                                   ----------

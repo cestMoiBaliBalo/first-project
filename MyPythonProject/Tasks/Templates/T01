@@ -5,7 +5,7 @@
           ===========
        A. Files list.
           ===========
-{% for file in dirs %}
+{% for file in files %}
 {{ loop.index|rjustify }}. {{ file }}
 {% endfor %}
 

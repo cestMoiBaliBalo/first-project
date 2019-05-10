@@ -14,7 +14,7 @@ defaultalbum:
   database: "g:\\computing\\mypythonproject\\resources\\database.db"
   debug: True
   console: False
-  save: False
+  save: True
   root: "F:\\"
   sample: True
 
@@ -59,7 +59,7 @@ unittest_defaultalbum:
 no_tags_processing:
   albums: False
   bootlegs: False
-  debug: False
+  debug: True
   console: False
   save: False
   root: !!python/none

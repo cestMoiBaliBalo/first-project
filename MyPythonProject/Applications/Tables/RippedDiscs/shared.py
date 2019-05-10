@@ -4,7 +4,9 @@ import sqlite3
 from collections import Counter
 from contextlib import ExitStack, suppress
 from datetime import date, datetime
+from functools import partial
 from itertools import compress
+from operator import is_not
 from typing import Iterable, List, NamedTuple, Tuple, Union
 
 from ..shared import DatabaseConnection, close_database, convert_tobooleanvalue
@@ -64,6 +66,13 @@ HEADERS = \
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
 
 
+# ==================
+# Private functions.
+# ==================
+def _is_not(a, b):
+    return is_not(b, a)
+
+
 # ==========
 # Functions.
 # ==========
@@ -83,7 +92,7 @@ def log_record(iterable):
 
     # 3. Configurer les entêtes adéquats en fonction des données présentes.
     #    Eliminer les entêtes des données à `None`.
-    headers = list(compress(HEADERS[isbootleg], map(lambda i: i is not None, attributes)))
+    headers = list(compress(HEADERS[isbootleg], map(partial(_is_not, None), attributes)))
 
     # 4. Log record.
     length = max(len(item) for item in headers)
@@ -305,9 +314,9 @@ def _get_rippeddiscs(db: str, **kwargs):
             # is_bootleg = row["is_bootleg"]
             # row = list(compress(row, FIELDS_SELECTORS[is_bootleg]))
             # if not is_bootleg:
-                # rows.append(DefaultAlbum._make(row))
+            # rows.append(DefaultAlbum._make(row))
             # else:
-                # rows.append(BootlegAlbum._make(row))  # type: ignore
+            # rows.append(BootlegAlbum._make(row))  # type: ignore
             rows.append(Album._make(row))
             log_record(row)
     for row in rows:

@@ -192,8 +192,8 @@ IF ERRORLEVEL 28 (
     )
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music !_target!
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music !_target!
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     POPD
@@ -217,9 +217,9 @@ REM Backup personal files to SD memory card.
 REM ----------------------------------------
 IF ERRORLEVEL 24 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD %_PYTHON_SECONDPROJECT%
-    python backup.py
+    PUSHD "%TEMP%"
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHON_SECONDPROJECT%\backup.py"
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
@@ -227,12 +227,10 @@ IF ERRORLEVEL 24 (
         POPD
         GOTO MENU
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
-    POPD
     POPD
     GOTO MENU
 )
@@ -374,9 +372,9 @@ REM MyCloud audio sync.
 REM -------------------
 IF ERRORLEVEL 17 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
-    python main.py --repository MyCloud
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py" --repository MyCloud
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
@@ -388,21 +386,19 @@ REM Sync mobile devices from local audio repositories.
 REM --------------------------------------------------
 IF ERRORLEVEL 16 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\02"
-    python main.py
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\02\main.py"
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
         POPD
         GOTO MENU
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
     ECHO:
     ECHO:
     PAUSE
-    POPD
     POPD
     GOTO MENU
 )
@@ -419,9 +415,9 @@ REM Sync local audio repositories.
 REM ------------------------------
 IF ERRORLEVEL 13 (
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\01"
-    python main.py
+    PUSHD %TEMP% 
+    DEL %_xxcopy% 2> NUL
+    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py"
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
@@ -506,8 +502,8 @@ REM --------------
 IF ERRORLEVEL 6 (
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 204959095
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 204959095
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
@@ -520,8 +516,8 @@ REM --------------
 IF ERRORLEVEL 5 (
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 1535780732
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 1535780732
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
@@ -534,8 +530,8 @@ REM --------------
 IF ERRORLEVEL 4 (
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 1196865155
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 1196865155
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
@@ -548,8 +544,8 @@ REM --------------
 IF ERRORLEVEL 3 (
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 1674209532
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 1674209532
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
@@ -562,8 +558,8 @@ REM --------------
 IF ERRORLEVEL 2 (
     CLS
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 854796030
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 854796030
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU
@@ -575,8 +571,8 @@ REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
     CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Areca
-    python Areca.py -c music 854796030 1674209532 1196865155 1535780732 204959095
+    PUSHD %_PYTHONPROJECT%\Backup
+    python backup.py -c music 854796030 1674209532 1196865155 1535780732 204959095
     POPD
     CALL "%_COMPUTING%\environment.cmd" D
     GOTO MENU

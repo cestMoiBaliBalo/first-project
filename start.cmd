@@ -41,6 +41,7 @@ REM     ------
 IF "%~1" EQU "" (
     ECHO:
     ECHO:
+    ECHO:
     PAUSE
     EXIT /B %ERRORLEVEL%
 )
@@ -56,9 +57,11 @@ IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
 IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
+IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "23" GOTO STEP23
 IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
+IF "%~1" EQU "26" GOTO STEP26
 SHIFT
 GOTO MAIN
 
@@ -134,19 +137,20 @@ SET _elapsed=
 SET _inserted=
 SET _removed=
 ECHO It can take a while.
-PUSHD "%_PYTHONPROJECT%\Tasks\XReferences"
-python main.py
 PUSHD "%TEMP%"
+python "%_PYTHONPROJECT%\Tasks\XReferences\main.py"
 IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
     SET _elapsed=%%I
     SET _inserted=%%J
     SET _removed=%%K
 )
 POPD
-POPD
 ECHO Done.
 IF DEFINED _inserted ECHO %_inserted% album(s) inserted.
 IF DEFINED _removed ECHO %_removed% album(s) removed.
+SET _elapsed=
+SET _inserted=
+SET _removed=
 SHIFT
 GOTO MAIN
 
@@ -265,8 +269,17 @@ SHIFT
 GOTO MAIN
 
 
+REM     -----------------------------
+REM 15. Ripped discs Excel dashboard.
+REM     -----------------------------
+:STEP22
+python "%_PYTHONPROJECT%\AudioCD\Grabber\RippedDiscs.py"
+SHIFT
+GOTO MAIN
+
+
 REM     --------------------------------------
-REM 15. Count extensions in local Audio drive.
+REM 16. Count extensions in local Audio drive.
 REM     --------------------------------------
 :STEP23
 ECHO:
@@ -274,24 +287,48 @@ ECHO:
 ECHO ======================================
 ECHO Count extensions in local Audio drive.
 ECHO ======================================
-SET _count=counts.txt
+SET _audioextensions=audioextensions.csv
+SET _csvcount=counts.csv
+SET _txtcount=counts.txt
+
+REM -----
 PUSHD %TEMP%
-DEL %_count% 2> NUL
-PUSHD G:\Computing\MyPythonProject\Tasks
-python toto.py "F:/" && python toto1.py --only_differences
+DEL %_txtcount% 2> NUL
+
+REM -----
+PUSHD %_COMPUTING%
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\main.py" "F:/"
+IF ERRORLEVEL 1 GOTO FIN23
+
+REM -----
+IF EXIST %_csvcount% COPY /Y %_csvcount% %_audioextensions% >NUL 2>&1
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\print.py" --only_differences
 IF ERRORLEVEL 1 (
-    POPD
-    IF EXIST %_count% TYPE %_count%
+    ECHO No differences found since the previous count.
+    GOTO FIN23
 )
-IF NOT ERRORLEVEL 1 ECHO No differences found since the previous count.
 POPD
-SET _count=
+IF EXIST %_txtcount% TYPE %_txtcount%
+PUSHD %_COMPUTING%
+
+REM -----
+:FIN23
+DEL %_csvcount% 2> NUL
+POPD
+POPD
+SET _audioextensions=
+SET _csvcount=
+SET _txtcount=
 SHIFT
 GOTO MAIN
 
 
 REM     -------------------------
-REM 16. Backup AVCHD videos to X.
+REM 17. Backup AVCHD videos to X.
 REM     -------------------------
 :STEP24
 XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
@@ -300,7 +337,7 @@ GOTO MAIN
 
 
 REM     ----------------------------------------
-REM 17. Backup personal files to SD memory card.
+REM 18. Backup personal files to SD memory card.
 REM     ----------------------------------------
 REM     Every 28 days.
 :STEP25
@@ -312,17 +349,17 @@ IF [!_errorlevel!] EQU [1] (
     CHOICE /N /C YN /T 30 /D N /M "Would you like to refresh the backup? Press [Y] for Yes or [N] for No."
     IF ERRORLEVEL 2 GOTO DELAY
     CLS
-    ECHO Insert SD Memory Card then press any key to run the backup... && PAUSE > NUL
+    ECHO Insert SD Memory Card then press any key to run the backup... & PAUSE > NUL
     CLS
-    DEL "%TEMP%\%_xxcopy%" 2> NUL
-    PUSHD %_PYTHON_SECONDPROJECT%
-    python backup.py
+    PUSHD %TEMP%
+    DEL "%_xxcopy%" 2> NUL
+    python "%_PYTHON_SECONDPROJECT%\backup.py"
     IF ERRORLEVEL 1 (
         POPD
         GOTO FIN
     )
-    PUSHD "%TEMP%"
     IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
+    POPD
     GOTO UPDATE
 )
 GOTO FIN
@@ -332,8 +369,6 @@ CALL :DELAY_TASK %_taskid% "sub" "23" _errorlevel
 GOTO FIN
 
 :UPDATE
-POPD
-POPD
 CALL :UPDATE_TASK %_taskid% _errorlevel
 ECHO:
 ECHO:
@@ -341,6 +376,50 @@ PAUSE
 GOTO FIN
 
 :FIN
+SHIFT
+GOTO MAIN
+
+
+REM     ---------------------------------------
+REM 19. Count extensions in local Images drive.
+REM     ---------------------------------------
+:STEP26
+ECHO:
+ECHO:
+ECHO =======================================
+ECHO Count extensions in local Images drive.
+ECHO =======================================
+SET _csvcount=counts.csv
+SET _txtcount=counts.txt
+
+REM -----
+PUSHD %TEMP%
+DEL %_txtcount% 2> NUL
+
+REM -----
+PUSHD %_COMPUTING%
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\main.py" "H:/"
+IF ERRORLEVEL 1 GOTO FIN26
+
+REM -----
+python "%_PYTHONPROJECT%\Tasks\Extensions\print.py" --only_differences
+IF ERRORLEVEL 1 (
+    ECHO No differences found since the previous count.
+    GOTO FIN26
+)
+POPD
+IF EXIST %_txtcount% TYPE %_txtcount%
+PUSHD %_COMPUTING%
+
+REM -----
+:FIN26
+DEL %_csvcount% 2> NUL
+POPD
+POPD
+SET _csvcount=
+SET _txtcount=
 SHIFT
 GOTO MAIN
 
