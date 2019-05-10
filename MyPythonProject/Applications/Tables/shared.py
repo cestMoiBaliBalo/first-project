@@ -5,10 +5,12 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 import logging
+import operator
 import re
 import sqlite3
-from contextlib import ContextDecorator
-from contextlib import ExitStack
+from contextlib import ContextDecorator, ExitStack
+from functools import partial
+from itertools import compress
 from typing import Any, Optional, Tuple
 
 from ..shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX
@@ -29,6 +31,13 @@ class DatabaseConnection(ContextDecorator):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.conn.close()
+
+
+# ==================
+# Private functions.
+# ==================
+def _contains(a, b):
+    return operator.contains(b, a)
 
 
 # ==========
@@ -165,7 +174,7 @@ def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Optional[Tuple[Any
     :return:
     """
     clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
-    _keys = list(filter(lambda i: all([i[0] is not None, i[1] is not None]), map(_split_discid, keys)))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
+    _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(_contains, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=?)"] * len(_keys))
@@ -180,7 +189,9 @@ def _set_whereclause_track(*keys: str) -> Tuple[Optional[str], Optional[Tuple[An
     :return:
     """
     clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
-    _keys = list(filter(lambda i: all([i[0] is not None, i[1] is not None, i[2] is not None]), map(_split_trackid, keys)))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
+    _keys = list(
+            compress(map(_split_trackid, keys),
+                     map(operator.not_, map(partial(_contains, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=? AND trackid=?)"] * len(_keys))
