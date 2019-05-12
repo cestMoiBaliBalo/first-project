@@ -8,12 +8,12 @@ import unittest
 from collections.abc import MutableSequence
 from datetime import datetime
 from functools import partial
-from operator import eq, gt, lt
+from operator import contains, eq, gt, lt
 
 from pytz import timezone
 
 from Applications.Tables.Albums.shared import get_genres
-from Applications.shared import DATABASE, TitleCaseConverter, UTF8, contains_, eq_integer, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, UTF8, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -235,11 +235,11 @@ class TestDecorator02(unittest.TestCase):
         self.iterable = [(1, "first string"), (2, "second string"), (3, "third string")]
 
     def test_t01(self):
-        decorated_function = getitem_()(partial_(3)(eq_integer))
+        decorated_function = getitem_()(partial_(3)(eq))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [(3, "third string")])
 
     def test_t02(self):
-        decorated_function = getitem_()(partial_(2)(eq_integer))
+        decorated_function = getitem_()(partial_(2)(eq))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [(2, "second string")])
 
 
@@ -252,16 +252,16 @@ class TestDecorator03(unittest.TestCase):
         self.iterable = [("console", "AA"), ("database", "BB"), ("debug", "CC"), ("foo", "DD"), ("bar", "EE")]
 
     def test_t01(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("foo", "DD"), ("bar", "EE")])
 
     def test_t02(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
     @unittest.skip
     def test_t03(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains_))
+        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
 

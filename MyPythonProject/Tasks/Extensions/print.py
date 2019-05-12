@@ -5,10 +5,10 @@ import csv
 import locale
 import os
 import sys
-from operator import itemgetter
+from operator import eq, itemgetter
 from pathlib import PurePath
 
-from Applications.shared import TemplatingEnvironment, eq_integer, getitem_, partial_
+from Applications.shared import TemplatingEnvironment, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -24,7 +24,7 @@ that_file = os.path.abspath(__file__)
 @getitem_(4)
 @partial_(0)
 def get_differences(a, b):
-    return not eq_integer(b, a)
+    return not eq(b, a)
 
 
 # ==========================

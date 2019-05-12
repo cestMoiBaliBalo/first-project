@@ -5,12 +5,13 @@ import logging.config
 import os
 import sys
 from contextlib import suppress
+from operator import contains
 
 import yaml
 
 from Applications.AudioCD.shared import upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import contains_, get_dirname, getitem_, mainscript, partial_
+from Applications.shared import get_dirname, getitem_, mainscript, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -22,7 +23,7 @@ __status__ = "Production"
 @getitem_(index=0)
 @partial_(["debug", "console"])
 def set_kwargs(a, b):
-    return not contains_(a, b.lower())
+    return not contains(a, b.lower())
 
 
 # Define French environment.

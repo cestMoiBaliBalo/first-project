@@ -7,6 +7,7 @@ import sqlite3
 import sys
 from contextlib import ExitStack, suppress
 from datetime import datetime, timedelta
+from operator import eq
 from typing import Iterable, Optional, Tuple
 
 import iso8601
@@ -14,7 +15,7 @@ import yaml
 
 from ..shared import DatabaseConnection, close_database
 from ...parsers import tasks_parser
-from ...shared import DATABASE, LOCAL, UTC, UTF8, eq_integer, get_dirname, getitem_, partial_
+from ...shared import DATABASE, LOCAL, UTC, UTF8, get_dirname, getitem_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -99,7 +100,7 @@ def _get_tasks(db: str = DATABASE) -> Iterable[Tuple[int, datetime]]:
 
 def _get_task(taskid: int, *, db: str = DATABASE) -> Tuple[int, Optional[datetime]]:
     uid, utc_run = 0, None  # type: int, Optional[datetime]
-    it = filter(getitem_()(partial_(taskid)(eq_integer)), _get_tasks(db))
+    it = filter(getitem_()(partial_(taskid)(eq)), _get_tasks(db))
     with suppress(StopIteration):
         uid, utc_run = next(it)
     return uid, utc_run
