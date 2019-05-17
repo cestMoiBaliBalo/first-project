@@ -61,8 +61,7 @@ class DigitalAlbums(MutableMapping):
 
 
 def _compress(selectors, data):
-    for item in compress(data, selectors):
-        yield item
+    return tuple(compress(data, selectors))
 
 
 # ======

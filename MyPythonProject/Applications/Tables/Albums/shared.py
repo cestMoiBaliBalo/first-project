@@ -405,7 +405,7 @@ def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE, loc
     _local_played = LOCAL.localize(datetime.now())  # type: datetime
     if local_played is not None:
         try:
-            _, _local_played, _ = valid_datetime(local_played)
+            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 0, 1, 0]))
         except ValueError:
             return 0, 0
 

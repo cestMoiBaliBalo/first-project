@@ -133,10 +133,10 @@ ECHO:
 ECHO ============================
 ECHO Sync audio cross-references.
 ECHO ============================
+ECHO It can take a while.
 SET _elapsed=
 SET _inserted=
 SET _removed=
-ECHO It can take a while.
 PUSHD "%TEMP%"
 python "%_PYTHONPROJECT%\Tasks\XReferences\main.py"
 IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (

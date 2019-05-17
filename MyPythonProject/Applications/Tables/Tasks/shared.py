@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import logging.config
-import operator
-import os
 import sqlite3
-import sys
 from contextlib import ExitStack, suppress
 from datetime import datetime, timedelta
-from operator import eq
+from operator import add, eq
 from typing import Iterable, Optional, Tuple
 
 import iso8601
@@ -197,6 +194,13 @@ def _delete_task(taskid: int, *, db: str = DATABASE) -> int:
 # ===============================================
 if __name__ == "__main__":
 
+    import locale
+    import os
+    import sys
+
+    # Set French environment.
+    locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+
     # Local constants.
     LOG_LEVELS = {False: "info", True: "debug"}
     EXIT = {False: 0, True: 1}
@@ -229,4 +233,4 @@ if __name__ == "__main__":
             datobj = LOCAL.localize(iso8601.parse_date(datstring).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None)
         sys.exit(update_task(arguments["taskid"],
                              db=arguments.get("db", DATABASE),
-                             dtobj=arguments.get("func", operator.add)(datobj, timedelta(days=arguments.get("days", 0)))))
+                             dtobj=arguments.get("func", add)(datobj, timedelta(days=arguments.get("days", 0)))))
