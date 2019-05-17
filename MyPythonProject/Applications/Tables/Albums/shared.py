@@ -10,14 +10,14 @@ from collections import Counter, namedtuple
 from contextlib import ExitStack, suppress
 from datetime import datetime
 from itertools import chain, compress, groupby, product, starmap
-from operator import itemgetter
+from operator import eq, is_, itemgetter
 from string import Template
 from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_integer, eq_string, get_attribute, get_dirname, getitem_, gt_, is_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, get_attribute, get_dirname, getitem_, gt_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -97,7 +97,7 @@ def _booleanify(arg):
 @getitem_(5)
 @partial_(1)
 def is_firsttrack(a, b):
-    return eq_integer(a, b)
+    return eq(a, b)
 
 
 @getitem_(0)
@@ -405,7 +405,7 @@ def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE, loc
     _local_played = LOCAL.localize(datetime.now())  # type: datetime
     if local_played is not None:
         try:
-            _, _local_played, _ = valid_datetime(local_played)
+            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 0, 1, 0]))
         except ValueError:
             return 0, 0
 

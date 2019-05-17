@@ -6,7 +6,7 @@ import os
 import sqlite3
 from contextlib import ExitStack, suppress
 from datetime import datetime
-from itertools import chain, repeat, tee
+from itertools import chain, compress, repeat, tee
 from typing import IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
 from Applications import shared
@@ -234,7 +234,7 @@ def _remove_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
         _stack.enter_context(_conn)
         _collection = iter(collection)
         _total_changes = 0  # type: int
-        for artistid, albumid, _, _, _, _, _, _ in _collection:
+        for artistid, albumid in compress(_collection, [1, 1, 0, 0, 0, 0, 0, 0]):
             # Delete file(s).
             _conn.execute("DELETE FROM files WHERE artistid=? AND albumid=?", (artistid, albumid))
             _files_changes = _conn.total_changes - _total_changes

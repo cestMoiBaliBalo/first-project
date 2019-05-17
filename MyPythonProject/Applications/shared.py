@@ -756,14 +756,6 @@ def valid_genre(genre: str) -> str:
 # ====================
 # Filtering functions.
 # ====================
-def contains_(a, b) -> bool:
-    return operator.contains(a, b)
-
-
-def eq_integer(a: int, b: int) -> bool:
-    return operator.eq(a, b)
-
-
 def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
     if not sensitive:
         return operator.eq(a.lower(), b.lower())
@@ -772,10 +764,6 @@ def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
 
 def gt_(a: int, b: int) -> bool:
     return operator.gt(b, a)
-
-
-def is_(a, b) -> bool:
-    return operator.is_(a, b)
 
 
 def le_(a: int, b: int) -> bool:
