@@ -16,10 +16,7 @@ var website = website || {};
     //     --------------
     privates.browse = function() {
         $("li.dropdown:first > a:first").on("click", function() {
-            $(this).attr("href", "/audiocollection/rippedcdview");
-        });
-        $("li.dropdown:first > div.dropdown-content > div.sub-dropdown > a").on("click", function() {
-            $(this).attr("href", "/audiocollection/rippedcdviewbyyear?year=" + $(this).text());
+            $(this).attr("href", "/audiocollection/rippeddiscsview");
         });
     };
 

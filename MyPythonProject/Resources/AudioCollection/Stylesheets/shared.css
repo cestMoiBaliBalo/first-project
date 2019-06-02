@@ -26,7 +26,8 @@ h2 {
 }
 
 h3 {
-    margin: 50px 0 15px 5px;
+    padding: 50px 0 15px 5px;
+    margin: 0;
     color: var(--h3-color);
 }
 
@@ -139,7 +140,7 @@ thead th {
     cursor: none;
 }
 
-#refresh, #create, #output, #view {
+#create, #output, #view, #refresh, #shutdown {
     margin: 0 5px 0 0;
 }
 

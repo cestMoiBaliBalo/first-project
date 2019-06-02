@@ -1,8 +1,3 @@
-.rippedcd {
-    position: relative;
-    z-index: 10;
-}
-
 .cover {
     position: absolute;
     top: 5px;
@@ -21,9 +16,17 @@
     left: 5px;
 }
 
+.rippedcd {
+    position: relative;
+    z-index: 10;
+    margin-bottom: 42px;
+}
+
 .tags {
     position: static;
     margin-left: 140px;
+    margin-bottom: 42px;
+    padding-top: 10px;
 }
 
 .tags > p {
@@ -39,4 +42,8 @@
 
 .tags > p > a.artist:hover, .tags > p > a.album:hover, .tags > p > a.genre:hover {
     text-decoration: underline;
+}
+
+h3:nth-of-type(1) {
+    padding: 0 0 15px 5px;
 }

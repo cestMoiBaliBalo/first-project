@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import logging.config
+# import logging.config
 import os
 
 import cherrypy
-import yaml
 
 from Applications.cherrypy import DigitalAudioCollection
 
@@ -13,9 +12,9 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 if __name__ == '__main__':
-    with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-        logging.config.dictConfig(yaml.load(fp))
-    logger = logging.getLogger("Applications.Tables.RippedDiscs")
+    # with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    #     logging.config.dictConfig(yaml.load(fp))
+    # logger = logging.getLogger("Applications.Tables.RippedDiscs")
 
     conf = {
         '/frameworks': {
