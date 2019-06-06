@@ -9,6 +9,7 @@ import sqlite3
 from collections import Counter, namedtuple
 from contextlib import ExitStack, suppress
 from datetime import datetime
+from functools import partial
 from itertools import chain, compress, groupby, product, starmap
 from operator import eq, gt, is_, itemgetter
 from string import Template
@@ -199,13 +200,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(getitem_()(partial_(row["genre"])(eq_string)), get_genres(db)))
+                    _, genreid = next(filter(getitem_()(partial(eq_string, row["genre"])), get_genres(db)))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(getitem_()(partial_(row["titlelanguage"])(eq_string)), get_languages(db)))
+                    _, languageid = next(filter(getitem_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
                 except TypeError:
                     continue
 
@@ -1138,7 +1139,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(filter(getitem_()(partial_(genre.lower())(eq_string)), genres))
+        _, genreid = next(filter(getitem_()(partial(eq_string, genre.lower())), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 
