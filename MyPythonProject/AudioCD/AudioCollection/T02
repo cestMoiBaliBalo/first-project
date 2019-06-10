@@ -17,20 +17,22 @@
             </div>
             <div id="wrapper">
                 {% for key, group in content["content"] %}
-                <h3>{{ key|e }}</h3>
+                <h3>{{ content["mapping"][key]|e }}</h3>
                 {% for item in group %}
-                <div class="rippedcd">
+                <div class="rippeddisc">
                     <div class="cover">
                         <div class="innercover">
                             <img src="{{ item.cover|normalize2|e }}" width="120" height="120" alt="No cover found">
+                            <div class="album">{{ item.album|e }}</div>
                         </div>
                     </div>
                     <div class="tags">
                         <p>{{ item.ripped|readable|e }}</p>
-                        <p><a class="artist" href="/audiocollection/rippedcdviewbyartist?artist={{ item.artist|normalize2|e }}">{{ item.artist|e }}</a></p>
+                        <p><a href="/audiocollection/rippeddiscsviewbyartist?artistsort={{ item.artistsort|normalize2|e }}">{{ item.artist|e }}</a></p>
                         <p>{{ item.year }}</p>
-                        <p><a class="album" href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ item.albumsort|getalbumid(item.artistsort)|normalize2|e }}">{{ item.album|e }}</a></p>
-                        <p><a class="genre" href="/audiocollection/rippedcdviewbygenre?genre={{ item.genre|normalize2|e }}">{{ item.genre|e }}</a></p>
+                        <p>{{ item.album|e }}</p>
+                        <p>Disc #{{ item.disc }}</p>
+                        <p><a href="/audiocollection/rippeddiscsviewbygenre?genre={{ item.genre|normalize2|e }}">{{ item.genre|e }}</a></p>
                     </div>
                 </div>
                 {% endfor %}

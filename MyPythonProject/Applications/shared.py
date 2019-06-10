@@ -395,7 +395,7 @@ class ToBoolean(object):
 # ===========
 # Decorators.
 # ===========
-def getattribute_(name: str):
+def attrgetter_(name: str):
     def wrapper(f):
         def sub_wrapper(arg):
             return f(attrgetter(name)(arg))

@@ -4,7 +4,7 @@ import datetime
 import os
 from functools import partial
 from itertools import compress, groupby
-from operator import attrgetter
+from operator import attrgetter, eq
 from pathlib import PurePath
 from string import Template
 from typing import Optional
@@ -16,7 +16,7 @@ from .Tables.RippedDiscs.shared import get_rippeddiscs
 # from .Tables.Albums.shared import get_albumheader, get_track, getartist, getlastplayeddate, updatelastplayeddate
 # from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 # from .Tables.RippedDiscs.shared import validyear
-from .shared import DATABASE, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UTC, format_date, localize_date, normalize, normalize2
+from .shared import DATABASE, LOCAL, MUSIC, TEMPLATE4, TemplatingEnvironment, UTC, attrgetter_, eq_string, format_date, localize_date, normalize, normalize2
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -98,8 +98,8 @@ class DigitalAudioCollection(object):
                  # "digitalalbums_playedview": "T01",
                  "rippeddiscsview": "T01",
                  "rippeddiscsviewbyartist": "T02",
-                 # "rippeddiscsviewbygenre": "T01",
-                 # "rippedcdviewbymonth": "T01",
+                 "rippeddiscsviewbygenre": "T02",
+                 "rippedcdviewbymonth": "T02",
                  "rippeddiscsviewbyyear": "T02",
                  # "digitalaudiotracksbyalbum": "T02_sav",
                  # "digitalaudiotracksbyartist": "T02_sav",
@@ -466,28 +466,32 @@ class DigitalAudioCollection(object):
     #                                                   current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
     #                                                   content=[(key, self.getclass(len(list(group)))) for key, group in groupby(sorted(tup[3].artist for tup in rippedcd))])
 
-    # ----------------------------
-    # Ripped CDs grouped by month.
-    # ----------------------------
-    # @cherrypy.expose
-    # def rippedcdviewbymonth(self, month):
-    #     """
-    #     Render ripped audio CDs grouped by ripping month.
-    #
-    #     :param month: Requested ripping month.
-    #     :return: HTML template rendered with CherryPy.
-    #     """
-    #     rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
-    #     return self.TEMPLATE.rippedcdviewbymonth.render(body="rippedcdview",
-    #                                                     menu=self.TEMPLATE.menu.render(months=self.months),
-    #                                                     stylesheets=["stylesheets/shared.css",
-    #                                                                  "stylesheets/rippedcdview.css"],
-    #                                                     content={"content": [(key, list(group)) for key, group in groupby(filter(lambda i: i[0] == month, rippedcd), key=lambda i: (i[0], i[1]))],
-    #                                                              "scripts": ["frameworks/jquery.js",
-    #                                                                          "scripts/functions.js",
-    #                                                                          "scripts/rippedcdview.js",
-    #                                                                          "scripts/common.js"]},
-    #                                                     maintitle="Ripped Audio CDs")
+    # ------------------------------
+    # Ripped discs grouped by month.
+    # ------------------------------
+    @cherrypy.expose
+    def rippeddiscsviewbymonth(self, month: Optional[int] = None):
+        """
+        Render ripped audio discs grouped by ripping month.
+
+        :param month: Requested ripping month.
+        :return: HTML template rendered with CherryPy.
+        """
+        mapping = dict(set((disc.ripped_year_month, format_date(LOCAL.localize(disc.ripped), template="$month $Y")) for disc in self.rippeddiscs))
+        discs = sorted(sorted(sorted(self.rippeddiscs, key=attrgetter("artistsort")), key=attrgetter("ripped"), reverse=True), key=attrgetter("ripped_year_month"), reverse=True)
+        if month is not None:
+            discs = list(filter(attrgetter_("ripped_year_month")(partial(eq, month)), discs))
+        return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="covers",
+                                                                      menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                      stylesheets=["stylesheets/shared.css",
+                                                                                   "stylesheets/discs.css"],
+                                                                      content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year_month"))],
+                                                                               "mapping": mapping,
+                                                                               "scripts": ["frameworks/jquery.js",
+                                                                                           "scripts/functions.js",
+                                                                                           "scripts/covers.js",
+                                                                                           "scripts/shared.js"]},
+                                                                      maintitle="Ripped Audio Discs")
 
     # -----------------------------
     # Ripped discs grouped by year.
@@ -495,70 +499,80 @@ class DigitalAudioCollection(object):
     @cherrypy.expose
     def rippeddiscsviewbyyear(self, year: Optional[str] = None):
         """
-        Render ripped audio CDs grouped by ripping year.
+        Render ripped audio discs grouped by ripping year.
 
         :param year: Requested ripping year.
         :return: HTML template rendered with CherryPy.
         """
+        mapping = dict(set((disc.ripped_year, format_date(LOCAL.localize(disc.ripped), template="$Y")) for disc in self.rippeddiscs))
         discs = sorted(sorted(sorted(self.rippeddiscs, key=attrgetter("artistsort")), key=attrgetter("ripped"), reverse=True), key=attrgetter("ripped_year"), reverse=True)
+        if year is not None:
+            discs = list(filter(attrgetter_("ripped_year")(partial(eq, year)), discs))
         return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="covers",
                                                                       menu=getattr(self.TEMPLATE, "menu").render(months=[]),
                                                                       stylesheets=["stylesheets/shared.css",
-                                                                                   "stylesheets/main.css"],
+                                                                                   "stylesheets/discs.css"],
                                                                       content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year"))],
+                                                                               "mapping": mapping,
                                                                                "scripts": ["frameworks/jquery.js",
                                                                                            "scripts/functions.js",
                                                                                            "scripts/covers.js",
                                                                                            "scripts/shared.js"]},
-                                                                      maintitle="Ripped Audio CDs")
+                                                                      maintitle="Ripped Audio Discs")
 
     # -------------------------------
     # Ripped discs grouped by artist.
     # -------------------------------
     @cherrypy.expose
-    def rippeddiscsviewbyartist(self, artist: Optional[str] = None):
+    def rippeddiscsviewbyartist(self, artistsort: Optional[str] = None):
         """
-        Render ripped audio CDs grouped by artist.
+        Render ripped audio discs grouped by artist.
 
-        :param artist: Requested artist.
+        :param artistsort: Requested artist.
         :return: HTML template rendered with CherryPy.
         """
+        mapping = dict(set((disc.artistsort, disc.artist) for disc in self.rippeddiscs))
         discs = sorted(sorted(self.rippeddiscs, key=attrgetter("ripped"), reverse=True), key=attrgetter("artistsort"))
+        if artistsort is not None:
+            discs = list(filter(attrgetter_("artistsort")(partial(eq_string, artistsort, sensitive=True)), discs))
         return getattr(self.TEMPLATE, "rippeddiscsviewbyartist").render(body="covers",
                                                                         menu=getattr(self.TEMPLATE, "menu").render(months=[]),
                                                                         stylesheets=["stylesheets/shared.css",
-                                                                                     "stylesheets/main.css"],
+                                                                                     "stylesheets/discs.css"],
                                                                         content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("artistsort"))],
+                                                                                 "mapping": mapping,
                                                                                  "scripts": ["frameworks/jquery.js",
                                                                                              "scripts/functions.js",
                                                                                              "scripts/covers.js",
                                                                                              "scripts/shared.js"]},
-                                                                        maintitle="Ripped Audio CDs")
+                                                                        maintitle="Ripped Audio Discs")
 
-        # ----------------------------
-        # Ripped CDs grouped by genre.
-        # ----------------------------
-        # @cherrypy.expose
-        # def rippedcdviewbygenre(self, genre):
-        #     """
-        #     Render ripped audio CDs grouped by genre.
-        #
-        #     :param genre: Requested genre.
-        #     :return: HTML template rendered with CherryPy.
-        #     """
-        #     rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
-        #     return getattr(self.TEMPLATE, "rippedcdviewbygenre").render(body="rippedcdview",
-        #                                                                 menu=getattr(self.TEMPLATE, "menu").render(months=self.months),
-        #                                                                 stylesheets=["stylesheets/shared.css",
-        #                                                                              "stylesheets/rippedcdview.css"],
-        #                                                                 content={
-        #                                                                     "content": [(key, list(group)) for key, group in
-        #                                                                                 groupby(filter(getitem_(3)(getattribute_("genre")((partial_(genre, sensitive=True)(eq_string)))), rippedcd),
-        #                                                                                         key=lambda i: (i[0], i[1]))], "scripts": ["frameworks/jquery.js",
-        #                                                                                                                                   "scripts/functions.js",
-        #                                                                                                                                   "scripts/rippedcdview.js",
-        #                                                                                                                                   "scripts/common.js"]},
-        #                                                                 maintitle="Ripped Audio CDs")
+    # ----------------------------
+    # Ripped CDs grouped by genre.
+    # ----------------------------
+    @cherrypy.expose
+    def rippeddiscsviewbygenre(self, genre: Optional[str] = None):
+        """
+        Render ripped audio discs grouped by artist.
+
+        :param genre: Requested artist.
+        :return: HTML template rendered with CherryPy.
+        """
+        mapping = dict(set((disc.genre, disc.genre) for disc in self.rippeddiscs))
+        discs = sorted(sorted(self.rippeddiscs, key=attrgetter("ripped"), reverse=True), key=attrgetter("genre"))
+        if genre is not None:
+            discs = list(filter(attrgetter_("genre")(partial(eq_string, genre, sensitive=False)), discs))
+        return getattr(self.TEMPLATE, "rippeddiscsviewbygenre").render(body="covers",
+                                                                       menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                       stylesheets=["stylesheets/shared.css",
+                                                                                    "stylesheets/discs.css"],
+                                                                       content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("genre"))],
+                                                                                "mapping": mapping,
+                                                                                "scripts": ["frameworks/jquery.js",
+                                                                                            "scripts/functions.js",
+                                                                                            "scripts/covers.js",
+                                                                                            "scripts/shared.js"]},
+                                                                       maintitle="Ripped Audio Discs")
 
         # ----------------------
         # Ripped CDs statistics.

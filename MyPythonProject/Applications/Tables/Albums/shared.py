@@ -18,7 +18,7 @@ from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Un
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, getattribute_, getitem_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, getitem_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -119,7 +119,7 @@ def bootlegdiscs_record(a, b):
     return not is_(b, a)
 
 
-@getattribute_("played")
+@attrgetter_("played")
 @partial_(0)
 def hasbeen_played(a, b):
     return gt(b, a)
