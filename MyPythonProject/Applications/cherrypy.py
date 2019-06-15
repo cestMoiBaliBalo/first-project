@@ -2,9 +2,10 @@
 # pylint: disable=no-member
 import datetime
 import os
+from collections import OrderedDict
 from functools import partial
 from itertools import compress, groupby
-from operator import attrgetter, eq
+from operator import attrgetter, eq, itemgetter
 from pathlib import PurePath
 from string import Template
 from typing import Optional
@@ -103,14 +104,14 @@ class DigitalAudioCollection(object):
                  "rippeddiscsviewbyyear": "T02",
                  # "digitalaudiotracksbyalbum": "T02_sav",
                  # "digitalaudiotracksbyartist": "T02_sav",
-                 # "rippedartistsview": "T03",
+                 # "rippedartistsview": "T03_sav",
                  # "digitalalbums_view": "T04",
                  "digitalalbumsview": "T01",
                  # "dialogbox1": "T06a",
                  # "dialogbox2": "T06b",
                  # "dropdownlist": "T06c",
-                 "getdigitalalbums": "T06d",
-                 "getrippeddiscs": "T06d",
+                 "getdigitalalbums": "T03",
+                 "getrippeddiscs": "T03",
                  # "rippedcdlog": "T06e",
                  # "rippedcdstatistics": "T07",
                  # "digitalalbums_playedstatistics": "T09",
@@ -370,16 +371,17 @@ class DigitalAudioCollection(object):
             albums = [(key, list(group)) for key, group in groupby(albums, key=attrgetter("month_created"))]
 
         # 4. Return HTML page.
-        return getattr(self.TEMPLATE, "digitalalbumsview").render(body="covers",
-                                                                  menu=getattr(self.TEMPLATE, "menu").render(months=[]),
-                                                                  stylesheets=["stylesheets/shared.css", "stylesheets/main.css"],
+        return getattr(self.TEMPLATE, "digitalalbumsview").render(body="view1",
                                                                   content={"albums": albums,
                                                                            "mapping": mapping,
-                                                                           "view": view,
-                                                                           "scripts": ["frameworks/jquery.js",
-                                                                                       "scripts/functions.js",
-                                                                                       "scripts/covers.js",
-                                                                                       "scripts/shared.js"]})
+                                                                           "view": view},
+                                                                  menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                  scripts=["frameworks/jquery.js",
+                                                                           "scripts/functions.js",
+                                                                           "scripts/view1.js",
+                                                                           "scripts/shared.js"],
+                                                                  stylesheets=["stylesheets/shared.css",
+                                                                               "stylesheets/view1.css"])
 
     # -------------------------
     # Ripped discs global view.
@@ -413,16 +415,17 @@ class DigitalAudioCollection(object):
             discs = [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_month"))]
 
         # 4. Return HTML page.
-        return getattr(self.TEMPLATE, "rippeddiscsview").render(body="covers",
-                                                                menu=getattr(self.TEMPLATE, "menu").render(months=[]),
-                                                                stylesheets=["stylesheets/shared.css", "stylesheets/main.css"],
+        return getattr(self.TEMPLATE, "rippeddiscsview").render(body="view1",
                                                                 content={"albums": discs,
                                                                          "mapping": mapping,
-                                                                         "view": view,
-                                                                         "scripts": ["frameworks/jquery.js",
-                                                                                     "scripts/functions.js",
-                                                                                     "scripts/covers.js",
-                                                                                     "scripts/shared.js"]})
+                                                                         "view": view},
+                                                                menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                scripts=["frameworks/jquery.js",
+                                                                         "scripts/functions.js",
+                                                                         "scripts/view1.js",
+                                                                         "scripts/shared.js"],
+                                                                stylesheets=["stylesheets/shared.css",
+                                                                             "stylesheets/view1.css"])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -470,7 +473,7 @@ class DigitalAudioCollection(object):
     # Ripped discs grouped by month.
     # ------------------------------
     @cherrypy.expose
-    def rippeddiscsviewbymonth(self, month: Optional[int] = None):
+    def rippeddiscsviewbymonth(self, month: Optional[str] = None):
         """
         Render ripped audio discs grouped by ripping month.
 
@@ -480,18 +483,20 @@ class DigitalAudioCollection(object):
         mapping = dict(set((disc.ripped_year_month, format_date(LOCAL.localize(disc.ripped), template="$month $Y")) for disc in self.rippeddiscs))
         discs = sorted(sorted(sorted(self.rippeddiscs, key=attrgetter("artistsort")), key=attrgetter("ripped"), reverse=True), key=attrgetter("ripped_year_month"), reverse=True)
         if month is not None:
-            discs = list(filter(attrgetter_("ripped_year_month")(partial(eq, month)), discs))
-        return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="covers",
+            discs = list(filter(attrgetter_("ripped_year_month")(partial(eq, int(month))), discs))
+        return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="view2",
+                                                                      bold=month,
+                                                                      browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0), reverse=True)),
+                                                                      content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year_month"))],
+                                                                      link=("month", "month"),
+                                                                      maintitle="Ripped Audio Discs",
                                                                       menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                      scripts=["frameworks/jquery.js",
+                                                                               "scripts/functions.js",
+                                                                               "scripts/shared.js"],
                                                                       stylesheets=["stylesheets/shared.css",
-                                                                                   "stylesheets/discs.css"],
-                                                                      content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year_month"))],
-                                                                               "mapping": mapping,
-                                                                               "scripts": ["frameworks/jquery.js",
-                                                                                           "scripts/functions.js",
-                                                                                           "scripts/covers.js",
-                                                                                           "scripts/shared.js"]},
-                                                                      maintitle="Ripped Audio Discs")
+                                                                                   "stylesheets/discs.css",
+                                                                                   "stylesheets/view2.css"])
 
     # -----------------------------
     # Ripped discs grouped by year.
@@ -507,18 +512,20 @@ class DigitalAudioCollection(object):
         mapping = dict(set((disc.ripped_year, format_date(LOCAL.localize(disc.ripped), template="$Y")) for disc in self.rippeddiscs))
         discs = sorted(sorted(sorted(self.rippeddiscs, key=attrgetter("artistsort")), key=attrgetter("ripped"), reverse=True), key=attrgetter("ripped_year"), reverse=True)
         if year is not None:
-            discs = list(filter(attrgetter_("ripped_year")(partial(eq, year)), discs))
-        return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="covers",
+            discs = list(filter(attrgetter_("ripped_year")(partial(eq, int(year))), discs))
+        return getattr(self.TEMPLATE, "rippeddiscsviewbyyear").render(body="view2",
+                                                                      bold=year,
+                                                                      browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0), reverse=True)),
+                                                                      content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year"))],
+                                                                      link=("year", "year"),
+                                                                      maintitle="Ripped Audio Discs",
                                                                       menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                      scripts=["frameworks/jquery.js",
+                                                                               "scripts/functions.js",
+                                                                               "scripts/shared.js"],
                                                                       stylesheets=["stylesheets/shared.css",
-                                                                                   "stylesheets/discs.css"],
-                                                                      content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year"))],
-                                                                               "mapping": mapping,
-                                                                               "scripts": ["frameworks/jquery.js",
-                                                                                           "scripts/functions.js",
-                                                                                           "scripts/covers.js",
-                                                                                           "scripts/shared.js"]},
-                                                                      maintitle="Ripped Audio Discs")
+                                                                                   "stylesheets/discs.css",
+                                                                                   "stylesheets/view2.css"])
 
     # -------------------------------
     # Ripped discs grouped by artist.
@@ -535,17 +542,19 @@ class DigitalAudioCollection(object):
         discs = sorted(sorted(self.rippeddiscs, key=attrgetter("ripped"), reverse=True), key=attrgetter("artistsort"))
         if artistsort is not None:
             discs = list(filter(attrgetter_("artistsort")(partial(eq_string, artistsort, sensitive=True)), discs))
-        return getattr(self.TEMPLATE, "rippeddiscsviewbyartist").render(body="covers",
+        return getattr(self.TEMPLATE, "rippeddiscsviewbyartist").render(body="view2",
+                                                                        bold=artistsort,
+                                                                        browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0))),
+                                                                        content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("artistsort"))],
+                                                                        link=("artist", "artistsort"),
+                                                                        maintitle="Ripped Audio Discs",
                                                                         menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                        scripts=["frameworks/jquery.js",
+                                                                                 "scripts/functions.js",
+                                                                                 "scripts/shared.js"],
                                                                         stylesheets=["stylesheets/shared.css",
-                                                                                     "stylesheets/discs.css"],
-                                                                        content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("artistsort"))],
-                                                                                 "mapping": mapping,
-                                                                                 "scripts": ["frameworks/jquery.js",
-                                                                                             "scripts/functions.js",
-                                                                                             "scripts/covers.js",
-                                                                                             "scripts/shared.js"]},
-                                                                        maintitle="Ripped Audio Discs")
+                                                                                     "stylesheets/discs.css",
+                                                                                     "stylesheets/view2.css"])
 
     # ----------------------------
     # Ripped CDs grouped by genre.
@@ -562,17 +571,19 @@ class DigitalAudioCollection(object):
         discs = sorted(sorted(self.rippeddiscs, key=attrgetter("ripped"), reverse=True), key=attrgetter("genre"))
         if genre is not None:
             discs = list(filter(attrgetter_("genre")(partial(eq_string, genre, sensitive=False)), discs))
-        return getattr(self.TEMPLATE, "rippeddiscsviewbygenre").render(body="covers",
+        return getattr(self.TEMPLATE, "rippeddiscsviewbygenre").render(body="view2",
+                                                                       bold=genre,
+                                                                       browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0))),
+                                                                       content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("genre"))],
+                                                                       link=("genre", "genre"),
+                                                                       maintitle="Ripped Audio Discs",
                                                                        menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                       scripts=["frameworks/jquery.js",
+                                                                                "scripts/functions.js",
+                                                                                "scripts/shared.js"],
                                                                        stylesheets=["stylesheets/shared.css",
-                                                                                    "stylesheets/discs.css"],
-                                                                       content={"content": [(key, list(group)) for key, group in groupby(discs, key=attrgetter("genre"))],
-                                                                                "mapping": mapping,
-                                                                                "scripts": ["frameworks/jquery.js",
-                                                                                            "scripts/functions.js",
-                                                                                            "scripts/covers.js",
-                                                                                            "scripts/shared.js"]},
-                                                                       maintitle="Ripped Audio Discs")
+                                                                                    "stylesheets/discs.css",
+                                                                                    "stylesheets/view2.css"])
 
         # ----------------------
         # Ripped CDs statistics.
@@ -744,7 +755,8 @@ class DigitalAudioCollection(object):
         #         new_tags = dict(tags)
         #         new_tags["genre"] = self.genres_mapping[tags["genre"]]
         #         new_tags["year"] = int(tags["year"])
-        #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(updatelog(int(rowid), db=self.database, **new_tags))})}
+        #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update log", "body": "{0:>2d} record(s) successfully updated.".format(updatelog(int(rowid), db=self.database,
+        #         **new_tags))})}
         #
         #     # B. Delete log.
         #     if action.lower() == "delete":
@@ -1248,27 +1260,27 @@ class DigitalAudioCollection(object):
         #                        format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(timezone("US/Pacific"))),
         #                        dict(reflist)], fp, indent=4, sort_keys=True, ensure_ascii=False)
 
-    # A.6. Update log.
-    # if action.lower() == "update":
-    #
-    #     #  A.6.a. New tags.
-    #     new_tags = dict(tags)
-    #     new_tags["genre"] = self.genres_mapping[tags["genre"]]
-    #     new_tags["ripped"] = int(new_tags["ripped"])
-    #     new_tags = sorted(new_tags.items(), key=itemgetter(0))
-    #
-    #     #  A.6.b. Current tags.
-    #     cur_tags = sorted(self.rippedcdlog.items(), key=itemgetter(0))
-    #
-    #     #  A.6.c. Differences between new tags and current tags.
-    #     differences = set(new_tags) - set(cur_tags)
-    #     logger.debug("new tags    : {0}".format(new_tags))
-    #     logger.debug("current tags: {0}".format(cur_tags))
-    #     logger.debug("differences : {0}".format(list(differences)))
-    #
-    #     #  A.6.d. Update log if some differences have been found.
-    #     if not differences:
-    #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update record", "body": "Any tag hasn't been changed. Can\'t update log."})}
-    #     return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update record", "body": "Would you like to update the selected log?"})}
+        # A.6. Update log.
+        # if action.lower() == "update":
+        #
+        #     #  A.6.a. New tags.
+        #     new_tags = dict(tags)
+        #     new_tags["genre"] = self.genres_mapping[tags["genre"]]
+        #     new_tags["ripped"] = int(new_tags["ripped"])
+        #     new_tags = sorted(new_tags.items(), key=itemgetter(0))
+        #
+        #     #  A.6.b. Current tags.
+        #     cur_tags = sorted(self.rippedcdlog.items(), key=itemgetter(0))
+        #
+        #     #  A.6.c. Differences between new tags and current tags.
+        #     differences = set(new_tags) - set(cur_tags)
+        #     logger.debug("new tags    : {0}".format(new_tags))
+        #     logger.debug("current tags: {0}".format(cur_tags))
+        #     logger.debug("differences : {0}".format(list(differences)))
+        #
+        #     #  A.6.d. Update log if some differences have been found.
+        #     if not differences:
+        #         return {"dialog": self.TEMPLATE.dialogbox1.render(box={"head": "Update record", "body": "Any tag hasn't been changed. Can\'t update log."})}
+        #     return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update record", "body": "Would you like to update the selected log?"})}
 
-    # return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update log", "body": "Would you like to update the selected log?"})}
+        # return {"dialog": self.TEMPLATE.dialogbox2.render(box={"head": "Update log", "body": "Would you like to update the selected log?"})}

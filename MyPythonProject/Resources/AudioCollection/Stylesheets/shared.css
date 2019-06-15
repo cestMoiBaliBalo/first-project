@@ -1,5 +1,5 @@
 /*     ------------- */
-/*  0. Common layout */
+/*  1. Shared layout */
 /*     ------------- */
 :root {
     --main-bg-color: #FDF3F2;
@@ -12,12 +12,12 @@
 }
 
 body {
+    background-color: var(--main-bg-color);
     font-family: "Trebuchet MS", verdana, geneva, arial, helvetica, sans-serif;
     font-size: 1em;
-    width: 75%;
     height: 100%;
     margin: 10px auto 20px;
-    background-color: var(--main-bg-color);
+    width: 75%;
 }
 
 h2 {
@@ -31,12 +31,7 @@ h3 {
     color: var(--h3-color);
 }
 
-thead th {
-    font-size: 1.25em;
-    color: var(--browser-color);
-}
-
-.default {
+/*.default {
     color: var(--cover-bg-color);
 }
 
@@ -46,7 +41,7 @@ thead th {
 
 .hover {
     background-color: #AFA;
-}
+}*/
 
 .button {
     color: var(--browser-color);
@@ -68,13 +63,13 @@ thead th {
     box-shadow: 2px 2px 8px var(--cover-bg-color);
 }
 
-.no-cursor {
+/*.no-cursor {
     cursor: not-allowed;
 }
 
 .no-scroll {
     overflow: hidden;
-}
+}*/
 
 #h2-title {
     position: relative;
@@ -126,28 +121,14 @@ thead th {
     height: 21px;
 }
 
-#loading {
-    display: none;
-}
-
-#pages > a, #pages > b {
-    color: var(--cover-bg-color);
-    padding: 0 4px 0 0;
-}
-
-#pages > a.disabled {
-    text-decoration: none;
-    cursor: none;
-}
-
-#create, #output, #view, #refresh, #shutdown {
+#browse, #create, #refresh, #shutdown, #view {
     margin: 0 5px 0 0;
 }
 
 
-/*     ---- */
-/*  1. Logo */
-/*     ---- */
+/*     ----------- */
+/*  2. Logo layout */
+/*     ----------- */
 #logo {
     position: relative;
     width: 100%;
@@ -181,9 +162,9 @@ thead th {
 }
 
 
-/*     ------- */
-/*  2. Browser */
-/*     ------- */
+/*     ------------ */
+/*  3. Main browser */
+/*     ------------ */
 ul.browser {
     margin: 10px 0 0;
     padding: 0;
@@ -191,18 +172,18 @@ ul.browser {
     list-style-type: none;
 }
 
-ul.browser li {
+ul.browser > li {
     display: inline-block;
     padding: 14px 16px;
 }
 
-ul.browser li a {
+ul.browser > li > a {
     color: white;
     text-align: center;
     text-decoration: none;
 }
 
-ul.browser li:hover {
+ul.browser > li:hover {
     background-color: red;
 }
 
@@ -212,7 +193,7 @@ ul.browser li:hover {
 /*     -------------------------------- */
 /*     Dropdown contents are defined as stacking contexts to be positioned in front of pages main content. */
 /*     Descendant elements are confined into the dropdown element and can't be positioned out. */
-.dropdown, .sub-dropdown {
+/*.dropdown, .sub-dropdown {
     position: relative;
 }
 
@@ -236,13 +217,13 @@ ul.browser li:hover {
     background-color: var(--dropdown-bg-color);
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-}
+}*/
 
 
 /*     --------------------------------- */
 /*  4. Display dropdown content on hover */
 /*     --------------------------------- */
-.dropdown:hover .dropdown-content, .sub-dropdown:hover .sub-dropdown-content {
+/*.dropdown:hover .dropdown-content, .sub-dropdown:hover .sub-dropdown-content {
     display: block;
 }
 
@@ -250,15 +231,15 @@ ul.browser li:hover {
     color: black;
     display: block;
     padding: 15px 0;
-}
+}*/
 
 
 /*     ----------------------------------------- */
 /*  5. Change color of dropdown content on hover */
 /*     ----------------------------------------- */
-.dropdown .dropdown-content a:hover, .sub-dropdown .sub-dropdown-content a:hover {
+/*.dropdown .dropdown-content a:hover, .sub-dropdown .sub-dropdown-content a:hover {
     background-color: #F1F1F1
-}
+}*/
 
 
 /*     ------------------ */
@@ -297,7 +278,7 @@ ul.browser li:hover {
 /*     Stacking contexts are created thanks to z-index attribute. */
 /*     Dialog box must be in front of dialog overlay. */
 /*     Dialog box descendants are confined into the box and can't be positioned out. */
-#div3 {
+/*#div3 {
     position: relative;
     z-index: 30;
 }
@@ -362,13 +343,13 @@ ul.browser li:hover {
     background: #666;
     padding: 10px;
     text-align: right;
-}
+}*/
 
 
 /*     ------------ */
 /*  8. Table sorter */
 /*     ------------ */
-table.tablesorter {
+/*table.tablesorter {
     margin:10px auto 15px;
     width: 40%;
     text-align: center;
@@ -419,4 +400,4 @@ table.tablesorter thead tr .headerSortDown {
 
 table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
 background-color: #8DBDD8;
-}
+}*/

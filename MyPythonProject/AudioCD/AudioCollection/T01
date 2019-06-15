@@ -36,7 +36,7 @@
                 </div>
                 <div id="div2">
                     <div>
-                        <form id="form" method="get" action="index">
+                        <form id="form" method="get" action="digitalalbumsview">
                              <select id="view" name="view">
                                 {{ option3 }}
                                 {{ option1 }}
@@ -74,7 +74,7 @@
             {%- endif %}
 
         </div>
-        {% for script in content["scripts"] %}
+        {% for script in scripts %}
         <script type="text/javascript" src="{{ script }}"></script>
         {% endfor %}
 

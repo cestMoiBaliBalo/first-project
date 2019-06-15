@@ -1,4 +1,5 @@
 "use strict";
+var root = root || "/audiocollection/";
 var website = website || {};
 
 
@@ -9,20 +10,16 @@ var website = website || {};
     //  1. Set inner variables.
     //     --------------------
     var coversperpage = 32,
-        mapping1 = [],
-        mapping2 = [],
         privates = {};
+    var month;
+
 
 
     //     -------------
     //  2. Set mappings.
     //     -------------
-    // mapping1["/audiocollection/digitalalbumsview"] = "/audiocollection/getdigitalalbums";
-    // mapping1["/audiocollection/rippeddiscsview"] = "/audiocollection/getrippeddiscs";
-    mapping1["/audiocollection/digitalalbumsview"] = "digitalalbums";
-    mapping1["/audiocollection/rippeddiscsview"] = "rippeddiscs";
-    mapping2["/audiocollection/digitalalbumsview"] = "refreshdigitalalbums";
-    mapping2["/audiocollection/rippeddiscsview"] = "refreshrippeddiscs";
+    var mapping = {"/audiocollection/digitalalbumsview": "digitalalbums",
+                   "/audiocollection/rippeddiscsview": "rippeddiscs"};
 
 
     //     --------------------
@@ -167,13 +164,14 @@ var website = website || {};
         }
     }
 
+
     //  2.6. Change URL hash part when all covers are requested.
     function displayallcovers() {
         location.hash = 9999;
     }
 
 
-    //  2.7. Number covers.
+    //  2.7. Get number of covers.
     function coverid(collection, prefix, from) {
         var i,
             j,
@@ -199,43 +197,28 @@ var website = website || {};
     //     ----------------
     //  3. Initialize page.
     //     ----------------
-    privates.initialize = function() {
-        var div_buttons,
-            refresh,
-            shutdown,
+    publics.initialize = function() {
+        var browse,
             buttons,
             div2,
-            form,
+            div_buttons,
             text,
             view;
+        var paths = window.location.pathname.split("/");
+        var pathname = paths[paths.length - 1];
 
-        //  3.1. Insert additional buttons.
-        div2 = document.querySelector("#div2");
-        form = document.querySelector("#form");
-        div_buttons = document.createElement("div");
-
-        //  3.1.a. Insert "refresh" button.
-        //         No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
-        refresh = document.createElement("button");
-        text = document.createTextNode("Refresh");
-        refresh.className = "button";
-        refresh.type = "button";
-        refresh.id = "refresh";
-        refresh.appendChild(text);
-        div_buttons.appendChild(refresh);
-
-        //  3.1.b. Insert "shutdown" button.
-        //         No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
-        shutdown = document.createElement("button");
-        text = document.createTextNode("Shutdown");
-        shutdown.className = "button";
-        shutdown.type = "button";
-        shutdown.id = "shutdown";
-        shutdown.appendChild(text);
-        div_buttons.appendChild(shutdown);
-
-        // -----
-        div2.insertBefore(div_buttons, form.parentNode);
+        //  3.1. Insert "browse" button for browsing ripped discs.
+        if (pathname === "rippeddiscsview") {
+            div2 = document.querySelector("#div2");
+            div_buttons = div2.getElementsByTagName("div")[0];
+            browse = document.createElement("button");
+            text = document.createTextNode("Browse");
+            browse.className = "button";
+            browse.type = "button";
+            browse.id = "browse";
+            browse.appendChild(text);
+            div_buttons.insertBefore(browse, document.getElementById("refresh"));
+        }
 
         //  3.2. Insert both "more covers" and "less covers" button.
         //       Only if view is "default".
@@ -247,7 +230,7 @@ var website = website || {};
             all_button();
         }
 
-        //  3.3. Number covers.
+        //  3.3. Get number of covers.
         coverid(document.querySelectorAll(".cover"), "cover_");
 
         //  3.3. Configure events listeners.
@@ -316,14 +299,14 @@ var website = website || {};
             //        Show or hide both "more covers" and less covers" buttons.
             switch (hash) {
                 case 9999:
-                    $posting = $.get("/audiocollection/getcovers?collection=" + mapping1[pathname] + "&coversperpage=9999");
+                    $posting = $.get(root + "getcovers?collection=" + mapping[pathname] + "&coversperpage=9999");
                     break;
                 default:
-                    $posting = $.get("/audiocollection/getcovers?collection=" + mapping1[pathname] + "&start=" + (number - 1));
+                    $posting = $.get(root + "getcovers?collection=" + mapping[pathname] + "&start=" + (number - 1));
             }
             $posting.done(function(r1) {
 
-                $posting = $.get("/audiocollection/gettotalitems?collection=" + mapping1[pathname]);
+                $posting = $.get(root + "gettotalitems?collection=" + mapping[pathname]);
                 $posting.done(function(r2) {
 
                     // -----
@@ -382,50 +365,35 @@ var website = website || {};
     };
 
 
-    //     -------------
-    //  4. Refresh page.
-    //     -------------
-    privates.refresh = function() {
-        var pathname;
-        pathname = window.location.pathname;
-        $("#refresh").on("click", function() {
-            var $postdata = $.get("/audiocollection/" + mapping2[pathname]);
-            $postdata.done(function() {
-                $(location).attr("href", pathname);
-            });
-        });
-    };
-
-
-    //     ---------------------
-    //  5. Shutdown application.
-    //     ---------------------
-    privates.shutdown = function() {
-        $("#shutdown").on("click", function() {
-            $(location).attr("href", "/audiocollection/shutdown");
-        });
-    };
-
-
-    //     --------------------
-    //  6. Change covers view.
-    //     --------------------
-    privates.changecoversview = function() {
+    //     -------------------
+    //  4. Change covers view.
+    //     -------------------
+    publics.changecoversview = function() {
         $("#view").change(function() {
             $("form").submit();
         });
     };
 
 
-    //     ----------------
-    //  7. Page controlers.
-    //     ----------------
-    publics.init = function() {
-        privates.initialize();
-        privates.refresh();
-        privates.shutdown();
-        privates.changecoversview();
+    //     --------------------
+    //  5. Browse ripped discs.
+    //     --------------------
+    publics.browse = function() {
+        $("#browse").click(function() {
+            $(location).attr("href", root + "rippeddiscsviewbymonth");
+        });
     };
 
 
-})(website.covers = {});
+
+    //     ----------------
+    //  6. Page controlers.
+    //     ----------------
+    publics.init = function() {
+        website.view1.initialize();
+        website.view1.changecoversview();
+        website.view1.browse();
+    };
+
+
+})(website.view1 = {});

@@ -7,18 +7,44 @@
 
 
 {% block content2 %}
-    {% if content["content"] %}
+    {% if content %}
 
         <div id="container">
             <div id="h2-title">
                 <div id="div1">
                     <h2>{{ maintitle|e|upper }}</h2>
                 </div>
+                <div id="div2">
+                    <div>
+                        <form id="form" method="get" action="rippeddiscsview">
+                             <select id="view" name="view">
+                                {{ option3 }}
+                                {{ option1 }}
+                                {{ option2 }}
+                            </select>
+                        </form>
+                    </div>
+                </div>
             </div>
             <div id="wrapper">
-                {% for key, group in content["content"] %}
-                <h3>{{ content["mapping"][key]|e }}</h3>
+
+                <!-- Discs browser -->
+                <div class="browser">
+                {% for key, value in browser.items() %}
+                    {% set class = '' %}
+                    {% if bold|string() == key|string() %}
+                        {% set class = ' class="bold"' %}
+                    {% endif %}
+                    <a href="/audiocollection/rippeddiscsviewby{{ link[0] }}?{{ link[1] }}={{ key }}"{{ class }}>{{ value }}</a>
+                {% endfor %}
+                </div>
+
+                <!-- Ripped discs -->
+                {% for key, group in content %}
+                <h3>{{ browser[key]|e }}</h3>
                 {% for item in group %}
+
+                <!-- {{ item.artist }} - {{ item.album }} -->
                 <div class="rippeddisc">
                     <div class="cover">
                         <div class="innercover">
@@ -39,7 +65,7 @@
                 {% endfor %}
             </div>
         </div>
-        {% for script in content["scripts"] %}
+        {% for script in scripts %}
         <script type="text/javascript" src="{{ script }}"></script>
         {% endfor %}
 

@@ -36,7 +36,7 @@
 
 #container .rippeddisc .tags > p {
     font-size: 0.95em;
-    margin: 5px 0 0;
+    margin: 3px 0 0;
     padding: 0;
 }
 
@@ -62,4 +62,31 @@
 #container .rippeddisc .tags a {
     color: var(--cover-bg-color);
     text-decoration: none;
+}
+
+#container .browser {
+    float: right;
+    clear: right;
+    border: 5px solid var(--cover-bg-color);
+    border-radius: 5px;
+    padding: 10px 10px 10px 10px;
+    background-color: wheat;
+    margin: 90px 10px 10px 0;
+}
+
+#container .browser > a {
+    color: var(--cover-bg-color);
+    display: block;
+    padding-top: 10px;
+    text-decoration: none;
+}
+
+#container .browser > a.bold {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+#container .browser > a.hover {
+    background-color: wheat;
+    opacity: 0.2;
 }
