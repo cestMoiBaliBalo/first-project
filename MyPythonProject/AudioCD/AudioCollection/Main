@@ -2,9 +2,9 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-{% block content3 %}{% endblock %}
+{% block content2 %}{% endblock %}
     </head>
-    <body id="{% block content4 %}{% endblock %}">
+    <body id="{% block content3 %}{% endblock %}">
 
         <!-- Logo -->
         <div id="logo">
@@ -36,6 +36,6 @@
             <li class="dropdown"><a href="#0">Played Discs</a></li>
 
         </ul>
-{% block content2 %}{% endblock %}
+{% block content1 %}{% endblock %}
     </body>
 </html>

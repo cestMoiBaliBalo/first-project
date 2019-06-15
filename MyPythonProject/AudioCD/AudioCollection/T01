@@ -2,11 +2,6 @@
 
 
 {% block content1 %}
-    {{- menu -}}
-{% endblock %}
-
-
-{% block content2 %}
 
     {%- if content %}
 
@@ -83,13 +78,13 @@
 {% endblock %}
 
 
-{% block content3 %}
+{% block content2 %}
     {% for stylesheet in stylesheets %}
         <link rel="stylesheet" href="{{ stylesheet }}">
     {% endfor %}
 {% endblock %}
 
 
-{% block content4 %}
+{% block content3 %}
 {{ body -}}
 {% endblock %}
