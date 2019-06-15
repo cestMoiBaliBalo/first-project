@@ -7,43 +7,79 @@
 
 
 {% block content2 %}
-    {% if content["content"] %}
 
+    {%- if content %}
+
+        {%- set option1 = '<option value="artists"' %}
+        {% if content["view"] == "artists" %}
+            {% set option1 = option1 ~ ' selected' %}
+        {% endif %}
+        {% set option1 = option1 ~ '>Artists</option>' %}
+
+        {%- set option2 = '<option value="months"' %}
+        {% if content["view"] == "months" %}
+            {% set option2 = option2 ~ ' selected' %}
+        {% endif %}
+        {% set option2 = option2 ~ '>Months</option>' %}
+
+        {%- set option3 = '<option value="default"' %}
+        {% if content["view"] == "default" %}
+            {% set option3 = option3 ~ ' selected' %}
+        {% endif %}
+        {% set option3 = option3 ~ '>Default</option>' %}
+
+        <!-- Digital audio collection -->
         <div id="container">
             <div id="h2-title">
                 <div id="div1">
-                    <h2>{{ maintitle|e|upper }}</h2>
+                    <h2>DIGITAL AUDIO COLLECTION</h2>
+                </div>
+                <div id="div2">
+                    <div>
+                        <form id="form" method="get" action="digitalalbumsview">
+                             <select id="view" name="view">
+                                {{ option3 }}
+                                {{ option1 }}
+                                {{ option2 }}
+                            </select>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div id="wrapper">
-                {% for key, group in content["content"] %}
-                <h3>{{ key[1]|e }}</h3>
-                {% for item in group %}
-                {% set ripped = item[2] %}
-                {% set item = item[3] %}
-                <div class="rippedcd">
+            {% if content["view"] == "default" %}
+
+            {%- for digitalalbum in content["albums"] %}
+            <div class="cover">
+                <div class="innercover">
+                    <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.cover|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                    <div class="album">{{ digitalalbum.album|e }}</div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {%- else -%}
+
+            {% for key, group in content["albums"] %}
+            <h3>{{ content["mapping"]|getvalue(key)|e }}</h3>
+                {% for digitalalbum in group %}
                     <div class="cover">
                         <div class="innercover">
-                            <img src="{{ item.albumsort|getcover(item.artist, item.artistsort)|normalize2|e }}" width="120" height="120" alt="No cover found">
+                            <a href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ digitalalbum.albumid|normalize2|e }}&amp;prevpage=index"><img src="{{ digitalalbum.cover|normalize2|e }}" alt="No cover found!" width="150" height="150"/></a>
+                            <div class="album">{{ digitalalbum.album|e }}</div>
                         </div>
                     </div>
-                    <div class="tags">
-                        <p>{{ ripped|readable|e }}</p>
-                        <p><a class="artist" href="/audiocollection/rippedcdviewbyartist?artist={{ item.artist|normalize2|e }}">{{ item.artist|e }}</a></p>
-                        <p>{{ item.year }}</p>
-                        <p><a class="album" href="/audiocollection/digitalaudiotracksbyalbum?albumid={{ item.albumsort|getalbumid(item.artist, item.artistsort)|normalize2|e }}">{{ item.album|e }}</a></p>
-                        <p><a class="genre" href="/audiocollection/rippedcdviewbygenre?genre={{ item.genre|normalize2|e }}">{{ item.genre|e }}</a></p>
-                    </div>
-                </div>
                 {% endfor %}
-                {% endfor %}
-            </div>
+            {% endfor %}
+
+            {%- endif %}
+
         </div>
-        {% for script in content["scripts"] %}
+        {% for script in scripts %}
         <script type="text/javascript" src="{{ script }}"></script>
         {% endfor %}
 
-    {% endif %}
+    {% endif -%}
+
 {% endblock %}
 
 

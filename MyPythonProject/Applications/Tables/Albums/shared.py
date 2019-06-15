@@ -9,15 +9,16 @@ import sqlite3
 from collections import Counter, namedtuple
 from contextlib import ExitStack, suppress
 from datetime import datetime
+from functools import partial
 from itertools import chain, compress, groupby, product, starmap
-from operator import eq, is_, itemgetter
+from operator import eq, gt, is_, itemgetter
 from string import Template
 from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, get_attribute, get_dirname, getitem_, gt_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, getitem_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -118,10 +119,10 @@ def bootlegdiscs_record(a, b):
     return not is_(b, a)
 
 
-@get_attribute("played")
+@attrgetter_("played")
 @partial_(0)
 def hasbeen_played(a, b):
-    return gt_(a, b)
+    return gt(b, a)
 
 
 @getitem_(8)
@@ -199,13 +200,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(getitem_()(partial_(row["genre"])(eq_string)), get_genres(db)))
+                    _, genreid = next(filter(getitem_()(partial(eq_string, row["genre"])), get_genres(db)))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(getitem_()(partial_(row["titlelanguage"])(eq_string)), get_languages(db)))
+                    _, languageid = next(filter(getitem_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
                 except TypeError:
                     continue
 
@@ -246,11 +247,6 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
     :param kwargs:
     :return: Album detail gathered into a namedtuple.
     """
-    # logger = logging.getLogger("{0}.get_albumheader".format(__name__))
-    # tabsize = 3
-
-    # -----
-    # headers = list(left_justify(("\t{0}".format(item).expandtabs(tabsize) for item in ["Row ID", "Album ID", "ArtistSort", "AlbumSort", "Artist", "Album", "Cover", "Genre", "Created"])))
 
     # -----
     Album = NamedTuple("Album",
@@ -264,6 +260,7 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
                         ("bootleg", bool),
                         ("incollection", bool),
                         ("language", str),
+                        ("month_created", str),
                         ("utc_created", datetime),
                         ("utc_modified", datetime),
                         ("album", str),
@@ -280,6 +277,7 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
                row.bootleg,
                row.incollection,
                row.language,
+               format_date(LOCAL.localize(row.utc_created), template="$Y$m"),
                row.utc_created,
                row.utc_modified,
                row.album,
@@ -289,14 +287,7 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
 
     # -----
     for album in albums:
-        row = Album._make(album)
-        # logger.debug("================")
-        # logger.debug("Selected record.")
-        # logger.debug("================")
-        # for key, value in zip(headers,
-        # (row.rowid, row.albumid, row.artistsort, row.albumsort, row.artist, row.album, row.cover, row.genre, dateformat(UTC.localize(row.utc_created).astimezone(LOCAL), TEMPLATE4))):
-        # logger.debug("%s: %s", key, value)
-        yield row
+        yield Album._make(album)
 
 
 def get_albumdetail(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
@@ -1148,7 +1139,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(filter(getitem_()(partial_(genre.lower())(eq_string)), genres))
+        _, genreid = next(filter(getitem_()(partial(eq_string, genre.lower())), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 

@@ -1,59 +1,85 @@
 {% extends "Main" %}
 
 
-{% block content0 %}
-                    <a href="/audiocollection/rippedcdviewbymonth?month={{ current }}">Current</a>
-{% endblock %}
-
-
 {% block content1 %}
     {{- menu -}}
 {% endblock %}
 
 
-{#        key: artistsort #}
-{#     subkey: albumid #}
-{#    ssubkey: discid #}
-{#   sssubkey: trackid #}
-{#      group: liste des titres regroupés par "artistsort" #}
-{#   subgroup: liste des titres regroupés par "albumid". Si la longueur de "subgroup" est "1" l'album est mono-CD. #}
-{#  ssubgroup: liste des titres regroupés par "discid". #}
-{# sssubgroup: liste des titres regroupés par "trackid". #}
-
-
 {% block content2 %}
     {% if content %}
-        <div id="audiotracks">
+
+        <div id="container">
             <div id="h2-title">
                 <div id="div1">
-                    <h2>AUDIO TRACKS</h2>
+                    <h2>{{ maintitle|e|upper }}</h2>
                 </div>
-                {% if previous_page %}
                 <div id="div2">
-                    <button type="button" id="{{ previous_page }}" class="button">Back</button>
+                    <div>
+                        <form id="form" method="get" action="rippeddiscsview">
+                             <select id="view" name="view">
+                                {{ option3 }}
+                                {{ option1 }}
+                                {{ option2 }}
+                            </select>
+                        </form>
+                    </div>
                 </div>
-                {% endif %}
             </div>
-        {% for key, group in content %}
-            <h2 id="{{ key[0]|normalize }}">{{ key[1] }}</h2>
-            {% for subkey, subgroup in group %}
-                {% set albumid = subkey[0] %}
-                {% set album, artist, year = subkey[1] %}
-            <h3 id="{{ albumid|normalize }}">{{ year }} - {{ album|e }}<img width="120" height="120" alt="No cover found!" src="{{ albumid[-12:]|getcover(key[0])|e }}"></img></h3>
-                {% for ssubkey, ssubgroup in subgroup %}
-                    {% if subgroup|length > 1 %}
-            <h5>CD #{{ ssubkey }}</h5>
+            <div id="wrapper">
+
+                <!-- Discs browser -->
+                <div class="browser">
+                {% for key, value in browser.items() %}
+                    {% set class = '' %}
+                    {% if bold|string() == key|string() %}
+                        {% set class = ' class="bold"' %}
                     {% endif %}
-            <div class="tracks">
-                <ol>
-                    {% for sssubkey, sssubgroup in ssubgroup %}
-                    <li>{{ sssubgroup[0][3] }}</li>
-                    {% endfor %}
-                </ol>
-            </div>
+                    <a href="/audiocollection/rippeddiscsviewby{{ link[0] }}?{{ link[1] }}={{ key }}"{{ class }}>{{ value }}</a>
                 {% endfor %}
-            {% endfor %}
-        {% endfor %}
+                </div>
+
+                <!-- Ripped discs -->
+                {% for key, group in content %}
+                <h3>{{ browser[key]|e }}</h3>
+                {% for item in group %}
+
+                <!-- {{ item.artist }} - {{ item.album }} -->
+                <div class="rippeddisc">
+                    <div class="cover">
+                        <div class="innercover">
+                            <img src="{{ item.cover|normalize2|e }}" width="120" height="120" alt="No cover found">
+                            <div class="album">{{ item.album|e }}</div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        <p>{{ item.ripped|readable|e }}</p>
+                        <p><a href="/audiocollection/rippeddiscsviewbyartist?artistsort={{ item.artistsort|normalize2|e }}">{{ item.artist|e }}</a></p>
+                        <p>{{ item.year }}</p>
+                        <p>{{ item.album|e }}</p>
+                        <p>Disc #{{ item.disc }}</p>
+                        <p><a href="/audiocollection/rippeddiscsviewbygenre?genre={{ item.genre|normalize2|e }}">{{ item.genre|e }}</a></p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endfor %}
+            </div>
         </div>
+        {% for script in scripts %}
+        <script type="text/javascript" src="{{ script }}"></script>
+        {% endfor %}
+
     {% endif %}
+{% endblock %}
+
+
+{% block content3 %}
+    {% for stylesheet in stylesheets %}
+        <link rel="stylesheet" href="{{ stylesheet }}">
+    {% endfor %}
+{% endblock %}
+
+
+{% block content4 %}
+{{ body -}}
 {% endblock %}

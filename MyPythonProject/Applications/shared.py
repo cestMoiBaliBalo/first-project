@@ -14,7 +14,7 @@ from functools import partial, singledispatch
 from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 from pathlib import PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
@@ -395,6 +395,16 @@ class ToBoolean(object):
 # ===========
 # Decorators.
 # ===========
+def attrgetter_(name: str):
+    def wrapper(f):
+        def sub_wrapper(arg):
+            return f(attrgetter(name)(arg))
+
+        return sub_wrapper
+
+    return wrapper
+
+
 def getitem_(index: int = 0):
     def wrapper(f):
         def sub_wrapper(arg):
@@ -409,16 +419,6 @@ def partial_(*args, **kwargs):
     def wrapper(f):
         def sub_wrapper(arg):
             return partial(f, *args, **kwargs)(arg)
-
-        return sub_wrapper
-
-    return wrapper
-
-
-def get_attribute(name: str):
-    def wrapper(f):
-        def sub_wrapper(obj):
-            return f(getattr(obj, name))
 
         return sub_wrapper
 
@@ -760,14 +760,6 @@ def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
     if not sensitive:
         return operator.eq(a.lower(), b.lower())
     return operator.eq(a, b)
-
-
-def gt_(a: int, b: int) -> bool:
-    return operator.gt(b, a)
-
-
-def le_(a: int, b: int) -> bool:
-    return operator.le(b, a)
 
 
 # ========================

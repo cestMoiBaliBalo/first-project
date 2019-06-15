@@ -13,7 +13,7 @@ from operator import contains, eq, gt, lt
 from pytz import timezone
 
 from Applications.Tables.Albums.shared import get_genres
-from Applications.shared import DATABASE, TitleCaseConverter, UTF8, eq_string, get_readabledate, get_rippingapplication, getitem_, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, UTF8, eq_string, get_readabledate, get_rippingapplication, getitem_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -206,23 +206,23 @@ class TestDecorator01(unittest.TestCase):
         self.iterable = ["Alternative Rock", "Black Metal", "Hard Rock", "Rock"]
 
     def test_t01(self):
-        decorated_function = getitem_()(partial_("alternative rock")(eq_string))
+        decorated_function = getitem_()(partial(eq_string, "alternative rock"))
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t02(self):
-        decorated_function = getitem_(index=1)(partial_("black metal")(eq_string))
+        decorated_function = getitem_(index=1)(partial(eq_string, "black metal"))
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t03(self):
-        decorated_function = getitem_(index=1)(partial_("Black Metal", sensitive=True)(eq_string))
+        decorated_function = getitem_(index=1)(partial(eq_string, "Black Metal", sensitive=True))
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t04(self):
-        decorated_function = getitem_(index=1)(partial_("black metal", sensitive=True)(eq_string))
+        decorated_function = getitem_(index=1)(partial(eq_string, "black metal", sensitive=True))
         self.assertFalse(decorated_function(self.iterable))
 
     def test_t05(self):
-        decorated_function = getitem_(index=2)(partial_("black metal")(eq_string))
+        decorated_function = getitem_(index=2)(partial(eq_string, "black metal"))
         self.assertFalse(decorated_function(self.iterable))
 
 
@@ -235,11 +235,11 @@ class TestDecorator02(unittest.TestCase):
         self.iterable = [(1, "first string"), (2, "second string"), (3, "third string")]
 
     def test_t01(self):
-        decorated_function = getitem_()(partial_(3)(eq))
+        decorated_function = getitem_()(partial(eq, 3))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [(3, "third string")])
 
     def test_t02(self):
-        decorated_function = getitem_()(partial_(2)(eq))
+        decorated_function = getitem_()(partial(eq, 2))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [(2, "second string")])
 
 
@@ -252,16 +252,16 @@ class TestDecorator03(unittest.TestCase):
         self.iterable = [("console", "AA"), ("database", "BB"), ("debug", "CC"), ("foo", "DD"), ("bar", "EE")]
 
     def test_t01(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
+        decorated_function = getitem_()(partial(contains, ["console", "database", "debug"]))
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("foo", "DD"), ("bar", "EE")])
 
     def test_t02(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
+        decorated_function = getitem_()(partial(contains, ["console", "database", "debug"]))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
     @unittest.skip
     def test_t03(self):
-        decorated_function = getitem_()(partial_(["console", "database", "debug"])(contains))
+        decorated_function = getitem_()(partial(contains, ["console", "database", "debug"]))
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
 
@@ -273,10 +273,10 @@ class TestDecorator04(unittest.TestCase):
 
     def test_t01(self):
         _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(getitem_()(partial_("hard rock")(eq_string)), get_genres(DATABASE)))
+        _, genreid2 = next(filter(getitem_()(partial(eq_string, "hard rock")), get_genres(DATABASE)))
         self.assertEqual(genreid1, genreid2)
 
     def test_t02(self):
         _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(getitem_()(partial_("rock")(eq_string)), get_genres(DATABASE)))
+        _, genreid2 = next(filter(getitem_()(partial(eq_string, "rock")), get_genres(DATABASE)))
         self.assertNotEqual(genreid1, genreid2)

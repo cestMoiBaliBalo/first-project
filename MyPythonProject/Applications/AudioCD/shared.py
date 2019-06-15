@@ -10,7 +10,7 @@ from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import compress, groupby
-from operator import itemgetter, contains
+from operator import contains, itemgetter
 from pathlib import PureWindowsPath
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
@@ -324,7 +324,7 @@ class CommonAudioCDTags(AudioCDTags):
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
         # ----- Attributes taken from the input tags.
-        filter_keys = shared.getitem_(index=0)(shared.partial_(sorted(self.__tags))(contains))
+        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags = dict(filter(filter_keys, sorted(kwargs.items())))
 
         # ----- Set encodedby.
@@ -421,7 +421,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.getitem_(index=0)(shared.partial_(sorted(self.__tags))(contains))
+        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set origyear.
@@ -487,7 +487,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.getitem_(index=0)(shared.partial_(sorted(self.__tags))(contains))
+        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set bootleg date.
@@ -771,7 +771,7 @@ class RippedDisc(ContextDecorator):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
-        filter_keys = shared.getitem_(index=0)(shared.partial_(PROFILES[self._profile].exclusions)(not_contains_))
+        filter_keys = shared.getitem_(index=0)(partial(not_contains_, PROFILES[self._profile].exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
         # --> 1. Log output tags.

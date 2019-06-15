@@ -23,34 +23,17 @@
             <a href="#0" class="back-to-top">Top</a>
         </div>
 
-        <!-- Browser -->
+        <!-- Pages browser -->
         <ul class="browser">
 
-            <!-- "Home" link -->
-            <li><a href="/audiocollection/index">Home</a></li>
+            <!-- Home page -->
+            <li><a href="/audiocollection/digitalalbumsview">Home</a></li>
 
-            <!-- "Ripped CDs" dropdown link -->
-            <li class="dropdown">
-                <a href="#0">Ripped CDs</a>
-                <div class="dropdown-content">
-                    <a href="/audiocollection/rippedcdlogs">Tags</a>
-                    <a href="/audiocollection/rippedcdstatistics">Statistics</a>
-                    <a href="/audiocollection/rippedartistsview">Artists</a>
-                    <a href="/audiocollection/rippedcdviewbymonth?month={{ utcnow|localize(utc)|readmonth }}">Current</a>
-{% block content1 %}{% endblock %}
-                </div>
-            </li>
+            <!-- Ripped discs pages -->
+            <li class="dropdown"><a href="#0">Ripped Discs</a></li>
 
-            <!-- "Digital Files" dropdown link -->
-            <li class="dropdown">
-                <a href="#0">Digital Files</a>
-                <div class="dropdown-content">
-                    <a href="/audiocollection/digitalaudiofiles">Files</a>
-                    <a href="/audiocollection/digitalalbums_view?page=1">Albums</a>
-                    <a href="/audiocollection/digitalalbums_playedview">Played</a>
-                    <a href="/audiocollection/digitalalbums_playedstatistics">Statistics</a>
-                </div>
-            </li>
+            <!-- Played discs pages -->
+            <li class="dropdown"><a href="#0">Played Discs</a></li>
 
         </ul>
 {% block content2 %}{% endblock %}

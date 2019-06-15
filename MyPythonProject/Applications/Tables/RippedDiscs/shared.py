@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 import sqlite3
 from collections import Counter
 from contextlib import ExitStack, suppress
@@ -7,6 +8,7 @@ from datetime import date, datetime
 from functools import partial
 from itertools import compress
 from operator import is_not
+from string import Template
 from typing import Iterable, List, NamedTuple, Tuple, Union
 
 from ..shared import DatabaseConnection, close_database, convert_tobooleanvalue
@@ -23,8 +25,9 @@ __status__ = "Production"
 Album = NamedTuple("Album", [("rowid", int),
                              ("albumid", str),
                              ("ripped", datetime),
-                             ("year_ripped", int),
-                             ("month_ripped", int),
+                             ("ripped_year", int),
+                             ("ripped_month", int),
+                             ("ripped_year_month", int),
                              ("artistsort", str),
                              ("albumsort", str),
                              ("artist", str),
@@ -43,11 +46,13 @@ Album = NamedTuple("Album", [("rowid", int),
                              ("bootleg_city", str),
                              ("bootleg_country", str),
                              ("bootleg_tour", str),
-                             ("modified_date", datetime)])
+                             ("modified_date", datetime),
+                             ("cover", str)])
 
 # ==========
 # Constants.
 # ==========
+COVER = Template("albumart/$letter/$artistsort/$albumsort/iPod-Front.jpg")
 FIELDS_SELECTORS = \
     {
         False: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
@@ -218,6 +223,7 @@ def _get_rippeddiscs(db: str, **kwargs):
                   "ripped_date, " \
                   "ripped_year, " \
                   "ripped_month, " \
+                  "ripped_year*100 + ripped_month AS ripped_year_month, " \
                   "artistsort, " \
                   "albumsort, " \
                   "artist, " \
@@ -311,13 +317,32 @@ def _get_rippeddiscs(db: str, **kwargs):
     rows = []
     with DatabaseConnection(db) as conn:
         for row in conn.execute(sql, args):
-            # is_bootleg = row["is_bootleg"]
-            # row = list(compress(row, FIELDS_SELECTORS[is_bootleg]))
-            # if not is_bootleg:
-            # rows.append(DefaultAlbum._make(row))
-            # else:
-            # rows.append(BootlegAlbum._make(row))  # type: ignore
-            rows.append(Album._make(row))
-            log_record(row)
+            cover = COVER.substitute(path=os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art"), letter=row["artistsort"][0], artistsort=row["artistsort"], albumsort=row["albumsort"])
+            rows.append(Album._make((row["rowid"],
+                                     row["albumid"],
+                                     row["ripped_date"],
+                                     row["ripped_year"],
+                                     row["ripped_month"],
+                                     row["ripped_year_month"],
+                                     row["artistsort"],
+                                     row["albumsort"],
+                                     row["artist"],
+                                     row["genre"],
+                                     row["application"],
+                                     row["discid"],
+                                     row["tracks"],
+                                     row["created_date"],
+                                     row["is_bootleg"],
+                                     row["origyear"],
+                                     row["year"],
+                                     row["album"],
+                                     row["label"],
+                                     row["upc"],
+                                     row["bootleg_date"],
+                                     row["bootleg_city"],
+                                     row["bootleg_country"],
+                                     row["bootleg_tour"],
+                                     row["modified_date"],
+                                     cover)))
     for row in rows:
         yield row
