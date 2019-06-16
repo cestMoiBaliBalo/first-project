@@ -1,28 +1,9 @@
-{% extends "Main" %}
+{% extends "T00" %}
 
 
-{% block content1 %}
-
+{% block content %}
     {%- if content %}
-
-        <div id="container">
-            <div id="h2-title">
-                <div id="div1">
-                    <h2>{{ maintitle|e|upper }}</h2>
-                </div>
-                <div id="div2">
-                    <div>
-                        <form id="form" method="get" action="rippeddiscsview">
-                             <select id="view" name="view">
-                                {{ option3 }}
-                                {{ option1 }}
-                                {{ option2 }}
-                            </select>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div id="wrapper">
+            <div id="wrapper" class="{{ view }}">
 
                 <!-- Discs browser -->
                 <div class="browser">
@@ -38,9 +19,9 @@
                 <!-- Ripped discs -->
                 {% for key, group in content %}
                 <h3>{{ browser[key]|e }}</h3>
-                {% for item in group %}
+                    {% for item in group %}
 
-                <!-- {{ item.artist }} - {{ item.album }} -->
+                <!-- {{ item.artist }} - {{ item.album }} - ({{ item.disc }}/{{ item.discs }}) -->
                 <div class="rippeddisc">
                     <div class="cover">
                         <div class="innercover">
@@ -53,30 +34,44 @@
                         <p><a href="/audiocollection/rippeddiscsviewbyartist?artistsort={{ item.artistsort|normalize2|e }}">{{ item.artist|e }}</a></p>
                         <p>{{ item.year }}</p>
                         <p>{{ item.album|e }}</p>
-                        <p>Disc #{{ item.disc }}</p>
+                        {% if item.discs > 1 %}
+                        <p>Disc {{ item.disc }}/{{ item.discs }}</p>
+                        {% endif %}
                         <p><a href="/audiocollection/rippeddiscsviewbygenre?genre={{ item.genre|normalize2|e }}">{{ item.genre|e }}</a></p>
                     </div>
                 </div>
-                {% endfor %}
+                    {% endfor %}
                 {% endfor %}
             </div>
-        </div>
-        {% for script in scripts %}
-        <script type="text/javascript" src="{{ script }}"></script>
-        {% endfor %}
 
     {% endif -%}
-
 {% endblock %}
 
 
-{% block content2 %}
+{% block stylesheets %}
     {% for stylesheet in stylesheets %}
         <link rel="stylesheet" href="{{ stylesheet }}">
     {% endfor %}
 {% endblock %}
 
+{% block scripts %}
+    {% for script in scripts %}
+        <script type="text/javascript" src="{{ script }}"></script>
+    {% endfor %}
+{% endblock %}
 
-{% block content3 %}
-{{ body -}}
+{% block form %}
+                <div id="div2">
+                    <div>
+                        <form id="form" method="get" action="{{ page }}">
+                             <select id="view" name="view">
+                                 {% if options %}
+                                    {% for value, text, selected in options %}
+                                <option value="{{ value }}"{{ selected }}>{{ text }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </form>
+                    </div>
+                </div>
 {% endblock %}

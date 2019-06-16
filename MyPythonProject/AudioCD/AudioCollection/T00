@@ -2,9 +2,9 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-{% block content2 %}{% endblock %}
+{% block stylesheets %}{% endblock %}
     </head>
-    <body id="{% block content3 %}{% endblock %}">
+    <body id="{{ body }}">
 
         <!-- Logo -->
         <div id="logo">
@@ -36,6 +36,17 @@
             <li class="dropdown"><a href="#0">Played Discs</a></li>
 
         </ul>
-{% block content1 %}{% endblock %}
+
+        <!-- Digital collection -->
+        <div id="container">
+            <div id="h2-title">
+                <div id="div1">
+                    <h2>{{ maintitle|e|upper }}</h2>
+                </div>
+{% block form %}{% endblock %}
+            </div>
+{% block content %}{% endblock %}
+        </div>
+{% block scripts %}{% endblock %}
     </body>
 </html>

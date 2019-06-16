@@ -34,6 +34,7 @@ Album = NamedTuple("Album", [("rowid", int),
                              ("genre", str),
                              ("application", str),
                              ("disc", int),
+                             ("discs", int),
                              ("tracks", int),
                              ("created_date", datetime),
                              ("bootleg", bool),
@@ -230,6 +231,7 @@ def _get_rippeddiscs(db: str, **kwargs):
                   "genre, " \
                   "application, " \
                   "discid, " \
+                  "discs, " \
                   "tracks, " \
                   "created_date, " \
                   "is_bootleg, " \
@@ -330,6 +332,7 @@ def _get_rippeddiscs(db: str, **kwargs):
                                      row["genre"],
                                      row["application"],
                                      row["discid"],
+                                     row["discs"],
                                      row["tracks"],
                                      row["created_date"],
                                      row["is_bootleg"],
