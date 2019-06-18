@@ -88,36 +88,35 @@ class DigitalAudioCollection(object):
                "3": "Two weeks ago",
                "4": "Three weeks ago",
                "5": "Four weeks ago and older"}
-    LINESPERPAGE = ["200",
-                    "400",
-                    "500",
-                    "800",
-                    "1000"]
+    # LINESPERPAGE = ["200",
+    #                 "400",
+    #                 "500",
+    #                 "800",
+    #                 "1000"]
 
     # Templating configuration.
-    TEMPLATES = {"menu": "Menu",
-                 # "digitalalbums_playedview": "T01",
-                 "rippeddiscsview": "T01",
-                 "rippeddiscsviewbyartist": "T02",
-                 "rippeddiscsviewbygenre": "T02",
-                 "rippedcdviewbymonth": "T02",
-                 "rippeddiscsviewbyyear": "T02",
-                 # "digitalaudiotracksbyalbum": "T02_sav",
-                 # "digitalaudiotracksbyartist": "T02_sav",
-                 # "rippedartistsview": "T03_sav",
-                 # "digitalalbums_view": "T04",
-                 "digitalalbumsview": "T01",
-                 # "dialogbox1": "T06a",
-                 # "dialogbox2": "T06b",
-                 # "dropdownlist": "T06c",
-                 "getdigitalalbums": "T03",
-                 "getrippeddiscs": "T03",
-                 # "rippedcdlog": "T06e",
-                 # "rippedcdstatistics": "T07",
-                 # "digitalalbums_playedstatistics": "T09",
-                 # "digitalaudiofiles": "T10",
-                 # "rippedcdlogs": "T11"
-                 }
+    TEMPLATES = {  # "digitalalbums_playedview": "T01",
+        "rippeddiscsview": "T01",
+        "rippeddiscsviewbyartist": "T02",
+        "rippeddiscsviewbygenre": "T02",
+        "rippedcdviewbymonth": "T02",
+        "rippeddiscsviewbyyear": "T02",
+        # "digitalaudiotracksbyalbum": "T02_sav",
+        # "digitalaudiotracksbyartist": "T02_sav",
+        # "rippedartistsview": "T03_sav",
+        # "digitalalbums_view": "T04",
+        "digitalalbumsview": "T01",
+        # "dialogbox1": "T06a",
+        # "dialogbox2": "T06b",
+        # "dropdownlist": "T06c",
+        "getdigitalalbums": "T03",
+        "getrippeddiscs": "T03",
+        # "rippedcdlog": "T06e",
+        # "rippedcdstatistics": "T07",
+        # "digitalalbums_playedstatistics": "T09",
+        # "digitalaudiofiles": "T10",
+        # "rippedcdlogs": "T11"
+    }
     TEMPLATE = TemplatingEnvironment(PurePath(os.path.expandvars("%_PYTHONPROJECT%")) / "AudioCD" / "AudioCollection")
     TEMPLATE.set_environment(globalvars={"local": LOCAL,
                                          "utc": UTC,
@@ -352,7 +351,7 @@ class DigitalAudioCollection(object):
         :param start: Number of the first displayed cover.
         :return: HTML template rendered with CherryPy.
         """
-        albums = None
+        albums, options = None, None
         mapping = dict(set((album.month_created, format_date(LOCAL.localize(album.utc_created), template="$month $Y")) for album in self.digitalalbums))
 
         # 1. Covers view.
@@ -360,22 +359,27 @@ class DigitalAudioCollection(object):
             beg = int(start)
             end = int(start) + int(coversperpage)
             albums = self.digitalalbums[beg:end]
+            options = [("default", "Default", " selected"), ("artists", "Artists", ""), ("months", "Months", "")]
 
         # 2. Covers grouped by artist.
         elif view == "artists":
             albums = [(key, list(group)) for key, group in groupby(self.digitalalbums, key=attrgetter("artistsort"))]
+            options = [("default", "Default", ""), ("artists", "Artists", " selected"), ("months", "Months", "")]
 
         # 3. Covers grouped by month.
         elif view == "months":
             albums = sorted(sorted(self.digitalalbums, key=attrgetter("albumid")), key=attrgetter("month_created"), reverse=True)
             albums = [(key, list(group)) for key, group in groupby(albums, key=attrgetter("month_created"))]
+            options = [("default", "Default", ""), ("artists", "Artists", ""), ("months", "Months", " selected")]
 
         # 4. Return HTML page.
         return getattr(self.TEMPLATE, "digitalalbumsview").render(body="view1",
                                                                   content={"albums": albums,
                                                                            "mapping": mapping,
                                                                            "view": view},
-                                                                  menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                  maintitle="digital albums",
+                                                                  options=options,
+                                                                  page="digitalalbumsview",
                                                                   scripts=["frameworks/jquery.js",
                                                                            "scripts/functions.js",
                                                                            "scripts/view1.js",
@@ -396,7 +400,7 @@ class DigitalAudioCollection(object):
         :param start: Number of the first displayed cover.
         :return: HTML template rendered with CherryPy.
         """
-        discs = None
+        discs, options = None, None
         mapping = dict(set((disc.ripped_year_month, format_date(LOCAL.localize(disc.ripped), template="$month $Y")) for disc in self.rippeddiscs))
 
         # 1. Covers view.
@@ -404,22 +408,27 @@ class DigitalAudioCollection(object):
             beg = int(start)
             end = int(start) + int(coversperpage)
             discs = self.rippeddiscs[beg:end]
+            options = [("default", "Default", " selected"), ("artists", "Artists", ""), ("months", "Months", "")]
 
         # 2. Covers grouped by artist.
         elif view == "artists":
             discs = [(key, list(group)) for key, group in groupby(self.rippeddiscs, key=attrgetter("artistsort"))]
+            options = [("default", "Default", ""), ("artists", "Artists", " selected"), ("months", "Months", "")]
 
         # 3. Covers grouped by month.
         elif view == "months":
             discs = sorted(sorted(self.rippeddiscs, key=attrgetter("albumid")), key=attrgetter("ripped_month"), reverse=True)
             discs = [(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_month"))]
+            options = [("default", "Default", ""), ("artists", "Artists", ""), ("months", "Months", " selected")]
 
         # 4. Return HTML page.
         return getattr(self.TEMPLATE, "rippeddiscsview").render(body="view1",
                                                                 content={"albums": discs,
                                                                          "mapping": mapping,
                                                                          "view": view},
-                                                                menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                maintitle="ripped discs",
+                                                                options=options,
+                                                                page="rippeddiscsview",
                                                                 scripts=["frameworks/jquery.js",
                                                                          "scripts/functions.js",
                                                                          "scripts/view1.js",
@@ -489,14 +498,15 @@ class DigitalAudioCollection(object):
                                                                       browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0), reverse=True)),
                                                                       content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year_month"))],
                                                                       link=("month", "month"),
-                                                                      maintitle="Ripped Audio Discs",
-                                                                      menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                      maintitle="ripped discs",
+                                                                      options=[],
                                                                       scripts=["frameworks/jquery.js",
                                                                                "scripts/functions.js",
+                                                                               "scripts/view2.js",
                                                                                "scripts/shared.js"],
                                                                       stylesheets=["stylesheets/shared.css",
-                                                                                   "stylesheets/discs.css",
-                                                                                   "stylesheets/view2.css"])
+                                                                                   "stylesheets/view2.css"],
+                                                                      view="months")
 
     # -----------------------------
     # Ripped discs grouped by year.
@@ -518,14 +528,15 @@ class DigitalAudioCollection(object):
                                                                       browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0), reverse=True)),
                                                                       content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("ripped_year"))],
                                                                       link=("year", "year"),
-                                                                      maintitle="Ripped Audio Discs",
-                                                                      menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                      maintitle="ripped discs",
+                                                                      options=[],
                                                                       scripts=["frameworks/jquery.js",
                                                                                "scripts/functions.js",
+                                                                               "scripts/view2.js",
                                                                                "scripts/shared.js"],
                                                                       stylesheets=["stylesheets/shared.css",
-                                                                                   "stylesheets/discs.css",
-                                                                                   "stylesheets/view2.css"])
+                                                                                   "stylesheets/view2.css"],
+                                                                      view="years")
 
     # -------------------------------
     # Ripped discs grouped by artist.
@@ -547,14 +558,15 @@ class DigitalAudioCollection(object):
                                                                         browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0))),
                                                                         content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("artistsort"))],
                                                                         link=("artist", "artistsort"),
-                                                                        maintitle="Ripped Audio Discs",
-                                                                        menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                        maintitle="ripped discs",
+                                                                        options=[],
                                                                         scripts=["frameworks/jquery.js",
                                                                                  "scripts/functions.js",
+                                                                                 "scripts/view2.js",
                                                                                  "scripts/shared.js"],
                                                                         stylesheets=["stylesheets/shared.css",
-                                                                                     "stylesheets/discs.css",
-                                                                                     "stylesheets/view2.css"])
+                                                                                     "stylesheets/view2.css"],
+                                                                        view="artists")
 
     # ----------------------------
     # Ripped CDs grouped by genre.
@@ -576,14 +588,15 @@ class DigitalAudioCollection(object):
                                                                        browser=OrderedDict(sorted(mapping.items(), key=itemgetter(0))),
                                                                        content=[(key, list(group)) for key, group in groupby(discs, key=attrgetter("genre"))],
                                                                        link=("genre", "genre"),
-                                                                       maintitle="Ripped Audio Discs",
-                                                                       menu=getattr(self.TEMPLATE, "menu").render(months=[]),
+                                                                       maintitle="ripped discs",
+                                                                       options=[],
                                                                        scripts=["frameworks/jquery.js",
                                                                                 "scripts/functions.js",
+                                                                                "scripts/view2.js",
                                                                                 "scripts/shared.js"],
                                                                        stylesheets=["stylesheets/shared.css",
-                                                                                    "stylesheets/discs.css",
-                                                                                    "stylesheets/view2.css"])
+                                                                                    "stylesheets/view2.css"],
+                                                                       view="genres")
 
         # ----------------------
         # Ripped CDs statistics.
