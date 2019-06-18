@@ -73,8 +73,7 @@ var website = website || {};
     //  3. Refresh current page.
     //     ---------------------
     publics.refresh = function() {
-        var pathname;
-        pathname = window.location.pathname;
+        var pathname = window.location.pathname;
         $("#refresh").click(function() {
             var $postdata = $.get(root + mapping[pathname]);
             $postdata.done(function() {

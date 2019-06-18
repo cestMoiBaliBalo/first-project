@@ -121,7 +121,7 @@ h3 {
     height: 21px;
 }
 
-#browse, #create, #refresh, #shutdown, #view {
+#artists, #browse, #create, #genres, #months, #refresh, #shutdown, #view, #years {
     margin: 0 5px 0 0;
 }
 

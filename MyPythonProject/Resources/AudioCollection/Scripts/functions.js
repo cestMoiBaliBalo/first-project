@@ -37,3 +37,11 @@ if (!String.prototype.trim) {
         return this.replace(/^\w*(.+)\w*$/, "$1");
     };
 }
+
+
+if (!String.prototype.capitalize) {
+    String.prototype.capitalize = function() {
+      var word = this.toLowerCase();
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    };
+}
