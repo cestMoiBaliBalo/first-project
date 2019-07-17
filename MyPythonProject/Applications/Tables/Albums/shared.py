@@ -18,7 +18,7 @@ from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Un
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, getitem_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, itemgetter_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -95,25 +95,25 @@ def _booleanify(arg):
     return booleanify(arg)
 
 
-@getitem_(5)
+@itemgetter_(5)
 @partial_(1)
 def is_firsttrack(a, b):
     return eq(a, b)
 
 
-@getitem_(0)
+@itemgetter_(0)
 @partial_("discs")
 def discs_record(a, b, sensitive=False):
     return eq_string(a, b, sensitive=sensitive)
 
 
-@getitem_(1)
+@itemgetter_(1)
 @partial_("bootlegalbums")
 def bootlegalbums_record(a, b, sensitive=False):
     return eq_string(a, b, sensitive=sensitive)
 
 
-@getitem_(27)
+@itemgetter_(27)
 @partial_(None)
 def bootlegdiscs_record(a, b):
     return not is_(b, a)
@@ -125,7 +125,7 @@ def hasbeen_played(a, b):
     return gt(b, a)
 
 
-@getitem_(8)
+@itemgetter_(8)
 def bonuses_record(arg):
     return arg.bool
 
@@ -200,13 +200,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(getitem_()(partial(eq_string, row["genre"])), get_genres(db)))
+                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(db)))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(getitem_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
+                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
                 except TypeError:
                     continue
 
@@ -1139,7 +1139,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(filter(getitem_()(partial(eq_string, genre.lower())), genres))
+        _, genreid = next(filter(itemgetter_()(partial(eq_string, genre.lower())), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 

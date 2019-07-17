@@ -25,7 +25,7 @@ locale.setlocale(locale.LC_ALL, "french")
 # ============
 # Main script.
 # ============
-collection = [list(itertools.compress(item, [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0])) for item in get_rippeddiscs()]
+collection = [list(itertools.compress(item, [1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])) for item in get_rippeddiscs()]
 index, albumid, ripped_date, ripped_year, ripped_month, artist, albumsort, genre, application, disc, album, upc = zip(*collection)
 series = {"Album ID": pandas.Series(albumid, index=index),
           "Artist": pandas.Series(artist, index=index),
@@ -41,4 +41,3 @@ series = {"Album ID": pandas.Series(albumid, index=index),
 dataframe = pandas.DataFrame(series)
 dataframe.index.name = "Record ID"
 dataframe.to_csv(os.path.join(os.path.expandvars("%_COMPUTING%"), "rippeddiscs.csv"), encoding="UTF_8", sep="|")
-

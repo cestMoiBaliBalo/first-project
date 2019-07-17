@@ -40,7 +40,7 @@ if __name__ == '__main__':
         '/albumart': {
             'tools.staticdir.on': True,
             'tools.staticdir.dir': os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art")
-        },
+        }
     }
 
     cherrypy.tree.mount(DigitalAudioCollection(), '/audiocollection', conf)

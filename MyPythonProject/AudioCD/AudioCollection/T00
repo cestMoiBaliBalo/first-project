@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <script src="https://kit.fontawesome.com/85078dba42.js"></script>
 {% block stylesheets %}{% endblock %}
     </head>
     <body id="{{ body }}">
@@ -30,10 +31,10 @@
             <li><a href="/audiocollection/digitalalbumsview">Home</a></li>
 
             <!-- Ripped discs pages -->
-            <li class="dropdown"><a href="#0">Ripped Discs</a></li>
+            <li class="dropdown"><a href="/audiocollection/rippeddiscsview">Ripped Discs</a></li>
 
             <!-- Played discs pages -->
-            <li class="dropdown"><a href="#0">Played Discs</a></li>
+            <li class="dropdown"><a href="/audiocollection/playeddiscsview">Played Discs</a></li>
 
         </ul>
 
@@ -41,9 +42,9 @@
         <div id="container">
             <div id="h2-title">
                 <div id="div1">
-                    <h2>{{ maintitle|e|upper }}</h2>
+                    <h2>{{ title|e|upper }}</h2>
                 </div>
-{% block form %}{% endblock %}
+{% block buttons %}{% endblock %}
             </div>
 {% block content %}{% endblock %}
         </div>

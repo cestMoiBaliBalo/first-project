@@ -5,12 +5,13 @@ var website = website || {};
 
 (function (publics) {
 
+
     function append_button(parent, element, text) {
         // """
         // Private function to append a button using standard JS syntax.
         // """
-        var button = document.createElement("button");
-        var textButton = document.createTextNode(text.capitalize());
+        var button = document.createElement("button"),
+            textButton = document.createTextNode(text.capitalize());
         button.className = "button";
         button.type = "button";
         button.id = text;
@@ -18,19 +19,21 @@ var website = website || {};
         parent.insertBefore(button, element);
     }
 
+
     function append_anotherbutton(element, text) {
         // """
         // Private function to append a button using jQuery syntax.
         // How use me: append_anotherbutton($(".button:eq(0)"), "button text");
         // """
-        var button = document.createElement("button");
-        var textButton = document.createTextNode(text);
+        var button = document.createElement("button"),
+            textButton = document.createTextNode(text);
         button.className = "button";
         button.type = "button";
         button.id = text;
         button.appendChild(textButton);
         $(button.outerHTML).insertBefore(element);
     }
+
 
     function views(element) {
         // """
@@ -46,16 +49,17 @@ var website = website || {};
         });
     }
 
-    publics.initialize = function() {
+
+    publics.initialize_page = function() {
 
         // -----
         var anchor,
             anchorText,
             key,
-            browser;
-        var paths = window.location.pathname.split("/");
-        var pathname = paths[paths.length - 1];
-        var search = window.location.search;
+            browser,
+            paths = location.pathname.split("/"),
+            pathname = paths[paths.length - 1],
+            search = location.search;
         if (search !== "") {
             browser = document.querySelector("div.browser");
             anchor = document.createElement("a");
@@ -80,10 +84,8 @@ var website = website || {};
         }
 
         // -----
-        var buttons = [];
-        var i,
-            len;
-        var view = $("div#wrapper").attr("class");
+        var buttons = [],
+            view = $("div#wrapper").attr("class");
         switch (view) {
             case "artists":
                 buttons = ["genres", "months", "years"];
@@ -98,16 +100,24 @@ var website = website || {};
                 buttons = ["artists", "genres", "months"];
         }
         if (buttons) {
-            for (i = 0, len = 3; i < len; i++) {
-                append_button(document.querySelector("div#div2").firstElementChild, document.querySelector("#refresh"), buttons[i]);
-            }
+            $.each(buttons, function(entryIndex, entry) {
+                append_button(document.querySelector("div#div2").firstElementChild, document.querySelector("#refresh"), entry);
+            });
         }
 
     };
 
-    publics.browse = function() {
-        var month;
 
+    publics.browse_collection = function() {
+        views("artists");
+        views("genres");
+        views("months");
+        views("years");
+    };
+
+
+    publics.browse_page = function() {
+        var month;
         $("div.browser > a").hover(function() {
             $("div.browser > a").each(function() {
                 if ($(this).hasClass("bold")) {
@@ -126,19 +136,12 @@ var website = website || {};
 
     };
 
-    publics.views = function() {
-        views("artists");
-        views("genres");
-        views("months");
-        views("years");
-    };
 
-    publics.init = function() {
-        website.view2.initialize();
-        website.view2.browse();
-        website.view2.views();
+    publics.load = function() {
+        website.view2.initialize_page();
+        website.view2.browse_collection();
+        website.view2.browse_page();
     };
-
 
 
 })(website.view2 = {});

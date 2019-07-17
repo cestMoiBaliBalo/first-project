@@ -5,7 +5,7 @@ import os
 from contextlib import ExitStack
 from pathlib import PurePath
 
-from Applications.shared import TemplatingEnvironment, getitem_
+from Applications.shared import TemplatingEnvironment, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -24,12 +24,12 @@ RIPPEDTRACKS = "rippedtracks"
 # ==========
 # Functions.
 # ==========
-@getitem_()
+@itemgetter_()
 def get_parent(path: str) -> PurePath:
     return PurePath(path).parent
 
 
-@getitem_()
+@itemgetter_()
 def get_name(path: str) -> str:
     return PurePath(path).name
 

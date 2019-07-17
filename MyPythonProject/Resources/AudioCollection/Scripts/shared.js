@@ -11,6 +11,7 @@ var website = website || {};
     //     -------------
     var mapping = {"/audiocollection/digitalalbumsview": "refreshdigitalalbums",
                    "/audiocollection/rippeddiscsview": "refreshrippeddiscs",
+                   "/audiocollection/playeddiscsview": "refreshplayeddiscs",
                    "/audiocollection/rippeddiscsviewbyartist": "rippeddiscsviewbyartist",
                    "/audiocollection/rippeddiscsviewbygenre": "rippeddiscsviewbygenre",
                    "/audiocollection/rippeddiscsviewbymonth": "rippeddiscsviewbymonth",
@@ -18,20 +19,18 @@ var website = website || {};
 
 
     //     ----------------------------------------
-    //  1. Initialize page with additional buttons.
+    //  1. initialize_page page with additional buttons.
     //     ----------------------------------------
-    publics.initialize = function() {
-        var div_buttons,
+    publics.initialize_page = function() {
+        var buttons,
+            div,
             refresh,
             shutdown,
-            div2,
-            form,
             text;
 
         //  3.1. Insert additional buttons.
-        div2 = document.querySelector("#div2");
-        form = document.querySelector("#form");
-        div_buttons = document.createElement("div");
+        div = document.querySelector("#div2");
+        buttons = document.createElement("div");
 
         //  3.1.a. Insert "refresh" button.
         //         No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
@@ -41,7 +40,7 @@ var website = website || {};
         refresh.type = "button";
         refresh.id = "refresh";
         refresh.appendChild(text);
-        div_buttons.appendChild(refresh);
+        buttons.appendChild(refresh);
 
         //  3.1.b. Insert "shutdown" button.
         //         No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
@@ -51,33 +50,23 @@ var website = website || {};
         shutdown.type = "button";
         shutdown.id = "shutdown";
         shutdown.appendChild(text);
-        div_buttons.appendChild(shutdown);
+        buttons.appendChild(shutdown);
 
         // -----
-        div2.insertBefore(div_buttons, form.parentNode);
+        div.appendChild(buttons);
 
-    };
-
-
-    //     ------------
-    //  2. Browse site.
-    //     ------------
-    publics.browse = function() {
-        $("li.dropdown:first > a:first").click(function() {
-            $(location).attr("href", root + "rippeddiscsview");
-        });
     };
 
 
     //     ---------------------
     //  3. Refresh current page.
     //     ---------------------
-    publics.refresh = function() {
-        var pathname = window.location.pathname;
+    publics.refresh_page = function() {
         $("#refresh").click(function() {
-            var $postdata = $.get(root + mapping[pathname]);
+            var $pathname = location.pathname,
+                $postdata = $.get(root + mapping[$pathname]);
             $postdata.done(function() {
-                $(location).attr("href", pathname);
+                $(location).attr("href", $pathname);
             });
         });
     };
@@ -96,10 +85,9 @@ var website = website || {};
     //     ----------------
     //  5. Pages controler.
     //     ----------------
-    publics.init = function() {
-        website.initialize();
-        website.browse();
-        website.refresh();
+    publics.load = function() {
+        website.initialize_page();
+        website.refresh_page();
         website.shutdown();
     };
 
@@ -111,11 +99,11 @@ $(function() {
     var $specific = $("body").attr("id");
 
     // --> Run common script.
-    website.init();
+    website.load();
 
     // --> Run page specific script.
     if (website[$specific] !== undefined) {
-        website[$specific].init();
+        website[$specific].load();
     }
 
 });

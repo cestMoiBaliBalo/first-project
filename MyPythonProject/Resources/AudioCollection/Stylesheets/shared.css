@@ -97,21 +97,20 @@ h3 {
 #div2 > div:nth-child(1) {
     position: absolute;
     z-index: 1;
+    right: 0;
     top: 50%;
-    left: 0;
-    width: 80%;
     -webkit-transform: translateY(-50%);
     -ms-transform: translateY(-50%);
     transform: translateY(-50%);
 }
 
-#div2 > div:nth-child(2) {
+/* #div2 > div:nth-child(2) {
     position: absolute;
     z-index: 1;
     right: 0;
     width: 20%;
     text-align: left;
-}
+} */
 
 #container {
     background-color: var(--container-bg-color);

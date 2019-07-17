@@ -10,16 +10,10 @@ var website = website || {};
     //  1. Set inner variables.
     //     --------------------
     var coversperpage = 32,
-        privates = {};
-    var month;
-
-
-
-    //     -------------
-    //  2. Set mappings.
-    //     -------------
-    var mapping = {"/audiocollection/digitalalbumsview": "digitalalbums",
-                   "/audiocollection/rippeddiscsview": "rippeddiscs"};
+        mapping = {"/audiocollection/digitalalbumsview": "digitalalbums",
+                   "/audiocollection/playeddiscsview": "playeddiscs",
+                   "/audiocollection/rippeddiscsview": "rippeddiscs"},
+        month;
 
 
     //     --------------------
@@ -146,13 +140,13 @@ var website = website || {};
 
 
     //  2.4. Change URL hash part when more covers are requested.
-    function displaymorecovers() {
+    function display_morecovers() {
         location.hash = document.querySelectorAll(".cover").length + 1;
     }
 
 
     //  2.5. Change URL hash part when less covers are requested.
-    function displaylesscovers() {
+    function display_lesscovers() {
         var covers = document.querySelectorAll(".cover");
         var modulo = covers.length % coversperpage;
         switch (modulo) {
@@ -166,7 +160,7 @@ var website = website || {};
 
 
     //  2.6. Change URL hash part when all covers are requested.
-    function displayallcovers() {
+    function display_allcovers() {
         location.hash = 9999;
     }
 
@@ -194,21 +188,24 @@ var website = website || {};
     }
 
 
-    //     ----------------
-    //  3. Initialize page.
-    //     ----------------
-    publics.initialize = function() {
+    //     ---------------------
+    //  3. Set public functions.
+    //     ---------------------
+
+
+    //  3.1. initialize_page page.
+    publics.initialize_page = function() {
         var browse,
             buttons,
             div2,
             div_buttons,
             text,
-            view;
-        var paths = window.location.pathname.split("/");
-        var pathname = paths[paths.length - 1];
+            view,
+            paths = location.pathname.split("/"),
+            page = paths[paths.length - 1];
 
-        //  3.1. Insert "browse" button for browsing ripped discs.
-        if (pathname === "rippeddiscsview") {
+        //  3.1.a. Insert "browse" button for browsing ripped discs.
+        if (page === "rippeddiscsview") {
             div2 = document.querySelector("#div2");
             div_buttons = div2.getElementsByTagName("div")[0];
             browse = document.createElement("button");
@@ -220,57 +217,56 @@ var website = website || {};
             div_buttons.insertBefore(browse, document.getElementById("refresh"));
         }
 
-        //  3.2. Insert both "more covers" and "less covers" button.
-        //       Only if view is "default".
-        //       No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
-        view = document.getElementById("view");
-        if (view.options[view.selectedIndex].value === "default") {
-            more_button();
-            less_button();
-            all_button();
-        }
+        //  3.1.b. Insert both "more covers" and "less covers" button.
+        //         No button will be displayed if javascript/jQuery isn't available. It is a progressive enhancement.
+        more_button();
+        less_button();
+        all_button();
 
-        //  3.3. Get number of covers.
+        //  3.1.c. Get number of covers.
         coverid(document.querySelectorAll(".cover"), "cover_");
 
-        //  3.3. Configure events listeners.
+        //  3.1.d. Configure events listeners.
         buttons = document.getElementById("buttons");
         if (buttons) {
-            buttons.addEventListener("click", function(e) {
-                if (e.target) {
-                    switch (e.target.id.toLowerCase()) {
+            buttons.addEventListener("click", function(ev) {
+                if (ev.target) {
+                    switch (ev.target.id.toLowerCase()) {
                         case "less":
-                            displaylesscovers();
+                            display_lesscovers();
                             break;
                         case "more":
-                            displaymorecovers();
+                            display_morecovers();
                             break;
                         case "all":
-                            displayallcovers();
+                            display_allcovers();
                             break;
                     }
                 }
             });
         }
 
-        //  3.4. Display more, or less, covers by getting URL hash part.
-        //       Allow to browse covers with browser history.
-        window.onhashchange = function() {
+    };
+
+
+    //  3.2. Display more, or less, covers by getting URL hash part.
+    //       Allow to browse covers with browser history.
+    publics.browse_covers = function() {
+
+        window.addEventListener("hashchange", function() {
             var $posting,
-                hash,
                 i,
                 number,
-                pathname;
+                hash = location.hash,
+                pathname = location.pathname;
 
-            pathname = window.location.pathname;
-
-            //  3.4.a. Get required HTML elements.
+            //  3.2.a. Get required HTML elements.
             var more = document.querySelector("#more"),
                 less = document.querySelector("#less"),
                 all = document.querySelector("#all");
 
-            //  3.4.b. Get first displayed cover number.
-            hash = parseInt(location.hash.replace("#", ''), 10);
+            //  3.2.b. Get first displayed cover number.
+            hash = parseInt(hash.replace("#", ''), 10);
             if (!hash) {
                 number = 1;
             }
@@ -281,10 +277,10 @@ var website = website || {};
                 number = hash;
             }
 
-            //  3.4.c. Get displayed covers count.
+            //  3.2.c. Get displayed covers count.
             var covers = document.querySelectorAll(".cover");
 
-            //  3.4.d. Remove displayed covers from first cover number to covers count.
+            //  3.2.d. Remove displayed covers from first cover number to covers count.
             if (covers) {
                 i = number;
                 while (i <= covers.length) {
@@ -295,7 +291,7 @@ var website = website || {};
                 }
             }
 
-            // 3.4.e. Append requested covers when more covers are requested.
+            //  3.2.e. Append requested covers when more covers are requested.
             //        Show or hide both "more covers" and less covers" buttons.
             switch (hash) {
                 case 9999:
@@ -360,39 +356,33 @@ var website = website || {};
 
             });
 
-        };
+        });
 
     };
 
 
-    //     -------------------
-    //  4. Change covers view.
-    //     -------------------
-    publics.changecoversview = function() {
-        $("#view").change(function() {
-            $("form").submit();
+    //  3.2. Browse albums or discs.
+    //       Deprecated. Not used anymore!
+    // publics.browse = function() {
+    //     $("#browse").click(function() {
+    //         $(location).attr("href", root + "rippeddiscsviewbymonth");
+    //     });
+    // };
+
+
+    //  3.3. Browse collection list.
+    publics.browse_collection = function() {
+        $("#fa-bars").click(function() {
+            $(location).attr("href", root + mapping[location.pathname] + "list");
         });
     };
 
 
-    //     --------------------
-    //  5. Browse ripped discs.
-    //     --------------------
-    publics.browse = function() {
-        $("#browse").click(function() {
-            $(location).attr("href", root + "rippeddiscsviewbymonth");
-        });
-    };
-
-
-
-    //     ----------------
-    //  6. Page controlers.
-    //     ----------------
-    publics.init = function() {
-        website.view1.initialize();
-        website.view1.changecoversview();
-        website.view1.browse();
+    //  3.3. Page controlers.
+    publics.load = function() {
+        website.view1.initialize_page();
+        website.view1.browse_collection();
+        website.view1.browse_covers();
     };
 
 

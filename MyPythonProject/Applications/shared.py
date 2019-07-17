@@ -405,7 +405,7 @@ def attrgetter_(name: str):
     return wrapper
 
 
-def getitem_(index: int = 0):
+def itemgetter_(index: int = 0):
     def wrapper(f):
         def sub_wrapper(arg):
             return f(arg[index])
