@@ -11,10 +11,10 @@ from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import partial, singledispatch
-from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
+from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
 from logging import Formatter
 from logging.handlers import RotatingFileHandler
-from operator import attrgetter, itemgetter
+from operator import attrgetter
 from pathlib import PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
@@ -226,7 +226,7 @@ class TitleCaseBaseConverter(ABC):
 
     # Define class-level configuration.
     with open(join(_THATFILE.parent / "Resources" / "resource1.yml"), encoding=UTF8) as fp:
-        config = yaml.load(fp)
+        config = yaml.load(fp, Loader=yaml.FullLoader)
 
     # Define class-level regular expressions.
     acronyms = re.compile(r"\b((?:u\.?)(?:s\.?a\.?|k\.?))\b", re.IGNORECASE)
@@ -384,12 +384,17 @@ class LocalParser(parserinfo):
 
 
 class ToBoolean(object):
+
     def __init__(self, arg):
-        self.bool = False
+        self._bool = False
         if arg.lower() == "y":
-            self.bool = True
+            self._bool = True
         if arg.lower() == "yes":
-            self.bool = True
+            self._bool = True
+
+    @property
+    def boolean_value(self):
+        return self._bool
 
 
 # ===========
@@ -799,37 +804,37 @@ def grouper(iterable, n, *, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def advanced_grouper(collection, *, key: Optional[int] = None, subkey: Optional[int] = None):
-    if key is None:
-        for item in collection:
-            yield item
-    elif key is not None:
-        group_by = [(key, 0), (subkey, 1)]
-        if subkey is None:
-            group_by = [(key, 0)]
-        group_by = iter(group_by)
-        while True:
-            try:
-                key, index = next(group_by)
-            except StopIteration:
-                break
-            if index == 0:
-                collection = alternative_grouper(*collection, index=key)
-            elif index > 0:
-                templist1, templist2 = [], []
-                for _key, _group in collection:
-                    for _sub_key, _sub_group in alternative_grouper(*_group, index=key):
-                        templist1.append((_sub_key, _sub_group))
-                    templist2.append((_key, templist1))
-                    templist1 = []
-                collection = list(templist2)
-        for item in collection:
-            yield item
+# def advanced_grouper(collection, *, key: Optional[int] = None, subkey: Optional[int] = None):
+#     if key is None:
+#         for item in collection:
+#             yield item
+#     elif key is not None:
+#         group_by = [(key, 0), (subkey, 1)]
+#         if subkey is None:
+#             group_by = [(key, 0)]
+#         group_by = iter(group_by)
+#         while True:
+#             try:
+#                 key, index = next(group_by)
+#             except StopIteration:
+#                 break
+#             if index == 0:
+#                 collection = alternative_grouper(*collection, index=key)
+#             elif index > 0:
+#                 templist1, templist2 = [], []
+#                 for _key, _group in collection:
+#                     for _sub_key, _sub_group in alternative_grouper(*_group, index=key):
+#                         templist1.append((_sub_key, _sub_group))
+#                     templist2.append((_key, templist1))
+#                     templist1 = []
+#                 collection = list(templist2)
+#         for item in collection:
+#             yield item
 
 
-def alternative_grouper(*collection, index: int = 0):
-    for k, group in groupby(collection, key=itemgetter(index)):
-        yield k, list(group)
+# def alternative_grouper(*collection, index: int = 0):
+#     for k, group in groupby(collection, key=itemgetter(index)):
+#         yield k, list(group)
 
 
 def partitioner(iterable, *, predicate=None):
@@ -971,7 +976,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
     :param timestamp: facultative input local timestamp.
     :return: ripping application.
     """
-    application = {"1553943600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    application = {"1564610400": "dBpoweramp Release 16.6", "1553943600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
     ts: Optional[int] = timestamp
     if timestamp is None:
         ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
@@ -1312,7 +1317,7 @@ def booleanify(arg):
 @booleanify.register(str)  # type: ignore
 def _(arg: str):
     if arg.lower() in ["n", "y"]:
-        return ToBoolean(arg)
+        return ToBoolean(arg).boolean_value
     return arg
 
 

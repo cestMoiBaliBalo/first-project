@@ -41,7 +41,7 @@ MAPPING = {True: "debug", False: "info"}
 # Logging.
 # ========
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    config = yaml.load(fp)
+    config = yaml.load(fp, Loader=yaml.FullLoader)
 for item in ["Applications.AudioCD", "MyPythonProject"]:
     with suppress(KeyError):
         config["loggers"][item]["level"] = MAPPING[argument.debug].upper()

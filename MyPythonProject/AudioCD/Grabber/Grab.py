@@ -45,7 +45,7 @@ with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "pr
 # Configure logging.
 if tags_config.get("debug", False):
     with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as stream:
-        log_config = yaml.load(stream)
+        log_config = yaml.load(stream, Loader=yaml.FullLoader)
 
     for item in LOGGERS:
         with suppress(KeyError):

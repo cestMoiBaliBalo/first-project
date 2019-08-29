@@ -396,7 +396,7 @@ def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE, loc
     _local_played = LOCAL.localize(datetime.now())  # type: datetime
     if local_played is not None:
         try:
-            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 0, 1, 0]))
+            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 1, 0]))
         except ValueError:
             return 0, 0
 
@@ -826,7 +826,7 @@ def _insert_albums(*iterables) -> int:
 
     # -----
     with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
-        config = yaml.load(stream)
+        config = yaml.load(stream, Loader=yaml.FullLoader)
     _statements = config["statements"]
     _selectors = config["selectors"]
     _tables = config["tables"]

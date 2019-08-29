@@ -3,22 +3,34 @@
 import itertools
 import json
 import os
-import sys
 import unittest
 from collections.abc import MutableSequence
-from datetime import datetime
 from functools import partial
 from operator import contains, eq, gt, lt
+from unittest.mock import Mock
 
-from pytz import timezone
-
-from Applications.Tables.Albums.shared import get_genres
-from Applications.shared import DATABASE, TitleCaseConverter, UTF8, eq_string, get_readabledate, get_rippingapplication, itemgetter_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+
+# ==========
+# Functions.
+# ==========
+def myfunction(char: str):
+    def wrapper(index: int = 0):
+        def sub_wrapper(func):
+            def ssub_wrapper(arg: str):
+                return func(arg.split(char)[index])
+
+            return ssub_wrapper
+
+        return sub_wrapper
+
+    return wrapper
 
 
 # ========
@@ -51,7 +63,7 @@ class Test02(unittest.TestCase):
 
             def __init__(self, seq):
                 self._index = -1
-                self._seq = sorted(sorted(sorted(seq, key=lambda i: int(i.split(".")[2])), key=lambda i: int(i.split(".")[0])), key=lambda i: int(i.split(".")[1]))
+                self._seq = sorted(sorted(sorted(seq, key=myfunction(".")(2)(int)), key=myfunction(".")(0)(int)), key=myfunction(".")(1)(int))
 
             def __getitem__(self, item):
                 return self._seq[item]
@@ -113,39 +125,39 @@ class Test02(unittest.TestCase):
 
 class Test03(unittest.TestCase):
     def setUp(self):
-        self.x = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
+        self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
 
     def test_t01(self):
-        self.assertEqual(int(max(self.x).split("_")[1]), 101)
+        self.assertEqual(int(max(self.iterable).split("_")[1]), 101)
 
     def test_t02(self):
-        self.assertEqual(int(max([i.split("_")[1] for i in self.x])), 456)
+        self.assertEqual(myfunction("_")(1)(int)(max(self.iterable)), 101)
 
     def test_t03(self):
-        def myfunc1(s):
-            return int(s.split("_")[1])
-
-        self.assertListEqual(sorted(self.x, key=myfunc1), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertEqual(int(max([item.split("_")[1] for item in self.iterable])), 456)
 
     def test_t04(self):
-        self.assertListEqual(sorted(sorted(self.x, key=lambda i: int(i.split("_")[1])), key=lambda i: int(i.split("_")[0])), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
+        self.assertEqual(max(map(myfunction("_")(1)(int), self.iterable)), 456)
+
+    def test_t05(self):
+        self.assertListEqual(sorted(self.iterable, key=myfunction("_")(1)(int)), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+
+    def test_t06(self):
+        self.assertListEqual(sorted(sorted(self.iterable, key=myfunction("_")(1)(int)), key=myfunction("_")(0)(int)), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
-# class Test05(unittest.TestCase):
-#     def test_t01(self):
-#         self.assertEqual(validmonth("Janvier 2017"), 201701)
-#
-#     def test_t02(self):
-#         self.assertEqual(validmonth("2017 01"), 201701)
-#
-#     def test_t03(self):
-#         self.assertEqual(validmonth("Février 2017"), 201702)
-#
-#     def test_t04(self):
-#         self.assertEqual(validmonth("2017 02"), 201702)
-#
-#     def test_t05(self):
-#         self.assertEqual(validmonth("2017-02"), 201702)
+class Test04(unittest.TestCase):
+    def test_t01(self):
+        self.assertTrue(ToBoolean("Y").boolean_value)
+
+    def test_t02(self):
+        self.assertFalse(ToBoolean("N").boolean_value)
+
+    def test_t03(self):
+        self.assertFalse(ToBoolean("O").boolean_value)
+
+    def test_t04(self):
+        self.assertFalse(ToBoolean("toto").boolean_value)
 
 
 class TestTitleCaseConverter(unittest.TestCase):
@@ -160,26 +172,13 @@ class TestTitleCaseConverter(unittest.TestCase):
                 self.assertEqual(title_out, TitleCaseConverter().convert(title_in))
 
 
-@unittest.skip
-class TestGetReadableDate(unittest.TestCase):
-
-    def setUp(self):
-        self.readable_date = "Jeudi 08 Novembre 2018 13:48:51 CET (UTC+0100)"
-
-    def test_t01(self):
-        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 13, 48, 51), tz=timezone("Europe/Paris")), self.readable_date)
-
-    def test_t02(self):
-        self.assertEqual(get_readabledate(datetime(2018, 11, 8, 12, 48, 51), tz=timezone("UTC")), self.readable_date)
-
-
 class TestGetRippingApplication(unittest.TestCase):
     """
 
     """
 
     def test_t01(self):
-        self.assertEqual(get_rippingapplication(), "dBpoweramp 16.5")
+        self.assertEqual(get_rippingapplication(), "dBpoweramp Release 16.6")
 
     def test_t02(self):
         self.assertEqual(get_rippingapplication(timestamp=1541702820), "dBpoweramp 15.1")
@@ -265,18 +264,24 @@ class TestDecorator03(unittest.TestCase):
         self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
 
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestDecorator04(unittest.TestCase):
     """
 
     """
 
+    def setUp(self):
+        self.get_genres = Mock(return_value=[("Alternative Rock", 1), ("Hard Rock", 2), ("Rock", 3)])
+
     def test_t01(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "hard rock")), get_genres(DATABASE)))
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", self.get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "hard rock")), self.get_genres(DATABASE)))
         self.assertEqual(genreid1, genreid2)
+        self.get_genres.assert_called()
+        self.get_genres.assert_called_with(DATABASE)
 
     def test_t02(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "rock")), get_genres(DATABASE)))
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", self.get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "rock")), self.get_genres(DATABASE)))
         self.assertNotEqual(genreid1, genreid2)
+        self.get_genres.assert_called()
+        self.get_genres.assert_called_with(DATABASE)

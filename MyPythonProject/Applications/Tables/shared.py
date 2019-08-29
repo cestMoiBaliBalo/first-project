@@ -49,7 +49,7 @@ def adapt_booleanvalue(boolobj):
     :param boolobj: object created from `ToBoolean` class.
     """
     d = {False: 0, True: 1}
-    return d[boolobj.bool]
+    return d[boolobj.boolean_value]
 
 
 def convert_tobooleanvalue(i: bytes) -> bool:

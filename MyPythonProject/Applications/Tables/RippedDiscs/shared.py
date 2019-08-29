@@ -235,11 +235,11 @@ def _get_rippeddiscs(db: str, **kwargs):
                   "tracks, " \
                   "created_date, " \
                   "is_bootleg, " \
-                  "origyear, " \
-                  "year, " \
+                  "coalesce(origyear, '') AS origyear, " \
+                  "coalesce(year, '') AS year, " \
                   "album, " \
-                  "label, " \
-                  "upc, " \
+                  "coalesce(label, '') AS label, " \
+                  "coalesce(upc, '') AS upc, " \
                   "bootleg_date, " \
                   "bootleg_city, " \
                   "bootleg_country, " \

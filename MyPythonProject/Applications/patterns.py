@@ -19,7 +19,7 @@ __status__ = "Production"
 # ==========
 # Constants.
 # ==========
-REGEX = re.compile(r"^(\d\.\d{2}\.)(.+)\.[a-z]{3,4}$", re.IGNORECASE)
+REGEX = re.compile(r"^(\d\.\d{2}\.)(.+)\.[a-z0-9]{3,4}$", re.IGNORECASE)
 
 
 # ==========
@@ -35,14 +35,14 @@ class FileNameDecorator(object):
 
 class RightTrim(FileNameDecorator):
     def __init__(self, obj, length=30):
-        super(RightTrim).__init__(obj)
+        super(RightTrim, self).__init__(obj)
         if self.found:
             self.name = self.name[:length]
 
 
 class RenameWithTitle(FileNameDecorator):
     def __init__(self, obj):
-        super(RenameWithTitle).__init__(obj)
+        super(RenameWithTitle, self).__init__(obj)
         if self.found:
             _name = self.tags["title"]
             for char in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:

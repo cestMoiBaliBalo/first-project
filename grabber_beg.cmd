@@ -49,7 +49,7 @@ IF [%~5] NEQ [] (
     GOTO LOOP
 )
 PUSHD "%_PYTHONPROJECT%\AudioCD\Grabber"
-python Main.py "%~1" %~2 %_decorators%--tags_processing %~4
+python Grab.py "%~1" %~2 %_decorators%--tags_processing %~4
 POPD
 
 REM Exit script.
