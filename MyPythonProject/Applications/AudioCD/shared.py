@@ -198,7 +198,7 @@ class AudioCDTags(MutableMapping):
 
     @property
     def foldersortcount(self):
-        return self._otags.get("foldersortcount", "N")
+        return shared.ToBoolean(self._otags.get("foldersortcount", "N")).boolean_value
 
     @property
     def genre(self):
