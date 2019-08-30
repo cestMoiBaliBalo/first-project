@@ -70,7 +70,7 @@ class AudioCDTags(MutableMapping):
         return iter(self._otags)
 
     def __str__(self):
-        return f'{self._otags["artistsort"][0].upper()}{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["album"]}'
+        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]} - {self._otags["album"]} - .{self._otags["titlesort"]}'
 
     @property
     def album(self):
@@ -828,6 +828,7 @@ class RippedTrack(ContextDecorator):
         if self._audiotracktags.step == 2:
             exclusions.append("albumsortcount")
             exclusions.append("foldersortcount")
+            exclusions.append("origtrack")
         filter_keys = shared.itemgetter_(index=0)(partial(not_contains_, exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
