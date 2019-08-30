@@ -40,7 +40,7 @@ arguments = vars(tags_grabber.parse_args())
 
 # Get audio tags processing profile.
 with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "profiles.yml"), encoding="UTF_8") as stream:
-    tags_config = yaml.load(stream)[arguments.get("tags_processing", "no_tags_processing")]
+    tags_config = yaml.load(stream)[arguments.get("tags_processing", "default")]
 
 # Configure logging.
 if tags_config.get("debug", False):
@@ -73,5 +73,6 @@ if tags_config.get("debug", False):
 # Process tags from input file.
 sys.exit(upsert_audiotags(arguments["profile"],
                           arguments["source"],
+                          arguments["sequence"],
                           *arguments.get("decorators", ()),
                           **dict(filter(set_kwargs, tags_config.items()))))

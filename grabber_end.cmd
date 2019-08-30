@@ -25,7 +25,6 @@ SET _errorlevel=0
 SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 SET _jsontags=%TEMP%\tags.json
 SET _jsonxreferences=%TEMP%\xreferences.json
-SET _txtfiles=%_COMPUTING%\Resources\rippedtracks.txt
 
 
 REM ============
@@ -40,34 +39,32 @@ IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
+IF "%~1" EQU "5" GOTO STEP5
 SHIFT
 GOTO MAIN
 
 
-REM        -----------------------------------------------
-REM  1 --> Append ripped tracks to digital audio database.
-REM        -----------------------------------------------
+REM        -----------------------
+REM  1 --> Digital audio database.
+REM        -----------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-    PUSHD !_parent!
-    python Insert_Albums.py "%_jsontags%"
+    PUSHD %_grabber%
+    python Store_Albums.py "%_jsontags%"
     POPD
-    SET _parent=
     DEL "%_jsontags%" 2>NUL
 )
 SHIFT
 GOTO MAIN
 
 
-REM        ---------------------------------------------
-REM  2 --> Append ripped tracks to XReferences database.
-REM        ---------------------------------------------
+REM        ---------------------
+REM  2 --> XReferences database.
+REM        ---------------------
 :STEP2
 IF EXIST "%_jsonxreferences%" (
-    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-    PUSHD !_parent!
-    python Insert_XReferences.py "%_jsonxreferences%"
+    PUSHD %_grabber%
+    python Store_XReferences.py "%_jsonxreferences%"
     POPD
     DEL "%_jsonxreferences%" 2>NUL
 )
@@ -75,9 +72,9 @@ SHIFT
 GOTO MAIN
 
 
-REM        ------------------------------
-REM  3 --> Update ripped discs dashboard.
-REM        ------------------------------
+REM        -----------------------
+REM  3 --> Ripped discs dashboard.
+REM        -----------------------
 :STEP3
 PUSHD %_grabber%
 python RippedDiscs.py
@@ -86,14 +83,20 @@ SHIFT
 GOTO MAIN
 
 
-REM        ----------------------------
-REM  4 --> Prepare NAS Syncing. Step 2.
-REM        ----------------------------
+REM        -----------------------------------
+REM  4 --> Ripped tracks list for NAS syncing.
+REM        -----------------------------------
 :STEP4
-IF EXIST "%_txtfiles%" (
-    PUSHD %_grabber%
-    python RippedTracks2NAS.py
-    POPD
-)
+PUSHD %_grabber%
+python RippedTracks2NAS.py
+POPD
+SHIFT
+GOTO MAIN
+
+
+:STEP5
+PUSHD %TEMP%
+DEL sequences.json 2> NUL
+POPD
 SHIFT
 GOTO MAIN

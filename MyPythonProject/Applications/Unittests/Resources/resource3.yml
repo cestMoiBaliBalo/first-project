@@ -185,7 +185,7 @@ default:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: FLAC 1.3.3
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Hard Rock
     InCollection: Y
@@ -239,7 +239,7 @@ default1:
     Bootleg: N
     Deluxe: N
     Disc: 2/2
-    Encoder: FLAC 1.3.3
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: Y
     Genre: Hard Rock
     InCollection: Y
@@ -292,7 +292,7 @@ default2:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: FLAC 1.3.3
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Hard Rock
     InCollection: Y
@@ -345,7 +345,7 @@ default3:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: FLAC 1.3.3
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: Y
     Genre: Hard Rock
     InCollection: Y
@@ -399,7 +399,7 @@ default4:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: FLAC 1.3.3
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Rock
     InCollection: Y

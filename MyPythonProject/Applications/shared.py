@@ -92,6 +92,7 @@ TEMPLATE7 = "$Y$m${d}_$H$M$S"
 # Local drives.
 IMAGES = PurePath("H:/")
 MUSIC = PurePath("F:/")
+TEMP = PurePath("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
 
 # Distant directories.
 IMAGES_COLLECTION = r"\\Diskstation\backup\Images\Collection"
