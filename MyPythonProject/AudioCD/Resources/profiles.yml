@@ -23,9 +23,9 @@ test_bootlegalbum:
   bootlegs: True
   database: !!python/name:Applications.shared.TESTDATABASE
   debug: True
-  console: True
-  save: False
-  root: !!python/none
+  console: False
+  save: True
+  root: !!python/name:Applications.shared.TEMP
   sample: False
 
 test_defaultalbum:
@@ -33,9 +33,9 @@ test_defaultalbum:
   bootlegs: False
   database: !!python/name:Applications.shared.TESTDATABASE
   debug: True
-  console: True
-  save: False
-  root: !!python/none
+  console: False
+  save: True
+  root: !!python/name:Applications.shared.TEMP
   sample: False
 
 unittest_bootlegalbum:
