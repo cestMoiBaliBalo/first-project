@@ -11,7 +11,7 @@ from datetime import datetime
 from functools import partial
 from itertools import compress, groupby
 from operator import contains, itemgetter
-from pathlib import PureWindowsPath
+from pathlib import Path, PurePath, PureWindowsPath
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
 
@@ -48,9 +48,11 @@ class AudioCDTags(MutableMapping):
     def __init__(self):
         self.logger.debug("AudioCDTags.__init__")
         self._encoder = None
+        self._otags = dict()
+        self._sequence = None
+        self._step = 0
         self._totaltracks_key = None
         self._totaldiscs_key = None
-        self._otags = dict()
 
     def __getitem__(self, item):
         return self._otags[item]
@@ -66,6 +68,9 @@ class AudioCDTags(MutableMapping):
 
     def __iter__(self):
         return iter(self._otags)
+
+    def __str__(self):
+        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]} - {self._otags["album"]} - .{self._otags["titlesort"]}'
 
     @property
     def album(self):
@@ -185,6 +190,10 @@ class AudioCDTags(MutableMapping):
         return self._otags.get("bootlegtracktour")
 
     @property
+    def database(self):
+        return shared.ToBoolean(self._otags.get("database", "Y")).boolean_value
+
+    @property
     def deluxe(self):
         return self._otags.get("deluxe", "N")
 
@@ -225,8 +234,28 @@ class AudioCDTags(MutableMapping):
         return self._otags.get("mediaprovider")
 
     @property
+    def origtrack(self):
+        return self._otags.get("origtrack", self._otags["track"])
+
+    @origtrack.deleter
+    def origtrack(self):
+        del self._otags["origtrack"]
+
+    @property
     def origyear(self):
         return self._otags.get("origyear")
+
+    @property
+    def sample(self):
+        return shared.ToBoolean(self._otags.get("sample", "Y")).boolean_value
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @property
+    def step(self):
+        return self._step
 
     @property
     def titlesort(self):
@@ -261,13 +290,13 @@ class AudioCDTags(MutableMapping):
         return self._otags["year"]
 
     @classmethod
-    def fromfile(cls, fil):
+    def fromfile(cls, fil, sequence):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
         for line in filcontents(fil):
             _match = regex.match(line)
             if _match:
                 mapping[_match.group(1).rstrip().lower()] = _match.group(2)
-        return cls(**SortedDict(**mapping))
+        return cls(sequence, **SortedDict(**mapping))
 
     @staticmethod
     def checktags(member, container):
@@ -294,6 +323,8 @@ class CommonAudioCDTags(AudioCDTags):
               "artist": True,
               "artistsort": True,
               "bootleg": True,
+              "boxset": False,
+              "database": False,
               "disc": True,
               "encoder": True,
               "genre": False,
@@ -302,14 +333,16 @@ class CommonAudioCDTags(AudioCDTags):
               "livetrack": True,
               "profile": False,
               "rating": False,
+              "sample": False,
               "source": False,
               "style": False,
               "title": False,
               "tracklanguage": False,
               "track": True,
+              "utctimestamp": False,
               "_albumart_1_front album cover": False}
 
-    def __init__(self, **kwargs):
+    def __init__(self, sequence, **kwargs):
         self.logger.debug("CommonAudioCDTags.__init__")
         super(CommonAudioCDTags, self).__init__()
 
@@ -324,8 +357,27 @@ class CommonAudioCDTags(AudioCDTags):
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
         # ----- Attributes taken from the input tags.
-        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags = dict(filter(filter_keys, sorted(kwargs.items())))
+
+        # ----- Step.
+        #       Step 1 : preserve both "albumsortcount" and "foldersortcount" into output tags for correct file naming.
+        #       Step 2 : remove both "albumsortcount" and "foldersortcount" from output tags.
+        self._sequence = sequence
+        sequences = Path(shared.TEMP) / "sequences.json"
+        self._step, tracks = 2, []
+        if sequences.exists():
+            with open(sequences, encoding=shared.UTF8) as stream:
+                tracks = json.load(stream)
+        self.logger.debug(tracks)
+        self.logger.debug("Track is %s.", f'{kwargs["track"]}{sequence}')
+        if f'{kwargs["track"]}{sequence}' not in tracks:
+            self._step = 1
+            tracks.append(f'{kwargs["track"]}{sequence}')
+            self.logger.debug("%s inserted into list.", f'{kwargs["track"]}{sequence}')
+            with open(sequences, mode="w", encoding=shared.UTF8) as stream:
+                json.dump(tracks, stream)
+        self.logger.debug("Step %s for track %s.", self._step, f'{kwargs["track"]}{sequence}')
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
@@ -360,6 +412,9 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
         self._otags["track"], self._otags[self._totaltracks_key] = self.splitfield(kwargs["track"], self.track_pattern)
+
+        # ----- Backup track number.
+        self._otags["origtrack"] = self._otags["track"]
 
         # ----- Both update disc and set total discs.
         self.logger.debug("Set disc.")
@@ -411,9 +466,9 @@ class DefaultAudioCDTags(CommonAudioCDTags):
               "upc": True,
               "year": True}
 
-    def __init__(self, **kwargs):
+    def __init__(self, sequence, **kwargs):
         self.logger.debug("DefaultAudioCDTags.__init__")
-        super(DefaultAudioCDTags, self).__init__(**kwargs)
+        super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -421,7 +476,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set origyear.
@@ -478,8 +533,8 @@ class BootlegAudioCDTags(CommonAudioCDTags):
               "bootlegdiscreference": False,
               "bonustrack": True}
 
-    def __init__(self, **kwargs):
-        super(BootlegAudioCDTags, self).__init__(**kwargs)
+    def __init__(self, sequence, **kwargs):
+        super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -487,7 +542,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.getitem_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set bootleg date.
@@ -606,21 +661,22 @@ class ChangeTrack(TagsModifier):
         self._otags["track"] = str(int(self.tracknumber) + offset)
 
 
-class RippedDisc(ContextDecorator):
+class RippedTrack(ContextDecorator):
     _environment = Environment(loader=FileSystemLoader(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
     _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
-    def __init__(self, rippingprofile, file, *decoratingprofiles):
+    def __init__(self, rippingprofile, file, sequence, *decoratingprofiles):
         self._audiotracktags = None
         self._decorators = None
+        self._sequence = None
         self._encoder = None
         self._profile = None
         self._intags = None
         self._tags = None
         self.decorators = decoratingprofiles
-        # self.encoder = encoder
+        self.sequence = sequence
         self.profile = rippingprofile
         self.tags = file
 
@@ -634,14 +690,6 @@ class RippedDisc(ContextDecorator):
         if arg not in PROFILES:
             raise ValueError('"{0}" isn\'t allowed.'.format(arg))
         self._profile = arg
-
-    # @property
-    # def encoder(self):
-    #     return self._encoder
-    #
-    # @encoder.setter
-    # def encoder(self, arg):
-    #     self._encoder = arg
 
     @property
     def decorators(self):
@@ -658,6 +706,14 @@ class RippedDisc(ContextDecorator):
     @tags.setter
     def tags(self, arg):
         self._tags = arg
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @sequence.setter
+    def sequence(self, arg):
+        self._sequence = arg
 
     @property
     def intags(self):
@@ -733,7 +789,6 @@ class RippedDisc(ContextDecorator):
         self._in_logger.info('"%s" used as ripping profile.', self._profile)
         for decorator in self._decorators:
             self._in_logger.info('"%s" used as decorating profile.', decorator)
-        self._in_logger.info('"%s" used as encoder.', self._encoder)
 
         # --> 2. Log input file.
         self._in_logger.debug("Input file.")
@@ -748,60 +803,64 @@ class RippedDisc(ContextDecorator):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
         offset = int(offset)
 
-        # --> 4. Append encoder code.
-        if "encoder" not in (key.lower() for key in keys):
-            self._tags.seek(0, 2)
-            self._tags.write(f"Encoder={self._encoder}")
-
-        # --> 5. Create AudioCDTags instance.
+        # --> 4. Create AudioCDTags instance.
         self._tags.seek(0)
-        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
+        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
-        # --> 6. Log instance attributes.
+        # --> 5. Log instance attributes.
         keys, values = list(zip(*self._audiotracktags.interface.items()))
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
         for key, value in zip(shared.left_justify(keys), values):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
 
-        # --> 7. Change instance attributes.
+        # --> 6. Alter instance attributes.
         self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators, offset=offset, totaltracks=totaltracks)
+        if self._audiotracktags.origtrack == self._audiotracktags.tracknumber:
+            del self._audiotracktags.origtrack
 
-        # --> 8. Return RippedDisc instance.
+        # --> 7. Return RippedDisc instance.
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
-        filter_keys = shared.getitem_(index=0)(partial(not_contains_, PROFILES[self._profile].exclusions))
+        # --> 1. Set output tags.
+        exclusions = PROFILES[self._profile].exclusions
+        if self._audiotracktags.step == 2:
+            exclusions.append("albumsortcount")
+            exclusions.append("foldersortcount")
+            exclusions.append("origtrack")
+        filter_keys = shared.itemgetter_(index=0)(partial(not_contains_, exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
-        # --> 1. Log output tags.
+        # --> 2. Log output tags.
         self._in_logger.debug("Output tags.")
         keys, values = list(zip(*list(outtags.items())))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
 
-        # --> 2. Log output file.
+        # --> 3. Log output file.
         self._in_logger.debug("Output file.")
         self._in_logger.debug("\t%s".expandtabs(self._tabs), self._tags.name)
 
-        # --> 3. Store tags.
+        # --> 4. Store tags.
         self._in_logger.debug("Write output tags to output file.")
         self._tags.seek(0)
         self._tags.truncate()
         self._tags.write(self._outputtags.render(tags=outtags))
 
-        # --> 4. Stop logging.
+        # --> 5. Stop logging.
         self._in_logger.info('END "%s".', os.path.basename(__file__))
 
 
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, *decorators: str, **kwargs: Any) -> int:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, **kwargs: Any) -> int:
     """
 
     :param profile:
     :param source:
+    :param sequence:
     :param decorators:
     :param kwargs:
     :return:
@@ -813,37 +872,43 @@ def upsert_audiotags(profile: str, source: IO, *decorators: str, **kwargs: Any) 
     in_logger.debug(profile)
     in_logger.debug(source.name)
     try:
-        track = stack.enter_context(RippedDisc(profile, source, *decorators))
+        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators))
     except ValueError as err:
         in_logger.debug(err)
         value = 100
     else:
         with stack:
 
-            for k, v in in_mapping.items():
-                if kwargs.get(k, False):
-                    dump_audiotags_tojson(track.audiotrack, v, database=kwargs.get("database", shared.DATABASE), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
+            if track.audiotrack.database:
+                for k, v in in_mapping.items():
+                    if kwargs.get(k, False):
+                        database = Path(kwargs.get("database", shared.DATABASE))
+                        if database.exists():
+                            dump_audiotags_tojson(track.audiotrack, v, database=str(database), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
 
-            if all([kwargs.get("save"), kwargs.get("root")]):
-                path = os.path.join(kwargs["root"], get_tagsfile(track.audiotrack))
-                os.makedirs(path, exist_ok=True)
+            if kwargs.get("save", False):
+                root = Path(kwargs.get("root"))
+                if root.exists():
+                    path = kwargs["root"] / PurePath(get_tagsfile(track.audiotrack))
+                    os.makedirs(str(path), exist_ok=True)
 
-                # -----
-                json_file = os.path.join(path, "input_tags.json")
-                collection = list(load_sequence_fromjson(json_file))
-                collection.append(dict(track.intags))
-                dump_sequence_tojson(json_file, *collection)
-                dump_sequence_toyaml(os.path.join(path, "input_tags.yml"), *collection)
+                    # -----
+                    json_file = str(path / "input_tags.json")
+                    collection = list(load_sequence_fromjson(json_file))
+                    collection.append(dict(track.intags))
+                    dump_sequence_tojson(json_file, *collection)
+                    dump_sequence_toyaml(str(path / "input_tags.yml"), *collection)
 
-                # -----
-                json_file = os.path.join(path, "output_tags.json")
-                collection = list(load_sequence_fromjson(json_file))
-                collection.append(dict(**track.audiotrack))
-                dump_sequence_tojson(json_file, *collection)
-                dump_sequence_toyaml(os.path.join(path, "output_tags.yml"), *collection)
+                    # -----
+                    json_file = str(path / "output_tags.json")
+                    collection = list(load_sequence_fromjson(json_file))
+                    collection.append(dict(**track.audiotrack))
+                    dump_sequence_tojson(json_file, *collection)
+                    dump_sequence_toyaml(str(path / "output_tags.yml"), *collection)
 
-            if kwargs.get("sample", False):
-                save_audiotags_sample(profile, **dict(track.intags))
+            if track.audiotrack.sample:
+                if kwargs.get("sample", False):
+                    save_audiotags_sample(profile, **dict(track.intags))
 
     return value
 
@@ -876,7 +941,7 @@ def get_tagsfile(obj):
 
     # -----
     with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "Templates.yml"), encoding=shared.UTF8) as stream:
-        templates = yaml.load(stream)
+        templates = yaml.load(stream, Loader=yaml.FullLoader)
     in_logger.debug(templates)
 
     # Load templates respective to "bootleg" value.
@@ -1130,7 +1195,7 @@ def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -
     """
     mapping = {}  # type: Dict[str, Mapping[str, Any]]
     if not samples:
-        samples = os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "Applications", "Tests", "Resources", "resource1.json")
+        samples = os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "Applications", "Unittests", "Resources", "resource1.json")
     mapping = dict(load_mapping_fromjson(samples))
     if profile not in mapping:
         mapping[profile] = dict(**kwargs)
@@ -1449,17 +1514,17 @@ ENC_KEYS = ["name",
             "code",
             "folder",
             "extension"]
-PROFILES = {"default": Profile(["albumsortcount",
-                                "foldersortcount",
-                                "albumsortyear",
+PROFILES = {"default": Profile(["albumsortyear",
                                 "bonustrack",
                                 "bootleg",
+                                "database",
                                 "deluxe",
                                 "livedisc",
                                 "livetrack",
-                                "tracklanguage"], DefaultAudioCDTags.fromfile),
-            "bootleg": Profile(["albumsortcount",
-                                "albumsortyear",
+                                "sample",
+                                "tracklanguage",
+                                "utctimestamp"], DefaultAudioCDTags.fromfile),
+            "bootleg": Profile(["albumsortyear",
                                 "bonustrack",
                                 "bootleg",
                                 "bootlegalbumcity",
@@ -1469,11 +1534,15 @@ PROFILES = {"default": Profile(["albumsortcount",
                                 "bootlegalbumtour",
                                 "bootlegalbumyear",
                                 "bootlegtrackday",
+                                "database",
+                                "deluxe",
                                 "dashedbootlegalbumyear",
                                 "dottedbootlegalbumyear",
                                 "livedisc",
                                 "livetrack",
-                                "tracklanguage"], BootlegAudioCDTags.fromfile)
+                                "sample",
+                                "tracklanguage",
+                                "utctimestamp"], BootlegAudioCDTags.fromfile)
             }
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

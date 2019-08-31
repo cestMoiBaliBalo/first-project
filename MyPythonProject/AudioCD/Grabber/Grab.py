@@ -11,7 +11,7 @@ import yaml
 
 from Applications.AudioCD.shared import upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import get_dirname, getitem_, mainscript, partial_
+from Applications.shared import get_dirname, itemgetter_, mainscript, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -20,10 +20,10 @@ __status__ = "Production"
 
 
 # Function for setting additional keywords arguments.
-@getitem_(index=0)
+@itemgetter_(0)
 @partial_(["debug", "console"])
-def set_kwargs(a, b):
-    return not contains(a, b.lower())
+def not_contains_(iterable, item: str):
+    return not contains(iterable, item.lower())
 
 
 # Define French environment.
@@ -40,12 +40,12 @@ arguments = vars(tags_grabber.parse_args())
 
 # Get audio tags processing profile.
 with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "profiles.yml"), encoding="UTF_8") as stream:
-    tags_config = yaml.load(stream)[arguments.get("tags_processing", "no_tags_processing")]
+    tags_config = yaml.load(stream)[arguments.get("tags_processing", "default")]
 
 # Configure logging.
 if tags_config.get("debug", False):
     with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as stream:
-        log_config = yaml.load(stream)
+        log_config = yaml.load(stream, Loader=yaml.FullLoader)
 
     for item in LOGGERS:
         with suppress(KeyError):
@@ -73,5 +73,6 @@ if tags_config.get("debug", False):
 # Process tags from input file.
 sys.exit(upsert_audiotags(arguments["profile"],
                           arguments["source"],
+                          arguments["sequence"],
                           *arguments.get("decorators", ()),
-                          **dict(filter(set_kwargs, tags_config.items()))))
+                          **dict(filter(not_contains_, tags_config.items()))))

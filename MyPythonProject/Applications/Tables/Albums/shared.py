@@ -18,7 +18,7 @@ from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Un
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, getitem_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -91,29 +91,29 @@ def merge(item):
 # Decorated functions.
 # ====================
 @booleanify_sequence
-def _booleanify(arg):
+def booleanify_(arg):
     return booleanify(arg)
 
 
-@getitem_(5)
+@itemgetter_(5)
 @partial_(1)
 def is_firsttrack(a, b):
     return eq(a, b)
 
 
-@getitem_(0)
+@itemgetter_(0)
 @partial_("discs")
 def discs_record(a, b, sensitive=False):
     return eq_string(a, b, sensitive=sensitive)
 
 
-@getitem_(1)
+@itemgetter_(1)
 @partial_("bootlegalbums")
 def bootlegalbums_record(a, b, sensitive=False):
     return eq_string(a, b, sensitive=sensitive)
 
 
-@getitem_(27)
+@itemgetter_(27)
 @partial_(None)
 def bootlegdiscs_record(a, b):
     return not is_(b, a)
@@ -123,11 +123,6 @@ def bootlegdiscs_record(a, b):
 @partial_(0)
 def hasbeen_played(a, b):
     return gt(b, a)
-
-
-@getitem_(8)
-def bonuses_record(arg):
-    return arg.bool
 
 
 # ==========
@@ -200,13 +195,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(getitem_()(partial(eq_string, row["genre"])), get_genres(db)))
+                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(db)))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(getitem_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
+                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
                 except TypeError:
                     continue
 
@@ -396,7 +391,7 @@ def update_playeddisccount(albumid: str, discid: int, *, db: str = DATABASE, loc
     _local_played = LOCAL.localize(datetime.now())  # type: datetime
     if local_played is not None:
         try:
-            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 0, 1, 0]))
+            (_local_played,) = tuple(compress(valid_datetime(local_played), [0, 1, 0]))
         except ValueError:
             return 0, 0
 
@@ -826,7 +821,7 @@ def _insert_albums(*iterables) -> int:
 
     # -----
     with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
-        config = yaml.load(stream)
+        config = yaml.load(stream, Loader=yaml.FullLoader)
     _statements = config["statements"]
     _selectors = config["selectors"]
     _tables = config["tables"]
@@ -835,7 +830,7 @@ def _insert_albums(*iterables) -> int:
     iterables = iter(iterables)  # type: ignore
     total_changes: int = 0
     for profile, group in groupby(sorted(sorted(iterables, key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(0)):
-        primary_group = starmap(_booleanify, filter(FUNCTIONS[profile], group))
+        primary_group = starmap(booleanify_, filter(FUNCTIONS[profile], group))
         for database, secondary_group in groupby(primary_group, key=itemgetter(1)):
             with ExitStack() as stack:
                 conn = stack.enter_context(DatabaseConnection(database))
@@ -865,7 +860,7 @@ def _insert_albums(*iterables) -> int:
 
                 # "bonuses" table.
                 table = "bonuses"
-                for track in filter(bonuses_record, filter(bootlegalbums_record, tracks)):
+                for track in filter(itemgetter(8), filter(bootlegalbums_record, tracks)):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
@@ -1139,7 +1134,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(filter(getitem_()(partial(eq_string, genre.lower())), genres))
+        _, genreid = next(filter(itemgetter_()(partial(eq_string, genre.lower())), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 

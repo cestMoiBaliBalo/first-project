@@ -12,7 +12,7 @@ bootleg:
     BootlegAlbumYear: 1993 06 24
     Deluxe: N
     Disc: 2/4
-    Encoder: FDK v0.1.3
+    Encoder: FDK v2.0.0
     Genre: Rock
     InCollection: Y
     LiveDisc: Y
@@ -28,7 +28,7 @@ bootleg:
   - - nugs
     - updtrack
     - updtotaltracks
-  - no_tags_processing
+  - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
@@ -69,7 +69,7 @@ bootleg1:
     BootlegTrackYear: 2002 10 16
     Deluxe: N
     Disc: 2/3
-    Encoder: FDK v0.1.3
+    Encoder: FDK v2.0.0
     Genre: Rock
     InCollection: Y
     LiveDisc: Y
@@ -85,7 +85,7 @@ bootleg1:
   - - sbootlegs
     - updtrack
     - updtotaltracks
-  - no_tags_processing
+  - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.20021014.1.02
     artist: Bruce Springsteen
@@ -136,7 +136,7 @@ bootleg2:
     BootlegAlbumYear: 1993 06 24
     Deluxe: N
     Disc: 2/4
-    Encoder: FDK v0.1.3
+    Encoder: FDK v2.0.0
     Genre: Rock
     InCollection: Y
     LiveDisc: Y
@@ -185,7 +185,7 @@ default:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: (FLAC 1.3.0)
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Hard Rock
     InCollection: Y
@@ -239,7 +239,7 @@ default1:
     Bootleg: N
     Deluxe: N
     Disc: 2/2
-    Encoder: (FLAC 1.3.0)
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: Y
     Genre: Hard Rock
     InCollection: Y
@@ -292,7 +292,7 @@ default2:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: (FLAC 1.3.0)
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Hard Rock
     InCollection: Y
@@ -345,7 +345,7 @@ default3:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: (FLAC 1.3.0)
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: Y
     Genre: Hard Rock
     InCollection: Y
@@ -399,7 +399,7 @@ default4:
     Bootleg: N
     Deluxe: N
     Disc: 1/1
-    Encoder: (FLAC 1.3.0)
+    Encoder: FLAC 1.3.3 beta
     FolderSortCount: N
     Genre: Rock
     InCollection: Y

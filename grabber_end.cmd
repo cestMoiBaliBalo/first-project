@@ -39,6 +39,7 @@ IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
+IF "%~1" EQU "5" GOTO STEP5
 SHIFT
 GOTO MAIN
 
@@ -88,6 +89,14 @@ REM        -----------------------------------
 :STEP4
 PUSHD %_grabber%
 python RippedTracks2NAS.py
+POPD
+SHIFT
+GOTO MAIN
+
+
+:STEP5
+PUSHD %TEMP%
+DEL sequences.json 2> NUL
 POPD
 SHIFT
 GOTO MAIN

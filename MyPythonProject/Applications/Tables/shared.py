@@ -36,7 +36,7 @@ class DatabaseConnection(ContextDecorator):
 # ==================
 # Private functions.
 # ==================
-def _contains(a, b):
+def contains_(a, b):
     return operator.contains(b, a)
 
 
@@ -49,7 +49,7 @@ def adapt_booleanvalue(boolobj):
     :param boolobj: object created from `ToBoolean` class.
     """
     d = {False: 0, True: 1}
-    return d[boolobj.bool]
+    return d[boolobj.boolean_value]
 
 
 def convert_tobooleanvalue(i: bytes) -> bool:
@@ -174,7 +174,7 @@ def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Optional[Tuple[Any
     :return:
     """
     clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
-    _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(_contains, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
+    _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(contains_, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=?)"] * len(_keys))
@@ -191,7 +191,7 @@ def _set_whereclause_track(*keys: str) -> Tuple[Optional[str], Optional[Tuple[An
     clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
     _keys = list(
             compress(map(_split_trackid, keys),
-                     map(operator.not_, map(partial(_contains, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
+                     map(operator.not_, map(partial(contains_, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=? AND trackid=?)"] * len(_keys))

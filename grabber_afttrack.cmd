@@ -35,27 +35,38 @@ FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 IF "%~2" EQU "" EXIT /B %_errorlevel%
 IF "%~2" EQU "1" GOTO STEP1
 IF "%~2" EQU "2" GOTO STEP2
+IF "%~2" EQU "3" GOTO STEP3
 SHIFT /2
 GOTO MAIN
 
 
-REM        -----------------------
-REM  1 --> Digital audio database.
-REM        -----------------------
+REM        -------------------------------------
+REM  1 --> Prepare XReferences database syncing.
+REM        -------------------------------------
 :STEP1
-PUSHD %_grabber%
-python XReferences.py "%~1"
+FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
+PUSHD %_parent%
+python Dump_XReferences.py "%~1"
 POPD
-SHIFT
+SET _parent=
+SHIFT /2
 GOTO MAIN
 
 
-REM        ---------------------
-REM  2 --> XReferences database.
-REM        ---------------------
+REM        ----------------------------
+REM  2 --> Prepare NAS Syncing. Step 1.
+REM        ----------------------------
 :STEP2
 PUSHD %_grabber%
 python RippedTracks.py "%~1"
 POPD
-SHIFT
+SHIFT /2
+GOTO MAIN
+
+
+:STEP3
+PUSHD %TEMP%
+ECHO "%~1">> cdgrabber.txt
+POPD
+SHIFT /2
 GOTO MAIN

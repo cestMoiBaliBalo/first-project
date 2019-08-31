@@ -13,7 +13,7 @@ import yaml
 
 from ..shared import DatabaseConnection, close_database
 from ...parsers import tasks_parser
-from ...shared import DATABASE, LOCAL, UTC, UTF8, get_dirname, getitem_
+from ...shared import DATABASE, LOCAL, UTC, UTF8, get_dirname, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -98,7 +98,7 @@ def _get_tasks(db: str = DATABASE) -> Iterable[Tuple[int, datetime]]:
 
 def _get_task(taskid: int, *, db: str = DATABASE) -> Tuple[int, Optional[datetime]]:
     uid, utc_run = 0, None  # type: int, Optional[datetime]
-    it = filter(getitem_()(partial(eq, taskid)), _get_tasks(db))
+    it = filter(itemgetter_()(partial(eq, taskid)), _get_tasks(db))
     with suppress(StopIteration):
         uid, utc_run = next(it)
     return uid, utc_run
