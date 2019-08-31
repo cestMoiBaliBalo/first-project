@@ -829,6 +829,7 @@ class RippedTrack(ContextDecorator):
             exclusions.append("albumsortcount")
             exclusions.append("foldersortcount")
             exclusions.append("origtrack")
+            exclusions.append("lossless")
         filter_keys = shared.itemgetter_(index=0)(partial(not_contains_, exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
