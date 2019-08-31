@@ -18,7 +18,7 @@ from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Un
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string, format_date, get_dirname, attrgetter_, itemgetter_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -91,7 +91,7 @@ def merge(item):
 # Decorated functions.
 # ====================
 @booleanify_sequence
-def _booleanify(arg):
+def booleanify_(arg):
     return booleanify(arg)
 
 
@@ -123,11 +123,6 @@ def bootlegdiscs_record(a, b):
 @partial_(0)
 def hasbeen_played(a, b):
     return gt(b, a)
-
-
-@itemgetter_(8)
-def bonuses_record(arg):
-    return arg.bool
 
 
 # ==========
@@ -835,7 +830,7 @@ def _insert_albums(*iterables) -> int:
     iterables = iter(iterables)  # type: ignore
     total_changes: int = 0
     for profile, group in groupby(sorted(sorted(iterables, key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(0)):
-        primary_group = starmap(_booleanify, filter(FUNCTIONS[profile], group))
+        primary_group = starmap(booleanify_, filter(FUNCTIONS[profile], group))
         for database, secondary_group in groupby(primary_group, key=itemgetter(1)):
             with ExitStack() as stack:
                 conn = stack.enter_context(DatabaseConnection(database))
@@ -865,7 +860,7 @@ def _insert_albums(*iterables) -> int:
 
                 # "bonuses" table.
                 table = "bonuses"
-                for track in filter(bonuses_record, filter(bootlegalbums_record, tracks)):
+                for track in filter(itemgetter(8), filter(bootlegalbums_record, tracks)):
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):

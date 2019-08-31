@@ -20,10 +20,10 @@ __status__ = "Production"
 
 
 # Function for setting additional keywords arguments.
-@itemgetter_(index=0)
+@itemgetter_(0)
 @partial_(["debug", "console"])
-def set_kwargs(a, b):
-    return not contains(a, b.lower())
+def not_contains_(iterable, item: str):
+    return not contains(iterable, item.lower())
 
 
 # Define French environment.
@@ -75,4 +75,4 @@ sys.exit(upsert_audiotags(arguments["profile"],
                           arguments["source"],
                           arguments["sequence"],
                           *arguments.get("decorators", ()),
-                          **dict(filter(set_kwargs, tags_config.items()))))
+                          **dict(filter(not_contains_, tags_config.items()))))

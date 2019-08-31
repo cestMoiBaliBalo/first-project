@@ -20,7 +20,7 @@ __status__ = "Production"
 # ==========
 # Functions.
 # ==========
-def myfunction(char: str):
+def split_(char: str):
     def wrapper(index: int = 0):
         def sub_wrapper(func):
             def ssub_wrapper(arg: str):
@@ -63,7 +63,7 @@ class Test02(unittest.TestCase):
 
             def __init__(self, seq):
                 self._index = -1
-                self._seq = sorted(sorted(sorted(seq, key=myfunction(".")(2)(int)), key=myfunction(".")(0)(int)), key=myfunction(".")(1)(int))
+                self._seq = sorted(sorted(sorted(seq, key=split_(".")(2)(int)), key=split_(".")(0)(int)), key=split_(".")(1)(int))
 
             def __getitem__(self, item):
                 return self._seq[item]
@@ -131,19 +131,19 @@ class Test03(unittest.TestCase):
         self.assertEqual(int(max(self.iterable).split("_")[1]), 101)
 
     def test_t02(self):
-        self.assertEqual(myfunction("_")(1)(int)(max(self.iterable)), 101)
+        self.assertEqual(split_("_")(1)(int)(max(self.iterable)), 101)
 
     def test_t03(self):
         self.assertEqual(int(max([item.split("_")[1] for item in self.iterable])), 456)
 
     def test_t04(self):
-        self.assertEqual(max(map(myfunction("_")(1)(int), self.iterable)), 456)
+        self.assertEqual(max(map(split_("_")(1)(int), self.iterable)), 456)
 
     def test_t05(self):
-        self.assertListEqual(sorted(self.iterable, key=myfunction("_")(1)(int)), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertListEqual(sorted(self.iterable, key=split_("_")(1)(int)), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_t06(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=myfunction("_")(1)(int)), key=myfunction("_")(0)(int)), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
+        self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(1)(int)), key=split_("_")(0)(int)), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
 class Test04(unittest.TestCase):

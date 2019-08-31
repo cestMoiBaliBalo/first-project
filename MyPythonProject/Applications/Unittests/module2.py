@@ -257,20 +257,23 @@ class Test06(unittest.TestCase):
         self.arguments = None
 
     def test_t01(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default", "--tags_processing", "defaultalbum"])
+        self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])
         self.assertEqual(self.arguments.profile, "default")
+        self.assertEqual(self.arguments.sequence, "C1")
         self.assertEqual(self.arguments.tags_processing, "defaultalbum")
         self.assertListEqual(self.arguments.decorators, [])
 
     def test_t02(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default"])
+        self.arguments = tags_grabber.parse_args([self.resource, "default", "C2"])
         self.assertEqual(self.arguments.profile, "default")
-        self.assertEqual(self.arguments.tags_processing, "no_tags_processing")
+        self.assertEqual(self.arguments.sequence, "C2")
+        self.assertEqual(self.arguments.tags_processing, "default")
         self.assertListEqual(self.arguments.decorators, [])
 
     def test_t03(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
+        self.arguments = tags_grabber.parse_args([self.resource, "default", "C3", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
         self.assertEqual(self.arguments.profile, "default")
+        self.assertEqual(self.arguments.sequence, "C3")
         self.assertEqual(self.arguments.tags_processing, "test_defaultalbum")
         self.assertListEqual(self.arguments.decorators, ["decorator1", "decorator2", "decorator3"])
 

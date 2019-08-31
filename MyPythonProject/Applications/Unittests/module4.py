@@ -8,6 +8,7 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from functools import partial
+from operator import contains
 from pathlib import PurePath, PureWindowsPath
 from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
@@ -18,7 +19,7 @@ from ..AudioCD.shared import RippedTrack, upsert_audiotags
 from ..Tables.Albums.shared import insert_albums_fromjson, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
-from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate
+from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -27,6 +28,18 @@ __status__ = "Production"
 
 _THATFILE = PureWindowsPath(os.path.abspath(__file__))  # type: PureWindowsPath
 basename, exists, join = os.path.basename, os.path.exists, os.path.join
+
+
+@itemgetter_(0)
+@partial_(["debug", "database", "console"])
+def not_contains1_(iterable, item: str):
+    return not contains(iterable, item.lower())
+
+
+@itemgetter_(0)
+@partial_(["save", "root", "debug", "database", "console"])
+def not_contains2_(iterable, item: str):
+    return not contains(iterable, item.lower())
 
 
 class Changes(object):
@@ -192,7 +205,7 @@ class TestRippedTrack(unittest.TestCase):
 
                 # -----
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    with RippedTrack(profile, stream, *decorators) as track:
+                    with RippedTrack(profile, stream, "C1", *decorators) as track:
                         pass
 
                 # -----
@@ -227,9 +240,9 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, **config)
+                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
 
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
@@ -273,9 +286,9 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug"], self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, **config)
+                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
@@ -320,9 +333,9 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains2_, self.test_config.get(tags_processing, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
+                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
@@ -363,9 +376,9 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(not_contains2_, self.test_config.get(tags_processing, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
-                upsert_audiotags(profile, stream, *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
+                upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
 
             # -----
             # inserted = 0

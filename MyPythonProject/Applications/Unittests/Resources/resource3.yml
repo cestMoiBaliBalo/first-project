@@ -28,7 +28,7 @@ bootleg:
   - - nugs
     - updtrack
     - updtotaltracks
-  - no_tags_processing
+  - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
@@ -85,7 +85,7 @@ bootleg1:
   - - sbootlegs
     - updtrack
     - updtotaltracks
-  - no_tags_processing
+  - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.20021014.1.02
     artist: Bruce Springsteen
