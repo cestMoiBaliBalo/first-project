@@ -331,6 +331,7 @@ class CommonAudioCDTags(AudioCDTags):
               "incollection": True,
               "livedisc": True,
               "livetrack": True,
+              "lossless": False,
               "profile": False,
               "rating": False,
               "sample": False,
@@ -880,6 +881,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     else:
         with stack:
 
+            in_logger.debug(kwargs)
             if track.audiotrack.database:
                 for k, v in in_mapping.items():
                     if kwargs.get(k, False):

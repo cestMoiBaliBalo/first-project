@@ -6,6 +6,7 @@ import os
 import sys
 from contextlib import suppress
 from operator import contains
+from typing import List
 
 import yaml
 
@@ -22,7 +23,7 @@ __status__ = "Production"
 # Function for setting additional keywords arguments.
 @itemgetter_(0)
 @partial_(["debug", "console"])
-def not_contains_(iterable, strg: str):
+def not_contains_(iterable: List[str], strg: str):
     return not contains(iterable, strg.lower())
 
 
