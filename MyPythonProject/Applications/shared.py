@@ -402,33 +402,83 @@ class ToBoolean(object):
 # Decorators.
 # ===========
 def attrgetter_(name: str):
-    def wrapper(f):
-        def sub_wrapper(arg):
+    """
+
+    :param name:
+    :return:
+    """
+    def outer_wrapper(f):
+        def inner_wrapper(arg):
             return f(attrgetter(name)(arg))
 
-        return sub_wrapper
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def int_(f):
+    """
+
+    :param f:
+    :return:
+    """
+    def wrapper(arg):
+        return int(f(arg))
 
     return wrapper
 
 
-def itemgetter_(index: int = 0):
-    def wrapper(f):
-        def sub_wrapper(arg):
-            return f(arg[index])
+def itemgetter_(*args: int):
+    """
 
-        return sub_wrapper
+    :param args:
+    :return:
+    """
+    def outer_wrapper(f):
+        def inner_wrapper(arg):
+            _args = tuple(args)
+            if not _args:
+                _args = (0,)
+            _args = iter(_args)
+            rvalue = f(arg[next(_args)])
+            with suppress(StopIteration):
+                rvalue = rvalue[next(_args)]
+            return rvalue
 
-    return wrapper
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def itemgetter2_(index: int = 0):
+    """
+
+    :param index:
+    :return:
+    """
+    def outer_wrapper(f):
+        def inner_wrapper(arg):
+            return f(arg)[index]
+
+        return inner_wrapper
+
+    return outer_wrapper
 
 
 def partial_(*args, **kwargs):
-    def wrapper(f):
-        def sub_wrapper(arg):
+    """
+
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    def outer_wrapper(f):
+        def inner_wrapper(arg):
             return partial(f, *args, **kwargs)(arg)
 
-        return sub_wrapper
+        return inner_wrapper
 
-    return wrapper
+    return outer_wrapper
 
 
 # ===========================

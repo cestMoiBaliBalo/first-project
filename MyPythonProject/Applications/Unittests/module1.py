@@ -9,7 +9,7 @@ from functools import partial
 from operator import contains, eq, gt, lt
 from unittest.mock import Mock
 
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, itemgetter_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -20,17 +20,48 @@ __status__ = "Production"
 # ==========
 # Functions.
 # ==========
-def split_(char: str):
-    def wrapper(index: int = 0):
-        def sub_wrapper(func):
-            def ssub_wrapper(arg: str):
-                return func(arg.split(char)[index])
+def split_(char: str, strg: str):
+    return strg.split(char)
 
-            return ssub_wrapper
 
-        return sub_wrapper
+@int_
+@itemgetter_(0, 2)
+@partial_(".")
+def split1_(char: str, strg: str):
+    return strg.split(char)
 
-    return wrapper
+
+@int_
+@itemgetter_(0, 1)
+@partial_(".")
+def split2_(char: str, strg: str):
+    return strg.split(char)
+
+
+@partial_(".")
+def split3_(char: str, strg: str):
+    return strg.split(char)
+
+
+@int_
+@itemgetter_(1, 2)
+@partial_(".")
+def split4_(char: str, strg: str):
+    return strg.split(char)
+
+
+@int_
+@itemgetter_(1, 1)
+@partial_(".")
+def split5_(char: str, strg: str):
+    return strg.split(char)
+
+
+@int_
+@itemgetter_(1, 0)
+@partial_(".")
+def split6_(char: str, strg: str):
+    return strg.split(char)
 
 
 # ========
@@ -63,7 +94,7 @@ class Test02(unittest.TestCase):
 
             def __init__(self, seq):
                 self._index = -1
-                self._seq = sorted(sorted(sorted(seq, key=split_(".")(2)(int)), key=split_(".")(0)(int)), key=split_(".")(1)(int))
+                self._seq = sorted(sorted(sorted(seq, key=int_(itemgetter2_(2)(partial(split_, ".")))), key=itemgetter2_()(partial(split_, "."))), key=itemgetter2_(1)(partial(split_, ".")))
 
             def __getitem__(self, item):
                 return self._seq[item]
@@ -131,19 +162,20 @@ class Test03(unittest.TestCase):
         self.assertEqual(int(max(self.iterable).split("_")[1]), 101)
 
     def test_t02(self):
-        self.assertEqual(split_("_")(1)(int)(max(self.iterable)), 101)
+        self.assertEqual(int_(itemgetter2_(1)(partial(split_, "_")))(max(self.iterable)), 101)
 
     def test_t03(self):
         self.assertEqual(int(max([item.split("_")[1] for item in self.iterable])), 456)
 
     def test_t04(self):
-        self.assertEqual(max(map(split_("_")(1)(int), self.iterable)), 456)
+        self.assertEqual(max(map(int_(itemgetter2_(1)(partial(split_, "_"))), self.iterable)), 456)
 
     def test_t05(self):
-        self.assertListEqual(sorted(self.iterable, key=split_("_")(1)(int)), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertListEqual(sorted(self.iterable, key=int_(itemgetter2_(1)(partial(split_, "_")))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_t06(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(1)(int)), key=split_("_")(0)(int)), ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
+        self.assertListEqual(sorted(sorted(self.iterable, key=int_(itemgetter2_(1)(partial(split_, "_")))), key=int_(itemgetter2_()(partial(split_, "_")))),
+                             ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
 class Test04(unittest.TestCase):
@@ -209,19 +241,19 @@ class TestDecorator01(unittest.TestCase):
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t02(self):
-        decorated_function = itemgetter_(index=1)(partial(eq_string, "black metal"))
+        decorated_function = itemgetter_(1)(partial(eq_string, "black metal"))
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t03(self):
-        decorated_function = itemgetter_(index=1)(partial(eq_string, "Black Metal", sensitive=True))
+        decorated_function = itemgetter_(1)(partial(eq_string, "Black Metal", sensitive=True))
         self.assertTrue(decorated_function(self.iterable))
 
     def test_t04(self):
-        decorated_function = itemgetter_(index=1)(partial(eq_string, "black metal", sensitive=True))
+        decorated_function = itemgetter_(1)(partial(eq_string, "black metal", sensitive=True))
         self.assertFalse(decorated_function(self.iterable))
 
     def test_t05(self):
-        decorated_function = itemgetter_(index=2)(partial(eq_string, "black metal"))
+        decorated_function = itemgetter_(2)(partial(eq_string, "black metal"))
         self.assertFalse(decorated_function(self.iterable))
 
 
@@ -285,3 +317,111 @@ class TestDecorator04(unittest.TestCase):
         self.assertNotEqual(genreid1, genreid2)
         self.get_genres.assert_called()
         self.get_genres.assert_called_with(DATABASE)
+
+
+class TestDecorator05(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = ("1.20160000.10",)
+
+    def test_t01(self):
+        self.assertEqual(split1_(self.iterable), 10)
+
+    def test_t02(self):
+        self.assertEqual(split2_(self.iterable), 20160000)
+
+
+class TestDecorator06(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = ["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13", "2.20000823.13",
+                         "2.20170101.13", "1.20160422.02"]
+
+    def test_t01(self):
+        self.assertListEqual(sorted(sorted(self.iterable, key=int_(itemgetter2_(2)(partial(split_, ".")))), key=int_(itemgetter2_(1)(partial(split_, ".")))), ["2.19841102.13",
+                                                                                                                                                               "2.19990822.13",
+                                                                                                                                                               "2.20000823.13",
+                                                                                                                                                               "2.20021014.13",
+                                                                                                                                                               "2.20160120.13",
+                                                                                                                                                               "2.20160125.13",
+                                                                                                                                                               "2.20160201.13",
+                                                                                                                                                               "1.20160422.02",
+                                                                                                                                                               "1.20160422.13",
+                                                                                                                                                               "2.20160422.15",
+                                                                                                                                                               "1.20160625.13",
+                                                                                                                                                               "2.20170101.13"])
+
+    def test_t02(self):
+        self.assertListEqual(
+                sorted(sorted(sorted(self.iterable, key=int_(itemgetter2_(2)(partial(split_, ".")))), key=int_(itemgetter2_(1)(partial(split_, ".")))), key=int_(itemgetter2_()(partial(split_, ".")))),
+                ["1.20160422.02",
+                 "1.20160422.13",
+                 "1.20160625.13",
+                 "2.19841102.13",
+                 "2.19990822.13",
+                 "2.20000823.13",
+                 "2.20021014.13",
+                 "2.20160120.13",
+                 "2.20160125.13",
+                 "2.20160201.13",
+                 "2.20160422.15",
+                 "2.20170101.13"])
+
+
+class TestDecorator07(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.iterable = [("A", "2.20160125.13"), ("B", "2.20160201.13"), ("C", "2.20160120.13"), ("D", "1.20160625.13"), ("E", "1.20160422.13"), ("F", "2.20160422.15"), ("H", "2.19841102.13"),
+                         ("I", "2.19990822.13"), ("K", "2.20021014.13"), ("L", "2.20000823.13"), ("M", "2.20170101.13"), ("N", "1.20160422.02")]
+
+    def test_t01(self):
+        self.assertListEqual(sorted(sorted(self.iterable, key=int_(itemgetter_(1, 2)(split3_))), key=int_(itemgetter_(1, 1)(split3_))), [("H", "2.19841102.13"),
+                                                                                                                                         ("I", "2.19990822.13"),
+                                                                                                                                         ("L", "2.20000823.13"),
+                                                                                                                                         ("K", "2.20021014.13"),
+                                                                                                                                         ("C", "2.20160120.13"),
+                                                                                                                                         ("A", "2.20160125.13"),
+                                                                                                                                         ("B", "2.20160201.13"),
+                                                                                                                                         ("N", "1.20160422.02"),
+                                                                                                                                         ("E", "1.20160422.13"),
+                                                                                                                                         ("F", "2.20160422.15"),
+                                                                                                                                         ("D", "1.20160625.13"),
+                                                                                                                                         ("M", "2.20170101.13")])
+
+    def test_t02(self):
+        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=int_(itemgetter_(1, 2)(split3_))), key=int_(itemgetter_(1, 1)(split3_))), key=int_(itemgetter_(1, 0)(split3_))),
+                             [("N", "1.20160422.02"),
+                              ("E", "1.20160422.13"),
+                              ("D", "1.20160625.13"),
+                              ("H", "2.19841102.13"),
+                              ("I", "2.19990822.13"),
+                              ("L", "2.20000823.13"),
+                              ("K", "2.20021014.13"),
+                              ("C", "2.20160120.13"),
+                              ("A", "2.20160125.13"),
+                              ("B", "2.20160201.13"),
+                              ("F", "2.20160422.15"),
+                              ("M", "2.20170101.13")])
+
+    def test_t03(self):
+        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=split4_), key=split5_), key=split6_), [("N", "1.20160422.02"),
+                                                                                                            ("E", "1.20160422.13"),
+                                                                                                            ("D", "1.20160625.13"),
+                                                                                                            ("H", "2.19841102.13"),
+                                                                                                            ("I", "2.19990822.13"),
+                                                                                                            ("L", "2.20000823.13"),
+                                                                                                            ("K", "2.20021014.13"),
+                                                                                                            ("C", "2.20160120.13"),
+                                                                                                            ("A", "2.20160125.13"),
+                                                                                                            ("B", "2.20160201.13"),
+                                                                                                            ("F", "2.20160422.15"),
+                                                                                                            ("M", "2.20170101.13")])

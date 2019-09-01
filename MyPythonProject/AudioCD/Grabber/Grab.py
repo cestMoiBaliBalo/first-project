@@ -22,8 +22,8 @@ __status__ = "Production"
 # Function for setting additional keywords arguments.
 @itemgetter_(0)
 @partial_(["debug", "console"])
-def not_contains_(iterable, item: str):
-    return not contains(iterable, item.lower())
+def not_contains_(iterable, strg: str):
+    return not contains(iterable, strg.lower())
 
 
 # Define French environment.

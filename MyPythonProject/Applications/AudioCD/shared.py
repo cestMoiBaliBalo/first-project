@@ -357,7 +357,7 @@ class CommonAudioCDTags(AudioCDTags):
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
         # ----- Attributes taken from the input tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags = dict(filter(filter_keys, sorted(kwargs.items())))
 
         # ----- Step.
@@ -476,7 +476,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set origyear.
@@ -542,7 +542,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set bootleg date.
@@ -830,7 +830,7 @@ class RippedTrack(ContextDecorator):
             exclusions.append("foldersortcount")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_keys = shared.itemgetter_(index=0)(partial(not_contains_, exclusions))
+        filter_keys = shared.itemgetter_(0)(partial(not_contains_, exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
         # --> 2. Log output tags.
