@@ -1,0 +1,29 @@
+FDK v2.0.0:
+  code: !!python/str 02
+  extension: m4a
+  folder: 0.MPEG-4 AAC
+
+FLAC 1.3.3 beta:
+  code: !!python/str 13
+  extension: flac
+  folder: 1.Free Lossless Audio Codec
+
+Lame 3.100.0:
+  code: !!python/str 01
+  extension: mp3
+  folder: 0.MPEG 1 Layer III
+
+Monkeys Audio v4.12:
+  code: !!python/str 12
+  extension: ape
+  folder: 1.Monkey's Audio
+
+ogg vorbis (aoTuV SSE3):
+  code: !!python/str 05
+  extension: ogg
+  folder: 0.Ogg Vorbis
+
+SV8 mpcenc 1.30 stable:
+  code: !!python/str 03
+  extension: mpc
+  folder: 0.Musepack

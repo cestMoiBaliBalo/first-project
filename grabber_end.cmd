@@ -44,37 +44,41 @@ SHIFT
 GOTO MAIN
 
 
-REM        -----------------------
-REM  1 --> Digital audio database.
-REM        -----------------------
+REM        -----------------------------------------------
+REM  1 --> Append ripped tracks to digital audio database.
+REM        -----------------------------------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    PUSHD %_grabber%
-    python Store_Albums.py "%_jsontags%"
+    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
+    PUSHD !_parent!
+    python Insert_Albums.py "%_jsontags%"
     POPD
+    SET _parent=
     DEL "%_jsontags%" 2>NUL
 )
 SHIFT
 GOTO MAIN
 
 
-REM        ---------------------
-REM  2 --> XReferences database.
-REM        ---------------------
+REM        ---------------------------------------------
+REM  2 --> Append ripped tracks to XReferences database.
+REM        ---------------------------------------------
 :STEP2
 IF EXIST "%_jsonxreferences%" (
-    PUSHD %_grabber%
-    python Store_XReferences.py "%_jsonxreferences%"
+    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
+    PUSHD !_parent!
+    python Insert_XReferences.py "%_jsonxreferences%"
     POPD
+    SET _parent=
     DEL "%_jsonxreferences%" 2>NUL
 )
 SHIFT
 GOTO MAIN
 
 
-REM        -----------------------
-REM  3 --> Ripped discs dashboard.
-REM        -----------------------
+REM        ------------------------------
+REM  3 --> Update ripped discs dashboard.
+REM        ------------------------------
 :STEP3
 PUSHD %_grabber%
 python RippedDiscs.py
@@ -83,13 +87,15 @@ SHIFT
 GOTO MAIN
 
 
-REM        -----------------------------------
-REM  4 --> Ripped tracks list for NAS syncing.
-REM        -----------------------------------
+REM        ----------------------------
+REM  4 --> Prepare NAS Syncing. Step 2.
+REM        ----------------------------
 :STEP4
-PUSHD %_grabber%
-python RippedTracks2NAS.py
-POPD
+IF EXIST "%_txtfiles%" (
+    PUSHD %_grabber%
+    python RippedTracks2NAS.py
+    POPD
+)
 SHIFT
 GOTO MAIN
 

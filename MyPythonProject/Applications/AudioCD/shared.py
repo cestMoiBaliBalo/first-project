@@ -331,6 +331,7 @@ class CommonAudioCDTags(AudioCDTags):
               "incollection": True,
               "livedisc": True,
               "livetrack": True,
+              "lossless": False,
               "profile": False,
               "rating": False,
               "sample": False,
@@ -357,7 +358,7 @@ class CommonAudioCDTags(AudioCDTags):
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
         # ----- Attributes taken from the input tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags = dict(filter(filter_keys, sorted(kwargs.items())))
 
         # ----- Step.
@@ -397,16 +398,19 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encoder attributes.
         self.logger.debug("Set encoder attributes.")
-        for encoder in self.deserialize(ENCODERS):  # "encoder" est un dictionnaire.
-            if sorted(encoder) == sorted(ENC_KEYS):
-                if kwargs["encoder"] == encoder["name"]:
-                    self._otags["encoder"] = kwargs["encoder"]
-                    self._encoder = Encoder(encoder["name"], encoder["code"], encoder["folder"], encoder["extension"])
+        with open(ENCODERS, encoding=shared.UTF8) as stream:
+            encoders = yaml.load(stream, Loader=yaml.FullLoader)
+            for encoder, attributes in encoders.items():
+                if kwargs["encoder"].lower() == encoder.lower():
+                    self._encoder = Encoder(encoder, attributes["code"], attributes["folder"], attributes["extension"])
                     self.logger.debug("Used encoder.")
-                    self.logger.debug("Name\t\t: %s".expandtabs(3), self._encoder.name)
+                    self.logger.debug("Name\t\t: %s".expandtabs(3), encoder)
                     self.logger.debug("Code\t\t: %s".expandtabs(3), self._encoder.code)
                     self.logger.debug("Folder\t: %s".expandtabs(3), self._encoder.folder)
                     self.logger.debug("Extension: %s".expandtabs(3), self._encoder.extension)
+                    self._otags["encoder"] = kwargs["encoder"]
+                    self._otags["code"] = attributes["code"]
+                    self._otags["folder"] = attributes["folder"]
                     break
 
         # ----- Both update track and set total tracks.
@@ -449,8 +453,9 @@ class CommonAudioCDTags(AudioCDTags):
             return False, "track doesn\'t respect the expected pattern."
         if not self.track_pattern.match(kwargs["disc"]):
             return False, "disc doesn\'t respect the expected pattern."
-        if kwargs["encoder"] not in [encoder.get("name") for encoder in self.deserialize(ENCODERS)]:
-            return False, '"{0}" as encoder isn\'t recognized.'.format(kwargs["encoder"])
+        with open(ENCODERS, encoding=shared.UTF8) as stream:
+            if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
+                return False, '"{0}" as encoder isn\'t recognized.'.format(kwargs["encoder"])
         return True, ""
 
 
@@ -476,7 +481,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set origyear.
@@ -542,7 +547,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(index=0)(partial(contains, sorted(self.__tags)))
+        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set bootleg date.
@@ -828,9 +833,11 @@ class RippedTrack(ContextDecorator):
         if self._audiotracktags.step == 2:
             exclusions.append("albumsortcount")
             exclusions.append("foldersortcount")
+            exclusions.append("code")
+            exclusions.append("folder")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_keys = shared.itemgetter_(index=0)(partial(not_contains_, exclusions))
+        filter_keys = shared.itemgetter_(0)(partial(not_contains_, exclusions))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
 
         # --> 2. Log output tags.
@@ -880,6 +887,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     else:
         with stack:
 
+            in_logger.debug(kwargs)
             if track.audiotrack.database:
                 for k, v in in_mapping.items():
                     if kwargs.get(k, False):
@@ -1510,7 +1518,7 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(?!\s)(.+)$"
 GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
 LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
-ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.json")
+ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.yml")
 ENC_KEYS = ["name",
             "code",
             "folder",
