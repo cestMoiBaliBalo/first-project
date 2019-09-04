@@ -388,7 +388,7 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
-        self._otags["encodedby"] = "{0} on {1}".format(shared.get_rippingapplication(), now_readable)
+        self._otags["encodedby"] = f"{shared.get_rippingapplication()} on {now_readable}"
 
         # ----- Set taggingtime.
         self.logger.debug("Set taggingtime.")
@@ -456,14 +456,14 @@ class CommonAudioCDTags(AudioCDTags):
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("CommonAudioCDTags: %s.", item)
             if item not in kwargs:
-                return False, "{0} isn\'t available.".format(item)
+                return False, f"{item} isn\'t available."
         if not self.track_pattern.match(kwargs["track"]):
             return False, "track doesn\'t respect the expected pattern."
         if not self.track_pattern.match(kwargs["disc"]):
             return False, "disc doesn\'t respect the expected pattern."
         with open(ENCODERS, encoding=shared.UTF8) as stream:
             if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
-                return False, '"{0}" as encoder isn\'t recognized.'.format(kwargs["encoder"])
+                return False, f'"{kwargs['encoder']}" as encoder isn\'t recognized.'
         return True, ""
 
 
@@ -525,7 +525,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("DefaultAudioCDTags: %s.", item)
             if item not in kwargs:
-                return False, "{0} isn\'t available.".format(item)
+                return False, f"{item} isn\'t available."
         return True, ""
 
 
