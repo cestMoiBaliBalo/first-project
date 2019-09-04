@@ -213,9 +213,9 @@ class AudioCDTags(MutableMapping):
     def incollection(self):
         return self._otags["incollection"]
 
-    @property
-    def interface(self):
-        return SortedDict(**self._otags)
+    # @property
+    # def interface(self):
+    #     return SortedDict(**self._otags)
 
     @property
     def label(self):
@@ -305,8 +305,8 @@ class AudioCDTags(MutableMapping):
     @staticmethod
     def deserialize(fil, enc=shared.UTF8):
         with open(fil, encoding=enc) as fr:
-            for structure in json.load(fr):
-                yield structure
+            for item in json.load(fr):
+                yield item
 
     @staticmethod
     def splitfield(fld, rex):
@@ -368,8 +368,7 @@ class CommonAudioCDTags(AudioCDTags):
         sequences = Path(shared.TEMP) / "sequences.json"
         self._step, tracks = 2, []
         if sequences.exists():
-            with open(sequences, encoding=shared.UTF8) as stream:
-                tracks = json.load(stream)
+            tracks = list(self.deserialize(sequences))
         self.logger.debug(tracks)
         self.logger.debug("Track is %s.", f'{kwargs["track"]}{sequence}')
         if f'{kwargs["track"]}{sequence}' not in tracks:
@@ -380,21 +379,30 @@ class CommonAudioCDTags(AudioCDTags):
                 json.dump(tracks, stream)
         self.logger.debug("Step %s for track %s.", self._step, f'{kwargs["track"]}{sequence}')
 
+        # ----- Set encoding timestamp.
+        now = datetime.utcnow()
+        if int(self._otags.get("utctimestamp", 0)) > 0:
+            now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
+        now = timezone(shared.DFTTIMEZONE).localize(now)
+        now_readable = shared.format_date(now)
+
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
-        self._otags["encodedby"] = "{0} on {1}".format(shared.get_rippingapplication(), shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
+        self._otags["encodedby"] = f"{shared.get_rippingapplication()} on {now_readable}"
 
         # ----- Set taggingtime.
         self.logger.debug("Set taggingtime.")
-        self._otags["taggingtime"] = shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE)))
+        self._otags["taggingtime"] = now_readable
 
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
-        self._otags["encodingtime"] = int(datetime.now(tz=timezone(shared.DFTTIMEZONE)).timestamp())
+        self._otags["encodingtime"] = int(now.timestamp())
+        if int(self._otags.get("utctimestamp", 0)) > 0:
+            self._otags["encodingtime"] = int(timezone(shared.DFTTIMEZONE).localize(datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))).timestamp())
 
         # ----- Set encodingyear.
         self.logger.debug("Set encodingyear.")
-        self._otags["encodingyear"] = datetime.now(tz=timezone(shared.DFTTIMEZONE)).strftime("%Y")
+        self._otags["encodingyear"] = now.strftime("%Y")
 
         # ----- Set encoder attributes.
         self.logger.debug("Set encoder attributes.")
@@ -448,14 +456,14 @@ class CommonAudioCDTags(AudioCDTags):
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("CommonAudioCDTags: %s.", item)
             if item not in kwargs:
-                return False, "{0} isn\'t available.".format(item)
+                return False, f"{item} isn\'t available."
         if not self.track_pattern.match(kwargs["track"]):
             return False, "track doesn\'t respect the expected pattern."
         if not self.track_pattern.match(kwargs["disc"]):
             return False, "disc doesn\'t respect the expected pattern."
         with open(ENCODERS, encoding=shared.UTF8) as stream:
             if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
-                return False, '"{0}" as encoder isn\'t recognized.'.format(kwargs["encoder"])
+                return False, f'\"{kwargs["encoder"]}\" as encoder isn\'t recognized.'
         return True, ""
 
 
@@ -517,7 +525,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
         for item in filter(checktags, self.__tags.keys()):
             self.logger.debug("DefaultAudioCDTags: %s.", item)
             if item not in kwargs:
-                return False, "{0} isn\'t available.".format(item)
+                return False, f"{item} isn\'t available."
         return True, ""
 
 
@@ -813,7 +821,7 @@ class RippedTrack(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        keys, values = list(zip(*self._audiotracktags.interface.items()))
+        keys, values = list(zip(*self._audiotracktags.items()))
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
         for key, value in zip(shared.left_justify(keys), values):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
@@ -1074,7 +1082,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
-    keys, values = list(zip(*track.interface.items()))
+    keys, values = list(zip(*track.items()))
     for key, value in zip(shared.left_justify(keys), values):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
