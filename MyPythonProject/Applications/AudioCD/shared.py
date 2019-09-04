@@ -381,7 +381,7 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encoding timestamp.
         now = datetime.utcnow()
-        if int(self._otags["utctimestamp"]) > 0:
+        if int(self._otags.get("utctimestamp", 0)) > 0:
             now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
         now = timezone(shared.DFTTIMEZONE).localize(now)
         now_readable = shared.format_date(now)
@@ -397,7 +397,7 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
         self._otags["encodingtime"] = int(now.timestamp())
-        if int(self._otags["utctimestamp"]) > 0:
+        if int(self._otags.get("utctimestamp", 0)) > 0:
             self._otags["encodingtime"] = int(timezone(shared.DFTTIMEZONE).localize(datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))).timestamp())
 
         # ----- Set encodingyear.
@@ -463,7 +463,7 @@ class CommonAudioCDTags(AudioCDTags):
             return False, "disc doesn\'t respect the expected pattern."
         with open(ENCODERS, encoding=shared.UTF8) as stream:
             if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
-                return False, f'\"{kwargs['encoder']}\" as encoder isn\'t recognized.'
+                return False, f'\"{kwargs["encoder"]}\" as encoder isn\'t recognized.'
         return True, ""
 
 
