@@ -213,9 +213,9 @@ class AudioCDTags(MutableMapping):
     def incollection(self):
         return self._otags["incollection"]
 
-    @property
-    def interface(self):
-        return SortedDict(**self._otags)
+    # @property
+    # def interface(self):
+    #     return SortedDict(**self._otags)
 
     @property
     def label(self):
@@ -813,7 +813,7 @@ class RippedTrack(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        keys, values = list(zip(*self._audiotracktags.interface.items()))
+        keys, values = list(zip(*self._audiotracktags.items()))
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
         for key, value in zip(shared.left_justify(keys), values):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
@@ -1074,7 +1074,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
-    keys, values = list(zip(*track.interface.items()))
+    keys, values = list(zip(*track.items()))
     for key, value in zip(shared.left_justify(keys), values):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
