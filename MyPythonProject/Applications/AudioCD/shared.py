@@ -305,8 +305,8 @@ class AudioCDTags(MutableMapping):
     @staticmethod
     def deserialize(fil, enc=shared.UTF8):
         with open(fil, encoding=enc) as fr:
-            for structure in json.load(fr):
-                yield structure
+            for item in json.load(fr):
+                yield item
 
     @staticmethod
     def splitfield(fld, rex):
@@ -368,8 +368,7 @@ class CommonAudioCDTags(AudioCDTags):
         sequences = Path(shared.TEMP) / "sequences.json"
         self._step, tracks = 2, []
         if sequences.exists():
-            with open(sequences, encoding=shared.UTF8) as stream:
-                tracks = json.load(stream)
+            tracks = list(self.deserialize(sequences))
         self.logger.debug(tracks)
         self.logger.debug("Track is %s.", f'{kwargs["track"]}{sequence}')
         if f'{kwargs["track"]}{sequence}' not in tracks:
