@@ -379,21 +379,30 @@ class CommonAudioCDTags(AudioCDTags):
                 json.dump(tracks, stream)
         self.logger.debug("Step %s for track %s.", self._step, f'{kwargs["track"]}{sequence}')
 
+        # ----- Set encoding timestamp.
+        now = datetime.utcnow()
+        if int(self._otags["utctimestamp"]) > 0:
+            now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
+        now = timezone(shared.DFTTIMEZONE).localize(now)
+        now_readable = shared.format_date(now)
+
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
-        self._otags["encodedby"] = "{0} on {1}".format(shared.get_rippingapplication(), shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
+        self._otags["encodedby"] = "{0} on {1}".format(shared.get_rippingapplication(), now_readable)
 
         # ----- Set taggingtime.
         self.logger.debug("Set taggingtime.")
-        self._otags["taggingtime"] = shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE)))
+        self._otags["taggingtime"] = now_readable
 
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
-        self._otags["encodingtime"] = int(datetime.now(tz=timezone(shared.DFTTIMEZONE)).timestamp())
+        self._otags["encodingtime"] = int(now.timestamp())
+        if int(self._otags["utctimestamp"]) > 0:
+            self._otags["encodingtime"] = int(timezone(shared.DFTTIMEZONE).localize(datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))).timestamp())
 
         # ----- Set encodingyear.
         self.logger.debug("Set encodingyear.")
-        self._otags["encodingyear"] = datetime.now(tz=timezone(shared.DFTTIMEZONE)).strftime("%Y")
+        self._otags["encodingyear"] = now.strftime("%Y")
 
         # ----- Set encoder attributes.
         self.logger.debug("Set encoder attributes.")
