@@ -463,7 +463,7 @@ class CommonAudioCDTags(AudioCDTags):
             return False, "disc doesn\'t respect the expected pattern."
         with open(ENCODERS, encoding=shared.UTF8) as stream:
             if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
-                return False, f'"{kwargs['encoder']}" as encoder isn\'t recognized.'
+                return False, f'\"{kwargs['encoder']}\" as encoder isn\'t recognized.'
         return True, ""
 
 
