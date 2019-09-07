@@ -72,8 +72,9 @@ if tags_config.get("debug", False):
     logger.debug(mainscript(__file__))
 
 # Process tags from input file.
-sys.exit(upsert_audiotags(arguments["profile"],
-                          arguments["source"],
-                          arguments["sequence"],
-                          *arguments.get("decorators", ()),
-                          **dict(filter(not_contains_, tags_config.items()))))
+value, _ = upsert_audiotags(arguments["profile"],
+                            arguments["source"],
+                            arguments["sequence"],
+                            *arguments.get("decorators", ()),
+                            **dict(filter(not_contains_, tags_config.items())))
+sys.exit(value)

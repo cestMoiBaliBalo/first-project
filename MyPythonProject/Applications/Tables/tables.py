@@ -107,7 +107,7 @@ def create_tables(db: str) -> str:
         conn.execute(
                 "CREATE TABLE IF NOT EXISTS applications (applicationid INTEGER PRIMARY KEY ASC AUTOINCREMENT, application TEXT NOT NULL)")
         conn.executemany(
-                "INSERT INTO applications (application) VALUES (?)", [("dBpoweramp 15.1",)])
+                "INSERT INTO applications (application) VALUES (?)", [("dBpoweramp 15.1",), ("dBpoweramp 16.5",)])
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS applications_idx ON applications (application ASC)")
 
         # --> Artists.

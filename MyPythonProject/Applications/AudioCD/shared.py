@@ -67,10 +67,10 @@ class AudioCDTags(MutableMapping):
         return len(self._otags)
 
     def __iter__(self):
-        return iter(self._otags)
+        return iter(self._otags.items())
 
     def __str__(self):
-        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]} - {self._otags["album"]} - .{self._otags["titlesort"]}'
+        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - {self._otags["track"]}'
 
     @property
     def album(self):
@@ -212,10 +212,6 @@ class AudioCDTags(MutableMapping):
     @property
     def incollection(self):
         return self._otags["incollection"]
-
-    # @property
-    # def interface(self):
-    #     return SortedDict(**self._otags)
 
     @property
     def label(self):
@@ -821,7 +817,7 @@ class RippedTrack(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        keys, values = list(zip(*self._audiotracktags.items()))
+        keys, values = list(zip(*sorted(self._audiotracktags, key=itemgetter(0))))
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
         for key, value in zip(shared.left_justify(keys), values):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
@@ -846,9 +842,10 @@ class RippedTrack(ContextDecorator):
             exclusions.append("origtrack")
             exclusions.append("lossless")
         filter_keys = shared.itemgetter_(0)(partial(not_contains_, exclusions))
-        outtags = dict(filter(filter_keys, sorted(self._audiotracktags.items())))
+        outtags = dict(filter(filter_keys, sorted(self._audiotracktags, key=itemgetter(0))))
 
         # --> 2. Log output tags.
+        self._in_logger.debug(f'Processed track is: \"{self._audiotracktags}\"')
         self._in_logger.debug("Output tags.")
         keys, values = list(zip(*list(outtags.items())))
         for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
@@ -871,7 +868,7 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, **kwargs: Any) -> int:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, **kwargs: Any) -> Tuple[int, AudioCDTags]:
     """
 
     :param profile:
@@ -891,7 +888,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
         track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators))
     except ValueError as err:
         in_logger.debug(err)
-        value = 100
+        track, value = None, 100
     else:
         with stack:
 
@@ -919,7 +916,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
                     # -----
                     json_file = str(path / "output_tags.json")
                     collection = list(load_sequence_fromjson(json_file))
-                    collection.append(dict(**track.audiotrack))
+                    collection.append(dict(sorted(track.audiotrack, key=itemgetter(0))))
                     dump_sequence_tojson(json_file, *collection)
                     dump_sequence_toyaml(str(path / "output_tags.yml"), *collection)
 
@@ -927,7 +924,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
                 if kwargs.get("sample", False):
                     save_audiotags_sample(profile, **dict(track.intags))
 
-    return value
+    return value, track.audiotrack
 
 
 def get_tagsfile(obj):
@@ -1082,7 +1079,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
-    keys, values = list(zip(*track.items()))
+    keys, values = list(zip(*sorted(track, key=itemgetter(0))))
     for key, value in zip(shared.left_justify(keys), values):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 

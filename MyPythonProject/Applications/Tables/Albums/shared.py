@@ -877,7 +877,7 @@ def _insert_albums(*iterables) -> int:
                         logger.debug(conn.total_changes)
 
                 total_changes += conn.total_changes
-                logger.debug(total_changes)
+                logger.debug(f"{total_changes} total change(s).")
 
     return total_changes
 

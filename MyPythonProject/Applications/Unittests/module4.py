@@ -184,18 +184,18 @@ class Changes(object):
 class TestRippedTrack(unittest.TestCase):
 
     def setUp(self):
-        with open(str(_THATFILE.parent / "Resources" / "resource3.yml"), encoding=UTF8) as stream:
+        with open(_THATFILE.parent / "Resources" / "resource3.yml", encoding=UTF8) as stream:
             self.test_cases = yaml.load(stream, Loader=yaml.FullLoader)
-        with open(str(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml"), encoding=UTF8) as stream:
+        with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
 
-    def test_t01(self):
+    def test_t01a(self):
         """
-        Test that audio tags returned by RippedTrack class are the expected ones.
+        Test that audio tags held by any RippedTrack instance are the expected ones.
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            for _, value in self.test_cases.items():
+            for value in self.test_cases.values():
                 source, profile, decorators, _, expected = value
 
                 # -----
@@ -213,9 +213,59 @@ class TestRippedTrack(unittest.TestCase):
                     with self.subTest(key=k):
                         self.assertEqual(v, getattr(track.audiotrack, k, None))
 
+    def test_t01b(self):
+        """
+        Test that return value returned by `upsert_audiotags` main function is the expected one.
+        """
+        with TemporaryDirectory() as tempdir:
+            database = copy(DATABASE, tempdir)
+            txttags = join(tempdir, "tags.txt")
+            jsontags = join(tempdir, "tags.json")
+            for value in self.test_cases.values():
+                source, profile, decorators, tags_processing, expected = value
+
+                # -----
+                with open(txttags, mode="w", encoding=UTF16) as stream:
+                    for k, v in source.items():
+                        stream.write("{0}={1}\n".format(k.lower(), v))
+
+                # -----
+                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                with open(txttags, mode="r+", encoding=UTF16) as stream:
+                    value, _ = upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+
+                # -----
+                self.assertEqual(value, 0)
+
+    def test_t01c(self):
+        """
+        Test that audio tags returned by `upsert_audiotags` main function are the expected ones.
+        """
+        with TemporaryDirectory() as tempdir:
+            database = copy(DATABASE, tempdir)
+            txttags = join(tempdir, "tags.txt")
+            jsontags = join(tempdir, "tags.json")
+            for value in self.test_cases.values():
+                source, profile, decorators, tags_processing, expected = value
+
+                # -----
+                with open(txttags, mode="w", encoding=UTF16) as stream:
+                    for k, v in source.items():
+                        stream.write("{0}={1}\n".format(k.lower(), v))
+
+                # -----
+                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                with open(txttags, mode="r+", encoding=UTF16) as stream:
+                    _, track = upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+
+                # -----
+                for k, v in expected.items():
+                    with self.subTest(key=k):
+                        self.assertEqual(v, getattr(track, k, None))
+
     def test_t02(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that total ripped discs is coherent after new discs insertion.
         """
         total_rippeddiscs, rippeddiscs = get_total_rippeddiscs(DATABASE), 0
@@ -224,7 +274,7 @@ class TestRippedTrack(unittest.TestCase):
             database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
-            for _, value in self.test_cases.items():
+            for value in self.test_cases.values():
                 items += 1
                 source, profile, decorators, tags_processing, _ = value
 
@@ -251,7 +301,7 @@ class TestRippedTrack(unittest.TestCase):
 
     def test_t03(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that total database changes is coherent.
         Use production database duplicated into the working temporary folder.
         """
@@ -262,7 +312,7 @@ class TestRippedTrack(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            for _, value in self.test_cases.items():
+            for value in self.test_cases.values():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
@@ -297,7 +347,7 @@ class TestRippedTrack(unittest.TestCase):
 
     def test_t04(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that total database changes is coherent.
         Create an empty database into the working temporary directory.
         """
@@ -309,7 +359,7 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             create_tables(drop_tables(database))
             changes = Changes(db=database)
-            for _, value in self.test_cases.items():
+            for value in self.test_cases.values():
                 source, profile, decorators, tags_processing, expected = value
 
                 # -----
@@ -344,7 +394,7 @@ class TestRippedTrack(unittest.TestCase):
 
     def test_t05(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that total database changes is coherent.
         Use production database duplicated into the working temporary folder.
         """
@@ -389,7 +439,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t06(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         Create an empty database into the working temporary directory.
         """
@@ -416,7 +466,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t07(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         Create an empty database into the working temporary directory.
         """
@@ -445,7 +495,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t08(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         """
         with TemporaryDirectory() as tempdir:
@@ -473,7 +523,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t09(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         """
         with TemporaryDirectory() as tempdir:
@@ -500,7 +550,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t10(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         """
         with TemporaryDirectory() as tempdir:
@@ -527,7 +577,7 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skip
     def test_t11(self):
         """
-        Test `upsert_audiotags` shared function.
+        Test `upsert_audiotags` main function.
         Test that audio tags backup files are created into the right directory.
         """
         with TemporaryDirectory() as tempdir:
