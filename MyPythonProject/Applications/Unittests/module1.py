@@ -10,8 +10,9 @@ from collections.abc import MutableSequence
 from datetime import datetime
 from functools import partial
 from operator import contains, eq, gt, lt
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
+from Applications.Tables.Albums import shared
 from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, now, partial_
 
 __author__ = 'Xavier ROSSET'
@@ -294,27 +295,21 @@ class TestDecorator03(unittest.TestCase):
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestDecorator04(unittest.TestCase):
     """
 
     """
 
-    def setUp(self):
-        self.get_genres = Mock(return_value=[("Alternative Rock", 1), ("Hard Rock", 2), ("Rock", 3)])
-
     def test_t01(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", self.get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "hard rock")), self.get_genres(DATABASE)))
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", shared.get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "hard rock")), shared.get_genres(DATABASE)))
         self.assertEqual(genreid1, genreid2)
-        self.get_genres.assert_called()
-        self.get_genres.assert_called_with(DATABASE)
 
     def test_t02(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", self.get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "rock")), self.get_genres(DATABASE)))
+        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", shared.get_genres(DATABASE)))[0]
+        _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "rock")), shared.get_genres(DATABASE)))
         self.assertNotEqual(genreid1, genreid2)
-        self.get_genres.assert_called()
-        self.get_genres.assert_called_with(DATABASE)
 
 
 class TestDecorator05(unittest.TestCase):
