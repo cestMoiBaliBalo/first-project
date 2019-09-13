@@ -403,7 +403,6 @@ if __name__ == '__main__':
 
     # Define template.
     template = TemplatingEnvironment(path=get_dirname(that_script))
-    template.set_template(T1="T01")
 
     # Parse input arguments.
     parser = argparse.ArgumentParser()
@@ -429,7 +428,7 @@ if __name__ == '__main__':
                         for extension in extensions:
                             if set(find_files(dirname, excluded=partial(exclude_allbut_checked_extensions, extensions=[extension]))):
                                 collection.append((os.path.join(dirname, f"*.{extension}"), destination))
-        arguments.outfile.write(getattr(template, "T1").render(collection=collection))
+        arguments.outfile.write(template.get_template("T01").render(collection=collection))
 
     # Exit script.
     sys.exit(level)

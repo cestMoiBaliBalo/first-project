@@ -41,7 +41,7 @@ if sys.platform.startswith("win"):
     # -----
     locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-        config = yaml.load(fp)
+        config = yaml.load(fp, Loader=yaml.FullLoader)
     for item in LOGGERS:
         with suppress(KeyError):
             config["loggers"][item]["level"] = MAPPING[arguments.get("debug", False)].upper()

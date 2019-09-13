@@ -290,11 +290,6 @@ class TestDecorator03(unittest.TestCase):
         decorated_function = itemgetter_()(partial(contains, ["console", "database", "debug"]))
         self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
 
-    @unittest.skip
-    def test_t03(self):
-        decorated_function = itemgetter_()(partial(contains, ["console", "database", "debug"]))
-        self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
-
 
 class TestDecorator04(unittest.TestCase):
     """

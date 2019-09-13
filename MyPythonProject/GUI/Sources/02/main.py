@@ -303,7 +303,6 @@ if __name__ == '__main__':
 
     # Define template.
     template = TemplatingEnvironment(path=_THATFILE.parent)
-    template.set_template(T1="T01")
 
     # Parse input arguments.
     parser = argparse.ArgumentParser()
@@ -324,7 +323,7 @@ if __name__ == '__main__':
     interface.Show()
     app.MainLoop()
     if interface.copy_audiofiles:
-        arguments.outfile.write(getattr(template, "T1").render(collection1=iter(interface.collection1), collection2=iter(interface.collection2)))
+        arguments.outfile.write(template.get_template("T01").render(collection1=iter(interface.collection1), collection2=iter(interface.collection2)))
         if not interface.test_mode:
             level = 0
 

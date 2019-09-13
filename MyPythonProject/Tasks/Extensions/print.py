@@ -53,8 +53,6 @@ template = TemplatingEnvironment(path=PurePath(that_file).parents[1] / "Template
 # ===============
 # Main algorithm.
 # ===============
-template.set_template(template="T02")
-
 with open(f"{REPOSITORY}.csv", encoding="UTF_8", newline="") as stream:
     reader = csv.DictReader(stream)
     for row in reader:
@@ -74,6 +72,6 @@ if arguments.only_differences:
 if collection:
     status = 0
     with open(os.path.join(os.path.expandvars("%TEMP%"), "counts.txt"), mode="w", encoding="ISO-8859-1") as stream:
-        stream.write(getattr(template, "template").render(collection=[collection, "{0: >+44d}".format(total), arguments.only_differences]))
+        stream.write(template.get_template("T02").render(collection=[collection, "{0: >+44d}".format(total), arguments.only_differences]))
 
 sys.exit(status)

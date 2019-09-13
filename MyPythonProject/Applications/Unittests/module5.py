@@ -3,28 +3,18 @@
 import os
 import re
 import unittest
+from functools import partial
 from itertools import chain, compress, repeat
+from operator import contains
 from pathlib import PurePath
 from typing import List, Tuple
 
-from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, partitioner
+from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, itemgetter_, partitioner
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-
-# ----------
-# Functions.
-# ----------
-def predicate1(item) -> bool:
-    return item in ["Bad English", "Fleetwood Mac", "Iron Maiden", "Kiss", "Metallica", "Pearl Jam", "Springsteen, Bruce", "U2"]
-
-
-def predicate2(item) -> bool:
-    return item[1] in ["Kiss", "Metallica", "Pearl Jam", "Springsteen, Bruce"]
-
 
 # -----------------
 # Functions labels.
@@ -35,9 +25,9 @@ join = os.path.join
 # Global variables.
 # -----------------
 iterable = chain.from_iterable(os.listdir(str(MUSIC / letter)) for letter in os.listdir(str(MUSIC)) if re.match(r"^[A-Z]$", letter))
-specifics, generics = partitioner(iterable, predicate=predicate1)
+specifics, generics = partitioner(iterable, predicate=partial(contains, ["Bad English", "Fleetwood Mac", "Iron Maiden", "Kiss", "Metallica", "Pearl Jam", "Springsteen, Bruce", "U2"]))
 generics = list((artist[0], artist) for artist in generics)  # Generic artists.
-specifics = list(filter(predicate2, [(artist[0], artist) for artist in specifics]))  # Specific artists.
+specifics = list(filter(itemgetter_(1)(partial(contains, ["Kiss", "Metallica", "Pearl Jam", "Springsteen, Bruce"])), [(artist[0], artist) for artist in specifics]))  # Specific artists.
 
 
 # --------------

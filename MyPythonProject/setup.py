@@ -14,5 +14,5 @@ setup(name='MyPythonProject',
       author_email="",
       url="",
       packages=find_packages(),
-      package_data={"Applications.Unittests": ["Resources/*.yml", "Resources/*.json"]},
+      package_data={"Applications.Unittests": ["Resources/*.yml", "Resources/*.json"]}, install_requires=['PyYAML', 'jinja2', 'dateutil']
       )

@@ -96,9 +96,7 @@ collection1, collection2 = [], []  # type: List[PureWindowsPath], List[PureWindo
 # =========
 # Template.
 # =========
-template = TemplatingEnvironment(path=that_file.parents[1] / "Templates", keep_trailing_newline=False)
-template.set_environment(filters={"rjustify": rjustify})
-template.set_template(template="T01")
+template = TemplatingEnvironment(path=that_file.parents[1] / "Templates", keep_trailing_newline=False, filters={"rjustify": rjustify})
 
 # ===============
 # Main algorithm.
@@ -113,4 +111,4 @@ collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), k
 it1, it2 = tee(collection1)
 _extensions = filter(None, sorted([(key[1:], value) for key, value in count_justify(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))
 _directories = filter(None, sorted([(str(key), value) for key, value in count_justify(*Counter(file.parents[0] for file in it2).items())], key=itemgetter(0)))
-print(getattr(template, "template").render(root=arguments.path, files=collection1, extensions=_extensions, directories=_directories, empty_directories=collection2))
+print(template.get_template("T01").render(root=arguments.path, files=collection1, extensions=_extensions, directories=_directories, empty_directories=collection2))

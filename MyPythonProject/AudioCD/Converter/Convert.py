@@ -53,7 +53,7 @@ logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(_THATF
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(path=os.fspath(_THATFILE.parents[1] / "Templates")).environment.get_template("Tags")
+_template = TemplatingEnvironment(path=os.fspath(_THATFILE.parents[1] / "Templates"))
 
 # ============
 # Main script.
@@ -95,4 +95,4 @@ if pairs:
 
 # Get back audio tags to dBpoweramp Batch Converter.
 with open(argument.tags, mode=WRITE, encoding=UTF16) as fw:
-    fw.write(_template.render(tags=dict(tags.items())))
+    fw.write(_template.get_template("Tags").render(tags=dict(tags.items())))

@@ -40,7 +40,6 @@ def get_name(path: str) -> str:
 
 # Define template.
 template = TemplatingEnvironment(path=that_file.parents[1] / "Templates")
-template.set_template(template="T02")
 
 # Set copy commands file.
 with ExitStack() as stack:
@@ -49,4 +48,4 @@ with ExitStack() as stack:
     tracks = filter(None, itertools.chain.from_iterable([line.splitlines() for line in fr]))
     tracks = sorted(sorted((tuple(track.split("|")) for track in tracks), key=get_name), key=get_parent)
     tracks = [(src, PurePath(src).name, dst) for src, dst in tracks]
-    fw.write(getattr(template, "template").render(collection=iter((key, list(group)) for key, group in itertools.groupby(tracks, key=get_parent))))
+    fw.write(template.get_template("T02").render(collection=iter((key, list(group)) for key, group in itertools.groupby(tracks, key=get_parent))))

@@ -281,18 +281,18 @@ class TitleCaseConverter(TitleCaseBaseConverter):
     """
 
     """
-    logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
+    _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
     def __init__(self) -> None:
         super().__init__()
 
-    def convert(self, title: str):
+    def convert(self, title: str) -> str:
         """
         
         :param title: 
         :return: 
         """
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # ----------------
         # General process.
@@ -300,7 +300,7 @@ class TitleCaseConverter(TitleCaseBaseConverter):
         # 1. Title is formatted with lowercase letters.
         # 2. Words are capitalized --> `capitalize_words`.
         title = self.capitalize_words.sub(lambda match: match.group(1).capitalize(), title.lower().replace("[", "(").replace("]", ")"))
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # -------------------
         # Exceptions process.
@@ -320,13 +320,13 @@ class TitleCaseConverter(TitleCaseBaseConverter):
             title = self.capitalize_lastword.sub(lambda match: match.group(1).capitalize(), title)
         if self.alw_uppercase:
             title = self.alw_uppercase.sub(lambda match: match.group(1).upper(), title)
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # -----------------
         # Acronyms process.
         # -----------------
         title = self.acronyms.sub(lambda match: match.group(1).upper(), title)
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # --------------------
         # Apostrophes process.
@@ -338,14 +338,14 @@ class TitleCaseConverter(TitleCaseBaseConverter):
         title = self.apostrophe_regex5.sub(" 'n' ", title)
         title = self.apostrophe_regex6.sub(" 'n' ", title)
         title = self.apostrophe_regex7.sub(" 'n' ", title)
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # -----------------
         # Specific process.
         # -----------------
         # Capital letter is mandatory for the second word if the first one is defined between parenthesis --> `capitalize_secondword`.
         title = self.capitalize_secondword.sub(lambda match: "{0}{1}".format(match.group(1), match.group(2).capitalize()), title)
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # ----------------------
         # Roman numbers process.
@@ -353,7 +353,7 @@ class TitleCaseConverter(TitleCaseBaseConverter):
         title = self.roman_numbers_regex1.sub(lambda match: match.group(0).upper(), title)
         title = self.roman_numbers_regex2.sub(lambda match: match.group(0).upper(), title)
         title = self.roman_numbers_regex3.sub(lambda match: match.group(0).upper(), title)
-        self.logger.debug(title)
+        self._logger.debug(title)
 
         # --------------------
         # Punctuation process.
@@ -407,6 +407,7 @@ def attrgetter_(name: str):
     :param name:
     :return:
     """
+
     def outer_wrapper(f):
         def inner_wrapper(arg):
             return f(attrgetter(name)(arg))
@@ -422,6 +423,7 @@ def int_(f):
     :param f:
     :return:
     """
+
     def wrapper(arg):
         return int(f(arg))
 
@@ -434,6 +436,7 @@ def itemgetter_(*args: int):
     :param args:
     :return:
     """
+
     def outer_wrapper(f):
         def inner_wrapper(arg):
             _args = tuple(args)
@@ -456,6 +459,7 @@ def itemgetter2_(index: int = 0):
     :param index:
     :return:
     """
+
     def outer_wrapper(f):
         def inner_wrapper(arg):
             return f(arg)[index]
@@ -472,6 +476,7 @@ def partial_(*args, **kwargs):
     :param kwargs:
     :return:
     """
+
     def outer_wrapper(f):
         def inner_wrapper(arg):
             return partial(f, *args, **kwargs)(arg)
@@ -603,8 +608,10 @@ class SetEndSeconds(argparse.Action):
 # Jinja2 environment.
 # ===================
 class TemplatingEnvironment(object):
-    def __init__(self, path, keep_trailing_newline=True, trim_blocks=True, lstrip_blocks=True):
+
+    def __init__(self, path, keep_trailing_newline=True, trim_blocks=True, lstrip_blocks=True, **kwargs):
         self._environment = jinja2.Environment(keep_trailing_newline=keep_trailing_newline, trim_blocks=trim_blocks, lstrip_blocks=lstrip_blocks, loader=jinja2.FileSystemLoader(str(path)))
+        self.set_environment(**kwargs)
 
     def set_environment(self, **kwargs):
         globalvars = kwargs.get("globalvars", {})
@@ -614,13 +621,8 @@ class TemplatingEnvironment(object):
         for k, v in filters.items():
             self._environment.filters[k] = v
 
-    def set_template(self, **templates):
-        for k, v in templates.items():
-            setattr(self, k, self._environment.get_template(v))
-
-    @property
-    def environment(self):
-        return self._environment
+    def get_template(self, template):
+        return self._environment.get_template(template)
 
 
 # ==========================
@@ -1167,7 +1169,7 @@ def left_justify(iterable: Iterable[Any]) -> Iterable[str]:
         yield item
 
 
-def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Tuple[str, str]:
+def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Iterable[Tuple[str, str]]:
     sequence = list(iterable)  # type: List[Tuple[str, int]]
     keys, values = zip(*sequence)
     keys = list(left_justify(map(str, keys)))
@@ -1188,7 +1190,7 @@ def sort_by_insertion(iterable: Iterable[Any], *, reverse: bool = False) -> Iter
 # ============================
 # Audio directories functions.
 # ============================
-def get_artists(directory: str = MUSIC) -> Iterable[Tuple[str, str]]:
+def get_artists(directory: Union[str, PurePath] = MUSIC) -> Iterable[Tuple[str, str]]:
     """
     Get artists composing the local music drive.
     Yield 2-items tuples composed of both artist's name and artist's folder path.
@@ -1196,7 +1198,7 @@ def get_artists(directory: str = MUSIC) -> Iterable[Tuple[str, str]]:
     :param directory: local music drive.
     :return: 2-items tuples composed of both artist's name and artist's folder path.
     """
-    for _artist, _artist_path in chain.from_iterable(list(get_folders(letter_path)) for letter, letter_path in get_folders(directory)):
+    for _artist, _artist_path in chain.from_iterable(list(get_folders(letter_path)) for letter, letter_path in get_folders(str(directory))):
         yield _artist, _artist_path
 
 
@@ -1272,7 +1274,10 @@ def get_folders(directory: str) -> Iterable[Tuple[str, str]]:
 # Single dispatch functions.
 # ==========================
 
+
+#    ------------------------------------
 # 1. Convert argument to a string object.
+#    ------------------------------------
 @singledispatch
 def stringify(arg):
     return arg
@@ -1293,7 +1298,9 @@ def _(arg: date, *, template: str = "%d/%m/%Y") -> str:
     return arg.strftime(template)
 
 
+#    --------------------------------------
 # 2. Convert argument to a datetime object.
+#    --------------------------------------
 @singledispatch
 def valid_datetime(arg):
     """
@@ -1359,7 +1366,9 @@ def _(arg: datetime) -> Tuple[int, datetime, Tuple[int, int, int, int, int, int,
     return int(_arg.timestamp()), _arg, _arg.timetuple()
 
 
+#    -------------------------------------
 # 3. Convert argument to a boolean object.
+#    -------------------------------------
 @singledispatch
 def booleanify(arg):
     return arg
@@ -1375,25 +1384,25 @@ def _(arg: str):
 # ======================
 # Jinja2 Custom filters.
 # ======================
-def integer_to_string(intg: int) -> str:
-    return str(intg)
+# def integer_to_string(intg: int) -> str:
+#     return str(intg)
 
 
-def repeat_element(elem, n):
-    for i in repeat(elem, n):
-        yield i
+# def repeat_element(elem, n):
+#     for i in repeat(elem, n):
+#         yield i
 
 
-def cjustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}^{1}}".format(strg, width, char)
+# def cjustify(strg: str, width: int, *, char: str = "") -> str:
+#     return "{0:{2}^{1}}".format(strg, width, char)
 
 
 def rjustify(strg: str, width: int, *, char: str = "") -> str:
     return "{0:{2}>{1}}".format(str(strg), width, char)
 
 
-def ljustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}<{1}}".format(strg, width, char)
+# def ljustify(strg: str, width: int, *, char: str = "") -> str:
+#     return "{0:{2}<{1}}".format(strg, width, char)
 
 
 def normalize(strg: str) -> str:

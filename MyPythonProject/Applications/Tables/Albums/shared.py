@@ -13,7 +13,7 @@ from functools import partial
 from itertools import chain, compress, groupby, product, starmap
 from operator import eq, gt, is_, itemgetter
 from string import Template
-from typing import Any, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
 
@@ -1122,7 +1122,7 @@ def _update_track(table: str, *keys: str, db: str = DATABASE, **kwargs: Any) -> 
     return 0
 
 
-def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Mapping[str, Any]:
+def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Dict[str, Any]:
     """
 
     :param db:
