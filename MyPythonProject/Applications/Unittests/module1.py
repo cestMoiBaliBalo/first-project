@@ -2,14 +2,17 @@
 # pylint: disable=invalid-name
 import itertools
 import json
+import locale
 import os
+import sys
 import unittest
 from collections.abc import MutableSequence
+from datetime import datetime
 from functools import partial
 from operator import contains, eq, gt, lt
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, now, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -420,3 +423,56 @@ class TestDecorator07(unittest.TestCase):
                                                                                                             ("B", "2.20160201.13"),
                                                                                                             ("F", "2.20160422.15"),
                                                                                                             ("M", "2.20170101.13")])
+
+
+@patch("Applications.shared.datetime")
+class TestMock01(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.locale = locale.getlocale()
+        if sys.platform.startswith("win"):
+            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+        elif sys.platform.startswith("lin"):
+            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+        self.datetime = datetime(2019, 9, 13, 3, 1)
+        self.now = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self.locale)
+
+    def test01(self, mock_datetime):
+        mock_datetime.utcnow.return_value = self.datetime
+        self.assertEqual(now(), self.now)
+        mock_datetime.utcnow.assert_called()
+        mock_datetime.utcnow.assert_called_once()
+        self.assertEqual(mock_datetime.utcnow.call_count, 1)
+
+
+@patch("Applications.shared.datetime")
+class TestMock02(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self):
+        self.locale = locale.getlocale()
+        if sys.platform.startswith("win"):
+            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+        elif sys.platform.startswith("lin"):
+            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+        self.datetime = [datetime(2019, 9, 13, 3, 1), datetime(2019, 9, 13, 3, 2)]
+        self.now1 = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
+        self.now2 = "Vendredi 13 Septembre 2019 05:02:00 CEST (UTC+0200)"
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self.locale)
+
+    def test01(self, mock_datetime):
+        mock_datetime.utcnow.side_effect = self.datetime
+        self.assertEqual(now(), self.now1)
+        self.assertEqual(now(), self.now2)
+        mock_datetime.utcnow.assert_called()
+        self.assertEqual(mock_datetime.utcnow.call_count, 2)
