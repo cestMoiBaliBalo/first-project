@@ -2,12 +2,14 @@
 # pylint: disable=invalid-name
 import os
 import re
+import sys
 import unittest
 from functools import partial
 from itertools import chain, compress, repeat
 from operator import contains
 from pathlib import PurePath
 from typing import List, Tuple
+from unittest.mock import patch
 
 from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, itemgetter_, partitioner
 
@@ -33,6 +35,7 @@ specifics = list(filter(itemgetter_(1)(partial(contains, ["Kiss", "Metallica", "
 # --------------
 # Tests classes.
 # --------------
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestGetAlbums01(unittest.TestCase):
 
     @classmethod
@@ -48,6 +51,7 @@ class TestGetAlbums01(unittest.TestCase):
                 self.assertListEqual(albums, sorted(map(lambda i: i.split("-", maxsplit=1)[-1].strip(), reference)))
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestGetAlbums02(unittest.TestCase):
 
     @classmethod
@@ -63,6 +67,7 @@ class TestGetAlbums02(unittest.TestCase):
                 self.assertListEqual(paths, sorted(map(join, repeat(str(directory)), reference)))
 
 
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class TestGetAlbums03(unittest.TestCase):
 
     @classmethod

@@ -1026,7 +1026,7 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
     if not fil:
-        fil = os.path.join(os.path.expandvars("%TEMP%"), "tags.json")
+        fil = Path(shared.TEMP) /  "tags.json"
 
     # Load existing sequences.
     with suppress(FileNotFoundError):
@@ -1075,7 +1075,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
     countries = dict(get_countries(db))
     providers = dict(get_providers(db))
     if not fil:
-        fil = os.path.join(os.path.expandvars("%TEMP%"), "tags.json")
+        fil = Path(shared.TEMP) /  "tags.json"
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
@@ -1226,7 +1226,7 @@ def not_contains_(a, b) -> bool:
 def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
     _collection = []  # type: List[Sequence[Union[bool, str]]]
     if not fil:
-        fil = os.path.join(os.path.expandvars("%TEMP%"), "xreferences.json")
+        fil = Path(shared.TEMP) /  "xreferences.json"
 
     # Load existing references.
     with suppress(FileNotFoundError):

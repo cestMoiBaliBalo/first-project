@@ -311,6 +311,26 @@ class TestDecorator04(unittest.TestCase):
         _, genreid2 = next(filter(itemgetter_()(partial(eq_string, "rock")), shared.get_genres(DATABASE)))
         self.assertNotEqual(genreid1, genreid2)
 
+    def test_t03(self):
+        genre = list(filter(itemgetter_()(partial(eq_string, "Hard Rock", sensitive=True)), shared.get_genres(DATABASE)))
+        self.assertListEqual(genre, [("Hard Rock", 2)])
+
+    def test_t04(self):
+        genre = list(filter(itemgetter_()(partial(eq_string, "hard rock", sensitive=True)), shared.get_genres(DATABASE)))
+        self.assertListEqual(genre, [])
+
+    def test_t05(self):
+        genre = list(filter(itemgetter_()(partial(eq_string, "hard rock")), shared.get_genres(DATABASE)))
+        self.assertListEqual(genre, [("Hard Rock", 2)])
+
+    def test_t06(self):
+        genre = list(filter(itemgetter_()(partial(eq_string, "Hard Rock")), shared.get_genres(DATABASE)))
+        self.assertListEqual(genre, [("Hard Rock", 2)])
+
+    def test_t07(self):
+        genre = list(filter(itemgetter_()(partial(eq_string, "some genre")), shared.get_genres(DATABASE)))
+        self.assertListEqual(genre, [])
+
 
 class TestDecorator05(unittest.TestCase):
     """

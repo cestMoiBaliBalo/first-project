@@ -3,15 +3,18 @@
 import fnmatch
 import logging.config
 import os
+# from unittest.mock import patch, Mock
+import sys
 import unittest
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from functools import partial
 from operator import contains
-from pathlib import PurePath, PureWindowsPath
+from pathlib import PurePath
 from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
+from unittest.mock import PropertyMock, patch
 
 import yaml
 
@@ -26,7 +29,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PureWindowsPath(os.path.abspath(__file__))  # type: PureWindowsPath
+_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 basename, exists, join = os.path.basename, os.path.exists, os.path.join
 
 
@@ -189,6 +192,7 @@ class TestRippedTrack(unittest.TestCase):
         with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
 
+    @unittest.skip
     def test_t01a(self):
         """
         Test that audio tags held by any RippedTrack instance are the expected ones.
@@ -213,16 +217,16 @@ class TestRippedTrack(unittest.TestCase):
                     with self.subTest(key=k):
                         self.assertEqual(v, getattr(track.audiotrack, k, None))
 
-    def test_t01b(self):
+    @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
+    def test_t01b(self, mock_database):
         """
         Test that return value returned by `upsert_audiotags` main function is the expected one.
         """
+        mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
-            database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
-            jsontags = join(tempdir, "tags.json")
             for value in self.test_cases.values():
-                source, profile, decorators, tags_processing, expected = value
+                source, profile, decorators, after_rip_actions, expected = value
 
                 # -----
                 with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -230,23 +234,24 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(after_rip_actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    value, _ = upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                    with patch("Applications.shared.TEMP", tempdir):
+                        value, _ = upsert_audiotags(profile, stream, "C1", *decorators, **config)
 
                 # -----
                 self.assertEqual(value, 0)
 
-    def test_t01c(self):
+    @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
+    def test_t01c(self, mock_database):
         """
         Test that audio tags returned by `upsert_audiotags` main function are the expected ones.
         """
+        mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
-            database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
-            jsontags = join(tempdir, "tags.json")
             for value in self.test_cases.values():
-                source, profile, decorators, tags_processing, expected = value
+                source, profile, decorators, after_rip_actions, expected = value
 
                 # -----
                 with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -254,15 +259,17 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(after_rip_actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    _, track = upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                    with patch("Applications.shared.TEMP", tempdir):
+                        _, track = upsert_audiotags(profile, stream, "C1", *decorators, **config)
 
                 # -----
                 for k, v in expected.items():
                     with self.subTest(key=k):
                         self.assertEqual(v, getattr(track, k, None))
 
+    @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t02(self):
         """
         Test `upsert_audiotags` main function.
@@ -276,11 +283,11 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             for value in self.test_cases.values():
                 items += 1
-                source, profile, decorators, tags_processing, _ = value
+                source, profile, decorators, after_rip_actions, _ = value
 
                 # -----
-                _tags_processing = any([self.test_config.get(tags_processing, {}).get("albums", False), self.test_config.get(tags_processing, {}).get("bootlegs", False)])
-                if _tags_processing:
+                _after_rip_actions = any([self.test_config.get(after_rip_actions, {}).get("albums", False), self.test_config.get(after_rip_actions, {}).get("bootlegs", False)])
+                if _after_rip_actions:
                     if int(source["Track"].split("/")[0]) == 1:
                         rippeddiscs += 1
 
@@ -290,15 +297,17 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(after_rip_actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                    with patch("Applications.shared.TEMP", tempdir):
+                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
 
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
             self.assertGreater(inserted, 0)
             self.assertEqual(total_rippeddiscs + rippeddiscs, get_total_rippeddiscs(database))
 
+    @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t03(self):
         """
         Test `upsert_audiotags` main function.
@@ -313,13 +322,13 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
             for value in self.test_cases.values():
-                source, profile, decorators, tags_processing, expected = value
+                source, profile, decorators, after_rip_actions, expected = value
 
                 # -----
-                _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
-                _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
-                _tags_processing = any([_db_album, _db_bootleg])
-                if _tags_processing:
+                _db_album = self.test_config.get(after_rip_actions, {}).get("albums", False)
+                _db_bootleg = self.test_config.get(after_rip_actions, {}).get("bootlegs", False)
+                _after_rip_actions = any([_db_album, _db_bootleg])
+                if _after_rip_actions:
                     kwargs = {k.lower(): v for k, v in source.items()}
                     kwargs.update(albumsort=expected["albumsort"],
                                   bonus=kwargs.get("bonustrack", "N"),
@@ -336,9 +345,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(not_contains1_, self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(after_rip_actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                    with patch("Applications.shared.TEMP", tempdir):
+                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
@@ -360,13 +370,13 @@ class TestRippedTrack(unittest.TestCase):
             create_tables(drop_tables(database))
             changes = Changes(db=database)
             for value in self.test_cases.values():
-                source, profile, decorators, tags_processing, expected = value
+                source, profile, decorators, after_rip_actions, expected = value
 
                 # -----
-                _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
-                _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
-                _tags_processing = any([_db_album, _db_bootleg])
-                if _tags_processing:
+                _db_album = self.test_config.get(after_rip_actions, {}).get("albums", False)
+                _db_bootleg = self.test_config.get(after_rip_actions, {}).get("bootlegs", False)
+                _after_rip_actions = any([_db_album, _db_bootleg])
+                if _after_rip_actions:
                     kwargs = {k.lower(): v for k, v in source.items()}
                     kwargs.update(albumsort=expected["albumsort"],
                                   bonus=kwargs.get("bonustrack", "N"),
@@ -383,15 +393,18 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(not_contains2_, self.test_config.get(tags_processing, {}).items()))
+                config = dict(filter(not_contains1_, self.test_config.get(after_rip_actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
-                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
+                    with patch("Applications.shared.TEMP", tempdir):
+                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
             self.assertEqual(inserted, changes.total_changes)
 
+    @unittest.skip
+    @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t05(self):
         """
         Test `upsert_audiotags` main function.
@@ -403,13 +416,13 @@ class TestRippedTrack(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            source, profile, decorators, tags_processing, expected = self.test_cases["default4"]
+            source, profile, decorators, after_rip_actions, expected = self.test_cases["default4"]
 
             # -----
-            _db_album = self.test_config.get(tags_processing, {}).get("albums", False)
-            _db_bootleg = self.test_config.get(tags_processing, {}).get("bootlegs", False)
-            _tags_processing = any([_db_album, _db_bootleg])
-            if _tags_processing:
+            _db_album = self.test_config.get(after_rip_actions, {}).get("albums", False)
+            _db_bootleg = self.test_config.get(after_rip_actions, {}).get("bootlegs", False)
+            _after_rip_actions = any([_db_album, _db_bootleg])
+            if _after_rip_actions:
                 kwargs = {k.lower(): v for k, v in source.items()}
                 kwargs.update(albumsort=expected["albumsort"],
                               bonus=kwargs.get("bonustrack", "N"),
@@ -426,9 +439,10 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(not_contains2_, self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(not_contains2_, self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
-                upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
+                with patch("Applications.shared.TEMP", tempdir):
+                    upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, save=True, root=PurePath(tempdir), **config)
 
             # -----
             # inserted = 0
@@ -445,7 +459,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg1"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg1"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -453,7 +467,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
             self.assertTrue(exists(join(tempdir, "S")))
@@ -472,7 +486,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg1"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg1"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -480,7 +494,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
             self.assertTrue(exists(os.path.join(tempdir, "S", "Springsteen, Bruce", "2", "2002", "10.14 - Paris, France", "CD2", "input_tags.json")))
@@ -500,7 +514,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -508,7 +522,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=tempdir, **config)
             self.assertTrue(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2", "input_tags.json")))
@@ -528,7 +542,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -536,7 +550,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=False, root=None, **config)
             self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
@@ -555,7 +569,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -563,7 +577,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=True, root=None, **config)
             self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
@@ -582,7 +596,7 @@ class TestRippedTrack(unittest.TestCase):
         """
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            source, profile, decorators, tags_processing, _ = self.test_cases["bootleg"]
+            source, profile, decorators, after_rip_actions, _ = self.test_cases["bootleg"]
 
             # -----
             with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -590,7 +604,7 @@ class TestRippedTrack(unittest.TestCase):
                     stream.write("{0}={1}\n".format(k.lower(), v))
 
             # -----
-            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(tags_processing, {}).items()))
+            config = dict(filter(lambda i: i[0] not in ["console", "database", "debug", "root", "save"], self.test_config.get(after_rip_actions, {}).items()))
             with open(txttags, mode="r+", encoding=UTF16) as stream:
                 upsert_audiotags(profile, stream, *decorators, save=False, root=tempdir, **config)
             self.assertFalse(exists(join(tempdir, "S", "Springsteen, Bruce", "2", "1993", "06.24 - East Rutherford, NJ", "CD2")))
@@ -602,6 +616,8 @@ class TestRippedTrack(unittest.TestCase):
             self.assertTrue(exists(tempdir))
 
 
+@unittest.skip
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest01(unittest.TestCase):
     _count = 10
 
@@ -681,6 +697,8 @@ class DatabaseFunctionsTest01(unittest.TestCase):
         self.assertEqual(played, self._played)
 
 
+@unittest.skip
+@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest02(unittest.TestCase):
 
     def setUp(self):
