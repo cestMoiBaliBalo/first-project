@@ -68,9 +68,9 @@ def split6_(char: str, strg: str):
     return strg.split(char)
 
 
-# ========
-# Classes.
-# ========
+# ==============
+# Tests classes.
+# ==============
 class Test01(unittest.TestCase):
     def setUp(self):
         self.ref = [1, 2, 3, 4, 5, 6, 7, 8]
