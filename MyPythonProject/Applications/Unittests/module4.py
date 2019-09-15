@@ -13,11 +13,11 @@ from operator import contains
 from pathlib import PurePath
 from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
-from unittest.mock import PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import yaml
 
-from ..AudioCD.shared import upsert_audiotags
+from ..AudioCD.shared import get_tagsfile, upsert_audiotags
 from ..Tables.Albums.shared import insert_albums_fromjson, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
@@ -342,8 +342,6 @@ class TestRippedTrack(unittest.TestCase):
         Test that total database changes is coherent.
         Create an empty database into the working temporary directory.
         """
-
-        # Run tests cases.
         with TemporaryDirectory() as tempdir:
             database = join(tempdir, "database.db")
             txttags = join(tempdir, "tags.txt")
@@ -385,6 +383,106 @@ class TestRippedTrack(unittest.TestCase):
             self.assertEqual(inserted, changes.total_changes)
 
 
+class TestGetTagsFile01(unittest.TestCase):
+
+    def setUp(self):
+        self.track = Mock()
+        self.track.album = "The Album"
+        self.track.albumsortcount = "1"
+        self.track.artistsort = "Artist, The"
+        self.track.artistsort_letter = "A"
+        self.track.bootleg = "N"
+        self.track.discnumber = "1"
+        self.track.foldersortcount = "N"
+        self.track.origyear = "2019"
+        self.track.totaldiscs = "1"
+
+    def test01(self):
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019 - The Album")
+
+    def test02(self):
+        self.track.totaldiscs = "2"
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019 - The Album\CD1")
+
+    def test03(self):
+        self.track.discnumber = "2"
+        self.track.totaldiscs = "2"
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019 - The Album\CD2")
+
+    def test04(self):
+        self.track.foldersortcount = "Y"
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019.1 - The Album")
+
+    def test05(self):
+        self.track.albumsortcount = "2"
+        self.track.foldersortcount = "Y"
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019.2 - The Album")
+
+    def test06(self):
+        self.track.albumsortcount = "2"
+        self.track.discnumber = "3"
+        self.track.foldersortcount = "Y"
+        self.track.totaldiscs = "3"
+        self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019.2 - The Album\CD3")
+
+
+@patch("Applications.Unittests.module4.get_tagsfile", return_value="dummy string")
+class TestGetTagsFile02(unittest.TestCase):
+
+    def setUp(self):
+        self.track = Mock()
+        self.track.album = "The Album"
+        self.track.albumsortcount = "1"
+        self.track.artistsort = "Artist, The"
+        self.track.artistsort_letter = "A"
+        self.track.bootleg = "N"
+        self.track.discnumber = "1"
+        self.track.foldersortcount = "N"
+        self.track.origyear = "2019"
+        self.track.totaldiscs = "1"
+
+    def test01(self, mock_get_tagsfile):
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+    def test02(self, mock_get_tagsfile):
+        self.track.totaldiscs = "2"
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+    def test03(self, mock_get_tagsfile):
+        self.track.discnumber = "2"
+        self.track.totaldiscs = "2"
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+    def test04(self, mock_get_tagsfile):
+        self.track.foldersortcount = "Y"
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+    def test05(self, mock_get_tagsfile):
+        self.track.albumsortcount = "2"
+        self.track.foldersortcount = "Y"
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+    def test06(self, mock_get_tagsfile):
+        self.track.albumsortcount = "2"
+        self.track.discnumber = "3"
+        self.track.foldersortcount = "Y"
+        self.track.totaldiscs = "3"
+        self.assertEqual(get_tagsfile(self.track), "dummy string")
+        mock_get_tagsfile.assert_called()
+        mock_get_tagsfile.assert_called_once()
+
+
+@unittest.skip
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest01(unittest.TestCase):
     _count = 10
@@ -465,6 +563,7 @@ class DatabaseFunctionsTest01(unittest.TestCase):
         self.assertEqual(played, self._played)
 
 
+@unittest.skip
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class DatabaseFunctionsTest02(unittest.TestCase):
 
