@@ -841,7 +841,7 @@ class RippedTrack(ContextDecorator):
             exclusions.append("folder")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_keys = shared.itemgetter_(0)(partial(not_contains_, exclusions))
+        filter_keys = shared.not_(shared.itemgetter_(0)(partial(contains, exclusions)))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags, key=itemgetter(0))))
 
         # --> 2. Log output tags.
@@ -1026,7 +1026,7 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
     if not fil:
-        fil = Path(shared.TEMP) /  "tags.json"
+        fil = Path(shared.TEMP) / "tags.json"
 
     # Load existing sequences.
     with suppress(FileNotFoundError):
@@ -1075,7 +1075,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
     countries = dict(get_countries(db))
     providers = dict(get_providers(db))
     if not fil:
-        fil = Path(shared.TEMP) /  "tags.json"
+        fil = Path(shared.TEMP) / "tags.json"
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
@@ -1219,14 +1219,10 @@ def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -
 # ================
 # Other functions.
 # ================
-def not_contains_(a, b) -> bool:
-    return not contains(a, b)
-
-
 def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
     _collection = []  # type: List[Sequence[Union[bool, str]]]
     if not fil:
-        fil = Path(shared.TEMP) /  "xreferences.json"
+        fil = Path(shared.TEMP) / "xreferences.json"
 
     # Load existing references.
     with suppress(FileNotFoundError):

@@ -13,7 +13,7 @@ from operator import contains, eq, gt, lt
 from unittest.mock import patch
 
 from Applications.Tables.Albums import shared
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, now, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, not_, now, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -438,6 +438,15 @@ class TestDecorator07(unittest.TestCase):
                                                                                                             ("B", "2.20160201.13"),
                                                                                                             ("F", "2.20160422.15"),
                                                                                                             ("M", "2.20170101.13")])
+
+
+class TestDecorator08(unittest.TestCase):
+
+    def test_t01(self):
+        self.assertListEqual(list(filter(not_(partial(contains, ["A", "C", "E", "G"])), ["A", "B", "C", "D", "E", "F", "G"])), ["B", "D", "F"])
+
+    def test_t02(self):
+        self.assertListEqual(list(filter(not_(partial(contains, ["A", "B", "C", "D", "E", "F", "G"])), ["A", "C", "E", "G", "H"])), ["H"])
 
 
 @patch("Applications.shared.datetime")
