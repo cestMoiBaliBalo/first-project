@@ -5,27 +5,19 @@ import logging.config
 import os
 import sys
 from contextlib import suppress
+from functools import partial
 from operator import contains
-from typing import List
 
 import yaml
 
 from Applications.AudioCD.shared import upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import get_dirname, itemgetter_, mainscript, partial_
+from Applications.shared import get_dirname, itemgetter_, mainscript, not_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-
-# Function for setting additional keywords arguments.
-@itemgetter_(0)
-@partial_(["debug", "console"])
-def not_contains_(iterable: List[str], strg: str):
-    return not contains(iterable, strg.lower())
-
 
 # Define French environment.
 locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
@@ -76,5 +68,5 @@ value, _ = upsert_audiotags(arguments["profile"],
                             arguments["source"],
                             arguments["sequence"],
                             *arguments.get("decorators", ()),
-                            **dict(filter(not_contains_, tags_config.items())))
+                            **dict(filter(not_(itemgetter_()(partial(contains, ["debug", "console"]))), tags_config.items())))
 sys.exit(value)

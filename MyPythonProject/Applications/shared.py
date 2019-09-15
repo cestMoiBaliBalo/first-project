@@ -417,7 +417,7 @@ def attrgetter_(name: str):
     return outer_wrapper
 
 
-def int_(f):
+def int_(func):
     """
 
     :param f:
@@ -425,7 +425,7 @@ def int_(f):
     """
 
     def wrapper(arg):
-        return int(f(arg))
+        return int(func(arg))
 
     return wrapper
 
@@ -467,6 +467,18 @@ def itemgetter2_(index: int = 0):
         return inner_wrapper
 
     return outer_wrapper
+
+
+def not_(func):
+    """
+
+    :return:
+    """
+
+    def wrapper(arg):
+        return operator.not_(func(arg))
+
+    return wrapper
 
 
 def partial_(*args, **kwargs):
