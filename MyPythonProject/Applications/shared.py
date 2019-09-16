@@ -131,17 +131,6 @@ LOCALMONTHS = ["Janvier",
 # ========
 # Classes.
 # ========
-# class CustomFilter(Filter):
-#     def filter(self, record):
-#         # print(record.pathname)
-#         # print(record.filename)
-#         # print(record.module)
-#         # print(record.funcName)
-#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
-#         #     return True
-#         return False
-
-
 class CustomTemplate(Template):
     delimiter = "@"
     idpattern = r"([a-z][a-z0-9]+)"
@@ -398,6 +387,17 @@ class ToBoolean(object):
         return self._bool
 
 
+# class CustomFilter(Filter):
+#     def filter(self, record):
+#         # print(record.pathname)
+#         # print(record.filename)
+#         # print(record.module)
+#         # print(record.funcName)
+#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
+#         #     return True
+#         return False
+
+
 # ===========
 # Decorators.
 # ===========
@@ -420,7 +420,7 @@ def attrgetter_(name: str):
 def int_(func):
     """
 
-    :param f:
+    :param func:
     :return:
     """
 
@@ -437,13 +437,13 @@ def itemgetter_(*args: int):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
             _args = tuple(args)
             if not _args:
                 _args = (0,)
             _args = iter(_args)
-            rvalue = f(arg[next(_args)])
+            rvalue = func(arg[next(_args)])
             with suppress(StopIteration):
                 rvalue = rvalue[next(_args)]
             return rvalue
@@ -460,9 +460,9 @@ def itemgetter2_(index: int = 0):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
-            return f(arg)[index]
+            return func(arg)[index]
 
         return inner_wrapper
 
@@ -472,6 +472,7 @@ def itemgetter2_(index: int = 0):
 def not_(func):
     """
 
+    :param func:
     :return:
     """
 
@@ -489,9 +490,9 @@ def partial_(*args, **kwargs):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
-            return partial(f, *args, **kwargs)(arg)
+            return partial(func, *args, **kwargs)(arg)
 
         return inner_wrapper
 
