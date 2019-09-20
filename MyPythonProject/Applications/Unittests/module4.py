@@ -2,23 +2,23 @@
 # pylint: disable=invalid-name
 import logging.config
 import os
-# from unittest.mock import patch, Mock
+import shutil
 import sys
 import unittest
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
-from functools import partial
+from functools import partial, wraps
 from operator import contains
 from pathlib import PurePath
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import Optional, Tuple
 from unittest.mock import Mock, PropertyMock, patch
 
 import yaml
 
-from ..AudioCD.shared import get_tagsfile, upsert_audiotags
-from ..Tables.Albums.shared import insert_albums_fromjson, update_playeddisccount
+from ..AudioCD.shared import albums, dump_audiotags_tojson, get_tagsfile, upsert_audiotags
+from ..Tables.Albums.shared import get_albumidfromgenre, insert_albums_fromjson, update_playeddisccount, exist_albumid
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
 from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_, not_
@@ -172,6 +172,64 @@ class Changes(object):
     @property
     def total_changes(self) -> int:
         return self._changes
+
+
+class SetUp(object):
+
+    def _enter_context(self):
+        return self
+
+    def _decorate_callable(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with self._enter_context() as tempdir:
+                database = join(tempdir, "database.db")
+                jsontags = join(tempdir, "tags.json")
+                create_tables(drop_tables(database))
+                with open(_THATFILE.parent / "Resources" / "resource2.yml") as stream:
+                    collection = yaml.load(stream, Loader=yaml.FullLoader)
+                for item in collection:
+                    track = Mock()
+                    for key, value in item.items():
+                        setattr(track, key, value)
+                    dump_audiotags_tojson(track, albums, database=database, jsonfile=jsontags)
+                with open(jsontags, encoding=UTF8) as stream:
+                    insert_albums_fromjson(stream)
+                args += (database,)
+                if self.args:
+                    args += self.args
+                func(*args, **kwargs)
+
+        return wrapper
+
+    def _decorate_class(self, klass):
+        for attr in dir(klass):
+            if not attr.startswith("test"):
+                continue
+            attr_value = getattr(klass, attr)
+            if not hasattr(attr_value, "__call__"):
+                continue
+            setattr(klass, attr, self(attr_value))
+        return klass
+
+    def __init__(self, *args, suffix=None, prefix=None, root=None):
+        self.name = None
+        self.suffix = suffix
+        self.prefix = prefix
+        self.root = root
+        self.args = args
+
+    def __enter__(self):
+        self.name = mkdtemp(self.suffix, self.prefix, self.root)
+        return self.name
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        shutil.rmtree(self.name)
+
+    def __call__(self, func):
+        if isinstance(func, type):
+            return self._decorate_class(func)
+        return self._decorate_callable(func)
 
 
 # ==============
@@ -467,9 +525,139 @@ class TestGetTagsFile02(unittest.TestCase):
         mock_get_tagsfile.assert_called_once()
 
 
+@SetUp("A.Artist, The.1.20190000.1", 1)
+class TestDatabase01(unittest.TestCase):
+
+    def setUp(self):
+        self._count = 10  # type: int
+        self._played = 0  # type: int
+        self._datobj = datetime.now()  # type: datetime
+        self._datstr = get_readabledate(LOCAL.localize(self._datobj))  # type: str
+
+    def test_t01(self, database, albumid, discid):
+        """
+        Test `update_playeddisccount` function.
+        Test that database changes are the expected ones.
+        """
+        _, updated = update_playeddisccount(albumid, discid, db=database, local_played=self._datobj)
+        self.assertEqual(updated, 1)
+
+    def test_t02(self, database, albumid, discid):
+        """
+        Test `update_playeddisccount` function.
+        Test that played count is the expected one.
+        """
+        i, played = 1, 0  # type: int, int
+        while i <= self._count:
+            update_playeddisccount(albumid, discid, db=database)
+            i += 1
+        with DatabaseConnection(database) as conn:
+            curs = conn.cursor()
+            curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+            with suppress(TypeError):
+                (played,) = curs.fetchone()
+        self.assertEqual(played, self._played + self._count)
+
+    def test_t03(self, database, albumid, discid):
+        """
+        Test `update_playeddisccount` function.
+        Test that most recent played date is the expected one.
+        Use a naive local timestamp (Europe/Paris timezone).
+        """
+        utc_played = None  # type: Optional[datetime]
+        update_playeddisccount(albumid, discid, db=database, local_played=self._datobj)
+        with DatabaseConnection(database) as conn:
+            curs = conn.cursor()
+            curs.execute("SELECT utc_played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+            with suppress(TypeError):
+                (utc_played,) = curs.fetchone()
+        self.assertIsNotNone(utc_played)
+        self.assertEqual(get_readabledate(UTC.localize(utc_played).astimezone(LOCAL)), self._datstr)
+
+    def test_t04(self, database, albumid, discid):
+        """
+        Test `update_playeddisccount` function.
+        Test that most recent played date is the expected one.
+        Use an aware local timestamp (Europe/Paris timezone).
+        """
+        utc_played = None  # type: Optional[datetime]
+        update_playeddisccount(albumid, discid, db=database, local_played=LOCAL.localize(self._datobj))
+        with DatabaseConnection(database) as conn:
+            curs = conn.cursor()
+            curs.execute("SELECT utc_played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+            with suppress(TypeError):
+                (utc_played,) = curs.fetchone()
+        self.assertIsNotNone(utc_played)
+        self.assertEqual(get_readabledate(UTC.localize(utc_played).astimezone(LOCAL)), self._datstr)
+
+
+@patch("Applications.Tables.Albums.shared.datetime")
+@SetUp("A.Artist, The.1.20190000.1", 1)
+class TestDatabase02(unittest.TestCase):
+
+    def setUp(self):
+        self._datobj = datetime(2019, 9, 19, 22)
+
+    def test_t01(self, mock_datetime, database, albumid, discid):
+        """
+        Test `update_playeddisccount` function.
+        Test that most recent played date is the expected one.
+        """
+        mock_datetime.now.return_value = self._datobj
+        mock_datetime.utcnow.return_value = datetime.utcnow()
+        utc_played = None  # type: Optional[datetime]
+        update_playeddisccount(albumid, discid, db=database)
+        with DatabaseConnection(database) as conn:
+            curs = conn.cursor()
+            curs.execute("SELECT utc_played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+            with suppress(TypeError):
+                (utc_played,) = curs.fetchone()
+        self.assertEqual(get_readabledate(UTC.localize(utc_played).astimezone(LOCAL)), get_readabledate(LOCAL.localize(self._datobj)))
+        mock_datetime.now.assert_called_once()
+        mock_datetime.utcnow.assert_called()
+        self.assertEqual(mock_datetime.utcnow.call_count, 2)
+
+
+@SetUp()
+class TestDatabase03(unittest.TestCase):
+
+    def test_t01(self, database):
+        """
+        Test `get_albumidfromgenre` function.
+        """
+        self.assertListEqual(sorted(get_albumidfromgenre("Rock", db=database)), ["A.Artist, The.1.20110000.1",
+                                                                                 "A.Artist, The.1.20130000.1",
+                                                                                 "A.Artist, The.1.20150000.1",
+                                                                                 "A.Artist, The.1.20170000.1",
+                                                                                 "A.Artist, The.1.20190000.1"])
+
+    def test_t02(self, database):
+        """
+        Test `get_albumidfromgenre` function.
+        """
+        self.assertListEqual(sorted(get_albumidfromgenre("Alternative Rock", db=database)), ["A.Awesome Artist, The.1.20080000.1"])
+
+    def test_t03(self, database):
+        """
+        Test `exist_albumid` function.
+        """
+        self.assertTrue(exist_albumid("A.Awesome Artist, The.1.20080000.1", db=database))
+
+    def test_t04(self, database):
+        """
+        Test `exist_albumid` function.
+        """
+        self.assertFalse(exist_albumid("A.Awesome Artist, The.1.20080000.2", db=database))
+
+    def test_t05(self, database):
+        """
+        Test `exist_albumid` function.
+        """
+        self.assertFalse(exist_albumid("A.Awesome Artist.1.20080000.1", db=database))
+
+
 @unittest.skip
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class DatabaseFunctionsTest01(unittest.TestCase):
+class DatabaseTest03(unittest.TestCase):
     _count = 10
 
     def setUp(self):
@@ -481,64 +669,14 @@ class DatabaseFunctionsTest01(unittest.TestCase):
             with suppress(TypeError):
                 (self._played,) = curs.fetchone()
         self._datobj = datetime.now()  # type: datetime
-        self._datstr = get_readabledate(LOCAL.localize(self._datobj))  # type: str
 
-    def test_t01(self):
-        with TemporaryDirectory() as tempdir:
-            copy(DATABASE, tempdir)
-            _, updated = update_playeddisccount(self._albumid, self._discid, db=join(tempdir, "database.db"), local_played=self._datobj)
-            self.assertEqual(updated, 1)
-
-    def test_t02(self):
-        i, played = 1, 0  # type: int, int
-        with TemporaryDirectory() as tempdir:
-            database = join(tempdir, "database.db")
-            copy(DATABASE, tempdir)
-            while i <= self._count:
-                update_playeddisccount(self._albumid, self._discid, db=database)
-                i += 1
-            with DatabaseConnection(database) as conn:
-                curs = conn.cursor()
-                curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (self._albumid, self._discid))
-                with suppress(TypeError):
-                    (played,) = curs.fetchone()
-        self.assertEqual(played, self._played + self._count)
-
-    def test_t03(self):
-        utc_played = None  # type: Optional[datetime]
-        with TemporaryDirectory() as tempdir:
-            database = join(tempdir, "database.db")
-            copy(DATABASE, tempdir)
-            update_playeddisccount(self._albumid, self._discid, db=database, local_played=self._datobj)
-            with DatabaseConnection(database) as conn:
-                curs = conn.cursor()
-                curs.execute("SELECT utc_played FROM playeddiscs WHERE albumid=? AND discid=?", (self._albumid, self._discid))
-                with suppress(TypeError):
-                    (utc_played,) = curs.fetchone()
-        self.assertIsNotNone(utc_played)
-        self.assertEqual(get_readabledate(UTC.localize(utc_played).astimezone(LOCAL)), self._datstr)
-
-    def test_t04(self):
-        utc_played = None  # type: Optional[datetime]
-        with TemporaryDirectory() as tempdir:
-            database = join(tempdir, "database.db")
-            copy(DATABASE, tempdir)
-            update_playeddisccount(self._albumid, self._discid, db=database, local_played=LOCAL.localize(self._datobj))
-            with DatabaseConnection(database) as conn:
-                curs = conn.cursor()
-                curs.execute("SELECT utc_played FROM playeddiscs WHERE albumid=? AND discid=?", (self._albumid, self._discid))
-                with suppress(TypeError):
-                    (utc_played,) = curs.fetchone()
-        self.assertIsNotNone(utc_played)
-        self.assertEqual(get_readabledate(UTC.localize(utc_played).astimezone(LOCAL)), self._datstr)
-
-    def test_t05(self):
+    def test_t06(self):
         with TemporaryDirectory() as tempdir:
             copy(DATABASE, tempdir)
             update = partial(update_playeddisccount, db=join(tempdir, "database.db"), local_played=None)
             self.assertEqual(sum([updated for _, updated in map(update, *zip(*[(self._albumid, self._discid)] * self._count))]), self._count)
 
-    def test_t06(self):
+    def test_t07(self):
         played = 0  # type: int
         with DatabaseConnection(DATABASE) as conn:
             curs = conn.cursor()
@@ -550,7 +688,7 @@ class DatabaseFunctionsTest01(unittest.TestCase):
 
 @unittest.skip
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class DatabaseFunctionsTest02(unittest.TestCase):
+class DatabaseTest02(unittest.TestCase):
 
     def setUp(self):
         with DatabaseConnection(DATABASE) as conn:
