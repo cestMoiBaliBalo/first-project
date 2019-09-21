@@ -9,7 +9,7 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from functools import partial, wraps
-from operator import contains
+from operator import contains, itemgetter
 from pathlib import PurePath
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Optional, Tuple
@@ -18,7 +18,7 @@ from unittest.mock import Mock, PropertyMock, patch
 import yaml
 
 from ..AudioCD.shared import albums, dump_audiotags_tojson, get_tagsfile, upsert_audiotags
-from ..Tables.Albums.shared import get_albumidfromgenre, insert_albums_fromjson, update_playeddisccount, exist_albumid
+from ..Tables.Albums.shared import defaultalbums, exist_albumid, get_albumidfromgenre, insert_albums_fromjson, update_defaultalbums, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
 from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_, not_
@@ -175,25 +175,26 @@ class Changes(object):
 
 
 class SetUp(object):
+    _encoding = UTF8
 
-    def _enter_context(self):
-        return self
+    # def _enter_context(self):
+    #     return self
 
     def _decorate_callable(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with self._enter_context() as tempdir:
+            with self as tempdir:
                 database = join(tempdir, "database.db")
                 jsontags = join(tempdir, "tags.json")
                 create_tables(drop_tables(database))
-                with open(_THATFILE.parent / "Resources" / "resource2.yml") as stream:
+                with open(_THATFILE.parent / "Resources" / "resource2.yml", encoding=self._encoding) as stream:
                     collection = yaml.load(stream, Loader=yaml.FullLoader)
                 for item in collection:
                     track = Mock()
                     for key, value in item.items():
                         setattr(track, key, value)
                     dump_audiotags_tojson(track, albums, database=database, jsonfile=jsontags)
-                with open(jsontags, encoding=UTF8) as stream:
+                with open(jsontags, encoding=self._encoding) as stream:
                     insert_albums_fromjson(stream)
                 args += (database,)
                 if self.args:
@@ -246,7 +247,7 @@ class TestRippedTrack(unittest.TestCase):
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
     def test_t01a(self, mock_database):
         """
-        Test that return value returned by `upsert_audiotags` main function is the expected one.
+        Test that value returned by `upsert_audiotags` function is the expected one.
         """
         mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
@@ -271,7 +272,7 @@ class TestRippedTrack(unittest.TestCase):
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
     def test_t01b(self, mock_database):
         """
-        Test that audio tags returned by `upsert_audiotags` main function are the expected ones.
+        Test that audio tags returned by `upsert_audiotags` function are the expected ones.
         """
         mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
@@ -298,10 +299,11 @@ class TestRippedTrack(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
     def test_t02(self):
         """
-        Test `upsert_audiotags` main function.
-        Test that total ripped discs is coherent after new discs insertion.
+        Test `upsert_audiotags` function.
+        Test that total ripped discs are coherent after inserting new discs.
+        Use production database duplicated into the working temporary folder.
         """
-        total_rippeddiscs, rippeddiscs = get_total_rippeddiscs(DATABASE), 0
+        total_rippeddiscs, rippeddiscs = get_total_rippeddiscs(DATABASE), 0  # type: int, int
         with TemporaryDirectory() as tempdir:
             inserted, items = 0, 0
             database = copy(DATABASE, tempdir)
@@ -337,7 +339,7 @@ class TestRippedTrack(unittest.TestCase):
     def test_t03(self):
         """
         Test `upsert_audiotags` main function.
-        Test that total database changes is coherent.
+        Test that total database changes are coherent.
         Use production database duplicated into the working temporary folder.
         """
         with TemporaryDirectory() as tempdir:
@@ -382,7 +384,7 @@ class TestRippedTrack(unittest.TestCase):
     def test_t04(self):
         """
         Test `upsert_audiotags` main function.
-        Test that total database changes is coherent.
+        Test that total database changes are coherent.
         Create an empty database into the working temporary directory.
         """
         with TemporaryDirectory() as tempdir:
@@ -655,47 +657,96 @@ class TestDatabase03(unittest.TestCase):
         """
         self.assertFalse(exist_albumid("A.Awesome Artist.1.20080000.1", db=database))
 
+    def test_t06(self, database):
+        """
+        Test that total ripped discs are coherent after inserting new discs.
+        """
+        self.assertEqual(get_total_rippeddiscs(database), 16)
 
-@unittest.skip
-class DatabaseTest03(unittest.TestCase):
-    _count = 10
+    def test_t07(self, database):
+        """
+        Test `defaultalbums` function.
+        """
+        collection = sorted(set([track.genre for track in defaultalbums(db=database)]))
+        expected_collection = ["Alternative Rock", "Hard Rock", "Rock"]
+        self.assertListEqual(collection, expected_collection)
+
+    def test_t08(self, database):
+        """
+        Test `defaultalbums` function.
+        """
+        collection = sorted(set([(track.artistsort, track.genre) for track in defaultalbums(db=database)]), key=itemgetter(0))
+        expected_collection = [("Artist, The", "Rock"), ("Awesome Artist, The", "Alternative Rock"), ("Other Artist, The", "Hard Rock")]
+        self.assertListEqual(collection, expected_collection)
+
+    def test_t09(self, database):
+        """
+        Test `update_defaultalbums` function.
+        """
+        self.assertEqual(update_defaultalbums(*[f"O.Other Artist, The.1.{year}0000.1" for year in range(2012, 2020, 2)], db=database, label="Island Records"), 4)
+
+    def test_t10(self, database):
+        """
+        Test `defaultalbums` function.
+        """
+        collection = sorted(set([(track.artistsort, track.label) for track in defaultalbums(db=database)]), key=itemgetter(0))
+        expected_collection = [("Artist, The", "Columbia Records"), ("Awesome Artist, The", "Columbia Records"), ("Other Artist, The", "Roadrunner Records")]
+        self.assertListEqual(collection, expected_collection)
+
+    def test_t11(self, database):
+        """
+        Test `update_defaultalbums` function.
+        """
+        self.assertEqual(update_defaultalbums(*[f"O.Other Artist, The.1.{year}0000.1" for year in range(2012, 2020, 2)], db=database, label="Island Records", upc="123456789012"), 4)
+        collection = sorted(set([(track.artistsort, track.label) for track in defaultalbums(db=database)]), key=itemgetter(0))
+        expected_collection = [("Artist, The", "Columbia Records"), ("Awesome Artist, The", "Columbia Records"), ("Other Artist, The", "Island Records")]
+        self.assertListEqual(collection, expected_collection)
+
+    def test_t12(self, database):
+        """
+        Test `update_defaultalbums` function.
+        """
+        update_defaultalbums(*[f"O.Other Artist, The.1.{year}0000.1" for year in range(2012, 2020, 2)], db=database, label="Island Records")
+        collection = sorted(set([track.label for track in defaultalbums(db=database)]), key=itemgetter(0))
+        self.assertFalse("Roadrunner Records" in collection)
+        self.assertListEqual(collection, ["Columbia Records", "Island Records"])
+
+
+@SetUp("A.Artist, The.1.20190000.1", 1)
+class TestDatabase04(unittest.TestCase):
 
     def setUp(self):
-        self._played = 0  # type: int
-        self._albumid, self._discid = "A.Adams, Bryan.1.19840000.1", 1  # type: str, int
-        with DatabaseConnection(DATABASE) as conn:
-            curs = conn.cursor()
-            curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (self._albumid, self._discid))
-            with suppress(TypeError):
-                (self._played,) = curs.fetchone()
-        self._datobj = datetime.now()  # type: datetime
+        self._count, self._played = 10, 0  # type: int, int
 
-    def test_t06(self):
-        with TemporaryDirectory() as tempdir:
-            copy(DATABASE, tempdir)
-            update = partial(update_playeddisccount, db=join(tempdir, "database.db"), local_played=None)
-            self.assertEqual(sum([updated for _, updated in map(update, *zip(*[(self._albumid, self._discid)] * self._count))]), self._count)
-
-    def test_t07(self):
+    def test_t01(self, database, albumid, discid):
         played = 0  # type: int
-        with DatabaseConnection(DATABASE) as conn:
+        with DatabaseConnection(database) as conn:
             curs = conn.cursor()
-            curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (self._albumid, self._discid))
+            curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
             with suppress(TypeError):
                 (played,) = curs.fetchone()
         self.assertEqual(played, self._played)
 
+    def test_t02(self, database, albumid, discid):
+        with DatabaseConnection(database) as conn:
+            curs = conn.cursor()
+            curs.execute("SELECT played FROM playeddiscs WHERE albumid=? AND discid=?", (albumid, discid))
+            with suppress(TypeError):
+                (self._played,) = curs.fetchone()
+        update = partial(update_playeddisccount, db=database)
+        self.assertEqual(sum([updated for _, updated in map(update, *zip(*[(albumid, discid)] * self._count))]), self._count)
 
-@unittest.skip
+
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class DatabaseTest02(unittest.TestCase):
+class TestDatabase05(unittest.TestCase):
 
     def setUp(self):
+        self._albums = []
         with DatabaseConnection(DATABASE) as conn:
-            self.args = list(conn.execute("SELECT albumid, discid FROM playeddiscs ORDER BY albumid, discid"))
+            self._albums = list(conn.execute("SELECT albumid, discid FROM playeddiscs ORDER BY albumid, discid"))
 
     def test_t01(self):
         with TemporaryDirectory() as tempdir:
             copy(DATABASE, tempdir)
-            update = partial(update_playeddisccount, db=join(tempdir, "database.db"), local_played=None)
-            self.assertEqual(sum([updated for _, updated in map(update, *zip(*self.args))]), len(self.args))
+            update = partial(update_playeddisccount, db=join(tempdir, "database.db"))
+            self.assertEqual(sum([updated for _, updated in map(update, *zip(*self._albums))]), len(self._albums))

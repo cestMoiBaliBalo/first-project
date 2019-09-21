@@ -137,7 +137,7 @@ class CustomTemplate(Template):
     flags = re.ASCII
 
     def __init__(self, template):
-        super().__init__(template)
+        super(CustomTemplate, self).__init__(template)
 
 
 class CustomFormatter(Formatter):
@@ -273,7 +273,7 @@ class TitleCaseConverter(TitleCaseBaseConverter):
     _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
     def __init__(self) -> None:
-        super().__init__()
+        super(TitleCaseConverter, self).__init__()
 
     def convert(self, title: str) -> str:
         """
@@ -370,7 +370,7 @@ class LocalParser(parserinfo):
               ('Decembre', 'December')]
 
     def __init__(self, dayfirst=False, yearfirst=False):
-        super().__init__(dayfirst, yearfirst)
+        super(LocalParser, self).__init__(dayfirst, yearfirst)
 
 
 class ToBoolean(object):
@@ -508,7 +508,7 @@ class SetDatabase(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -526,7 +526,7 @@ class GetPath(argparse.Action):
                     "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.destinations[values])
@@ -539,7 +539,7 @@ class GetExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(GetExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -556,7 +556,7 @@ class ExcludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(ExcludeExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -574,7 +574,7 @@ class KeepExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(KeepExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -592,7 +592,7 @@ class IncludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(IncludeExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -609,7 +609,7 @@ class SetEndSeconds(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(SetEndSeconds, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)

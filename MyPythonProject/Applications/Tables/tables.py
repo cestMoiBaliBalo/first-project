@@ -57,6 +57,10 @@ def drop_tables(db: str) -> str:
             conn.execute("DROP TABLE IF EXISTS countries")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS applications")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP VIEW IF EXISTS defaultalbums_vw")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP VIEW IF EXISTS tracks_vw")
     return db
 
 
@@ -333,6 +337,64 @@ def create_tables(db: str) -> str:
                 "JOIN supports s ON b.supportid = s.supportid "
                 "JOIN countries cou ON boot.bootleg_countryid = cou.countryid "
                 "JOIN artists e ON e.artistsort = substr(boot.albumid, 3, length(boot.albumid) - 15)"
+        )
+        conn.execute(
+                "CREATE VIEW IF NOT EXISTS defaultalbums_vw AS "
+                "SELECT "
+                "dft.rowid AS rowid, "
+                "dft.albumid AS albumid, "
+                "substr(dft.albumid, 3, length(dft.albumid) - 15) AS artistsort, "
+                "substr(dft.albumid, length(dft.albumid) - 11) AS albumsort, "
+                "art.artist AS artist, "
+                "alb.discs AS discs, "
+                "dis.discid AS discid, "
+                "dis.tracks AS tracks, "
+                "dft.origyear AS origyear, "
+                "dft.year AS year, "
+                "dft.album AS album, "
+                "gen.genre AS genre, "
+                "dft.label AS label, "
+                "dft.upc AS upc, "
+                "alb.is_bootleg AS is_bootleg, "
+                "dis.is_live AS is_disc_live, "
+                "trk.trackid AS track, "
+                "trk.title AS title, "
+                "trk.is_live AS is_track_live, "
+                "trk.is_bonus AS is_track_bonus, "
+                "dft.utc_created AS created_date, "
+                "rip.utc_ripped AS ripped_date, "
+                "CASE "
+                "WHEN rip.utc_ripped IS NOT NULL "
+                "THEN cast(strftime('%Y', rip.utc_ripped) AS INTEGER) "
+                "ELSE NULL "
+                "END AS ripped_year, "
+                "CASE "
+                "WHEN rip.utc_ripped IS NOT NULL "
+                "THEN cast(strftime('%m', rip.utc_ripped) AS INTEGER) "
+                "ELSE NULL "
+                "END AS ripped_month, "
+                "pla.utc_played AS played_date, "
+                "CASE "
+                "WHEN pla.utc_played IS NOT NULL "
+                "THEN cast(strftime('%Y', pla.utc_played) AS INTEGER) "
+                "ELSE NULL "
+                "END AS played_year, "
+                "CASE "
+                "WHEN pla.utc_played IS NOT NULL "
+                "THEN cast(strftime('%m', pla.utc_played) AS INTEGER) "
+                "ELSE NULL "
+                "END AS played_month, "
+                "ifnull(pla.played, 0) AS played, "
+                "sup.support AS support "
+                "FROM albums alb "
+                "JOIN defaultalbums dft ON alb.albumid = dft.albumid "
+                "JOIN discs dis ON alb.albumid = dis.albumid "
+                "JOIN tracks trk ON alb.albumid = trk.albumid AND dis.discid = trk.discid "
+                "JOIN genres gen ON gen.genreid = alb.genreid "
+                "JOIN supports sup ON alb.supportid = sup.supportid "
+                "JOIN artists art ON art.artistsort = substr(alb.albumid, 3, length(alb.albumid) - 15) "
+                "LEFT JOIN rippeddiscs rip ON rip.albumid = alb.albumid AND rip.discid = dis.discid "
+                "LEFT JOIN playeddiscs pla ON pla.albumid = alb.albumid AND pla.discid = dis.discid"
         )
 
     return db
