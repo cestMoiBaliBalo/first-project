@@ -104,16 +104,16 @@ EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
               "music": ["ape", "dsf", "flac", "mp3", "m4a", "ogg", "tak", "wv"],
               "lossless": ["ape", "dsf", "flac", "tak", "wv"],
               "lossy": ["mp3", "m4a", "ogg"]}
-GENRES = ["Rock",
-          "Hard Rock",
-          "Heavy Metal",
-          "Trash Metal",
+GENRES = ["Alternative Rock",
           "Black Metal",
           "Doom Metal",
-          "Progressive Rock",
-          "Alternative Rock",
+          "French Pop",
+          "Hard Rock",
+          "Heavy Metal",
           "Pop",
-          "French Pop"]
+          "Progressive Rock",
+          "Rock",
+          "Trash Metal"]
 LOCALMONTHS = ["Janvier",
                "Février",
                "Mars",
@@ -131,24 +131,13 @@ LOCALMONTHS = ["Janvier",
 # ========
 # Classes.
 # ========
-# class CustomFilter(Filter):
-#     def filter(self, record):
-#         # print(record.pathname)
-#         # print(record.filename)
-#         # print(record.module)
-#         # print(record.funcName)
-#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
-#         #     return True
-#         return False
-
-
 class CustomTemplate(Template):
     delimiter = "@"
     idpattern = r"([a-z][a-z0-9]+)"
     flags = re.ASCII
 
     def __init__(self, template):
-        super().__init__(template)
+        super(CustomTemplate, self).__init__(template)
 
 
 class CustomFormatter(Formatter):
@@ -284,7 +273,7 @@ class TitleCaseConverter(TitleCaseBaseConverter):
     _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
     def __init__(self) -> None:
-        super().__init__()
+        super(TitleCaseConverter, self).__init__()
 
     def convert(self, title: str) -> str:
         """
@@ -381,7 +370,7 @@ class LocalParser(parserinfo):
               ('Decembre', 'December')]
 
     def __init__(self, dayfirst=False, yearfirst=False):
-        super().__init__(dayfirst, yearfirst)
+        super(LocalParser, self).__init__(dayfirst, yearfirst)
 
 
 class ToBoolean(object):
@@ -396,6 +385,17 @@ class ToBoolean(object):
     @property
     def boolean_value(self):
         return self._bool
+
+
+# class CustomFilter(Filter):
+#     def filter(self, record):
+#         # print(record.pathname)
+#         # print(record.filename)
+#         # print(record.module)
+#         # print(record.funcName)
+#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
+#         #     return True
+#         return False
 
 
 # ===========
@@ -420,7 +420,7 @@ def attrgetter_(name: str):
 def int_(func):
     """
 
-    :param f:
+    :param func:
     :return:
     """
 
@@ -437,13 +437,13 @@ def itemgetter_(*args: int):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
             _args = tuple(args)
             if not _args:
                 _args = (0,)
             _args = iter(_args)
-            rvalue = f(arg[next(_args)])
+            rvalue = func(arg[next(_args)])
             with suppress(StopIteration):
                 rvalue = rvalue[next(_args)]
             return rvalue
@@ -460,9 +460,9 @@ def itemgetter2_(index: int = 0):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
-            return f(arg)[index]
+            return func(arg)[index]
 
         return inner_wrapper
 
@@ -472,6 +472,7 @@ def itemgetter2_(index: int = 0):
 def not_(func):
     """
 
+    :param func:
     :return:
     """
 
@@ -489,9 +490,9 @@ def partial_(*args, **kwargs):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
-            return partial(f, *args, **kwargs)(arg)
+            return partial(func, *args, **kwargs)(arg)
 
         return inner_wrapper
 
@@ -507,7 +508,7 @@ class SetDatabase(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -525,7 +526,7 @@ class GetPath(argparse.Action):
                     "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.destinations[values])
@@ -538,7 +539,7 @@ class GetExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(GetExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -555,7 +556,7 @@ class ExcludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(ExcludeExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -573,7 +574,7 @@ class KeepExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(KeepExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -591,7 +592,7 @@ class IncludeExtensions(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(IncludeExtensions, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
@@ -608,7 +609,7 @@ class SetEndSeconds(argparse.Action):
     """
 
     def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
+        super(SetEndSeconds, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)

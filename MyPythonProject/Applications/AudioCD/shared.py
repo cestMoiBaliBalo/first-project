@@ -1180,8 +1180,8 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
         yield fil, track
 
 
-def dump_audiotags_tojson(obj: AudioCDTags,
-                          func: Callable[[AudioCDTags, Optional[str], str], Iterable[Tuple[str, Tuple[Any, ...]]]],
+def dump_audiotags_tojson(obj: DefaultAudioCDTags,
+                          func: Callable[[DefaultAudioCDTags, Optional[str], str], Iterable[Tuple[str, Tuple[Any, ...]]]],
                           *,
                           database: str = shared.DATABASE,
                           jsonfile: Optional[str] = None,

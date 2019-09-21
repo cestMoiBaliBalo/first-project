@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
@@ -252,10 +251,10 @@ class Test06(unittest.TestCase):
     """
 
     """
-    resource = str(PurePath(THAT_FILE.parent, "Resources", "resource4.txt"))
 
     def setUp(self):
         self.arguments = None
+        self.resource = str(PurePath(THAT_FILE.parent, "Resources", "resource1.txt"))
 
     def test_t01(self):
         self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])

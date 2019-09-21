@@ -4,7 +4,9 @@ import itertools
 import json
 import locale
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 from collections.abc import MutableSequence
 from datetime import datetime
@@ -500,3 +502,31 @@ class TestMock02(unittest.TestCase):
         self.assertEqual(now(), self.now2)
         mock_datetime.utcnow.assert_called()
         self.assertEqual(mock_datetime.utcnow.call_count, 2)
+
+
+@patch.object(os.path, "expandvars")
+class TestMock03(unittest.TestCase):
+    """
+
+    """
+
+    def setUp(self) -> None:
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tempdir)
+
+    def test01(self, mock_ospath_expandvars):
+        mock_ospath_expandvars.return_value = self.tempdir
+        self.assertEqual(os.path.expandvars("%TEMP%"), self.tempdir)
+        mock_ospath_expandvars.assert_called_once()
+
+    def test02(self, mock_ospath_expandvars):
+        mock_ospath_expandvars.return_value = self.tempdir
+        self.assertEqual(os.path.join(os.path.expandvars("%TEMP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
+        mock_ospath_expandvars.assert_called_once()
+
+    def test03(self, mock_ospath_expandvars):
+        mock_ospath_expandvars.return_value = self.tempdir
+        self.assertEqual(os.path.join(os.path.expandvars("%BACKUP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
+        mock_ospath_expandvars.assert_called_once()
