@@ -58,6 +58,12 @@ WRITE = ...  # type: str
 XREFERENCES = ...  # type: str
 
 
+class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):
+    def __init__(self, ftpobj, directory: str):
+    def __enter__(self):
+    def __exit__(self, *exc):
+
+
 class ChangeLocalCurrentDirectory(ContextDecorator):
     def __init__(self, directory: Union[str, PurePath]): ...
     def __enter__(self): ...
