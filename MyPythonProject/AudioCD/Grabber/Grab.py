@@ -22,10 +22,10 @@ __status__ = "Production"
 # Define French environment.
 locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
 
-# Local constants.
+# Define local constants.
 LOGGERS = ["Applications.AudioCD", "MyPythonProject"]
 
-# Functions aliases.
+# Define functions aliases.
 abspath, basename, join, expandvars, splitext = os.path.abspath, os.path.basename, os.path.join, os.path.expandvars, os.path.splitext
 
 # Parse arguments.
@@ -43,21 +43,6 @@ if tags_config.get("debug", False):
     for item in LOGGERS:
         with suppress(KeyError):
             log_config["loggers"][item]["level"] = "DEBUG"
-
-    if tags_config.get("console", False):
-
-        # Set up a specific stream handler.
-        for item in LOGGERS:
-            with suppress(KeyError):
-                log_config["loggers"][item]["handlers"] = ["file", "console"]
-        with suppress(KeyError):
-            log_config["handlers"]["console"]["level"] = "DEBUG"
-
-        # Set up a specific filter for logging from "Applications.AudioCD.shared" only.
-        localfilter, audiocd_filter = {}, {"class": "logging.Filter", "name": "Applications.AudioCD.shared"}
-        localfilter["localfilter"] = audiocd_filter
-        log_config["filters"] = localfilter
-        log_config["handlers"]["console"]["filters"] = ["localfilter"]
 
     logging.config.dictConfig(log_config)
     logger = logging.getLogger("MyPythonProject.AudioCD.Grabber.{0}".format(splitext(basename(abspath(__file__)))[0]))

@@ -7,7 +7,7 @@ import unittest
 from functools import partial
 from itertools import chain, compress, repeat
 from operator import contains
-from pathlib import PurePath, PureWindowsPath
+from pathlib import PureWindowsPath
 from typing import List, Tuple
 
 from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, itemgetter_, partitioner
@@ -74,14 +74,14 @@ class TestGetAlbums03(unittest.TestCase):
     def test_t01(self):
         for letter, artist in self.artists:
             # ----
-            first_directory = MUSIC / letter / artist / "1"  # type: PurePath
+            first_directory = MUSIC / letter / artist / "1"  # type: PureWindowsPath
             self.reference = list(map(lambda i: i.split("-", maxsplit=1)[-1].strip(), os.listdir(str(first_directory))))  # type: List[str]
 
             # -----
-            second_directory = MUSIC / letter / artist / "2"  # type: PurePath
+            second_directory = MUSIC / letter / artist / "2"  # type: PureWindowsPath
             self.reference.extend(chain.from_iterable([os.listdir(str(second_directory / year)) for year in os.listdir(str(second_directory)) if re.match(f"^{DFTYEARREGEX}$", year)]))
 
             # -----
             with self.subTest(artist=artist):
-                albums = chain.from_iterable(compress(album, [1, 0, 0, 0]) for album in list(get_albums(MUSIC / letter / artist)))  # type: List[str]
-                self.assertListEqual(sorted(albums), sorted(self.reference))
+                albums = sorted(chain.from_iterable(compress(album, [1, 0, 0, 0]) for album in list(get_albums(MUSIC / letter / artist))))  # type: List[str]
+                self.assertListEqual(albums, sorted(self.reference))

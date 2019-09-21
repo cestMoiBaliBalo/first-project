@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
     # Load configuration.
     with open(_THATFILE.parents[1] / "Resources" / "audio_config.yml") as stream:
-        configuration = yaml.load(stream)
+        configuration = yaml.load(stream, Loader=yaml.FullLoader)
 
     # Run interface.
     app = wx.App()

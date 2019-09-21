@@ -2,19 +2,17 @@
 # pylint: disable=invalid-name
 import argparse
 import calendar
-import logging
+import logging.handlers
 import operator
 import os
 import re
+import sys
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import partial, singledispatch
-from itertools import chain, dropwhile, filterfalse, repeat, tee, zip_longest
-from logging import Formatter
-from logging.handlers import RotatingFileHandler
-from operator import attrgetter
+from itertools import chain, dropwhile, filterfalse, groupby as groupby_, repeat, tee, zip_longest
 from pathlib import PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
@@ -128,19 +126,10 @@ LOCALMONTHS = ["Janvier",
                "Decembre"]
 
 
-# ========
-# Classes.
-# ========
-class CustomTemplate(Template):
-    delimiter = "@"
-    idpattern = r"([a-z][a-z0-9]+)"
-    flags = re.ASCII
-
-    def __init__(self, template):
-        super(CustomTemplate, self).__init__(template)
-
-
-class CustomFormatter(Formatter):
+# ===============
+# Global classes.
+# ===============
+class CustomFormatter(logging.Formatter):
     converter = datetime.fromtimestamp  # type: ignore
     default_time_format = "%d/%m/%Y %H:%M:%S"
     default_localizedtime_format = "%Z (UTC%z)"
@@ -152,6 +141,39 @@ class CustomFormatter(Formatter):
         if datefmt:
             s = ct.strftime(datefmt)
         return s
+
+
+class CustomHandler(logging.StreamHandler):
+    def __init__(self, arg, func):
+        super(CustomHandler, self).__init__(stream=sys.stdout)
+        if arg:
+            self.addFilter(func)
+
+
+class CustomTemplate(Template):
+    delimiter = "@"
+    idpattern = r"([a-z][a-z0-9]+)"
+    flags = re.ASCII
+
+    def __init__(self, template):
+        super(CustomTemplate, self).__init__(template)
+
+
+class ChangeLocalCurrentDirectory(ContextDecorator):
+    """
+    Context manager to change the current directory of a local system.
+    """
+
+    def __init__(self, directory: Union[str, PurePath]):
+        self._dir = str(directory)
+        self._cwd = os.getcwd()
+
+    def __enter__(self):
+        os.chdir(self._dir)
+        return self
+
+    def __exit__(self, *exc):
+        os.chdir(self._cwd)
 
 
 class ChangeRemoteCurrentDirectory(ContextDecorator):
@@ -190,23 +212,6 @@ class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):
 
     def __exit__(self, *exc):
         self._ftpobj.chdir(self._cwd)
-
-
-class ChangeLocalCurrentDirectory(ContextDecorator):
-    """
-    Context manager to change the current directory of a local system.
-    """
-
-    def __init__(self, directory: Union[str, PurePath]):
-        self._dir = str(directory)
-        self._cwd = os.getcwd()
-
-    def __enter__(self):
-        os.chdir(self._dir)
-        return self
-
-    def __exit__(self, *exc):
-        os.chdir(self._cwd)
 
 
 class TitleCaseBaseConverter(ABC):
@@ -283,22 +288,18 @@ class TitleCaseConverter(TitleCaseBaseConverter):
         """
         self._logger.debug(title)
 
-        # ----------------
-        # General process.
-        # ----------------
-        # 1. Title is formatted with lowercase letters.
-        # 2. Words are capitalized --> `capitalize_words`.
+        # A. General process.
+        # A.1. Title is formatted with lowercase letters.
+        # A.2. Words are capitalized --> `capitalize_words`.
         title = self.capitalize_words.sub(lambda match: match.group(1).capitalize(), title.lower().replace("[", "(").replace("]", ")"))
         self._logger.debug(title)
 
-        # -------------------
-        # Exceptions process.
-        # -------------------
-        # 1. Words formatted only with lowercase letters --> `alw_lowercase`.
-        # 2. Words formatted only with a capital letter --> `alw_capital`.
-        # 3. Capital letter is mandatory for the first word of the title --> `capitalize_firstword`.
-        # 4. Capital letter is mandatory for the last word of the title --> `capitalize_lastword`.
-        # 5. Words formatted only with uppercase letters --> `alw_uppercase`.
+        # B. Exceptions process.
+        # B.1. Words formatted only with lowercase letters --> `alw_lowercase`.
+        # B.2. Words formatted only with a capital letter --> `alw_capital`.
+        # B.3. Capital letter is mandatory for the first word of the title --> `capitalize_firstword`.
+        # B.4. Capital letter is mandatory for the last word of the title --> `capitalize_lastword`.
+        # B.5. Words formatted only with uppercase letters --> `alw_uppercase`.
         if self.alw_lowercase:
             title = self.alw_lowercase.sub(lambda match: match.group(1).lower(), title)
         if self.alw_capital:
@@ -311,15 +312,11 @@ class TitleCaseConverter(TitleCaseBaseConverter):
             title = self.alw_uppercase.sub(lambda match: match.group(1).upper(), title)
         self._logger.debug(title)
 
-        # -----------------
-        # Acronyms process.
-        # -----------------
+        # C. Acronyms process.
         title = self.acronyms.sub(lambda match: match.group(1).upper(), title)
         self._logger.debug(title)
 
-        # --------------------
-        # Apostrophes process.
-        # --------------------
+        # D. Apostrophes process.
         title = self.apostrophe_regex1.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).lower()), title)
         title = self.apostrophe_regex2.sub(lambda match: "{0}'{1}".format(match.group(1).capitalize(), match.group(2).capitalize()), title)
         title = self.apostrophe_regex3.sub(lambda match: "{0}'".format(match.group(1).lower()), title)
@@ -329,29 +326,21 @@ class TitleCaseConverter(TitleCaseBaseConverter):
         title = self.apostrophe_regex7.sub(" 'n' ", title)
         self._logger.debug(title)
 
-        # -----------------
-        # Specific process.
-        # -----------------
-        # Capital letter is mandatory for the second word if the first one is defined between parenthesis --> `capitalize_secondword`.
+        # E. Specific process.
+        #    Capital letter is mandatory for the second word if the first one is defined between parenthesis --> `capitalize_secondword`.
         title = self.capitalize_secondword.sub(lambda match: "{0}{1}".format(match.group(1), match.group(2).capitalize()), title)
         self._logger.debug(title)
 
-        # ----------------------
-        # Roman numbers process.
-        # ----------------------
+        # F. Roman numbers process.
         title = self.roman_numbers_regex1.sub(lambda match: match.group(0).upper(), title)
         title = self.roman_numbers_regex2.sub(lambda match: match.group(0).upper(), title)
         title = self.roman_numbers_regex3.sub(lambda match: match.group(0).upper(), title)
         self._logger.debug(title)
 
-        # --------------------
-        # Punctuation process.
-        # --------------------
+        # G. Punctuation process.
         title = self.punctuation.sub(lambda match: f"{match.group(1)}{match.group(2)}", title)
 
-        # -----------------------
-        # Return converted title.
-        # -----------------------
+        # H. Return converted title.
         return title
 
 
@@ -387,17 +376,6 @@ class ToBoolean(object):
         return self._bool
 
 
-# class CustomFilter(Filter):
-#     def filter(self, record):
-#         # print(record.pathname)
-#         # print(record.filename)
-#         # print(record.module)
-#         # print(record.funcName)
-#         # if record.funcName.lower() in ["_selectlogs", "get_albumheader", "rippeddiscsview1"]:
-#         #     return True
-#         return False
-
-
 # ===========
 # Decorators.
 # ===========
@@ -408,9 +386,9 @@ def attrgetter_(name: str):
     :return:
     """
 
-    def outer_wrapper(f):
+    def outer_wrapper(func):
         def inner_wrapper(arg):
-            return f(attrgetter(name)(arg))
+            return func(operator.attrgetter(name)(arg))
 
         return inner_wrapper
 
@@ -439,13 +417,13 @@ def itemgetter_(*args: int):
 
     def outer_wrapper(func):
         def inner_wrapper(arg):
-            _args = tuple(args)
-            if not _args:
-                _args = (0,)
+            _args = (0,)
+            if args:
+                _args = tuple(args)
             _args = iter(_args)
-            rvalue = func(arg[next(_args)])
+            rvalue = func(operator.itemgetter(next(_args))(arg))
             with suppress(StopIteration):
-                rvalue = rvalue[next(_args)]
+                rvalue = operator.itemgetter(next(_args))(rvalue)
             return rvalue
 
         return inner_wrapper
@@ -462,7 +440,7 @@ def itemgetter2_(index: int = 0):
 
     def outer_wrapper(func):
         def inner_wrapper(arg):
-            return func(arg)[index]
+            return operator.itemgetter(index)(func(arg))
 
         return inner_wrapper
 
@@ -499,9 +477,25 @@ def partial_(*args, **kwargs):
     return outer_wrapper
 
 
-# ===========================
-# Customized parsing actions.
-# ===========================
+def valuegetter_(mapping):
+    """
+
+    :param mapping:
+    :return:
+    """
+
+    def outer_wrapper(func):
+        def inner_wrapper(key):
+            return func(mapping[key])
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+# =======================
+# Custom parsing actions.
+# =======================
 class SetDatabase(argparse.Action):
     """
 
@@ -636,6 +630,21 @@ class TemplatingEnvironment(object):
 
     def get_template(self, template):
         return self._environment.get_template(template)
+
+
+# ======================
+# Jinja2 custom filters.
+# ======================
+def rjustify(strg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}>{1}}".format(str(strg), width, char)
+
+
+def normalize(strg: str) -> str:
+    return strg.replace(", ", "_").replace(" ", "_")
+
+
+def normalize2(strg: str) -> str:
+    return strg.replace(" ", "%20").replace("&", "%26")
 
 
 # ==========================
@@ -836,15 +845,60 @@ def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
 # ========================
 # Miscellaneous functions.
 # ========================
-def customformatterfactory(pattern=LOGPATTERN):
-    return CustomFormatter(pattern)
+def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) -> str:
+    """
+
+    :param strg:
+    :param align:
+    :param fill:
+    :param length:
+    :return:
+    """
+    return "{0:{fill}{align}{length}}".format(" {0} ".format(strg), align=align, fill=fill, length=length)
 
 
 def customfilehandler(maxbytes, backupcount, encoding=UTF8):
-    return RotatingFileHandler(join(_THATFILE.parents[2] / "Log" / "pythonlog.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    """
+
+    :param maxbytes:
+    :param backupcount:
+    :param encoding:
+    :return:
+    """
+    return logging.handlers.RotatingFileHandler(join(_THATFILE.parents[2] / "Log" / "pyscripts.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+
+
+def customfilter(func, record):
+    """
+
+    :param func:
+    :param record:
+    :return:
+    """
+    # record.pathname: "%_PYTHONPROJECT%\Applications\Tables\Albums\shared.py".
+    # record.filename: "shared.py".
+    # record.module  : "shared".
+    # record.funcName: "_insert_albums".
+    return func(record)
+
+
+def customformatterfactory(pattern=LOGPATTERN):
+    """
+
+    :param pattern:
+    :return:
+    """
+    return CustomFormatter(pattern)
 
 
 def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
+    """
+
+    :param src:
+    :param dst:
+    :param size:
+    :return:
+    """
     if not isdir(dst):
         raise ValueError('"%s" is not a directory.' % dst)
     with ExitStack() as stack:
@@ -858,6 +912,38 @@ def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
     return join(dst, basename(src))
 
 
+def groupby(iterable, index):
+    """
+
+    :param iterable:
+    :param index:
+    :return:
+    """
+    try:
+        for _key, _group in iterable:
+            yield _key, list(groupby(_group, index))
+    except ValueError:
+        for _key, _group in groupby_(iterable, key=operator.itemgetter(index)):
+            yield _key, list(_group)
+
+
+def nested_groupby(iterable, *args):
+    """
+
+    :param iterable:
+    :param args:
+    :return:
+    """
+    try:
+        items = iter(zip(*args))
+    except TypeError:
+        items = iter([(arg,) for arg in args])
+    for item in items:
+        iterable = list(groupby(iterable, *item))
+    for key, group in iterable:
+        yield key, group
+
+
 def grouper(iterable, n, *, fillvalue=None):
     """
 
@@ -868,39 +954,6 @@ def grouper(iterable, n, *, fillvalue=None):
     """
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
-
-
-# def advanced_grouper(collection, *, key: Optional[int] = None, subkey: Optional[int] = None):
-#     if key is None:
-#         for item in collection:
-#             yield item
-#     elif key is not None:
-#         group_by = [(key, 0), (subkey, 1)]
-#         if subkey is None:
-#             group_by = [(key, 0)]
-#         group_by = iter(group_by)
-#         while True:
-#             try:
-#                 key, index = next(group_by)
-#             except StopIteration:
-#                 break
-#             if index == 0:
-#                 collection = alternative_grouper(*collection, index=key)
-#             elif index > 0:
-#                 templist1, templist2 = [], []
-#                 for _key, _group in collection:
-#                     for _sub_key, _sub_group in alternative_grouper(*_group, index=key):
-#                         templist1.append((_sub_key, _sub_group))
-#                     templist2.append((_key, templist1))
-#                     templist1 = []
-#                 collection = list(templist2)
-#         for item in collection:
-#             yield item
-
-
-# def alternative_grouper(*collection, index: int = 0):
-#     for k, group in groupby(collection, key=itemgetter(index)):
-#         yield k, list(group)
 
 
 def partitioner(iterable, *, predicate=None):
@@ -1073,10 +1126,6 @@ def find_files(directory: str, *, excluded=None):
         yield file
 
 
-def mainscript(strg: str, align: str = "^", fill: str = "=", length: int = 140) -> str:
-    return "{0:{fill}{align}{length}}".format(" {0} ".format(strg), align=align, fill=fill, length=length)
-
-
 def get_drives() -> Iterable[str]:
     """
 
@@ -1097,20 +1146,19 @@ def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3
     :param group:
     :return:
 
-
     :how to use it:
     collection = list(format_collection(somecollection, group=15))
     template.render(collection=collection[somepage])
     """
-    out_collection = []  # type: Iterable[Tuple[Any, ...]]
-    _, _, in_collection = _set_collection(collection, None, tabsize=tabsize, gap=gap)
+    _collection: Iterable[Tuple[Any, ...]]
+    _, _, _collection = _set_collection(collection, None, tabsize=tabsize, gap=gap)
     if group:
-        out_collection = zip_longest(*[in_collection] * group, fillvalue=None)
-    for item in out_collection:
+        _collection = zip_longest(*[list(_collection)] * group, fillvalue=None)
+    for item in _collection:
         yield item
 
 
-def print_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3, group: Optional[int] = 50) -> Iterable[str]:
+def iter_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3, group: Optional[int] = 50) -> Iterable[str]:
     """
 
     :param collection:
@@ -1122,17 +1170,19 @@ def print_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[It
     :return:
 
     :how to use it:
-    for item in print_collection(somecollection, someheaders):
-        print(item)
+    1. for item in iter_collection(somecollection, someheaders):
+           print(item)
+    2. with open("somefile") as stream:
+           for item in iter_collection(somecollection, someheaders):
+               stream.write(item)
     """
     separators, headers, in_collection = _set_collection(collection, headers, char=char, tabsize=tabsize, gap=gap)
     if group:
         in_collection = zip_longest(*[in_collection] * group, fillvalue=None)
-    out_collection: List[str]
+    out_collection = []  # type: List[str]
 
     # Both headers and groups.
     if all([bool(headers), bool(group)]):
-        out_collection = []
         for _group in in_collection:
             out_collection.extend(["", "", "".join(separators), "".join(headers), "".join(separators)])
             out_collection.extend("".join(item) for item in filter(None, _group))
@@ -1145,7 +1195,6 @@ def print_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[It
 
     # Groups only.
     elif not headers and group:
-        out_collection = []
         for _group in in_collection:
             out_collection.extend(["", ""])
             out_collection.extend("".join(item) for item in filter(None, _group))
@@ -1185,9 +1234,7 @@ def left_justify(iterable: Iterable[Any]) -> Iterable[str]:
 def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Iterable[Tuple[str, str]]:
     sequence = list(iterable)  # type: List[Tuple[str, int]]
     keys, values = zip(*sequence)
-    keys = list(left_justify(map(str, keys)))
-    values = ["{0: >{1}d}".format(value, length) for value in values]
-    for item in zip(keys, values):
+    for item in zip(left_justify(map(str, keys)), ["{0: >{1}d}".format(value, length) for value in values]):
         yield item
 
 
@@ -1394,38 +1441,6 @@ def _(arg: str):
     return arg
 
 
-# ======================
-# Jinja2 Custom filters.
-# ======================
-# def integer_to_string(intg: int) -> str:
-#     return str(intg)
-
-
-# def repeat_element(elem, n):
-#     for i in repeat(elem, n):
-#         yield i
-
-
-# def cjustify(strg: str, width: int, *, char: str = "") -> str:
-#     return "{0:{2}^{1}}".format(strg, width, char)
-
-
-def rjustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}>{1}}".format(str(strg), width, char)
-
-
-# def ljustify(strg: str, width: int, *, char: str = "") -> str:
-#     return "{0:{2}<{1}}".format(strg, width, char)
-
-
-def normalize(strg: str) -> str:
-    return strg.replace(", ", "_").replace(" ", "_")
-
-
-def normalize2(strg: str) -> str:
-    return strg.replace(" ", "%20").replace("&", "%26")
-
-
 # =======================================================
 # These interfaces mustn't be used from external scripts.
 # =======================================================
@@ -1501,34 +1516,32 @@ def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
     # 2. Gather data per header.
     in_collection = list(collection)  # type: Any
     length = len(in_collection)  # type: int
-    in_collection = list(zip(*in_collection))
-    _headers = None  # type: Any
+    in_collection = zip(*in_collection)
+    _headers = iter(f"header_{str(item).zfill(2)}" for item in range(1, length + 1))
     if headers is not None:
         _headers = iter(headers)
-    elif headers is None:
-        _headers = range(1, length + 1)
     in_collection = OrderedDict(zip(_headers, in_collection))
 
     # 3. Get data maximum length and maximum allowed width.
-    for k, v in in_collection.items():
-        key = stringify(k)
-        _len = len(key)  # type: int
-        if any(bool(item) for item in v):
-            _len = max(len(stringify(item)) for item in v if item)
-        if len(key) > _len:
-            _len = len(key)
-        max_length[k] = _len
-        max_width[k] = get_nearestmultiple(_len, multiple=tabsize) + gap
+    for key, value in in_collection.items():
+        _key = stringify(key)
+        _len = len(_key)  # type: int
+        if any(bool(item) for item in value):
+            _len = max(len(stringify(item)) for item in value if item)
+        if len(_key) > _len:
+            _len = len(_key)
+        max_length[key] = _len
+        max_width[key] = get_nearestmultiple(_len, multiple=tabsize) + gap
 
     # 4. Justify data.
-    for k, v in in_collection.items():
-        y = []
-        for item in v:
-            _tabs = get_tabs(max_width[k], tabsize=tabsize).expandtabs(tabsize)
+    for key, value in in_collection.items():
+        sequence = []
+        for item in value:
+            _tabs = get_tabs(max_width[key], tabsize=tabsize).expandtabs(tabsize)
             if item:
-                _tabs = "{0}{1}".format(item, get_tabs(max_width[k] - len(stringify(item)), tabsize=tabsize)).expandtabs(tabsize)
-            y.append(_tabs)
-        out_collection[k] = y
+                _tabs = "{0}{1}".format(item, get_tabs(max_width[key] - len(stringify(item)), tabsize=tabsize)).expandtabs(tabsize)
+            sequence.append(_tabs)
+        out_collection[key] = sequence
 
     # 5. Set separators.
     out_separators = ["{0}{1}".format(char * max_length[header], get_tabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
@@ -1537,7 +1550,7 @@ def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
     out_headers = ["{0}{1}".format(stringify(header).upper(), get_tabs(max_width[header] - len(stringify(header)), tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
 
     # 7. Return output data.
-    return out_separators, out_headers, iter(zip(*[v for _, v in out_collection.items()]))
+    return out_separators, out_headers, iter(zip(*out_collection.values()))
 
 
 def _sort_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:

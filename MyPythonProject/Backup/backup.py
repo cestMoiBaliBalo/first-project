@@ -7,44 +7,41 @@ import operator
 import os
 import subprocess
 import sys
+from functools import partial
 from os.path import exists, expandvars, join, normpath
-from pathlib import PureWindowsPath
+from pathlib import WindowsPath
 from typing import List, Mapping
 from xml.etree.ElementTree import parse
 
 import yaml
+
+from Applications.shared import TEMP, UTF8, int_, itemgetter_, valuegetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-# ===============
-# Backup targets.
-# ===============
-with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding="UTF_8") as stream:
-    targets = {item["target"]: item["workspace"] for item in json.load(stream)}  # type: Mapping[str, str]
 
-
-# ========
-# Classes.
-# ========
+# =============================
+# Define custom parsing action.
+# =============================
 class GetTargets(argparse.Action):
     def __init__(self, option_strings, dest, **kwargs):
         super(GetTargets, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
-        setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), targets.keys())))
+        setattr(namespace, self.dest, list(filter(itemgetter_(1)(partial(operator.eq, getattr(namespace, "workspace"))), targets.items())))
 
         # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme.
         if values:
-            setattr(namespace, self.dest, list(filter(lambda i: targets[i] == getattr(namespace, "workspace"), filter(lambda i: i in targets, values))))
+            setattr(namespace, self.dest, list(filter(valuegetter_(targets)(partial(operator.eq, getattr(namespace, "workspace"))), filter(partial(operator.contains, targets), values))))
 
 
-# =================
-# Arguments parser.
-# =================
+# ================
+# Parse arguments.
+# ================
 parser = argparse.ArgumentParser()
 parser.add_argument("workspace", choices=["documents", "miscellaneous", "music", "pictures", "videos"])
 parser.add_argument("targets", nargs="*", action=GetTargets)
@@ -52,17 +49,27 @@ parser.add_argument("-f", "--full", action="store_true")
 parser.add_argument("-c", "--check", action="store_true")
 parser.add_argument("-t", "--test", action="store_true")
 
-# ========
-# Logging.
-# ========
-with open(PureWindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding="UTF_8") as stream:
-    logging.config.dictConfig(yaml.load(stream))
-logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(PureWindowsPath(os.path.abspath(__file__)).stem)))
+# ===========================
+# Load logging configuration.
+# ===========================
+with open(WindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding=UTF8) as stream:
+    logging.config.dictConfig(yaml.load(stream, Loader=yaml.FullLoader))
 
-# ==========
-# Constants.
-# ==========
-ARECA = str(PureWindowsPath("C:/Program Files", "Areca", "areca_cl.exe"))
+# ====================
+# Load backup targets.
+# ====================
+with open(WindowsPath(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding=UTF8) as stream:
+    targets = {item["target"]: item["workspace"] for item in json.load(stream)}  # type: Mapping[str, str]
+
+# ==============
+# Define logger.
+# ==============
+logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(WindowsPath(os.path.abspath(__file__)).stem)))
+
+# =================
+# Global constants.
+# =================
+ARECA = str(WindowsPath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 TABS = 4
 
 # ================
@@ -81,7 +88,7 @@ arguments = parser.parse_args()
 
 # 1.a. Targets available in JSON reference file.
 logger.debug("Configured targets.")
-for target, workspace in sorted(sorted(targets.items(), key=lambda i: int(i[0])), key=operator.itemgetter(1)):
+for target, workspace in sorted(sorted(targets.items(), key=int_(itemgetter_())), key=operator.itemgetter(1)):
     logger.debug("\t%s: %s.".expandtabs(TABS), target, workspace)
 
 # 1.b. Targets given by parser.
@@ -124,7 +131,7 @@ for target in arguments.targets:
         command.append("-f")
     if arguments.check:
         command.append("-c")
-    command.extend(["-wdir", '"{0}"'.format(str(PureWindowsPath(expandvars("%TEMP%")) / "tmp-Xavier")), "-config", cfgfile])
+    command.extend(["-wdir", '"{0}"'.format(str(TEMP / "tmp-Xavier")), "-config", cfgfile])
     logger.debug("Backup command.")
     logger.debug('\t%s.'.expandtabs(TABS), " ".join(command))
 

@@ -11,7 +11,7 @@ from datetime import datetime
 from functools import partial
 from itertools import compress, groupby
 from operator import contains, itemgetter
-from pathlib import Path, PurePath, PureWindowsPath
+from pathlib import Path, PureWindowsPath
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
 
@@ -46,7 +46,6 @@ class AudioCDTags(MutableMapping):
     track_pattern = re.compile(r"^(\d{1,2})/(\d{1,2})")
 
     def __init__(self):
-        self.logger.debug("AudioCDTags.__init__")
         self._encoder = None
         self._otags = dict()
         self._sequence = None
@@ -70,7 +69,7 @@ class AudioCDTags(MutableMapping):
         return iter(self._otags.items())
 
     def __str__(self):
-        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - {self._otags["track"]}'
+        return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - track {self._otags["track"]}'
 
     @property
     def album(self):
@@ -340,7 +339,6 @@ class CommonAudioCDTags(AudioCDTags):
               "_albumart_1_front album cover": False}
 
     def __init__(self, sequence, **kwargs):
-        self.logger.debug("CommonAudioCDTags.__init__")
         super(CommonAudioCDTags, self).__init__()
 
         # ----- Check mandatory input tags.
@@ -476,7 +474,6 @@ class DefaultAudioCDTags(CommonAudioCDTags):
               "year": True}
 
     def __init__(self, sequence, **kwargs):
-        self.logger.debug("DefaultAudioCDTags.__init__")
         super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
 
         # ----- Check mandatory input tags.
@@ -653,9 +650,9 @@ class ChangeEncodedBy(TagsModifier):
 
 
 class ChangeMediaProvider(TagsModifier):
-    def __init__(self, obj, default="nugs.net"):
+    def __init__(self, obj, provider="nugs.net"):
         super(ChangeMediaProvider, self).__init__(obj)
-        self._otags["mediaprovider"] = self._otags.get("bootlegalbumprovider", default)
+        self._otags["mediaprovider"] = self._otags.get("bootlegalbumprovider", provider)
 
 
 class ChangeTotalTracks(TagsModifier):
@@ -882,8 +879,8 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     in_mapping = {"albums": albums, "bootlegs": bootlegs}
     stack = ExitStack()
     value = 0  # type: int
-    in_logger.debug(profile)
-    in_logger.debug(source.name)
+    in_logger.debug("Profile is  : %s", profile)
+    in_logger.debug("File name is: %s", source.name)
     try:
         track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators))
     except ValueError as err:
@@ -892,7 +889,9 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     else:
         with stack:
 
-            in_logger.debug(kwargs)
+            keys, values = zip(*kwargs.items())
+            for key, value in zip(shared.left_justify(sorted(keys)), values):
+                in_logger.debug("%s: %s", key, value)
             if track.audiotrack.database:
                 for k, v in in_mapping.items():
                     if kwargs.get(k, False):
@@ -903,7 +902,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
             if kwargs.get("save", False):
                 root = Path(kwargs.get("root"))
                 if root.exists():
-                    path = kwargs["root"] / PurePath(get_tagsfile(track.audiotrack))
+                    path = kwargs["root"] / Path(get_tagsfile(track.audiotrack))
                     os.makedirs(str(path), exist_ok=True)
 
                     # -----
@@ -933,7 +932,6 @@ def get_tagsfile(obj):
     :param obj:
     :return:
     """
-    in_logger = logging.getLogger("{0}.get_tagsfile".format(__name__))
     tags = {}
 
     # -----
@@ -951,12 +949,10 @@ def get_tagsfile(obj):
                 "bootlegalbum_country"]:
         with suppress(AttributeError):
             tags[key] = getattr(obj, key)
-    in_logger.debug(tags)
 
     # -----
     with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "Templates.yml"), encoding=shared.UTF8) as stream:
         templates = yaml.load(stream, Loader=yaml.FullLoader)
-    in_logger.debug(templates)
 
     # Load templates respective to "bootleg" value.
     template = templates.get(obj.bootleg, templates["N"])
@@ -1020,17 +1016,18 @@ def album(track):
     return track.album
 
 
-def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Tuple[Any, ...]]]:
+def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.albums".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
-    if not fil:
-        fil = Path(shared.TEMP) / "tags.json"
+    _fil = Path(shared.TEMP) / "tags.json"
+    if fil:
+        _fil = Path(fil)
 
     # Load existing sequences.
     with suppress(FileNotFoundError):
-        with open(fil, encoding=encoding) as fr:
+        with open(_fil, encoding=encoding) as fr:
             iterable = json.load(fr)
 
     # Convert list(s) to tuple(s) for using `set` container.
@@ -1063,19 +1060,20 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      2
                      ))
     iterable = list(set(iterable))
-    for track in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
-        yield fil, track
+    for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
+        yield str(_fil), item
 
 
-def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Tuple[Any, ...]]]:
+def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
     countries = dict(get_countries(db))
     providers = dict(get_providers(db))
-    if not fil:
-        fil = Path(shared.TEMP) / "tags.json"
+    _fil = Path(shared.TEMP) / "tags.json"
+    if fil:
+        _fil = Path(fil)
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
@@ -1138,7 +1136,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
 
     # Load existing sequences.
     with suppress(FileNotFoundError):
-        with open(fil, encoding=encoding) as fr:
+        with open(_fil, encoding=encoding) as fr:
             iterable = json.load(fr)
 
     # Convert list(s) to tuple(s) for using `set` container.
@@ -1176,8 +1174,8 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
                      2
                      ))
     iterable = list(set(iterable))
-    for track in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
-        yield fil, track
+    for item in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
+        yield str(_fil), item
 
 
 def dump_audiotags_tojson(obj: DefaultAudioCDTags,
@@ -1221,12 +1219,13 @@ def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -
 # ================
 def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
     _collection = []  # type: List[Sequence[Union[bool, str]]]
-    if not fil:
-        fil = Path(shared.TEMP) / "xreferences.json"
+    _fil = Path(shared.TEMP) / "xreferences.json"
+    if fil:
+        _fil = Path(fil)
 
     # Load existing references.
     with suppress(FileNotFoundError):
-        with open(fil, encoding=encoding) as fr:
+        with open(_fil, encoding=encoding) as fr:
             _collection = json.load(fr)
 
     # Convert list(s) to tuple(s) for using `set` container.
@@ -1237,7 +1236,7 @@ def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = 
     _collection = list(set(_collection))
 
     # Store references.
-    with open(fil, mode=shared.WRITE, encoding=encoding) as fw:
+    with open(_fil, mode=shared.WRITE, encoding=encoding) as fw:
         json.dump(sorted(sorted(sorted(_collection, key=itemgetter(6)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 

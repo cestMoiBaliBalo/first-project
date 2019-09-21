@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tup
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, left_justify, partial_, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -36,28 +36,14 @@ sqlite3.register_adapter(ToBoolean, adapt_booleanvalue)
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
 
 
-# ===========
-# Decorators.
-# ===========
-def booleanify_sequence(func):
-    def wrapper(*args):
-        return tuple(map(func, args))
-
-    return wrapper
-
-
 # ==========
 # Functions.
 # ==========
-# def datetime_converter(bytstr):
-#     chrstr = bytstr.decode("ascii")
-#     datobj = parse(chrstr)
-#     with suppress(ValueError):
-#         datobj = UTC.localize(parse(chrstr))
-#     return get_readabledate(datobj.astimezone(LOCAL), template=TEMPLATE4)
+def booleanify_(*args):
+    return tuple(map(booleanify, args))
 
 
-def check_defaultalbum(item):
+def check_bootlegalbum(item):
     """
 
     :param item:
@@ -67,7 +53,7 @@ def check_defaultalbum(item):
     return True
 
 
-def check_bootlegalbum(item):
+def check_defaultalbum(item):
     """
 
     :param item:
@@ -90,11 +76,6 @@ def merge(item):
 # ====================
 # Decorated functions.
 # ====================
-@booleanify_sequence
-def booleanify_(arg):
-    return booleanify(arg)
-
-
 @itemgetter_(5)
 @partial_(1)
 def is_firsttrack(a, b):
@@ -837,13 +818,16 @@ def _insert_albums(*iterables) -> int:
                 stack.enter_context(conn)
                 tracks = list(map(merge, product(_tables[profile], secondary_group)))
                 statements = _statements.get(profile, _statements["default"])
-                logger.debug(profile)
-                logger.debug(statements)
+                logger.debug("Profile   : %s", profile)
+                logger.debug("Statements:")
+                keys, values = zip(*statements.items())
+                for key, value in zip(left_justify(sorted(keys)), values):
+                    logger.debug("\t%s: %s".expandtabs(3), key, value)
 
                 # Shared tables.
                 for track in tracks:
                     table = track[0]
-                    logger.debug(table)
+                    logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
@@ -852,7 +836,7 @@ def _insert_albums(*iterables) -> int:
                 # "rippeddiscs" table.
                 table = "rippeddiscs"
                 for track in filter(discs_record, filter(is_firsttrack, tracks)):
-                    logger.debug(table)
+                    logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
@@ -861,7 +845,7 @@ def _insert_albums(*iterables) -> int:
                 # "bonuses" table.
                 table = "bonuses"
                 for track in filter(itemgetter(8), filter(bootlegalbums_record, tracks)):
-                    logger.debug(table)
+                    logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
                         conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))

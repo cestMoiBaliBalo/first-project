@@ -177,9 +177,6 @@ class Changes(object):
 class SetUp(object):
     _encoding = UTF8
 
-    # def _enter_context(self):
-    #     return self
-
     def _decorate_callable(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -227,10 +224,10 @@ class SetUp(object):
     def __exit__(self, exc_type, exc_value, traceback):
         shutil.rmtree(self.name)
 
-    def __call__(self, func):
-        if isinstance(func, type):
-            return self._decorate_class(func)
-        return self._decorate_callable(func)
+    def __call__(self, arg):
+        if isinstance(arg, type):
+            return self._decorate_class(arg)
+        return self._decorate_callable(arg)
 
 
 # ==============
@@ -252,7 +249,7 @@ class TestRippedTrack(unittest.TestCase):
         mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            for value in self.test_cases.values():
+            for value in self.test_cases:
                 source, profile, decorators, actions, expected = value
 
                 # -----
@@ -277,7 +274,7 @@ class TestRippedTrack(unittest.TestCase):
         mock_database.return_value = False
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
-            for value in self.test_cases.values():
+            for value in self.test_cases:
                 source, profile, decorators, actions, expected = value
 
                 # -----
@@ -309,7 +306,7 @@ class TestRippedTrack(unittest.TestCase):
             database = copy(DATABASE, tempdir)
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
-            for value in self.test_cases.values():
+            for value in self.test_cases:
                 items += 1
                 source, profile, decorators, actions, _ = value
 
@@ -347,7 +344,7 @@ class TestRippedTrack(unittest.TestCase):
             txttags = join(tempdir, "tags.txt")
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
-            for value in self.test_cases.values():
+            for value in self.test_cases:
                 source, profile, decorators, actions, expected = value
 
                 # -----
@@ -393,7 +390,7 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             create_tables(drop_tables(database))
             changes = Changes(db=database)
-            for value in self.test_cases.values():
+            for value in self.test_cases:
                 source, profile, decorators, actions, expected = value
 
                 # -----
