@@ -937,7 +937,7 @@ def nested_groupby(iterable, *args):
     try:
         items = iter(zip(*args))
     except TypeError:
-        items = iter([(arg,) for arg in args])
+        items = iter((arg,) for arg in args)
     for item in items:
         iterable = list(groupby(iterable, *item))
     for key, group in iterable:
@@ -1219,31 +1219,53 @@ def get_dataframe(collection: Iterable[Tuple[Any, ...]], headers: List[str]):
     return DataFrame(dict(zip(headers, zip(*collection))))
 
 
-def left_justify(iterable: Iterable[Any]) -> Iterable[str]:
+def pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
     """
 
-    :param iterable:
+    :param items:
     :return:
     """
-    sequence = list(iterable)  # type: List[Any]
-    length = max(len(stringify(item)) for item in sequence)
-    for item in ("{0:<{1}}".format(item, length) for item in sequence):
+    for item in _pprint_sequence(*items):
         yield item
 
 
-def count_justify(*iterable: Tuple[str, int], length: int = 5) -> Iterable[Tuple[str, str]]:
-    sequence = list(iterable)  # type: List[Tuple[str, int]]
+def pprint_mapping(*iterables: Tuple[Union[int, str], Union[int, str]]) -> Iterable[Tuple[str, Union[int, str]]]:
+    """
+
+    :param iterables:
+    :return:
+    """
+    sequence = iter(iterables)  # type: Iterable[Tuple[Union[int, str], Union[int, str]]]
     keys, values = zip(*sequence)
-    for item in zip(left_justify(map(str, keys)), ["{0: >{1}d}".format(value, length) for value in values]):
-        yield item
+    length = max(len(stringify(key)) for key in keys)
+    for key, value in zip(("{0:<{1}}".format(key, length) for key in keys), values):
+        yield key, value
 
 
-def sort_by_insertion(iterable: Iterable[Any], *, reverse: bool = False) -> Iterable[Any]:
+def pprint_count(*iterables: Tuple[str, int], length: int = 5) -> Iterable[Tuple[str, str]]:
+    """
+
+    :param iterables:
+    :return:
+    """
+    sequence = iter(iterables)  # type: Iterable[Tuple[str, int]]
+    keys, values = zip(*sequence)
+    for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0: >{1}d}".format(value, length) for value in values)):
+        yield key, value
+
+
+def sort_by_insertion(*items: Any, reverse: bool = False) -> Iterable[Any]:
+    """
+
+    :param items:
+    :param reverse:
+    :return:
+    """
     if not reverse:
-        for item in _sort_by_insertion(iterable):
+        for item in _sort_by_insertion(*items):
             yield item
     elif reverse:
-        for item in _sortreverse_by_insertion(iterable):
+        for item in _sortreverse_by_insertion(*items):
             yield item
 
 
@@ -1498,6 +1520,17 @@ def _format_date(dt: Union[date, datetime], template: str) -> str:
                                          Z=dt.strftime("%Z"))
 
 
+def _pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
+    """
+    :param items:
+    :return:
+    """
+    it1, it2 = tee(iter(items))  # type: Iterable[Union[int, str]], Iterable[Union[int, str]],
+    length = max(len(item) for item in it1)
+    for item in ("{0:<{1}}".format(item, length) for item in it2):
+        yield item
+
+
 def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3) -> Tuple[List[str], List[str], Iterator[Tuple[str, ...]]]:
     """
 
@@ -1553,13 +1586,13 @@ def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
     return out_separators, out_headers, iter(zip(*out_collection.values()))
 
 
-def _sort_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:
+def _sort_by_insertion(*items: Any) -> Iterable[Any]:
     """
 
-    :param iterable:
+    :param items:
     :return:
     """
-    sequence = list(iterable)
+    sequence = list(items)
     length = len(sequence)
     for i in range(1, length):
         for j in range(i, 0, -1):
@@ -1569,13 +1602,13 @@ def _sort_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:
         yield item
 
 
-def _sortreverse_by_insertion(iterable: Iterable[Any]) -> Iterable[Any]:
+def _sortreverse_by_insertion(*items: Any) -> Iterable[Any]:
     """
 
-    :param iterable:
+    :param items:
     :return:
     """
-    sequence = list(iterable)
+    sequence = list(items)
     length = len(sequence)
     for i in range(length - 2, -1, -1):
         for j in range(i, length - 1):

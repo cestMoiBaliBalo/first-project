@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tup
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, left_justify, partial_, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, partial_, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -821,7 +821,7 @@ def _insert_albums(*iterables) -> int:
                 logger.debug("Profile   : %s", profile)
                 logger.debug("Statements:")
                 keys, values = zip(*statements.items())
-                for key, value in zip(left_justify(sorted(keys)), values):
+                for key, value in zip(pprint_sequence(*sorted(keys)), values):
                     logger.debug("\t%s: %s".expandtabs(3), key, value)
 
                 # Shared tables.

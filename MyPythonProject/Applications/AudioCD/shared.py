@@ -803,9 +803,9 @@ class RippedTrack(ContextDecorator):
         # --> 3. Log input tags.
         self._tags.seek(0)
         self._intags, offset, totaltracks = self.get_tags(self._tags)
-        keys, values = list(zip(*self._intags))
+        keys, values = zip(*self._intags)
         self._in_logger.debug("Input tags.")
-        for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
+        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
         offset = int(offset)
 
@@ -814,9 +814,9 @@ class RippedTrack(ContextDecorator):
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
-        keys, values = list(zip(*sorted(self._audiotracktags, key=itemgetter(0))))
+        keys, values = zip(*sorted(self._audiotracktags, key=itemgetter(0)))
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
-        for key, value in zip(shared.left_justify(keys), values):
+        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
 
         # --> 6. Alter instance attributes.
@@ -844,8 +844,8 @@ class RippedTrack(ContextDecorator):
         # --> 2. Log output tags.
         self._in_logger.debug(f'Processed track is: \"{self._audiotracktags}\"')
         self._in_logger.debug("Output tags.")
-        keys, values = list(zip(*list(outtags.items())))
-        for key, value in sorted(zip(*[list(shared.left_justify(keys)), values]), key=itemgetter(0)):
+        keys, values = zip(*outtags.items())
+        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
 
         # --> 3. Log output file.
@@ -890,7 +890,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
         with stack:
 
             keys, values = zip(*kwargs.items())
-            for key, value in zip(shared.left_justify(sorted(keys)), values):
+            for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
                 in_logger.debug("%s: %s", key, value)
             if track.audiotrack.database:
                 for k, v in in_mapping.items():
@@ -1077,36 +1077,36 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
-    keys, values = list(zip(*sorted(track, key=itemgetter(0))))
-    for key, value in zip(shared.left_justify(keys), values):
+    keys, values = zip(*sorted(track, key=itemgetter(0)))
+    for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
     # Log `track` public attributes.
     logger.debug("Here are the public attributes stored into the `BootlegAudioCDTags` instance.")
-    keys = shared.left_justify(["albumid",
-                                "artistsort",
-                                "artist",
-                                "genre",
-                                "bootleg",
-                                "discnumber",
-                                "livedisc",
-                                "tracknumber",
-                                "livetrack",
-                                "bonustrack",
-                                "totaldiscs",
-                                "totaltracks",
-                                "title",
-                                "bootlegalbum_day",
-                                "bootlegalbum_city",
-                                "bootlegalbum_country",
-                                "bootlegalbum_tour",
-                                "bootlegtrack_day",
-                                "bootlegtrack_city",
-                                "bootlegtrack_country",
-                                "bootlegtrack_tour",
-                                "bootlegalbum_provider",
-                                "bootlegdisc_reference",
-                                "bootlegalbum_title"])
+    keys = shared.pprint_sequence("albumid",
+                                  "artistsort",
+                                  "artist",
+                                  "genre",
+                                  "bootleg",
+                                  "discnumber",
+                                  "livedisc",
+                                  "tracknumber",
+                                  "livetrack",
+                                  "bonustrack",
+                                  "totaldiscs",
+                                  "totaltracks",
+                                  "title",
+                                  "bootlegalbum_day",
+                                  "bootlegalbum_city",
+                                  "bootlegalbum_country",
+                                  "bootlegalbum_tour",
+                                  "bootlegtrack_day",
+                                  "bootlegtrack_city",
+                                  "bootlegtrack_country",
+                                  "bootlegtrack_tour",
+                                  "bootlegalbum_provider",
+                                  "bootlegdisc_reference",
+                                  "bootlegalbum_title")
     values = [track.albumid,
               track.artistsort,
               track.artist,
@@ -1378,7 +1378,7 @@ def upload_audiofiles(server, user, password, *files, test=False):
     :param test:
     :return: None.
     """
-    keys = shared.left_justify(["Source file to upload", "Source file name", "Target directory", "Artistsort", "Albumsort", "Album"])
+    keys = shared.pprint_sequence("Source file to upload", "Source file name", "Target directory", "Artistsort", "Albumsort", "Album")
     uploaded, selectors = [], []
 
     # --> Logging.

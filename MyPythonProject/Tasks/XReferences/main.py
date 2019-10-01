@@ -28,8 +28,9 @@ GROUP_SELECTORS = [1, 1, 0, 0, 1, 0, 0, 0]
 
 
 # -----
-def _compress(selectors, data):
-    return tuple(compress(data, selectors))
+def compress_(selectors, data):
+    for item in compress(data, selectors):
+        yield item
 
 
 # -----
@@ -52,7 +53,7 @@ inserted, removed = "  0", "  0"  # type: str, str
 new_albums = albums_drive.difference(albums_database)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if new_albums:
     collection = sorted(sorted(sorted(sorted(sorted(new_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
-    for key, group in groupby(collection, key=partial(_compress, GROUP_SELECTORS)):
+    for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
         logger.info("# Album inserted into the local audio drive ================================================== #")
         logger.info("ArtistID: %s", artistid)
@@ -68,7 +69,7 @@ if new_albums:
 removed_albums = albums_database.difference(albums_drive)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if removed_albums:
     collection = sorted(sorted(sorted(sorted(sorted(removed_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
-    for key, group in groupby(collection, key=partial(_compress, GROUP_SELECTORS)):
+    for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
         logger.info("# Album removed from the local audio drive ================================================== #")
         logger.info("ArtistID: %s", artistid)

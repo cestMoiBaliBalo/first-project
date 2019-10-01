@@ -10,7 +10,7 @@ from operator import itemgetter
 from pathlib import PureWindowsPath
 from typing import List, Optional, Tuple
 
-from Applications.shared import TemplatingEnvironment, count_justify
+from Applications.shared import TemplatingEnvironment, pprint_count
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -75,9 +75,7 @@ def valid_extension(path: PureWindowsPath, *, extensions: Optional[Tuple[str, ..
     """
     if not extensions:
         return True
-    if path.suffix[1:].lower() in [extension.lower() for extension in extensions]:
-        return True
-    return False
+    return path.suffix[1:].lower() in (extension.lower() for extension in extensions):
 
 
 # =================
@@ -109,6 +107,6 @@ if arguments.extensions:
     collection1 = list(filter(partial(valid_extension, extensions=tuple(arguments.extensions)), collection1))
 collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), key=byparents)
 it1, it2 = tee(collection1)
-_extensions = filter(None, sorted([(key[1:], value) for key, value in count_justify(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))
-_directories = filter(None, sorted([(str(key), value) for key, value in count_justify(*Counter(file.parents[0] for file in it2).items())], key=itemgetter(0)))
+_extensions = filter(None, sorted([(key[1:], value) for key, value in pprint_count(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))
+_directories = filter(None, sorted([(str(key), value) for key, value in pprint_count(*Counter(file.parents[0] for file in it2).items())], key=itemgetter(0)))
 print(template.get_template("T01").render(root=arguments.path, files=collection1, extensions=_extensions, directories=_directories, empty_directories=collection2))
