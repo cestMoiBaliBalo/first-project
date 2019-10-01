@@ -75,7 +75,7 @@ sqlite3.register_converter("boolean", convert_tobooleanvalue)
 # ==================
 # Private functions.
 # ==================
-def _is_not(a, b):
+def is_not_(a, b):
     return is_not(b, a)
 
 
@@ -98,7 +98,7 @@ def log_record(iterable):
 
     # 3. Configurer les entêtes adéquats en fonction des données présentes.
     #    Eliminer les entêtes des données à `None`.
-    headers = list(compress(HEADERS[isbootleg], map(partial(_is_not, None), attributes)))
+    headers = list(compress(HEADERS[isbootleg], map(partial(is_not_, None), attributes)))
 
     # 4. Log record.
     length = max(len(item) for item in headers)
