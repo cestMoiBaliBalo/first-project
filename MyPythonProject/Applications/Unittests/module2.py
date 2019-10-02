@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 import iso8601
 
-from ..parsers import database_parser, loglevel_parser, tags_grabber, tasks_parser, zipfile
+from ..parsers import database_parser, tags_grabber, tasks_parser
 from ..shared import GetPath, LOCAL, UTC, get_dirname
 
 __author__ = 'Xavier ROSSET'
@@ -152,62 +152,62 @@ class Test01d(unittest.TestCase):
         self.local_validpath.assert_called()
 
 
+# @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
+# class Test02(unittest.TestCase):
+#     """
+#
+#     """
+#
+#     def setUp(self):
+#         self.documents = os.path.expandvars("%_MYDOCUMENTS%")
+#
+#     def test_t01(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents"])
+#         self.assertListEqual(arguments.extensions, ["doc", "txt", "pdf", "xav"])
+#
+#     def test_t02(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-e", "doc"])
+#         self.assertListEqual(arguments.extensions, ["txt", "pdf", "xav"])
+#
+#     def test_t03(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-k", "pdf"])
+#         self.assertListEqual(arguments.extensions, ["pdf"])
+#
+#     def test_t04(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-e", "doc", "txt", "pdf", "xav"])
+#         self.assertListEqual(arguments.extensions, [])
+#
+#     def test_t05(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing"])
+#         self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl"])
+#
+#     def test_t06(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-i", "pdf"])
+#         self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl", "pdf"])
+#
+#     def test_t07(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-e", "cmd", "-i", "pdf", "txt"])
+#         self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "css", "xsl", "pdf", "txt"])
+#
+#     def test_t08(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-k", "py", "-i", "pdf", "txt"])
+#         self.assertListEqual(arguments.extensions, ["py", "pdf", "txt"])
+#
+#     def test_t09(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "documents"])
+#         self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl", "doc", "txt", "pdf", "xav"])
+#
+#     def test_t10(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "documents", "-e", "doc", "css"])
+#         self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "xsl", "txt", "pdf", "xav"])
+#
+#     def test_t11(self):
+#         arguments = zipfile.parse_args([self.documents, "temp", "singled", "doc", "pdf", "txt", "css", "abc"])
+#         self.assertListEqual(arguments.extensions, ["doc", "pdf", "txt", "css", "abc"])
+
+
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test02(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self):
-        self.documents = os.path.expandvars("%_MYDOCUMENTS%")
-
-    def test_t01(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents"])
-        self.assertListEqual(arguments.extensions, ["doc", "txt", "pdf", "xav"])
-
-    def test_t02(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-e", "doc"])
-        self.assertListEqual(arguments.extensions, ["txt", "pdf", "xav"])
-
-    def test_t03(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-k", "pdf"])
-        self.assertListEqual(arguments.extensions, ["pdf"])
-
-    def test_t04(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "documents", "-e", "doc", "txt", "pdf", "xav"])
-        self.assertListEqual(arguments.extensions, [])
-
-    def test_t05(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing"])
-        self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl"])
-
-    def test_t06(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-i", "pdf"])
-        self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl", "pdf"])
-
-    def test_t07(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-e", "cmd", "-i", "pdf", "txt"])
-        self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "css", "xsl", "pdf", "txt"])
-
-    def test_t08(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "-k", "py", "-i", "pdf", "txt"])
-        self.assertListEqual(arguments.extensions, ["py", "pdf", "txt"])
-
-    def test_t09(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "documents"])
-        self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "css", "xsl", "doc", "txt", "pdf", "xav"])
-
-    def test_t10(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "grouped", "computing", "documents", "-e", "doc", "css"])
-        self.assertListEqual(arguments.extensions, ["py", "json", "yaml", "cmd", "xsl", "txt", "pdf", "xav"])
-
-    def test_t11(self):
-        arguments = zipfile.parse_args([self.documents, "temp", "singled", "doc", "pdf", "txt", "css", "abc"])
-        self.assertListEqual(arguments.extensions, ["doc", "pdf", "txt", "css", "abc"])
-
-
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class Test04(unittest.TestCase):
     """
 
     """
@@ -233,21 +233,7 @@ class Test04(unittest.TestCase):
         self.assertFalse(arguments.test)
 
 
-class Test05(unittest.TestCase):
-    """
-
-    """
-
-    def test_t01(self):
-        arguments = loglevel_parser.parse_args([])
-        self.assertEqual(arguments.loglevel, "INFO")
-
-    def test_t02(self):
-        arguments = loglevel_parser.parse_args(["--loglevel", "DEBUG"])
-        self.assertEqual(arguments.loglevel, "DEBUG")
-
-
-class Test06(unittest.TestCase):
+class Test03(unittest.TestCase):
     """
 
     """
@@ -282,7 +268,7 @@ class Test06(unittest.TestCase):
 
 
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class Test07(unittest.TestCase):
+class Test04(unittest.TestCase):
     """
 
     """

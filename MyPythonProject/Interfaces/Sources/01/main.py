@@ -27,9 +27,8 @@ __status__ = "Production"
 # ==========
 # Functions.
 # ==========
-def exclude_allbut_checked_extensions(curdir: str, *files: str, extensions: Optional[List[str]] = None) -> Set[str]:
+def exclude_allbut_checked_extensions(*files: str, extensions: Optional[List[str]] = None) -> Set[str]:
     """
-    :param curdir:
     :param files:
     :param extensions:
     :return:

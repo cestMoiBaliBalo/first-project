@@ -10,22 +10,67 @@ import tempfile
 import unittest
 from collections.abc import MutableSequence
 from datetime import datetime
-from functools import partial
-from operator import contains, eq, gt, lt
+from functools import partial, wraps
+from operator import contains, eq, gt, itemgetter, lt
+from pathlib import PurePath
+from typing import Union
 from unittest.mock import patch
 
+import yaml
+
 from Applications.Tables.Albums import shared
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, eq_string, get_rippingapplication, int_, itemgetter2_, itemgetter_, not_, now, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string, get_rippingapplication, groupby, int_, itemgetter2_, itemgetter_, nested_groupby, not_, now, partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 
-# ==========
-# Functions.
-# ==========
+
+# ===============
+# Global classes.
+# ===============
+class SetUp(object):
+
+    def _decorate_callable(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with open(self._path, encoding=self._encoding) as stream:
+                collection = yaml.load(stream, Loader=yaml.FullLoader)
+            args += (collection,)
+            func(*args, **kwargs)
+
+        return wrapper
+
+    def _decorate_class(self, klass):
+        for attr in dir(klass):
+            if not attr.startswith("test"):
+                continue
+            attr_value = getattr(klass, attr)
+            if not hasattr(attr_value, "__call__"):
+                continue
+            setattr(klass, attr, self(attr_value))
+        return klass
+
+    def __init__(self, path: Union[PurePath, str], *, encoding: str = "UTF_8") -> None:
+        self._path = path
+        self._encoding = encoding
+
+    def __call__(self, arg):
+        if isinstance(arg, type):
+            return self._decorate_class(arg)
+        return self._decorate_callable(arg)
+
+
+# =================
+# Global functions.
+# =================
+def booleanify_(*args):
+    return tuple(map(booleanify, args))
+
+
 def split_(char: str, strg: str):
     return strg.split(char)
 
@@ -530,3 +575,87 @@ class TestMock03(unittest.TestCase):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.join(os.path.expandvars("%BACKUP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
         mock_ospath_expandvars.assert_called_once()
+
+    def test04(self, mock_ospath_expandvars):
+        mock_ospath_expandvars.return_value = "some_folder"
+        self.assertEqual(os.path.expandvars("%SOME_FOLDER%"), "some_folder")
+        mock_ospath_expandvars.assert_called_once()
+
+
+@SetUp(_THATFILE.parent / "Resources" / "resource4.yml")
+class Test05(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.collection = [("artist1", "album1", 1, 1, "X"),
+                           ("artist1", "album1", 1, 2, "X"),
+                           ("artist1", "album1", 2, 1, "X"),
+                           ("artist1", "album1", 1, 3, "X"),
+                           ("artist2", "album1", 1, 1, "X"),
+                           ("artist1", "album2", 1, 1, "X"),
+                           ("artist1", "album2", 1, 2, "X"),
+                           ("artist1", "album1", 2, 2, "X"),
+                           ("artist1", "album1", 2, 3, "X"),
+                           ("artist2", "album1", 2, 3, "X"),
+                           ("artist2", "album2", 2, 2, "X"),
+                           ("artist2", "album2", 2, 1, "X"),
+                           ("artist2", "album2", 2, 3, "X")]
+
+    def test_t01(self, collection):
+        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
+        out_collection = collection["test_t01"]
+        self.assertListEqual(list(nested_groupby(in_collection, 4, 0, 1, 2)), out_collection)
+
+    def test_t02(self, collection):
+        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
+        out_collection = collection["test_t02"]
+        self.assertListEqual(list(groupby(in_collection, 4)), out_collection)
+
+    def test_t03(self, collection):
+        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
+        out_collection = collection["test_t03"]
+        self.assertListEqual(list(nested_groupby(in_collection, 4)), out_collection)
+
+    def test_t04(self, collection):
+        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
+        out_collection = collection["test_t04"]
+        self.assertListEqual(list(nested_groupby(in_collection, 0, 1)), out_collection)
+
+
+class Test06(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", "Y", "N", "N", "Y"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
+
+    def test_t01(self):
+        self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
+                             [("defaultalbums", "Artist, The", "1", "1", True, False, False, True), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
+
+
+class Test07(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", "O", "N", "N", "O"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
+
+    def test_t01(self):
+        self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
+                             [("defaultalbums", "Artist, The", "1", "1", "O", False, False, "O"), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
+
+
+class Test08(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+
+    def test_t01(self):
+        self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
+                             [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+
+class Test09(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+
+    def test_t01(self):
+        self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
+                             [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])

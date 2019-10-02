@@ -1,5 +1,4 @@
-bootleg:
-  - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -49,9 +48,7 @@ bootleg:
     tracknumber: !!python/str 14
     tracklanguage: English
     upc: !!python/none
-
-bootleg1:
-  - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -121,9 +118,7 @@ bootleg1:
     tracknumber: !!python/str 18
     tracklanguage: English
     upc: !!python/none
-
-bootleg2:
-  - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -173,9 +168,7 @@ bootleg2:
     tracknumber: !!python/str 1
     tracklanguage: English
     upc: !!python/none
-
-default:
-  - Album: MTV Unplugged
+- - Album: MTV Unplugged
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
     AlbumSortCount: !!python/str 1
@@ -227,9 +220,7 @@ default:
     tracklanguage: English
     tracknumber: !!python/str 1
     upc: !!python/str 731452895028
-
-default1:
-  - Album: Alive!
+- - Album: Alive!
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
     AlbumSortCount: !!python/str 2
@@ -280,9 +271,7 @@ default1:
     tracklanguage: English
     tracknumber: !!python/str 1
     upc: !!python/str 042282278029
-
-default2:
-  - Album: Alive III
+- - Album: Alive III
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
     AlbumSortCount: !!python/str 1
@@ -333,9 +322,7 @@ default2:
     tracklanguage: English
     tracknumber: !!python/str 1
     upc: !!python/str 731451482724
-
-default3:
-  - Album: Rock and Roll Over
+- - Album: Rock and Roll Over
     AlbumArtist: Kiss
     AlbumArtistSort: Kiss
     AlbumSortCount: !!python/str 2
@@ -387,9 +374,7 @@ default3:
     tracklanguage: English
     tracknumber: !!python/str 1
     upc: !!python/str 042282415028
-
-default4:
-  - Album: Some New Album
+- - Album: Some New Album
     AlbumArtist: The Artist
     AlbumArtistSort: Artist, The
     AlbumSortCount: !!python/str 1
