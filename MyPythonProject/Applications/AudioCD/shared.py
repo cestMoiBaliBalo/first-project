@@ -1057,8 +1057,7 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     2
-                     ))
+                     2))
     iterable = list(set(iterable))
     for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1171,8 +1170,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
                      providers[track.bootlegalbum_provider],
                      track.bootlegdisc_reference,
                      track.bootlegalbum_title,
-                     2
-                     ))
+                     2))
     iterable = list(set(iterable))
     for item in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1383,11 +1381,6 @@ def upload_audiofiles(server, user, password, *files, test=False):
 
     # --> Logging.
     logger = logging.getLogger("{0}.upload_audiofile".format(__name__))
-
-    # --> Check existing files.
-    # if not any(map(os.path.exists, files)):
-    #     logger.debug("No eligible file found.")
-    #     return uploaded
 
     # --> Initializations.
     refdirectory = "/music"
