@@ -1246,6 +1246,7 @@ def pprint_count(*iterables: Tuple[str, int], length: int = 5) -> Iterable[Tuple
     """
 
     :param iterables:
+    :param length:
     :return:
     """
     sequence = iter(iterables)  # type: Iterable[Tuple[str, int]]

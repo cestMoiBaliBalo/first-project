@@ -5,27 +5,19 @@ import csv
 import locale
 import os
 import sys
+from functools import partial
+from itertools import filterfalse
 from operator import eq, itemgetter
 from pathlib import PurePath
 
-from Applications.shared import TemplatingEnvironment, itemgetter_, partial_
+from Applications.shared import TemplatingEnvironment, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-that_file = os.path.abspath(__file__)
-
-
-# ==========
-# Functions.
-# ==========
-@itemgetter_(4)
-@partial_(0)
-def get_differences(a, b):
-    return not eq(b, a)
-
+THAT_FILE = os.path.abspath(__file__)
 
 # ==========================
 # Define French environment.
@@ -42,13 +34,13 @@ arguments = parser.parse_args()
 # ==========
 # Constants.
 # ==========
-REPOSITORY = os.path.join(os.path.expandvars("%_COMPUTING%"), "counts")
+REPOSITORY = str(PurePath(os.path.expandvars("%_COMPUTING%")) / "counts")
 
 # ==========
 # Variables.
 # ==========
 collection, extensions, status, total = [], [], 1, 0
-template = TemplatingEnvironment(path=PurePath(that_file).parents[1] / "Templates")
+template = TemplatingEnvironment(PurePath(THAT_FILE).parents[1] / "Templates")
 
 # ===============
 # Main algorithm.
@@ -68,7 +60,7 @@ for extension, current, previous in sorted(extensions, key=itemgetter(0)):
     total += current - previous
     collection.append((_extension, _current, _previous, _difference, current - previous))
 if arguments.only_differences:
-    collection = list(filter(get_differences, collection))
+    collection = list(filterfalse(itemgetter_(4)(partial(eq, 0)), collection))
 if collection:
     status = 0
     with open(os.path.join(os.path.expandvars("%TEMP%"), "counts.txt"), mode="w", encoding="ISO-8859-1") as stream:
