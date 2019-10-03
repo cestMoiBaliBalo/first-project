@@ -4,12 +4,11 @@ import argparse
 import json
 import logging.config
 import operator
-import os
 import subprocess
 import sys
 from functools import partial
-from os.path import exists, expandvars, join, normpath
-from pathlib import WindowsPath
+from os.path import abspath, exists, expandvars, join, normpath
+from pathlib import Path
 from typing import List, Mapping
 from xml.etree.ElementTree import parse
 
@@ -52,24 +51,24 @@ parser.add_argument("-t", "--test", action="store_true")
 # ===========================
 # Load logging configuration.
 # ===========================
-with open(WindowsPath(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding=UTF8) as stream:
+with open(Path(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding=UTF8) as stream:
     logging.config.dictConfig(yaml.load(stream, Loader=yaml.FullLoader))
 
 # ====================
 # Load backup targets.
 # ====================
-with open(WindowsPath(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding=UTF8) as stream:
+with open(Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding=UTF8) as stream:
     targets = {item["target"]: item["workspace"] for item in json.load(stream)}  # type: Mapping[str, str]
 
 # ==============
 # Define logger.
 # ==============
-logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(WindowsPath(os.path.abspath(__file__)).stem)))
+logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(Path(abspath(__file__)).stem)))
 
 # =================
 # Global constants.
 # =================
-ARECA = str(WindowsPath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
+ARECA = str(Path("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 TABS = 4
 
 # ================

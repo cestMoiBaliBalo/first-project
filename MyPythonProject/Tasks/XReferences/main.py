@@ -19,19 +19,19 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-# -----
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
-
-# -----
-SELECTORS = [0, 0, 0, 0, 0, 0, 1, 1]
-GROUP_SELECTORS = [1, 1, 0, 0, 1, 0, 0, 0]
-
 
 # -----
 def compress_(selectors, data):
     for item in compress(data, selectors):
         yield item
 
+
+# -----
+locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+
+# -----
+SELECTORS = [0, 0, 0, 0, 0, 0, 1, 1]
+GROUP_SELECTORS = [1, 1, 0, 0, 1, 0, 0, 0]
 
 # -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding=UTF8) as fp:
@@ -59,7 +59,7 @@ if new_albums:
         logger.info("ArtistID: %s", artistid)
         logger.info("AlbumID : %s", albumid)
         logger.info("Album   : %s", album)
-        for file, extension in map(partial(_compress, SELECTORS), group):
+        for file, extension in map(partial(compress_, SELECTORS), group):
             logger.info("\tFile     : %s".expandtabs(4), file)
             logger.info("\tExtension: %s".expandtabs(4), extension)
     inserted = "{0:>3d}".format(insert_albums(*new_albums))
@@ -75,7 +75,7 @@ if removed_albums:
         logger.info("ArtistID: %s", artistid)
         logger.info("AlbumID : %s", albumid)
         logger.info("Album   : %s", album)
-        for file, extension in map(partial(_compress, SELECTORS), group):
+        for file, extension in map(partial(compress_, SELECTORS), group):
             logger.info("\tFile     : %s".expandtabs(4), file)
             logger.info("\tExtension: %s".expandtabs(4), extension)
     removed = "{0:>3d}".format(remove_albums(*removed_albums))

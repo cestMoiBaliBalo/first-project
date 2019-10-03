@@ -125,7 +125,8 @@ class DigitalAudioCollection(object):
                                       "readable": partial(format_date, template=TEMPLATE4),
                                       "readmonth": partial(format_date, template="$Y$m"),
                                       "timestamp": _gettimestamp})
-    TEMPLATE.set_template(**TEMPLATES)
+
+    # TEMPLATE.set_template(**TEMPLATES)
 
     def __init__(self, db=DATABASE):
 
@@ -323,6 +324,15 @@ class DigitalAudioCollection(object):
     #     # self._months = list(getmonths(db=arg))
     #     self._months = []
 
+    def get_page(self, collection: Iterable[Any], **kwargs) -> Any:
+        """
+
+        :param collection:
+        :param kwargs:
+        :return:
+        """
+        return self.TEMPLATE.get_template(kwargs.get("template")).render(content=iter(collection), **kwargs)
+
     @classmethod
     def get_collection(cls, collection: Sequence[Any], *sort_sequence: Tuple[str, bool], **kwargs) -> Tuple[Sequence[Any], Sequence[Tuple[str, str, str]]]:
         """
@@ -355,16 +365,6 @@ class DigitalAudioCollection(object):
         for attr, reverse in sequence:
             collection = sorted(collection, key=attrgetter(attr), reverse=reverse)
         return iter(collection)
-
-    @staticmethod
-    def get_page(collection: Iterable[Any], **kwargs) -> Any:
-        """
-
-        :param collection:
-        :param kwargs:
-        :return:
-        """
-        return kwargs.get("template").render(content=iter(collection), **kwargs)
 
     # ------------------
     # Refresh functions.
@@ -418,7 +418,7 @@ class DigitalAudioCollection(object):
                   "page": "digitalalbumsview",
                   "scripts": self.SCRIPTS.get("view1"),
                   "sheets": self.SHEETS.get("view1"),
-                  "template": getattr(self.TEMPLATE, "digitalalbumsview"),
+                  "template": self.TEMPLATES["digitalalbumsview"],
                   "title": "digital albums",
                   "view": view,
                   "views": views}
@@ -461,7 +461,7 @@ class DigitalAudioCollection(object):
                   "page": "rippeddiscsview",
                   "scripts": self.SCRIPTS.get("view1"),
                   "sheets": self.SHEETS.get("view1"),
-                  "template": getattr(self.TEMPLATE, "rippeddiscsview"),
+                  "template": self.TEMPLATES["rippeddiscsview"],
                   "title": "ripped discs",
                   "view": view,
                   "views": views}
@@ -504,7 +504,7 @@ class DigitalAudioCollection(object):
                   "page": "playeddiscsview",
                   "scripts": self.SCRIPTS.get("view1"),
                   "sheets": self.SHEETS.get("view1"),
-                  "template": getattr(self.TEMPLATE, "playeddiscsview"),
+                  "template": self.TEMPLATES["playeddiscsview"],
                   "title": "played discs",
                   "view": view,
                   "views": views}
@@ -524,7 +524,7 @@ class DigitalAudioCollection(object):
         mapping = {"digitalalbums": self.digitalalbums, "playeddiscs": self.playeddiscs, "rippeddiscs": self.rippeddiscs}
         beg = int(start)
         end = int(start) + int(coversperpage)
-        return {"covers": getattr(self.TEMPLATE, "getdigitalalbums").render(content=islice(self.sort_collection(mapping[collection], *self.SORT_SEQUENCE[collection]), beg, end))}
+        return {"covers": self.TEMPLATE.get_template(self.TEMPLATES["getdigitalalbums"]).render(content=islice(self.sort_collection(mapping[collection], *self.SORT_SEQUENCE[collection]), beg, end))}
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -549,7 +549,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         mapping = set((disc.ripped_year_month, format_date(LOCAL.localize(disc.ripped), template="$month $Y")) for disc in self.rippeddiscs)  # type: Set[Tuple[int, str]]
-        collection = self.sort_collection(self.rippeddiscs, *[("artistsort", False), ("ripped", True), ("ripped_year_month", True)])  # type: Sequence[Any]
+        collection = list(self.sort_collection(self.rippeddiscs, *[("artistsort", False), ("ripped", True), ("ripped_year_month", True)]))  # type: Sequence[Any]
         if month is not None:
             collection = list(filter(attrgetter_("ripped_year_month")(partial(eq, int(month))), collection))
         kwargs = {"body": "view2",
@@ -558,7 +558,7 @@ class DigitalAudioCollection(object):
                   "link": ("month", "month"),
                   "scripts": self.SCRIPTS.get("view2"),
                   "sheets": self.SHEETS.get("view2"),
-                  "template": getattr(self.TEMPLATE, "rippeddiscsviewbymonth"),
+                  "template": self.TEMPLATES["rippeddiscsviewbymonth"],
                   "title": "ripped discs",
                   "view": "months",
                   "views": []}
@@ -576,7 +576,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         mapping = set((disc.ripped_year, format_date(LOCAL.localize(disc.ripped), template="$Y")) for disc in self.rippeddiscs)  # type: Set[Tuple[int, str]]
-        collection = self.sort_collection(self.rippeddiscs, *[("artistsort", False), ("ripped", True), ("ripped_year", True)])  # type: Sequence[Any]
+        collection = list(self.sort_collection(self.rippeddiscs, *[("artistsort", False), ("ripped", True), ("ripped_year", True)]))  # type: Sequence[Any]
         if year is not None:
             collection = list(filter(attrgetter_("ripped_year")(partial(eq, int(year))), collection))
         kwargs = {"body": "view2",
@@ -585,7 +585,7 @@ class DigitalAudioCollection(object):
                   "link": ("year", "year"),
                   "scripts": self.SCRIPTS.get("view2"),
                   "sheets": self.SHEETS.get("view2"),
-                  "template": getattr(self.TEMPLATE, "rippeddiscsviewbyyear"),
+                  "template": self.TEMPLATES["rippeddiscsviewbyyear"],
                   "title": "ripped discs",
                   "view": "years",
                   "views": []}
@@ -603,7 +603,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         mapping = set((disc.artistsort, disc.artist) for disc in self.rippeddiscs)  # type: Set[Tuple[str, str]]
-        collection = self.sort_collection(self.rippeddiscs, *[("ripped", True), ("artistsort", False)])  # type: Sequence[Any]
+        collection = list(self.sort_collection(self.rippeddiscs, *[("ripped", True), ("artistsort", False)]))  # type: Sequence[Any]
         if artistsort is not None:
             collection = list(filter(attrgetter_("artistsort")(partial(eq_string, artistsort, sensitive=True)), collection))
         kwargs = {"body": "view2",
@@ -612,7 +612,7 @@ class DigitalAudioCollection(object):
                   "link": ("artist", "artistsort"),
                   "scripts": self.SCRIPTS.get("view2"),
                   "sheets": self.SHEETS.get("view2"),
-                  "template": getattr(self.TEMPLATE, "rippeddiscsviewbyartist"),
+                  "template": self.TEMPLATES["rippeddiscsviewbyartist"],
                   "title": "ripped discs",
                   "view": "artists",
                   "views": []}
@@ -630,7 +630,7 @@ class DigitalAudioCollection(object):
         :return: HTML template rendered with CherryPy.
         """
         mapping = set((disc.genre, disc.genre) for disc in self.rippeddiscs)  # type: Set[Tuple[str, str]]
-        collection = self.sort_collection(self.rippeddiscs, *[("ripped", True), ("genre", False)])  # type: Sequence[Any]
+        collection = list(self.sort_collection(self.rippeddiscs, *[("ripped", True), ("genre", False)]))  # type: Sequence[Any]
         if genre is not None:
             collection = list(filter(attrgetter_("genre")(partial(eq_string, genre, sensitive=False)), collection))
         kwargs = {"body": "view2",
@@ -639,7 +639,7 @@ class DigitalAudioCollection(object):
                   "link": ("genre", "genre"),
                   "scripts": self.SCRIPTS.get("view2"),
                   "sheets": self.SHEETS.get("view2"),
-                  "template": getattr(self.TEMPLATE, "rippeddiscsviewbygenre"),
+                  "template": self.TEMPLATES["rippeddiscsviewbygenre"],
                   "title": "ripped discs",
                   "view": "genres",
                   "views": []}
