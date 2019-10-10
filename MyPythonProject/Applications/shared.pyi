@@ -26,6 +26,7 @@ DFTTIMEZONE = ...  # type: str
 DFTYEARREGEX = ...  # type: str
 DISC = ...  # type: str
 DRIVE = ...  # type: str
+EXTENSIONS = ...  # type: Mapping[str, List[str]]
 FILE = ...  # type: str
 FOLDER = ...  # type: str
 GENRES = ...  # type: List[str]

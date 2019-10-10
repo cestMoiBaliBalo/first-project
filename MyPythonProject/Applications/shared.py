@@ -96,6 +96,11 @@ TEMP = PurePath("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
 IMAGES_COLLECTION = r"\\Diskstation\backup\Images\Collection"
 
 # Miscellaneous containers.
+EXTENSIONS = {"computing": ["cmd", "css", "json", "py", "pyi", "yaml", "xsl"],
+              "documents": ["doc", "pdf", "txt", "xav"],
+              "music": ["ape", "dsf", "flac", "mp3", "m4a", "ogg", "tak", "wv"],
+              "lossless": ["ape", "dsf", "flac", "tak", "wv"],
+              "lossy": ["mp3", "m4a", "ogg"]}
 GENRES = ["Alternative Rock",
           "Black Metal",
           "Doom Metal",
