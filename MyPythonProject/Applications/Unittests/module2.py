@@ -6,21 +6,23 @@ import operator
 import os
 import sys
 import unittest
-from pathlib import PurePath
+from functools import partial
+from pathlib import Path, PurePath
 from typing import Mapping
 from unittest.mock import Mock, patch
 
 import iso8601
 
+from ..callables import filter_audiofiles, filter_byextension, filter_losslessaudiofiles
 from ..parsers import database_parser, tags_grabber, tasks_parser
-from ..shared import GetPath, LOCAL, UTC, get_dirname
+from ..shared import GetPath, LOCAL, UTC, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-THAT_FILE = PurePath(os.path.abspath(__file__))  # type: PurePath
+_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 USERPROFILE = PurePath("C:/") / "Users" / "Xavier"  # type: PurePath
 BACKUP = str(PurePath("Y:/") / "Backup")  # type: str
 MYDOCUMENTS = str(USERPROFILE / "Documents")  # type: str
@@ -240,7 +242,7 @@ class Test03(unittest.TestCase):
 
     def setUp(self):
         self.arguments = None
-        self.resource = str(PurePath(THAT_FILE.parent, "Resources", "resource1.txt"))
+        self.resource = str(PurePath(_THATFILE.parent, "Resources", "resource1.txt"))
 
     def test_t01(self):
         self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])
@@ -376,3 +378,56 @@ class Test04(unittest.TestCase):
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
         self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
                          datetime.datetime(2019, 2, 1, 19, 38, 56))
+
+
+@patch("Applications.shared.os.walk")
+class Test05(unittest.TestCase):
+
+    def setUp(self):
+        self.files = ["file1.flac", "file2.flac", "file3.flac", "file1.mp3", "file2.mp3", "file3.mp3", "file1.m4a", "file2.m4a", "file3.m4a"]
+        self.side_effect = [((str(Path("G:/")), [], self.files),)]
+
+    def test01(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/A"), excluded=partial(filter_byextension, extensions=["flac"])))
+        self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
+        mock_os_walk.assert_called_once()
+
+    def test02(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        self.assertTrue(set(find_files(Path("F:/B"), excluded=partial(filter_byextension, extensions=["flac"]))))
+        mock_os_walk.assert_called_once()
+
+    def test03(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/C"), excluded=partial(filter_byextension, extensions=["pdf"])))
+        self.assertListEqual(out_files, [])
+        mock_os_walk.assert_called_once()
+
+    def test04(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        self.assertFalse(set(find_files(Path("F:/D"), excluded=partial(filter_byextension, extensions=["doc", "pdf", "txt"]))))
+        mock_os_walk.assert_called_once()
+
+    def test05(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/E"), excluded=partial(filter_byextension, extensions=["mp3", "m4a"])))
+        self.assertListEqual(out_files, [str(Path("G:/") / "file1.m4a"),
+                                         str(Path("G:/") / "file1.mp3"),
+                                         str(Path("G:/") / "file2.m4a"),
+                                         str(Path("G:/") / "file2.mp3"),
+                                         str(Path("G:/") / "file3.m4a"),
+                                         str(Path("G:/") / "file3.mp3")])
+        mock_os_walk.assert_called_once()
+
+    def test06(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/G"), excluded=filter_losslessaudiofiles))
+        self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
+        mock_os_walk.assert_called_once()
+
+    def test07(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/H"), excluded=filter_audiofiles))
+        self.assertListEqual(out_files, sorted(str(Path("G:/") / file) for file in self.files))
+        mock_os_walk.assert_called_once()

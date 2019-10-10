@@ -53,10 +53,10 @@ with open(f"{REPOSITORY}.csv", encoding="UTF_8", newline="") as stream:
 for extension, current, previous in sorted(extensions, key=itemgetter(0)):
     current = int(current)
     previous = int(previous)
-    _extension = "{0: <9}".format(extension)
-    _current = "{0: >8d}".format(current)
-    _previous = "{0: >8d}".format(previous)
-    _difference = "{0: >+10d}".format(current - previous)
+    _extension = "{0:<9}".format(extension)
+    _current = "{0:>8d}".format(current)
+    _previous = "{0:>8d}".format(previous)
+    _difference = "{0:>+10d}".format(current - previous)
     total += current - previous
     collection.append((_extension, _current, _previous, _difference, current - previous))
 if arguments.only_differences:
@@ -64,6 +64,6 @@ if arguments.only_differences:
 if collection:
     status = 0
     with open(os.path.join(os.path.expandvars("%TEMP%"), "counts.txt"), mode="w", encoding="ISO-8859-1") as stream:
-        stream.write(template.get_template("T02").render(collection=[collection, "{0: >+44d}".format(total), arguments.only_differences]))
+        stream.write(template.get_template("T02").render(collection=[collection, "{0:>+44d}".format(total), arguments.only_differences]))
 
 sys.exit(status)

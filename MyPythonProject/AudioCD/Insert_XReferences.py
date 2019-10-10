@@ -25,7 +25,7 @@ locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
 # Arguments parser.
 # =================
 parser = argparse.ArgumentParser()
-parser.add_argument("xreferences", type=argparse.FileType(mode="r", encoding="UTF_8"))
+parser.add_argument("file", type=argparse.FileType(mode="r", encoding="UTF_8"))
 parser.add_argument("--debug", action="store_true")
 
 # ==========
@@ -52,4 +52,4 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insert_albums_fromjson(arguments.xreferences))
+sys.exit(insert_albums_fromjson(arguments.file))

@@ -55,7 +55,8 @@ if new_albums:
     collection = sorted(sorted(sorted(sorted(sorted(new_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("# Album inserted into the local audio drive ================================================== #")
+        header = "{0:{fil}<100}".format("Album inserted into the local audio drive ", fil="=")
+        logger.info("# %s #", header)
         logger.info("ArtistID: %s", artistid)
         logger.info("AlbumID : %s", albumid)
         logger.info("Album   : %s", album)
@@ -71,7 +72,8 @@ if removed_albums:
     collection = sorted(sorted(sorted(sorted(sorted(removed_albums, key=itemgetter(6)), key=itemgetter(7)), key=itemgetter(4)), key=itemgetter(1)), key=itemgetter(0))
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("# Album removed from the local audio drive ================================================== #")
+        header = "{0:{fil}<100}".format("Album removed from the local audio drive ", fil="=")
+        logger.info("# %s #", header)
         logger.info("ArtistID: %s", artistid)
         logger.info("AlbumID : %s", albumid)
         logger.info("Album   : %s", album)

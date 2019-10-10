@@ -15,8 +15,6 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-that_file = os.path.abspath(__file__)
-
 # ==========================
 # Define French environment.
 # ==========================

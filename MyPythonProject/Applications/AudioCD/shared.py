@@ -9,28 +9,20 @@ from collections.abc import MutableMapping
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
-from itertools import compress, groupby
+from itertools import groupby
 from operator import contains, itemgetter
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, WindowsPath
 from string import Template
-from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
-import ftputil.error
-import mutagen.flac
-import mutagen.monkeysaudio
-import mutagen.mp3
 import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
-from mutagen import File, MutagenError
-from mutagen.apev2 import APETextValue
-from mutagen.easyid3 import EasyID3
 from pytz import timezone
 from sortedcontainers import SortedDict
 
 from .. import shared
 from ..Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers
-from ..callables import exclude_allbutlosslessaudiofiles
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -1238,7 +1230,7 @@ def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = 
         json.dump(sorted(sorted(sorted(_collection, key=itemgetter(6)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def get_xreferences(track: Union[PureWindowsPath, str]) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
+def get_xreferences(track: Union[str, WindowsPath]) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
     """
     return artistid, albumid, artist_path, album_path, album, is_bootleg, track basename and track extension.
 
@@ -1277,151 +1269,6 @@ def get_xreferences(track: Union[PureWindowsPath, str]) -> Tuple[bool, Tuple[Opt
         group4 = mapping.get(match.group(12), False)
         group5 = tuple(match.group(10, 13))
     return found, group1 + group2 + (group3,) + (group4,) + group5
-
-
-def getmetadata(audiofil: str) -> Any:
-    """
-    Get metada from an audio file.
-    FLAC, Monkey's Audio or MP3 (with ID3 tags) are only processed.
-    :param audiofil: characters string representing an audio file.
-    :return: 4-attribute named tuple:
-                - "file". Both dirname and basename of the audio file.
-                - "found". Boolean value depending on whether metadata have been found or not.
-                - "tags". Dictionary enumerating each metadata found.
-                - "object". Audio file object.
-    """
-    tags, Result = {}, NamedTuple("Result", [("file", str), ("found", bool), ("tags", Mapping[str, Any]), ("object", Optional[Any])])
-    logger = logging.getLogger("{0}.getmetadata".format(__name__))
-    logger.debug(audiofil)
-
-    # Guess "audiofil" type.
-    try:
-        audioobj = File(audiofil, easy=True)
-    except (MutagenError, mutagen.flac.FLACNoHeaderError, TypeError, ZeroDivisionError) as err:
-        logger.exception(err)
-        return Result._make((audiofil, False, {}, None))
-
-    # Is "audiofil" a valid audio file?
-    if not audioobj:
-        return Result._make((audiofil, False, {}, None))
-
-    # Is "audiofil" type FLAC, Monkey's Audio or MP3 (with ID3 tags)?
-    if any([isinstance(audioobj, mutagen.flac.FLAC), isinstance(audioobj, mutagen.monkeysaudio.MonkeysAudio), isinstance(audioobj, mutagen.mp3.MP3)]):
-
-        # --> FLAC.
-        try:
-            assert isinstance(audioobj, mutagen.flac.FLAC) is True
-        except AssertionError:
-            pass
-        else:
-            tags = dict((k.lower(), v) for k, v in audioobj.tags)
-
-        # --> Monkey's audio.
-        try:
-            assert isinstance(audioobj, mutagen.monkeysaudio.MonkeysAudio) is True
-        except AssertionError:
-            pass
-        else:
-            tags = {k.lower(): str(v) for k, v in audioobj.tags.items() if isinstance(v, APETextValue)}
-
-        # --> MP3 (with ID3 tags).
-        try:
-            assert isinstance(audioobj, mutagen.mp3.MP3) is True
-        except AssertionError:
-            pass
-        else:
-
-            # Map user-defined text frame key.
-            for key in ["incollection", "titlelanguage", "totaltracks", "totaldiscs", "upc", "encoder"]:
-                description, cycle = key, 0
-                while True:
-                    EasyID3.RegisterTXXXKey(key, description)
-                    if key.lower() in (item.lower() for item in audioobj.tags):
-                        break
-                    cycle += 1
-                    if cycle > 1:
-                        break
-                    description = key.upper()
-
-            # Map normalized text frame key.
-            for key, description in [("artistsort", "TSOP"), ("albumartistsort", "TSO2"), ("albumsort", "TSOA"), ("mediatype", "TMED"), ("encodingtime", "TDEN"), ("label", "TPUB")]:
-                EasyID3.RegisterTextKey(key, description)
-
-            # Aggregate ID3 frames.
-            tags = {k.lower(): v[0] for k, v in audioobj.tags.items()}
-
-    # Have "audiofil" metadata been retrieved?
-    if not tags:
-        return Result._make((audiofil, False, {}, None))
-    return Result._make((audiofil, True, tags, audioobj))
-
-
-def get_audiofiles(folder):
-    """
-    Return a generator object yielding both FLAC and Monkey's Audio files stored in "folder" having extension enumerated in "extensions".
-    :param folder: folder to walk through.
-    :return: generator object.
-    """
-    for audiofil, audioobj, tags in ((result.file, result.object, result.tags) for result in map(getmetadata, shared.find_files(folder, excluded=exclude_allbutlosslessaudiofiles)) if result.found):
-        yield audiofil, audioobj, tags
-
-
-def upload_audiofiles(server, user, password, *files, test=False):
-    """
-    Upload audio file(s) to a remote directory on the NAS server.
-    :param server: IP address of the NAS server.
-    :param user: user for creating connection to the server.
-    :param password: password for creating connection to the server.
-    :param files: list of audio files.
-    :param test:
-    :return: None.
-    """
-    keys = shared.pprint_sequence("Source file to upload", "Source file name", "Target directory", "Artistsort", "Albumsort", "Album")
-    uploaded, selectors = [], []
-
-    # --> Logging.
-    logger = logging.getLogger("{0}.upload_audiofile".format(__name__))
-
-    # --> Initializations.
-    refdirectory = "/music"
-    collection = [(item.file, item.tags) for item in [getmetadata(file) for file in compress(files, map(os.path.exists, files))] if item.found]
-    for file, tags in collection:
-        if all(["artistsort" in tags, "albumsort" in tags, "album" in tags]):
-            selectors.append(True)
-        else:
-            selectors.append(False)
-    for file, tags in compress(collection, [not selector for selector in selectors]):
-        logger.debug("%s is rejected.", file)
-
-    # --> Copy local audio collection to remote directory.
-    stack1 = ExitStack()
-    try:
-        ftp = stack1.enter_context(ftputil.FTPHost(server, user, password))
-    except ftputil.error.FTPOSError as err:
-        logger.exception(err)
-    else:
-        with stack1:
-            ftp.chdir(refdirectory)
-            for file, tags in compress(collection, selectors):
-                wdir = ftp.path.join(refdirectory, "/".join(os.path.splitdrive(os.path.dirname(file))[1][1:].split("\\")))
-                values = [file, os.path.basename(file), wdir, tags["artistsort"], tags["albumsort"], tags["album"]]
-                for key, value in zip(keys, values):
-                    logger.debug("%s: %s", key, value)
-                if not test:
-                    stack2 = ExitStack()
-                    while True:
-                        try:
-                            stack2.enter_context(shared.AlternativeChangeRemoteCurrentDirectory(ftp, wdir))
-                        except ftputil.error.PermanentError:
-                            ftp.makedirs(wdir)
-                        else:
-                            break
-                    with stack2:
-                        ftp.upload(file, os.path.basename(file))
-                        uploaded.append(file)
-                    logger.debug("Restored current directory\t: {0}".format(ftp.getcwd()).expandtabs(3))
-    for file in uploaded:
-        yield file
 
 
 def load_mapping_fromjson(jsonfile: str, encoding: str = shared.UTF8) -> Iterable[Any]:
