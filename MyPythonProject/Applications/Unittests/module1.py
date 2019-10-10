@@ -19,7 +19,10 @@ from unittest.mock import patch
 import yaml
 
 from Applications.Tables.Albums import shared
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string, get_rippingapplication, groupby, int_, itemgetter2_, itemgetter_, nested_groupby, not_, now, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, compress_, eq_string, freeze_, get_rippingapplication, groupby, int_, itemgetter2_, itemgetter_, nested_groupby, \
+    not_, \
+    now, \
+    partial_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -76,14 +79,16 @@ def split_(char: str, strg: str):
 
 
 @int_
-@itemgetter_(0, 2)
+@itemgetter2_(2)
+@itemgetter_()
 @partial_(".")
 def split1_(char: str, strg: str):
     return strg.split(char)
 
 
 @int_
-@itemgetter_(0, 1)
+@itemgetter2_(1)
+@itemgetter_()
 @partial_(".")
 def split2_(char: str, strg: str):
     return strg.split(char)
@@ -95,31 +100,47 @@ def split3_(char: str, strg: str):
 
 
 @int_
-@itemgetter_(1, 2)
+@itemgetter2_(2)
+@itemgetter_(1)
 @partial_(".")
 def split4_(char: str, strg: str):
     return strg.split(char)
 
 
 @int_
-@itemgetter_(1, 1)
+@itemgetter2_(1)
+@itemgetter_(1)
 @partial_(".")
 def split5_(char: str, strg: str):
     return strg.split(char)
 
 
 @int_
-@itemgetter_(1, 0)
+@itemgetter2_()
+@itemgetter_(1)
 @partial_(".")
 def split6_(char: str, strg: str):
     return strg.split(char)
+
+
+@freeze_(*range(1, 6))
+def func1(arg1, arg2, *args):
+    for arg in args:
+        yield (arg1 * arg) + arg2
+
+
+@compress_(*range(2))
+@freeze_(*range(1, 6))
+def func2(arg1, arg2, *args):
+    for arg in args:
+        yield (arg1 * arg) + arg2
 
 
 # ==============
 # Tests classes.
 # ==============
 class Test01(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.ref = [1, 2, 3, 4, 5, 6, 7, 8]
 
     def test_t01(self):
@@ -139,7 +160,7 @@ class Test01(unittest.TestCase):
 
 
 class Test02(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
 
         class ThatClass(MutableSequence):
 
@@ -206,7 +227,7 @@ class Test02(unittest.TestCase):
 
 
 class Test03(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
 
     def test_t01(self):
@@ -244,7 +265,7 @@ class Test04(unittest.TestCase):
 
 
 class TestTitleCaseConverter(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "titles.json"), encoding=UTF8) as stream:
             self.titles = json.load(stream)
 
@@ -284,7 +305,7 @@ class TestDecorator01(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = ["Alternative Rock", "Black Metal", "Hard Rock", "Rock"]
 
     def test_t01(self):
@@ -313,7 +334,7 @@ class TestDecorator02(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = [(1, "first string"), (2, "second string"), (3, "third string")]
 
     def test_t01(self):
@@ -330,7 +351,7 @@ class TestDecorator03(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = [("console", "AA"), ("database", "BB"), ("debug", "CC"), ("foo", "DD"), ("bar", "EE")]
 
     def test_t01(self):
@@ -384,7 +405,7 @@ class TestDecorator05(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = ("1.20160000.10",)
 
     def test_t01(self):
@@ -399,7 +420,7 @@ class TestDecorator06(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = ["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13", "2.20000823.13",
                          "2.20170101.13", "1.20160422.02"]
 
@@ -439,38 +460,39 @@ class TestDecorator07(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.iterable = [("A", "2.20160125.13"), ("B", "2.20160201.13"), ("C", "2.20160120.13"), ("D", "1.20160625.13"), ("E", "1.20160422.13"), ("F", "2.20160422.15"), ("H", "2.19841102.13"),
                          ("I", "2.19990822.13"), ("K", "2.20021014.13"), ("L", "2.20000823.13"), ("M", "2.20170101.13"), ("N", "1.20160422.02")]
 
     def test_t01(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=int_(itemgetter_(1, 2)(split3_))), key=int_(itemgetter_(1, 1)(split3_))), [("H", "2.19841102.13"),
-                                                                                                                                         ("I", "2.19990822.13"),
-                                                                                                                                         ("L", "2.20000823.13"),
-                                                                                                                                         ("K", "2.20021014.13"),
-                                                                                                                                         ("C", "2.20160120.13"),
-                                                                                                                                         ("A", "2.20160125.13"),
-                                                                                                                                         ("B", "2.20160201.13"),
-                                                                                                                                         ("N", "1.20160422.02"),
-                                                                                                                                         ("E", "1.20160422.13"),
-                                                                                                                                         ("F", "2.20160422.15"),
-                                                                                                                                         ("D", "1.20160625.13"),
-                                                                                                                                         ("M", "2.20170101.13")])
+        self.assertListEqual(sorted(sorted(self.iterable, key=int_(itemgetter2_(2)(itemgetter_(1)(split3_)))), key=int_(itemgetter2_(1)(itemgetter_(1)(split3_)))), [("H", "2.19841102.13"),
+                                                                                                                                                                     ("I", "2.19990822.13"),
+                                                                                                                                                                     ("L", "2.20000823.13"),
+                                                                                                                                                                     ("K", "2.20021014.13"),
+                                                                                                                                                                     ("C", "2.20160120.13"),
+                                                                                                                                                                     ("A", "2.20160125.13"),
+                                                                                                                                                                     ("B", "2.20160201.13"),
+                                                                                                                                                                     ("N", "1.20160422.02"),
+                                                                                                                                                                     ("E", "1.20160422.13"),
+                                                                                                                                                                     ("F", "2.20160422.15"),
+                                                                                                                                                                     ("D", "1.20160625.13"),
+                                                                                                                                                                     ("M", "2.20170101.13")])
 
     def test_t02(self):
-        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=int_(itemgetter_(1, 2)(split3_))), key=int_(itemgetter_(1, 1)(split3_))), key=int_(itemgetter_(1, 0)(split3_))),
-                             [("N", "1.20160422.02"),
-                              ("E", "1.20160422.13"),
-                              ("D", "1.20160625.13"),
-                              ("H", "2.19841102.13"),
-                              ("I", "2.19990822.13"),
-                              ("L", "2.20000823.13"),
-                              ("K", "2.20021014.13"),
-                              ("C", "2.20160120.13"),
-                              ("A", "2.20160125.13"),
-                              ("B", "2.20160201.13"),
-                              ("F", "2.20160422.15"),
-                              ("M", "2.20170101.13")])
+        self.assertListEqual(
+                sorted(sorted(sorted(self.iterable, key=int_(itemgetter2_(2)(itemgetter_(1)(split3_)))), key=int_(itemgetter2_(1)(itemgetter_(1)(split3_)))), key=int_(itemgetter2_()(itemgetter_(1)(split3_)))),
+                [("N", "1.20160422.02"),
+                 ("E", "1.20160422.13"),
+                 ("D", "1.20160625.13"),
+                 ("H", "2.19841102.13"),
+                 ("I", "2.19990822.13"),
+                 ("L", "2.20000823.13"),
+                 ("K", "2.20021014.13"),
+                 ("C", "2.20160120.13"),
+                 ("A", "2.20160125.13"),
+                 ("B", "2.20160201.13"),
+                 ("F", "2.20160422.15"),
+                 ("M", "2.20170101.13")])
 
     def test_t03(self):
         self.assertListEqual(sorted(sorted(sorted(self.iterable, key=split4_), key=split5_), key=split6_), [("N", "1.20160422.02"),
@@ -496,13 +518,32 @@ class TestDecorator08(unittest.TestCase):
         self.assertListEqual(list(filter(not_(partial(contains, ["A", "B", "C", "D", "E", "F", "G"])), ["A", "C", "E", "G", "H"])), ["H"])
 
 
+class TestDecorator09(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.in_collection = [(1, 2, "A"), (5, 6, "B"), (15, 5, "C"), (12, 18, "D")]
+        self.out_collection = [(3, 4, 5, 6, 7), (11, 16, 21, 26, 31), (20, 35, 50, 65, 80), (30, 42, 54, 66, 78)]
+
+    def test_t01(self):
+        collection = []
+        for _generator in itertools.starmap(func1, (itertools.compress(item, [1, 1, 0]) for item in self.in_collection)):
+            collection.append(tuple(_generator))
+        self.assertListEqual(self.out_collection, collection)
+
+    def test_t02(self):
+        collection = []
+        for _generator in map(func2, self.in_collection):
+            collection.append(tuple(_generator))
+        self.assertListEqual(self.out_collection, collection)
+
+
 @patch("Applications.shared.datetime")
 class TestMock01(unittest.TestCase):
     """
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.locale = locale.getlocale()
         if sys.platform.startswith("win"):
             locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
@@ -528,7 +569,7 @@ class TestMock02(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.locale = locale.getlocale()
         if sys.platform.startswith("win"):
             locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))

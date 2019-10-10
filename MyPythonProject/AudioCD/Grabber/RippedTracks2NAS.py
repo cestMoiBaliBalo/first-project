@@ -13,7 +13,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-THAT_FILE = Path(os.path.abspath(__file__))
+_THATFILE = Path(os.path.abspath(__file__))
 
 
 # ========
@@ -53,7 +53,7 @@ RIPPEDTRACKS = "rippedtracks"
 # ============
 
 # Define template.
-template = TemplatingEnvironment(THAT_FILE.parents[1] / "Templates")
+template = TemplatingEnvironment(_THATFILE.parents[1] / "Templates")
 
 # Set copy commands file.
 with ExitStack() as stack:

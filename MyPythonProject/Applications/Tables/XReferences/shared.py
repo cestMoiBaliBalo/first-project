@@ -149,7 +149,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
                                                                 album,
                                                                 is_bootleg) for album, album_path, albumid, is_bootleg in shared.get_albums(artist_path)]) for artistid, artist_path in shared.get_artists())
     _albums_it1, _albums_it2, _albums_it3 = tee(_albums, 3)
-    header = "{0:{fil}<100}".format(" LOCAL DRIVE ALBUMS ", fil="=")
+    header = "{0:{fil}<100}".format("LOCAL DRIVE ALBUMS ", fil="=")
     logger.debug("# %s #", header)
     for _item in _albums_it1:
         logger.debug(_item)
@@ -159,7 +159,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     # Every tuple is composed of the file basename and the file extension.
     _files = ([(os.path.basename(os.path.splitext(file)[0]), os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=exclude_allbutaudiofiles)] for _item in _albums_it2)
     _files_it1, _files_it2 = tee(_files)
-    header = "{0:{fil}<100}".format(" LOCAL DRIVE FILES ", fil="=")
+    header = "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="=")
     logger.debug("# %s #", header)
     for _item in _files_it1:  # type: ignore
         logger.debug(_item)
@@ -176,7 +176,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
             artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension = chain.from_iterable(_item)
             if first:
                 first = False
-                header = "{0:{fil}<100}".format(" LOCAL DRIVE COLLECTION ", fil="=")
+                header = "{0:{fil}<100}".format("LOCAL DRIVE COLLECTION ", fil="=")
                 logger.debug("# %s #", header)
             logger.debug(_item)
             yield artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension

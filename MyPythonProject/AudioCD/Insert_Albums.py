@@ -19,7 +19,7 @@ __status__ = "Production"
 # Arguments parser.
 # =================
 parser = argparse.ArgumentParser()
-parser.add_argument("tags", type=argparse.FileType(mode="r", encoding="UTF_8"))
+parser.add_argument("file", type=argparse.FileType(mode="r", encoding="UTF_8"))
 parser.add_argument("--debug", action="store_true")
 
 # ==========
@@ -46,4 +46,4 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insert_albums_fromjson(arguments.tags))
+sys.exit(insert_albums_fromjson(arguments.file))

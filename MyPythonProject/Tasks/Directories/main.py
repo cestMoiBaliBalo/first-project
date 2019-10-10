@@ -4,13 +4,12 @@ import argparse
 import locale
 import os
 from collections import Counter
-from functools import wraps
 from itertools import tee
 from operator import itemgetter
 from pathlib import PurePath
 from typing import List
 
-from Applications.shared import TemplatingEnvironment, pprint_count
+from Applications.shared import TemplatingEnvironment, freeze_, pprint_count
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -78,23 +77,6 @@ def valid_extension(path: PurePath, *extensions: str) -> bool:
     return path.suffix[1:].lower() in (extension.lower() for extension in extensions)
 
 
-# ===========
-# Decorators.
-# ===========
-def unzip_sequence(sequence):
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args):
-            _args = tuple(args)
-            for item in sequence:
-                _args += (item,)
-            return func(*_args)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 # =================
 # Arguments parser.
 # =================
@@ -121,7 +103,7 @@ for root, directories, files in os.walk(str(PurePath(arguments.path))):
     if not any([directories, files]):
         collection2.extend(PurePath(root) / PurePath(directory) for directory in directories)
 if arguments.extensions:
-    collection1 = list(filter(unzip_sequence(arguments.extensions)(valid_extension), collection1))
+    collection1 = list(filter(freeze_(arguments.extensions)(valid_extension), collection1))
 collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), key=byparents)
 it1, it2 = tee(collection1)
 _extensions = filter(None, sorted([(key[1:], value) for key, value in pprint_count(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))

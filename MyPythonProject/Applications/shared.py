@@ -11,9 +11,9 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
-from functools import partial, singledispatch
-from itertools import chain, dropwhile, filterfalse, groupby as groupby_, repeat, tee, zip_longest
-from pathlib import PurePath, PureWindowsPath, WindowsPath
+from functools import partial, singledispatch, wraps
+from itertools import chain, compress, dropwhile, filterfalse, groupby as groupby_, repeat, tee, zip_longest
+from pathlib import Path, PurePath, PureWindowsPath, WindowsPath
 from string import Template
 from subprocess import PIPE, run
 from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
@@ -96,9 +96,8 @@ TEMP = PurePath("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
 IMAGES_COLLECTION = r"\\Diskstation\backup\Images\Collection"
 
 # Miscellaneous containers.
-ACCEPTEDANSWERS = ["N", "Y"]
-EXTENSIONS = {"computing": ["py", "json", "yaml", "cmd", "css", "xsl"],
-              "documents": ["doc", "txt", "pdf", "xav"],
+EXTENSIONS = {"computing": ["cmd", "css", "json", "py", "pyi", "yaml", "xsl"],
+              "documents": ["doc", "pdf", "txt", "xav"],
               "music": ["ape", "dsf", "flac", "mp3", "m4a", "ogg", "tak", "wv"],
               "lossless": ["ape", "dsf", "flac", "tak", "wv"],
               "lossy": ["mp3", "m4a", "ogg"]}
@@ -379,16 +378,68 @@ class ToBoolean(object):
 # ===========
 # Decorators.
 # ===========
-def attrgetter_(name: str):
+def attrgetter_(attr: str):
+    """
+    That decorator allows running any function using as argument an object attribute named `attribute`.
+    It must be used everywhere a callable object with an object as argument is required.
+
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @attrgetter_("some_attribute")
+    def some_callable(arg):
+        pass
+    1. filter(some_callable, [object1, object2, object3, ...]) --> some_callable(object1.attr), some_callable(object2.attr), some_callable(object3.attr)
+    2. sorted([object1, object2, object3, ...], key=some_callable)
+
+    :param attr: object attribute name.
+    :return: callable object.
     """
 
-    :param name:
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return func(operator.attrgetter(attr)(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def compress_(*indexes: int):
+    """
+
+    :param indexes:
     :return:
     """
 
     def outer_wrapper(func):
-        def inner_wrapper(arg):
-            return func(operator.attrgetter(name)(arg))
+        @wraps(func)
+        def inner_wrapper(arg: Tuple[Any]):
+            selectors = [0] * len(arg)
+            for index in indexes:
+                selectors[index] = 1
+            return func(*compress(arg, selectors))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def freeze_(*sequence: Any):
+    """
+
+    :param sequence:
+    :return:
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args):
+            _args = tuple(args)
+            for item in sequence:
+                _args += (item,)
+            return func(*_args)
 
         return inner_wrapper
 
@@ -397,34 +448,56 @@ def attrgetter_(name: str):
 
 def int_(func):
     """
+    That decorator wraps any function with the "int" builtin function.
 
-    :param func:
-    :return:
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @int_
+    def some_callable(arg):
+        pass
+    1. map(some_callable, [arg1, arg2, arg3, ...]) --> int(some_callable(arg1)), int(some_callable(arg2)), int(some_callable(arg3))
+    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
+
+    :param func. any function returning an integer compatible value.
+    :return: callable object.
     """
 
+    @wraps(func)
     def wrapper(arg):
         return int(func(arg))
 
     return wrapper
 
 
-def itemgetter_(*args: int):
+def itemgetter_(index: int = 0):
     """
+    That decorator allows running any function using as argument a sequence item located at index `index`.
+    It must be used everywhere a callable object with a sequence as argument is required.
 
-    :param args:
-    :return:
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @itemgetter_(2)
+    def some_callable(arg):
+        pass
+    1. filter(some_callable, [sequence1, sequence2, sequence3, ...]) --> some_callable(sequence1[2]), some_callable(sequence2[2]), some_callable(sequence3[2])
+    2. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
+
+    @int_
+    @itemgetter_()
+    def some_callable(arg):
+        pass
+    1. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
+
+    :param index: item index.
+    :return: callable object.
     """
 
     def outer_wrapper(func):
+        @wraps(func)
         def inner_wrapper(arg):
-            _args = (0,)
-            if args:
-                _args = tuple(args)
-            _args = iter(_args)
-            rvalue = func(operator.itemgetter(next(_args))(arg))
-            with suppress(StopIteration):
-                rvalue = operator.itemgetter(next(_args))(rvalue)
-            return rvalue
+            return func(operator.itemgetter(index)(arg))
 
         return inner_wrapper
 
@@ -433,12 +506,28 @@ def itemgetter_(*args: int):
 
 def itemgetter2_(index: int = 0):
     """
+    That decorator wraps any function with the "operator.itemgetter" method.
 
-    :param index:
-    :return:
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @itemgetter2_(1)
+    def some_callable(arg):
+        pass
+    1. map(some_callable, [arg1, arg2, arg3, ...]) --> operator.itemgetter(1)(some_callable(arg1)), operator.itemgetter(1)(some_callable(arg2)), operator.itemgetter(1)(some_callable(arg3))
+
+    @int_
+    @itemgetter2_(3)
+    def some_callable(arg):
+        pass
+    1. sorted([arg1, arg2, arg3, ...], some_callable)
+
+    :param index: item index.
+    :return: callable object.
     """
 
     def outer_wrapper(func):
+        @wraps(func)
         def inner_wrapper(arg):
             return operator.itemgetter(index)(func(arg))
 
@@ -449,11 +538,21 @@ def itemgetter2_(index: int = 0):
 
 def not_(func):
     """
+    That decorator wraps any function with the "operator.not_" method.
 
-    :param func:
-    :return:
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @not_
+    def some_callable(arg):
+        pass
+    1. filter(some_callable, [arg1, arg2, arg3, ...]) --> operator.not_(some_callable(arg1)), operator.not_(some_callable(arg2)), operator.not_(some_callable(arg3))
+
+    :param func. any function returning a boolean compatible value.
+    :return: callable object.
     """
 
+    @wraps(func)
     def wrapper(arg):
         return operator.not_(func(arg))
 
@@ -469,6 +568,7 @@ def partial_(*args, **kwargs):
     """
 
     def outer_wrapper(func):
+        @wraps(func)
         def inner_wrapper(arg):
             return partial(func, *args, **kwargs)(arg)
 
@@ -485,6 +585,7 @@ def valuegetter_(mapping):
     """
 
     def outer_wrapper(func):
+        @wraps(func)
         def inner_wrapper(key):
             return func(mapping[key])
 
@@ -524,23 +625,6 @@ class GetPath(argparse.Action):
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.destinations[values])
-
-
-class GetExtensions(argparse.Action):
-    """
-    Set "files" attribute with a list of extensions.
-    Set "extensions" attribute with a list of extensions to process.
-    """
-
-    def __init__(self, option_strings, dest, **kwargs):
-        super(GetExtensions, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parsobj, namespace, values, option_string=None):
-        setattr(namespace, self.dest, values)
-        lext = []
-        for file in values:
-            lext.extend(EXTENSIONS[file])
-        setattr(namespace, "extensions", lext)
 
 
 class ExcludeExtensions(argparse.Action):
@@ -1103,7 +1187,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
     return application[next(it)]
 
 
-def find_files(directory: str, *, excluded=None):
+def find_files(directory: Union[str, Path], *, excluded=None) -> Iterable[str]:
     """
     Return a generator object yielding files stored into `directory` argument.
     :param directory: Directory to walk through. Must be a string representing an existing path.
@@ -1113,15 +1197,15 @@ def find_files(directory: str, *, excluded=None):
                         - list of files present into the root folder.
     :return: generator object.
     """
-    collection = []  # type: List[Iterable[str]]
+    collection = []  # type: List[str]
     if not excluded:
-        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(directory) if files)
+        collection.extend(list(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files))
     elif excluded:
-        for root, _, files in os.walk(directory):
+        for root, _, files in os.walk(str(directory)):
             if files:
-                files = set(files) - excluded(root, *set(files))
+                files = set(os.path.join(root, file) for file in files) - excluded(root, *set(files))
                 if files:
-                    collection.extend(map(os.path.join, repeat(root), files))
+                    collection.extend(files)
     for file in sorted(collection):
         yield file
 

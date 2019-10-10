@@ -3,40 +3,24 @@
 # Frame generated with wxFormBuilder (version Jun 17 2015)
 # http://www.wxformbuilder.org/
 import argparse
-import fnmatch
-import itertools
 import os
 import sys
 from collections import OrderedDict
 from functools import partial
 from operator import itemgetter
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 import wx  # type: ignore
 import yaml
 
 from Applications.Tables.XReferences.shared import get_albums, get_artists
+from Applications.callables import filter_byextension
 from Applications.shared import TemplatingEnvironment, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
-
-
-# ==========
-# Functions.
-# ==========
-def exclude_allbut_checked_extensions(*files: str, extensions: Optional[List[str]] = None) -> Set[str]:
-    """
-    :param files:
-    :param extensions:
-    :return:
-    """
-    myset = set()  # type: Set[str]
-    if extensions:
-        myset = set(files) - set(itertools.chain.from_iterable(fnmatch.filter(files, f"*.{_extension}") for _extension in extensions))
-    return myset
 
 
 # ======
@@ -49,7 +33,7 @@ class MainFrame(wx.Frame):
 
         # -----
         with open(config) as stream:
-            self._configuration = yaml.load(stream)
+            self._configuration = yaml.load(stream, Loader=yaml.FullLoader)
 
         # -----
         self._init_interface()
@@ -395,13 +379,13 @@ class MainFrame(wx.Frame):
 # ============
 if __name__ == '__main__':
 
-    that_script = os.path.abspath(__file__)
+    _THATFILE = os.path.abspath(__file__)
 
     # Define variables.
     collection, level = [], 100  # type: List[Tuple[str, str]], int
 
     # Define template.
-    template = TemplatingEnvironment(path=get_dirname(that_script))
+    template = TemplatingEnvironment(path=get_dirname(_THATFILE))
 
     # Parse input arguments.
     parser = argparse.ArgumentParser()
@@ -415,18 +399,16 @@ if __name__ == '__main__':
 
     # Run interface.
     app = wx.App()
-    interface = MainFrame(None, os.path.join(get_dirname(that_script, level=2), "Resources", "audio_config.yml"), arguments.repository)
+    interface = MainFrame(None, os.path.join(get_dirname(_THATFILE, level=2), "Resources", "audio_config.yml"), arguments.repository)
     interface.Show()
     app.MainLoop()
     if interface.sync_audiofiles:
         level = 0
         for source, destination, extensions in interface.sync_arguments:
-            for dirname, dirnames, filenames in os.walk(source):
+            for dirname, dirnames, _ in os.walk(source):
                 if not dirnames:
-                    if filenames:
-                        for extension in extensions:
-                            if set(find_files(dirname, excluded=partial(exclude_allbut_checked_extensions, extensions=[extension]))):
-                                collection.append((os.path.join(dirname, f"*.{extension}"), destination))
+                    if set(find_files(dirname, excluded=partial(filter_byextension, extensions=extensions))):
+                        collection.extend([(os.path.join(dirname, f"*.{extension}"), destination) for extension in extensions])
         arguments.outfile.write(template.get_template("T01").render(collection=collection))
 
     # Exit script.
