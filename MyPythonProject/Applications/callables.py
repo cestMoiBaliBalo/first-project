@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import fnmatch
-from itertools import chain
+from functools import wraps
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Optional, Set, Union
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -11,55 +11,47 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-def filter_byextension(cwdir: Union[str, Path], *names: str, extensions: Optional[List[str]] = None) -> Set[str]:
+# ===========
+# Decorators.
+# ===========
+def filterfalse(func):
+    @wraps(func)
+    def wrapper(cwdir, *names):
+        return set(str(Path(cwdir) / name) for name in names) - func(cwdir, *names)
+
+    return wrapper
+
+
+def filter_extensions(*extensions):
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args):
+            files = set()
+            for extension in extensions:
+                files = files | func(*args, extension=extension)
+            return files
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+# =================
+# Global functions.
+# =================
+def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[str] = None) -> Set[str]:
     """
     :param cwdir:
     :param names:
-    :param extensions:
+    :param extension:
     :return:
     """
-    files = set()  # type: Set[str]
-    if extensions:
-        files = set(names) - set(chain.from_iterable(fnmatch.filter(names, f"*.{_extension}") for _extension in extensions))
+    files = set(names)  # type: Set[str]
+    if extension:
+        files = set(fnmatch.filter(names, f"*.{extension}"))
     return set(str(Path(cwdir) / file) for file in files)
 
 
-def filter_portabledocuments(cwdir: Union[str, Path], *names: str) -> Set[str]:
-    """
-
-    :param cwdir:
-    :param names:
-    :return:
-    """
-    files = set(names) - set(fnmatch.filter(names, "*.pdf"))  # type: Set[str]
-    return set(str(Path(cwdir) / file) for file in files)
-
-
-def filter_losslessaudiofiles(cwdir: Union[str, Path], *names: str) -> Set[str]:
-    """
-
-    :param cwdir:
-    :param names:
-    :return:
-    """
-    ape = fnmatch.filter(names, "*.ape")
-    flac = fnmatch.filter(names, "*.flac")
-    files = set(names) - (set(ape) | set(flac))  # type: Set[str]
-    return set(str(Path(cwdir) / file) for file in files)
-
-
-def filter_audiofiles(cwdir: Union[str, Path], *names: str) -> Set[str]:
-    """
-
-    :param cwdir:
-    :param names:
-    :return:
-    """
-    ape = fnmatch.filter(names, "*.ape")
-    dsf = fnmatch.filter(names, "*.dsf")
-    flac = fnmatch.filter(names, "*.flac")
-    mp3 = fnmatch.filter(names, "*.mp3")
-    m4a = fnmatch.filter(names, "*.m4a")
-    ogg = fnmatch.filter(names, "*.ogg")
-    files = set(names) - (set(ape) | set(dsf) | set(flac) | set(mp3) | set(m4a) | set(ogg))  # type: Set[str]
-    return set(str(Path(cwdir) / file) for file in files)
+filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")(filter_extension)
+filter_losslessaudiofiles = filter_extensions("ape", "dsf", "flac")(filter_extension)
+filter_portablesdocuments = filter_extensions("pdf")(filter_extension)
