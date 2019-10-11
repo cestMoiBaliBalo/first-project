@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import fnmatch
-from functools import wraps
+from functools import partial, wraps
 from pathlib import Path
 from typing import Optional, Set, Union
 
@@ -54,4 +54,4 @@ def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[s
 
 filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")(filter_extension)
 filter_losslessaudiofiles = filter_extensions("ape", "dsf", "flac")(filter_extension)
-filter_portablesdocuments = filter_extensions("pdf")(filter_extension)
+filter_portablesdocuments = partial(filter_extension, extension="pdf")
