@@ -389,18 +389,18 @@ class Test05(unittest.TestCase):
 
     def test01(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/A"), excluded=filterfalse(filter_extensions("flac")(filter_extension))))
+        out_files = sorted(find_files(Path("F:/A"), excluded=filterfalse(partial(filter_extension, extension="flac"))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
     def test02(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        self.assertTrue(set(find_files(Path("F:/B"), excluded=filterfalse(filter_extensions("flac")(filter_extension)))))
+        self.assertTrue(set(find_files(Path("F:/B"), excluded=filterfalse(partial(filter_extension, extension="flac")))))
         mock_os_walk.assert_called_once()
 
     def test03(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/C"), excluded=filterfalse(filter_extensions("pdf")(filter_extension))))
+        out_files = sorted(find_files(Path("F:/C"), excluded=filterfalse(partial(filter_extension, extension="pdf"))))
         self.assertListEqual(out_files, [])
         mock_os_walk.assert_called_once()
 
