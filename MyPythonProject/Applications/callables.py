@@ -14,7 +14,7 @@ __status__ = "Production"
 # ===========
 # Decorators.
 # ===========
-def filterfalse(func):
+def filterfalse_(func):
     @wraps(func)
     def wrapper(cwdir, *names):
         return set(str(Path(cwdir) / name) for name in names) - func(cwdir, *names)
@@ -22,23 +22,20 @@ def filterfalse(func):
     return wrapper
 
 
-def filter_extensions(*extensions):
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args):
-            files = set()
-            for extension in extensions:
-                files = files | func(*args, extension=extension)
-            return files
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 # =================
 # Global functions.
 # =================
+def filter_extensions(*extensions):
+    @wraps(filter_extension)
+    def wrapper(*args):
+        files = set()
+        for extension in extensions:
+            files = files | filter_extension(*args, extension=extension)
+        return files
+
+    return wrapper
+
+
 def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[str] = None) -> Set[str]:
     """
     :param cwdir:
@@ -52,6 +49,6 @@ def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[s
     return set(str(Path(cwdir) / file) for file in files)
 
 
-filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")(filter_extension)
-filter_losslessaudiofiles = filter_extensions("ape", "dsf", "flac")(filter_extension)
-filter_portablesdocuments = partial(filter_extension, extension="pdf")
+filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")
+filter_losslessaudiofiles = filter_extensions("ape", "dsf", "flac")
+filter_portabledocuments = partial(filter_extension, extension="pdf")

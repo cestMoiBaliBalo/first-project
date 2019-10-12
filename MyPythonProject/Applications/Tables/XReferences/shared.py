@@ -11,7 +11,7 @@ from typing import IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
 from Applications import shared
 from Applications.Tables.shared import DatabaseConnection, close_database
-from Applications.callables import exclude_allbutaudiofiles
+from Applications.callables import filter_audiofiles, filterfalse_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -157,7 +157,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     # `_files` is a generator object.
     # Every yielded item is a sequence composed of N 2-item tuples describing the audio files associated with an album.
     # Every tuple is composed of the file basename and the file extension.
-    _files = ([(os.path.basename(os.path.splitext(file)[0]), os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=exclude_allbutaudiofiles)] for _item in _albums_it2)
+    _files = ([(os.path.basename(os.path.splitext(file)[0]), os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it2)
     _files_it1, _files_it2 = tee(_files)
     header = "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="=")
     logger.debug("# %s #", header)
