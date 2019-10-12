@@ -17,7 +17,7 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-THAT_FILE = os.path.abspath(__file__)
+_THATFILE = os.path.abspath(__file__)
 
 # ==========================
 # Define French environment.
@@ -40,7 +40,7 @@ REPOSITORY = str(PurePath(os.path.expandvars("%_COMPUTING%")) / "counts")
 # Variables.
 # ==========
 collection, extensions, status, total = [], [], 1, 0
-template = TemplatingEnvironment(PurePath(THAT_FILE).parents[1] / "Templates")
+template = TemplatingEnvironment(PurePath(_THATFILE).parents[1] / "Templates")
 
 # ===============
 # Main algorithm.
