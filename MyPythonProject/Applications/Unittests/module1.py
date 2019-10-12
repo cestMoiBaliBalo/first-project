@@ -19,7 +19,7 @@ from unittest.mock import patch
 import yaml
 
 from Applications.Tables.Albums import shared
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, compress_, eq_string, freeze_, get_rippingapplication, groupby, int_, itemgetter2_, itemgetter_, nested_groupby, \
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string, get_rippingapplication, groupby, int_, itemgetter2_, itemgetter_, nested_groupby, \
     not_, \
     now, \
     partial_
@@ -121,19 +121,6 @@ def split5_(char: str, strg: str):
 @partial_(".")
 def split6_(char: str, strg: str):
     return strg.split(char)
-
-
-@freeze_(*range(1, 6))
-def func1(arg1, arg2, *args):
-    for arg in args:
-        yield (arg1 * arg) + arg2
-
-
-@compress_(*range(2))
-@freeze_(*range(1, 6))
-def func2(arg1, arg2, *args):
-    for arg in args:
-        yield (arg1 * arg) + arg2
 
 
 # ==============
@@ -516,25 +503,6 @@ class TestDecorator08(unittest.TestCase):
 
     def test_t02(self):
         self.assertListEqual(list(filter(not_(partial(contains, ["A", "B", "C", "D", "E", "F", "G"])), ["A", "C", "E", "G", "H"])), ["H"])
-
-
-class TestDecorator09(unittest.TestCase):
-
-    def setUp(self) -> None:
-        self.in_collection = [(1, 2, "A"), (5, 6, "B"), (15, 5, "C"), (12, 18, "D")]
-        self.out_collection = [(3, 4, 5, 6, 7), (11, 16, 21, 26, 31), (20, 35, 50, 65, 80), (30, 42, 54, 66, 78)]
-
-    def test_t01(self):
-        collection = []
-        for _generator in itertools.starmap(func1, (itertools.compress(item, [1, 1, 0]) for item in self.in_collection)):
-            collection.append(tuple(_generator))
-        self.assertListEqual(self.out_collection, collection)
-
-    def test_t02(self):
-        collection = []
-        for _generator in map(func2, self.in_collection):
-            collection.append(tuple(_generator))
-        self.assertListEqual(self.out_collection, collection)
 
 
 @patch("Applications.shared.datetime")
