@@ -557,23 +557,6 @@ def partial_(*args, **kwargs):
     return outer_wrapper
 
 
-def valuegetter_(mapping):
-    """
-
-    :param mapping:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(key):
-            return func(mapping[key])
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 # =======================
 # Custom parsing actions.
 # =======================
