@@ -7,14 +7,16 @@ import operator
 import subprocess
 import sys
 from functools import partial
+from itertools import chain, compress
+from operator import contains, eq
 from os.path import abspath, exists, expandvars, join, normpath
 from pathlib import Path
-from typing import List, Mapping
+from typing import List
 from xml.etree.ElementTree import parse
 
 import yaml
 
-from Applications.shared import TEMP, UTF8, int_, itemgetter_, valuegetter_
+from Applications.shared import TEMP, UTF8, int_, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -30,18 +32,24 @@ class GetTargets(argparse.Action):
         super(GetTargets, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
+        with open(getattr(namespace, "config"), encoding=getattr(namespace, "encoding")) as stream:
+            setattr(namespace, "config", {item["target"]: item["workspace"] for item in json.load(stream)})
+
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
-        setattr(namespace, self.dest, list(filter(itemgetter_(1)(partial(operator.eq, getattr(namespace, "workspace"))), targets.items())))
+        setattr(namespace, self.dest, list(filter(itemgetter_(1)(partial(operator.eq, getattr(namespace, "workspace"))), getattr(namespace, "config").items())))
 
         # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme.
         if values:
-            setattr(namespace, self.dest, list(filter(valuegetter_(targets)(partial(operator.eq, getattr(namespace, "workspace"))), filter(partial(operator.contains, targets), values))))
+            targets = list(chain.from_iterable(tuple(compress(item, [1, 0])) for item in filter(itemgetter_(1)(partial(eq, getattr(namespace, "workspace"))), getattr(namespace, "config").items())))
+            setattr(namespace, self.dest, list(filter(partial(contains, targets), values)))
 
 
 # ================
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser()
+parser.set_defaults(config=Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json")
+parser.set_defaults(encoding=UTF8)
 parser.add_argument("workspace", choices=["documents", "miscellaneous", "music", "pictures", "videos"])
 parser.add_argument("targets", nargs="*", action=GetTargets)
 parser.add_argument("-f", "--full", action="store_true")
@@ -54,26 +62,20 @@ parser.add_argument("-t", "--test", action="store_true")
 with open(Path(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding=UTF8) as stream:
     logging.config.dictConfig(yaml.load(stream, Loader=yaml.FullLoader))
 
-# ====================
-# Load backup targets.
-# ====================
-with open(Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json", encoding=UTF8) as stream:
-    targets = {item["target"]: item["workspace"] for item in json.load(stream)}  # type: Mapping[str, str]
-
 # ==============
 # Define logger.
 # ==============
 logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(Path(abspath(__file__)).stem)))
 
-# =================
-# Global constants.
-# =================
+# ========================
+# Define global constants.
+# ========================
 ARECA = str(Path("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 TABS = 4
 
-# ================
-# Initializations.
-# ================
+# =====================
+# Initialize variables.
+# =====================
 status, codes, = 100, []  # type: int, List[int]
 
 # ===============
@@ -87,7 +89,7 @@ arguments = parser.parse_args()
 
 # 1.a. Targets available in JSON reference file.
 logger.debug("Configured targets.")
-for target, workspace in sorted(sorted(targets.items(), key=int_(itemgetter_())), key=operator.itemgetter(1)):
+for target, workspace in sorted(sorted(arguments.config.items(), key=int_(itemgetter_())), key=operator.itemgetter(1)):
     logger.debug("\t%s: %s.".expandtabs(TABS), target, workspace)
 
 # 1.b. Targets given by parser.

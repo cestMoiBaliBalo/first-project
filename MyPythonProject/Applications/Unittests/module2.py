@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 
 import iso8601
 
-from ..callables import filter_audiofiles, filter_byextension, filter_losslessaudiofiles
+from ..callables import filter_audiofiles, filter_extension, filter_extensions, filter_losslessaudiofiles, filter_portabledocuments, filterfalse_
 from ..parsers import database_parser, tags_grabber, tasks_parser
 from ..shared import GetPath, LOCAL, UTC, find_files, get_dirname
 
@@ -389,29 +389,35 @@ class Test05(unittest.TestCase):
 
     def test01(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/A"), excluded=partial(filter_byextension, extensions=["flac"])))
+        out_files = sorted(find_files(Path("F:/A"), excluded=filterfalse_(partial(filter_extension, extension="flac"))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
     def test02(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        self.assertTrue(set(find_files(Path("F:/B"), excluded=partial(filter_byextension, extensions=["flac"]))))
+        self.assertTrue(set(find_files(Path("F:/B"), excluded=filterfalse_(partial(filter_extension, extension="flac")))))
         mock_os_walk.assert_called_once()
 
     def test03(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/C"), excluded=partial(filter_byextension, extensions=["pdf"])))
+        out_files = sorted(find_files(Path("F:/C"), excluded=filterfalse_(partial(filter_extension, extension="pdf"))))
         self.assertListEqual(out_files, [])
         mock_os_walk.assert_called_once()
 
     def test04(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        self.assertFalse(set(find_files(Path("F:/D"), excluded=partial(filter_byextension, extensions=["doc", "pdf", "txt"]))))
+        out_files = sorted(find_files(Path("F:/D"), excluded=filterfalse_(filter_portabledocuments)))
+        self.assertListEqual(out_files, [])
         mock_os_walk.assert_called_once()
 
     def test05(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/E"), excluded=partial(filter_byextension, extensions=["mp3", "m4a"])))
+        self.assertFalse(set(find_files(Path("F:/E"), excluded=filterfalse_(filter_extensions("doc", "pdf", "txt")))))
+        mock_os_walk.assert_called_once()
+
+    def test06(self, mock_os_walk):
+        mock_os_walk.side_effect = self.side_effect
+        out_files = sorted(find_files(Path("F:/F"), excluded=filterfalse_(filter_extensions("mp3", "m4a"))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.m4a"),
                                          str(Path("G:/") / "file1.mp3"),
                                          str(Path("G:/") / "file2.m4a"),
@@ -420,14 +426,14 @@ class Test05(unittest.TestCase):
                                          str(Path("G:/") / "file3.mp3")])
         mock_os_walk.assert_called_once()
 
-    def test06(self, mock_os_walk):
+    def test07(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/G"), excluded=filter_losslessaudiofiles))
+        out_files = sorted(find_files(Path("F:/G"), excluded=filterfalse_(filter_losslessaudiofiles)))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
-    def test07(self, mock_os_walk):
+    def test08(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/H"), excluded=filter_audiofiles))
+        out_files = sorted(find_files(Path("F:/H"), excluded=filterfalse_(filter_audiofiles)))
         self.assertListEqual(out_files, sorted(str(Path("G:/") / file) for file in self.files))
         mock_os_walk.assert_called_once()

@@ -4,19 +4,20 @@ import argparse
 import locale
 import os
 from collections import Counter
-from itertools import tee
+from functools import wraps
+from itertools import repeat, tee
 from operator import itemgetter
-from pathlib import PurePath
+from pathlib import Path
 from typing import List
 
-from Applications.shared import TemplatingEnvironment, freeze_, pprint_count
+from Applications.shared import TemplatingEnvironment, pprint_count
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-THAT_FILE = PurePath(os.path.abspath(__file__))
+_THATFILE = Path(os.path.abspath(__file__))
 
 # ==========================
 # Define French environment.
@@ -27,7 +28,7 @@ locale.setlocale(locale.LC_ALL, "french")
 # ==========
 # Functions.
 # ==========
-def byextension(arg: PurePath) -> str:
+def byextension(arg: Path) -> str:
     """
 
     :param arg:
@@ -36,7 +37,7 @@ def byextension(arg: PurePath) -> str:
     return arg.suffix
 
 
-def byname(arg: PurePath) -> str:
+def byname(arg: Path) -> str:
     """
 
     :param arg:
@@ -45,7 +46,7 @@ def byname(arg: PurePath) -> str:
     return arg.stem
 
 
-def byparents(arg: PurePath) -> str:
+def byparents(arg: Path) -> str:
     """
 
     :param arg:
@@ -65,16 +66,32 @@ def rjustify(arg, *, char: str = " ", length: int = 5) -> str:
     return "{0:{1}>{2}d}".format(arg, char, length)
 
 
-def valid_extension(path: PurePath, *extensions: str) -> bool:
+def valid_extension(path: Path, extension: str) -> bool:
     """
 
     :param path:
+    :param extension:
+    :return:
+    """
+    if not extension:
+        return True
+    return path.suffix[1:].lower() == extension.lower()
+
+
+# ===========================================
+# Callable wrapping valid_extension function.
+# ===========================================
+def valid_extensions(*extensions: str):
+    """
+
     :param extensions:
     :return:
     """
-    if not extensions:
-        return True
-    return path.suffix[1:].lower() in (extension.lower() for extension in extensions)
+    @wraps(valid_extension)
+    def wrapper(path: Path):
+        return any(list(map(valid_extension, repeat(path), extensions)))
+
+    return wrapper
 
 
 # =================
@@ -88,22 +105,22 @@ arguments = parser.parse_args()
 # ==========
 # Variables.
 # ==========
-collection1, collection2 = [], []  # type: List[PurePath], List[PurePath]
+collection1, collection2 = [], []  # type: List[Path], List[Path]
 
 # =========
 # Template.
 # =========
-template = TemplatingEnvironment(THAT_FILE.parents[1] / "Templates", keep_trailing_newline=False, filters={"rjustify": rjustify})
+template = TemplatingEnvironment(_THATFILE.parents[1] / "Templates", keep_trailing_newline=False, filters={"rjustify": rjustify})
 
 # ===============
 # Main algorithm.
 # ===============
-for root, directories, files in os.walk(str(PurePath(arguments.path))):
-    collection1.extend(PurePath(root) / PurePath(file) for file in files)
+for root, directories, files in os.walk(str(Path(arguments.path))):
+    collection1.extend(Path(root) / Path(file) for file in files)
     if not any([directories, files]):
-        collection2.extend(PurePath(root) / PurePath(directory) for directory in directories)
+        collection2.extend(Path(root) / Path(directory) for directory in directories)
 if arguments.extensions:
-    collection1 = list(filter(freeze_(arguments.extensions)(valid_extension), collection1))
+    collection1 = list(filter(valid_extensions(arguments.extensions), collection1))
 collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), key=byparents)
 it1, it2 = tee(collection1)
 _extensions = filter(None, sorted([(key[1:], value) for key, value in pprint_count(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))

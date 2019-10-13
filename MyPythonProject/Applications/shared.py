@@ -426,26 +426,6 @@ def compress_(*indexes: int):
     return outer_wrapper
 
 
-def freeze_(*sequence: Any):
-    """
-
-    :param sequence:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args):
-            _args = tuple(args)
-            for item in sequence:
-                _args += (item,)
-            return func(*_args)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 def int_(func):
     """
     That decorator wraps any function with the "int" builtin function.
@@ -571,23 +551,6 @@ def partial_(*args, **kwargs):
         @wraps(func)
         def inner_wrapper(arg):
             return partial(func, *args, **kwargs)(arg)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def valuegetter_(mapping):
-    """
-
-    :param mapping:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(key):
-            return func(mapping[key])
 
         return inner_wrapper
 

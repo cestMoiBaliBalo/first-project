@@ -6,7 +6,6 @@ import argparse
 import os
 import sys
 from collections import OrderedDict
-from functools import partial
 from operator import itemgetter
 from typing import List, Optional, Tuple
 
@@ -14,7 +13,7 @@ import wx  # type: ignore
 import yaml
 
 from Applications.Tables.XReferences.shared import get_albums, get_artists
-from Applications.callables import filter_byextension
+from Applications.callables import filter_extensions, filterfalse_
 from Applications.shared import TemplatingEnvironment, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
@@ -407,7 +406,7 @@ if __name__ == '__main__':
         for source, destination, extensions in interface.sync_arguments:
             for dirname, dirnames, _ in os.walk(source):
                 if not dirnames:
-                    if set(find_files(dirname, excluded=partial(filter_byextension, extensions=extensions))):
+                    if set(find_files(dirname, excluded=filterfalse_(filter_extensions(*extensions)))):
                         collection.extend([(os.path.join(dirname, f"*.{extension}"), destination) for extension in extensions])
         arguments.outfile.write(template.get_template("T01").render(collection=collection))
 
