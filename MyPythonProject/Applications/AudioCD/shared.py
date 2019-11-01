@@ -1355,7 +1355,7 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 # ==========
 # Constants.
 # ==========
-DFTPATTERN = r"^(?:\ufeff)?(?!#)(?:z_)?([^=]+)=(?!\s)(.+)$"
+DFTPATTERN = r"^(?:\uFEFF)?(?!#)(?:z_)?([^=]+)=(?!\s)(.+)$"
 GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
 LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
 ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.yml")

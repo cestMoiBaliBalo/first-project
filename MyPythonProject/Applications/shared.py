@@ -40,7 +40,7 @@ abspath, basename, dirname, exists, expandvars, isdir, join, normpath = os.path.
 # Constants.
 # ==========
 APPEND = "a"
-COPYRIGHT = "\u00a9"
+COPYRIGHT = "\u00A9"
 DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
 LOCAL = timezone("Europe/Paris")
@@ -48,7 +48,7 @@ LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
 UTC = timezone("UTC")
 UTF8 = "UTF_8"
 UTF16 = "UTF_16LE"
-UTF16BOM = "\ufeff"
+UTF16BOM = "\uFEFF"
 WRITE = "w"
 
 # Resources.

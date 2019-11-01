@@ -11,7 +11,7 @@ from contextlib import ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import chain, compress, groupby, product, starmap
-from operator import eq, gt, is_, itemgetter
+from operator import contains, eq, gt, is_, itemgetter
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
@@ -138,11 +138,13 @@ def insert_albums_fromjson(*jsonfiles) -> int:
     return _insert_albums(*chain.from_iterable([json.load(file) for file in jsonfiles]))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: str = "UTF_8", delimiter: str = ";", **kwargs) -> int:
+def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: str = "UTF_8", **kwargs: Any) -> int:
     """
 
     :param txtfiles:
     :param db:
+    :param encoding:
+    :param kwargs:
     :return:
     """
     tracks = []
@@ -168,11 +170,11 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: 
                   "artist",
                   "is_incollection",
                   "applicationid"]
-    kargs = dict(filter(itemgetter_()(partial(contains, ["escapechar", "quoting", "doublequote"])), kwargs.items()))
+    kargs = dict(filter(itemgetter_()(partial(contains, ["delimiter", "doublequote", "escapechar", "quoting"])), kwargs.items()))
     with ExitStack() as stack:
         files = [stack.enter_context(open(file, encoding=encoding, newline="")) for file in txtfiles]
         for file in files:
-            reader = csv.DictReader(file, fieldnames=fieldnames, delimiter=delimiter, **kargs)
+            reader = csv.DictReader(file, fieldnames=fieldnames, **kargs)
             for row in reader:
 
                 # Map genre to genreid.
