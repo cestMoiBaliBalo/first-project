@@ -138,7 +138,7 @@ def insert_albums_fromjson(*jsonfiles) -> int:
     return _insert_albums(*chain.from_iterable([json.load(file) for file in jsonfiles]))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: str = "UTF_8", **kwargs: Any) -> int:
+def insert_defaultalbums_fromplaintext(*txtfiles, encoding: str = "UTF_8", **kwargs: Any) -> int:
     """
 
     :param txtfiles:
@@ -169,7 +169,8 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: 
                   "artistsort",
                   "artist",
                   "is_incollection",
-                  "applicationid"]
+                  "applicationid",
+                  "database"]
     kargs = dict(filter(itemgetter_()(partial(contains, ["delimiter", "doublequote", "escapechar", "quoting"])), kwargs.items()))
     with ExitStack() as stack:
         files = [stack.enter_context(open(file, encoding=encoding, newline="")) for file in txtfiles]
@@ -179,19 +180,19 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE, encoding: 
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(db)))
+                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(row["database"])))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
+                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(row["database"])))
                 except TypeError:
                     continue
 
-                # Prepare data structure.
+                # Prepare data collection.
                 tracks.append(("defaultalbums",
-                               db,
+                               row["database"],
                                row["albumid"],
                                int(row["discnumber"]),
                                int(row["tracknumber"]),
