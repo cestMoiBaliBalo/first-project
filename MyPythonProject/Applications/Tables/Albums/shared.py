@@ -11,7 +11,7 @@ from contextlib import ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import chain, compress, groupby, product, starmap
-from operator import eq, gt, is_, itemgetter
+from operator import contains, eq, gt, is_, itemgetter
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
@@ -79,19 +79,19 @@ def merge(item):
 @itemgetter_(5)
 @partial_(1)
 def is_firsttrack(a, b):
-    return eq(a, b)
+    return eq(b, a)
 
 
 @itemgetter_(0)
 @partial_("discs")
 def discs_record(a, b, sensitive=False):
-    return eq_string(a, b, sensitive=sensitive)
+    return eq_string(b, a, sensitive=sensitive)
 
 
 @itemgetter_(1)
 @partial_("bootlegalbums")
 def bootlegalbums_record(a, b, sensitive=False):
-    return eq_string(a, b, sensitive=sensitive)
+    return eq_string(b, a, sensitive=sensitive)
 
 
 @itemgetter_(27)
@@ -138,11 +138,13 @@ def insert_albums_fromjson(*jsonfiles) -> int:
     return _insert_albums(*chain.from_iterable([json.load(file) for file in jsonfiles]))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
+def insert_defaultalbums_fromplaintext(*txtfiles, encoding: str = "UTF_8", **kwargs: Any) -> int:
     """
 
     :param txtfiles:
     :param db:
+    :param encoding:
+    :param kwargs:
     :return:
     """
     tracks = []
@@ -167,28 +169,30 @@ def insert_defaultalbums_fromplaintext(*txtfiles, db: str = DATABASE) -> int:
                   "artistsort",
                   "artist",
                   "is_incollection",
-                  "applicationid"]
+                  "applicationid",
+                  "database"]
+    kargs = dict(filter(itemgetter_()(partial(contains, ["delimiter", "doublequote", "escapechar", "quoting"])), kwargs.items()))
     with ExitStack() as stack:
-        files = [stack.enter_context(open(file, encoding="UTF_8_SIG")) for file in txtfiles]
+        files = [stack.enter_context(open(file, encoding=encoding, newline="")) for file in txtfiles]
         for file in files:
-            reader = csv.DictReader(file, fieldnames=fieldnames, delimiter=";")
+            reader = csv.DictReader(file, fieldnames=fieldnames, **kargs)
             for row in reader:
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(db)))
+                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(row["database"])))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(db)))
+                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(row["database"])))
                 except TypeError:
                     continue
 
-                # Prepare data structure.
+                # Prepare data collection.
                 tracks.append(("defaultalbums",
-                               db,
+                               row["database"],
                                row["albumid"],
                                int(row["discnumber"]),
                                int(row["tracknumber"]),
