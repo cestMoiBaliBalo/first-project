@@ -13,7 +13,7 @@ Lame 3.100.0:
   extension: mp3
   folder: 0.MPEG 1 Layer III
 
-Monkeys Audio v4.12:
+Monkeys Audio v4.38:
   code: !!python/str 12
   extension: ape
   folder: 1.Monkey's Audio
