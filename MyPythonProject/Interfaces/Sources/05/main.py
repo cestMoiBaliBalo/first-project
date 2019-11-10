@@ -435,7 +435,7 @@ class VirtualList(wx.ListCtrl):
 # ============
 if __name__ == '__main__':
     that_file = os.path.abspath(__file__)
-    locale.setlocale(locale.LC_ALL, "french")
+    locale.setlocale(locale.LC_ALL, "")
     get_readabledate = partial(get_readabledate, template=TEMPLATE4)
     app = wx.App()
     interface = MainFrame(None)

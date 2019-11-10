@@ -396,7 +396,7 @@ class RightDropTarget(DropTarget):
 # ============
 if __name__ == '__main__':
     that_file = os.path.abspath(__file__)
-    locale.setlocale(locale.LC_ALL, "french")
+    locale.setlocale(locale.LC_ALL, "")
     app = wx.App()
     interface = MainFrame(None, "artistsort", "albumsort", "discid", "ripped_year", "ripped_month", "rippde_date", "genre")
     interface.Show()

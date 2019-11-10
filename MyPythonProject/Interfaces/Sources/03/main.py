@@ -23,7 +23,7 @@ __status__ = "Production"
 that_file = os.path.abspath(__file__)
 
 # Define French environment.
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+locale.setlocale(locale.LC_ALL, "")
 
 # Logging.
 with open(os.path.join(get_dirname(that_file, level=4), "Resources", "logging.yml"), encoding="UTF_8") as fp:

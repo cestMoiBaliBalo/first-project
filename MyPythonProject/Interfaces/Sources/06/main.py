@@ -325,7 +325,7 @@ class MainFrame(wx.Frame):
 # ============
 if __name__ == '__main__':
     that_file = os.path.abspath(__file__)
-    locale.setlocale(locale.LC_ALL, "french")
+    locale.setlocale(locale.LC_ALL, "")
     app = wx.App()
     interface = MainFrame(None)
     interface.Show()

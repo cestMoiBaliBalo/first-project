@@ -42,7 +42,7 @@ if sys.platform.startswith("win"):
     from Applications.shared import attrgetter_, customfilter as cf
 
     # -----
-    locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+    locale.setlocale(locale.LC_ALL, "")
 
     # -----
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "logging.yml"), encoding="UTF_8") as fp:

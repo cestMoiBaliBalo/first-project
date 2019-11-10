@@ -200,7 +200,7 @@ if __name__ == "__main__":
     import sys
 
     # Set French environment.
-    locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+    locale.setlocale(locale.LC_ALL, "")
 
     # Local constants.
     LOG_LEVELS = {False: "info", True: "debug"}
