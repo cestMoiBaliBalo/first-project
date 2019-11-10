@@ -12,11 +12,11 @@ defaultalbum:
   albums: True
   bootlegs: False
   database: !!python/name:Applications.shared.DATABASE
-  debug: True
+  debug: False
   console: False
-  save: True
+  save: False
   root: !!python/name:Applications.shared.MUSIC
-  sample: True
+  sample: False
 
 test_bootlegalbum:
   albums: False

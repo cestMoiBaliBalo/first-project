@@ -22,7 +22,7 @@ _THATFILE = Path(os.path.abspath(__file__))
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, "french")
+locale.setlocale(locale.LC_ALL, "")
 
 
 # ==========

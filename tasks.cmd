@@ -142,6 +142,17 @@ IF ERRORLEVEL 32 (
 )
 
 
+REM --------------------------------------
+REM Update Audio database with new albums.
+REM --------------------------------------
+IF ERRORLEVEL 31 (
+    PUSHD "%TEMP%"
+    python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
+    POPD
+    GOTO MENU
+)
+
+
 REM --------------------------------
 REM Update audio albums played date.
 REM --------------------------------

@@ -52,9 +52,9 @@ COVER = Template("albumart/$letter/$artistsort/$albumsort/iPod-Front.jpg")
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
 
 
-# ==================
-# Private functions.
-# ==================
+# =================
+# Public functions.
+# =================
 def get_playeddiscs(db: str = DATABASE, **kwargs):
     for disc in _get_playeddiscs(db, **kwargs):
         yield disc
