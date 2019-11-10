@@ -2,10 +2,10 @@
 # pylint: disable=invalid-name
 import datetime
 import locale
+import os
 import re
-import sys
 import unittest
-from pathlib import PureWindowsPath
+from pathlib import PurePath, PureWindowsPath
 
 from pytz import timezone
 
@@ -16,6 +16,9 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
+locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 
 class TestRegexT01(unittest.TestCase):
@@ -312,16 +315,6 @@ class TestAdjustDatetime(unittest.TestCase):
 
 class TestGetReadableDate(unittest.TestCase):
 
-    def setUp(self):
-        self.locale = locale.getlocale()
-        if sys.platform.startswith("win"):
-            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
-        elif sys.platform.startswith("lin"):
-            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
-
-    def tearDown(self):
-        locale.setlocale(locale.LC_ALL, self.locale)
-
     def test_t01(self):
         self.assertEqual(shared.get_readabledate(datetime.datetime(2018, 11, 17, 14, 8, 0)), "Samedi 17 Novembre 2018 14:08:00  (UTC)")
 
@@ -333,16 +326,6 @@ class TestGetReadableDate(unittest.TestCase):
 
 
 class TestFormatDate(unittest.TestCase):
-
-    def setUp(self):
-        self.locale = locale.getlocale()
-        if sys.platform.startswith("win"):
-            locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
-        elif sys.platform.startswith("lin"):
-            locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
-
-    def tearDown(self):
-        locale.setlocale(locale.LC_ALL, self.locale)
 
     def test_t01(self):
         self.assertEqual(shared.format_date(shared.LOCAL.localize(datetime.datetime(2018, 11, 17, 14, 8, 0))), "Samedi 17 Novembre 2018 14:08:00 CET (UTC+0100)")
