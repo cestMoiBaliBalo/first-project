@@ -6,7 +6,7 @@ import os
 from contextlib import ExitStack
 from pathlib import Path
 
-from Applications.shared import TemplatingEnvironment, itemgetter_
+from Applications.shared import TemplatingEnvironment, itemgetter_, UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -19,14 +19,15 @@ _THATFILE = Path(os.path.abspath(__file__))
 # ========
 # Classes.
 # ========
-class CustomDialect(csv.Dialect):
-    def __init__(self, delimiter="|", escapechar="`", doublequote=False, quoting=csv.QUOTE_NONE, lineterminator="\r\n"):
-        super(CustomDialect, self).__init__()
-        self.delimiter = delimiter
-        self.escapechar = escapechar
-        self.doublequote = doublequote
-        self.quoting = quoting
-        self.lineterminator = lineterminator
+class Dialect(csv.Dialect):
+    delimiter = "|"
+    escapechar = "`"
+    doublequote = False
+    quoting = csv.QUOTE_NONE
+    lineterminator = "\r\n"
+
+
+csv.register_dialect("dialect", Dialect())
 
 
 # ==========
@@ -57,9 +58,9 @@ template = TemplatingEnvironment(_THATFILE.parents[1] / "Templates")
 
 # Set copy commands file.
 with ExitStack() as stack:
-    fr = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.txt", encoding="UTF_8", newline=""))
+    fr = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.txt", encoding=UTF8, newline=""))
     fw = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.cmd", mode="w", encoding="ISO-8859-1"))
-    reader = csv.reader(fr, dialect=CustomDialect())
+    reader = csv.reader(fr, dialect="dialect")
     tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)
     tracks = [(src, Path(src).name, dst) for src, dst in tracks]
     fw.write(template.get_template("T02").render(collection=iter((key, list(group)) for key, group in itertools.groupby(tracks, key=get_parent))))
