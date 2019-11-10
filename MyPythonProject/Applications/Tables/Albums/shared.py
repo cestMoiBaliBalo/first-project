@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tup
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string, format_date, get_dirname, itemgetter_, partial_, pprint_sequence, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string_, format_date, get_dirname, itemgetter_, partial_, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -85,13 +85,13 @@ def is_firsttrack(a, b):
 @itemgetter_(0)
 @partial_("discs")
 def discs_record(a, b, sensitive=False):
-    return eq_string(b, a, sensitive=sensitive)
+    return eq_string_(b, a, sensitive=sensitive)
 
 
 @itemgetter_(1)
 @partial_("bootlegalbums")
 def bootlegalbums_record(a, b, sensitive=False):
-    return eq_string(b, a, sensitive=sensitive)
+    return eq_string_(b, a, sensitive=sensitive)
 
 
 @itemgetter_(27)
@@ -112,9 +112,7 @@ def hasbeen_played(a, b):
 COVER = Template("albumart/$letter/$artistsort/$albumsort/iPod-Front.jpg")
 FUNCTIONS = {"defaultalbums": check_defaultalbum,
              "bootlegalbums": check_bootlegalbum}
-SORT = {"rowid": "album_rowid",
-        "created": "utc_created",
-        "modified": "utc_modified"}
+
 
 # ====================
 # Regular expressions.
@@ -135,10 +133,10 @@ def insert_albums_fromjson(*jsonfiles) -> int:
     :param jsonfiles:
     :return:
     """
-    return _insert_albums(*chain.from_iterable([json.load(file) for file in jsonfiles]))
+    return _insert_albums(*chain.from_iterable(json.load(file) for file in jsonfiles))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, encoding: str = "UTF_8", **kwargs: Any) -> int:
+def insert_defaultalbums_fromplaintext(*txtfiles: str, encoding: str = "UTF_8", **kwargs: Any) -> int:
     """
 
     :param txtfiles:
@@ -180,13 +178,13 @@ def insert_defaultalbums_fromplaintext(*txtfiles, encoding: str = "UTF_8", **kwa
 
                 # Map genre to genreid.
                 try:
-                    _, genreid = next(filter(itemgetter_()(partial(eq_string, row["genre"])), get_genres(row["database"])))
+                    _, genreid = next(filter(itemgetter_()(partial(eq_string_, row["genre"])), get_genres(row["database"])))
                 except TypeError:
                     continue
 
                 # Map language to languageid.
                 try:
-                    _, languageid = next(filter(itemgetter_()(partial(eq_string, row["titlelanguage"])), get_languages(row["database"])))
+                    _, languageid = next(filter(itemgetter_()(partial(eq_string_, row["titlelanguage"])), get_languages(row["database"])))
                 except TypeError:
                     continue
 
@@ -1122,7 +1120,7 @@ def _check_arguments(db: str = DATABASE, **kwargs: Any) -> Dict[str, Any]:
         genres = list(get_genres(db))  # type: List[Tuple[str, int]]
         if genre.lower() not in (item[0].lower() for item in genres):
             raise ValueError(f'"{genre}" is not defined as genre.')
-        _, genreid = next(filter(itemgetter_()(partial(eq_string, genre.lower())), genres))
+        _, genreid = next(filter(itemgetter_()(partial(eq_string_, genre.lower())), genres))
         del kwargs["genre"]
         kwargs["genreid"] = genreid
 

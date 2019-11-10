@@ -389,7 +389,7 @@ def attrgetter_(attr: str):
     @attrgetter_("some_attribute")
     def some_callable(arg):
         pass
-    1. filter(some_callable, [object1, object2, object3, ...]) --> some_callable(object1.attr), some_callable(object2.attr), some_callable(object3.attr)
+    1. filter(some_callable, [object1, object2, object3, ...]) --> some_callable(object1.some_attribute), some_callable(object2.some_attribute), some_callable(object3.some_attribute)
     2. sorted([object1, object2, object3, ...], key=some_callable)
 
     :param attr: object attribute name.
@@ -400,6 +400,61 @@ def attrgetter_(attr: str):
         @wraps(func)
         def inner_wrapper(arg):
             return func(operator.attrgetter(attr)(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def itemgetter_(index: int = 0):
+    """
+    That decorator allows running any function using as argument a sequence item located at index `index`.
+    It must be used everywhere a callable object with a sequence as argument is required.
+
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @itemgetter_(2)
+    def some_callable(arg):
+        pass
+    1. filter(some_callable, [sequence1, sequence2, sequence3, ...]) --> some_callable(sequence1[2]), some_callable(sequence2[2]), some_callable(sequence3[2])
+    2. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
+
+    :param index: item index.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return func(operator.itemgetter(index)(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def int_(base: int = 10):
+    """
+
+
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @int_()
+    def some_callable(arg):
+        pass
+    1. map(some_callable, [arg1, arg2, arg3, ...]) --> some_callable(int(arg1)), some_callable(int(arg2)), some_callable(int(arg3))
+    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
+
+    :param base.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return func(int(arg, base=base))
 
         return inner_wrapper
 
@@ -426,117 +481,24 @@ def compress_(*indexes: int):
     return outer_wrapper
 
 
-def int_(func):
+def nested_(*functions):
     """
-    That decorator wraps any function with the "int" builtin function.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @int_
-    def some_callable(arg):
-        pass
-    1. map(some_callable, [arg1, arg2, arg3, ...]) --> int(some_callable(arg1)), int(some_callable(arg2)), int(some_callable(arg3))
-    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
-
-    :param func. any function returning an integer compatible value.
-    :return: callable object.
-    """
-
-    @wraps(func)
-    def wrapper(arg):
-        return int(func(arg))
-
-    return wrapper
-
-
-def itemgetter_(index: int = 0):
-    """
-    That decorator allows running any function using as argument a sequence item located at index `index`.
-    It must be used everywhere a callable object with a sequence as argument is required.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @itemgetter_(2)
-    def some_callable(arg):
-        pass
-    1. filter(some_callable, [sequence1, sequence2, sequence3, ...]) --> some_callable(sequence1[2]), some_callable(sequence2[2]), some_callable(sequence3[2])
-    2. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
-
-    @int_
-    @itemgetter_()
-    def some_callable(arg):
-        pass
-    1. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
-
-    :param index: item index.
+    
+    :param functions: sequence of callables.
     :return: callable object.
     """
 
     def outer_wrapper(func):
         @wraps(func)
         def inner_wrapper(arg):
-            return func(operator.itemgetter(index)(arg))
+            returned = func(arg)
+            for function in functions:
+                returned = function(returned)
+            return returned
 
         return inner_wrapper
 
     return outer_wrapper
-
-
-def itemgetter2_(index: int = 0):
-    """
-    That decorator wraps any function with the "operator.itemgetter" method.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @itemgetter2_(1)
-    def some_callable(arg):
-        pass
-    1. map(some_callable, [arg1, arg2, arg3, ...]) --> operator.itemgetter(1)(some_callable(arg1)), operator.itemgetter(1)(some_callable(arg2)), operator.itemgetter(1)(some_callable(arg3))
-
-    @int_
-    @itemgetter2_(3)
-    def some_callable(arg):
-        pass
-    1. sorted([arg1, arg2, arg3, ...], some_callable)
-
-    :param index: item index.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            return operator.itemgetter(index)(func(arg))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def not_(func):
-    """
-    That decorator wraps any function with the "operator.not_" method.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @not_
-    def some_callable(arg):
-        pass
-    1. filter(some_callable, [arg1, arg2, arg3, ...]) --> operator.not_(some_callable(arg1)), operator.not_(some_callable(arg2)), operator.not_(some_callable(arg3))
-
-    :param func. any function returning a boolean compatible value.
-    :return: callable object.
-    """
-
-    @wraps(func)
-    def wrapper(arg):
-        return operator.not_(func(arg))
-
-    return wrapper
 
 
 def partial_(*args, **kwargs):
@@ -544,7 +506,7 @@ def partial_(*args, **kwargs):
 
     :param args:
     :param kwargs:
-    :return:
+    :return: callable object.
     """
 
     def outer_wrapper(func):
@@ -883,10 +845,10 @@ def valid_genre(genre: str) -> str:
 # ====================
 # Filtering functions.
 # ====================
-def eq_string(a: str, b: str, *, sensitive: bool = False) -> bool:
+def eq_string_(a: str, b: str, *, sensitive: bool = False) -> bool:
     if not sensitive:
-        return operator.eq(a.lower(), b.lower())
-    return operator.eq(a, b)
+        return operator.eq(b.lower(), a.lower())
+    return operator.eq(b, a)
 
 
 # ========================
@@ -1135,14 +1097,14 @@ def get_nearestmultiple(length: int, *, multiple: int = 3) -> int:
     return x * multiple
 
 
-def get_rippingapplication(*, timestamp: Optional[int] = None) -> str:
+def get_rippingapplication(*, timestamp: Optional[int] = None) -> Tuple[str, Optional[int]]:
     """
     Get ripping application respective to the facultative input local timestamp.
 
     :param timestamp: facultative input local timestamp.
     :return: ripping application.
     """
-    application = {"1564610400": "dBpoweramp Release 16.6", "1553943600": "dBpoweramp 16.5", "1388530800": "dBpoweramp 15.1", "0": "dBpoweramp 14.1"}
+    application = {"1564610400": ("dBpoweramp Release 16.6", 2), "1553943600": ("dBpoweramp 16.5", None), "1388530800": ("dBpoweramp 15.1", None), "0": ("dBpoweramp 14.1", 1)}
     ts: Optional[int] = timestamp
     if timestamp is None:
         ts = int(UTC.localize(datetime.utcnow()).astimezone(LOCAL).timestamp())
