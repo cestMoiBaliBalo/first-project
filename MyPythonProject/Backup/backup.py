@@ -11,17 +11,36 @@ from itertools import chain, compress
 from operator import contains, eq
 from os.path import abspath, exists, expandvars, join, normpath
 from pathlib import Path
-from typing import List
+from typing import List, Mapping, Optional, Union
 from xml.etree.ElementTree import parse
 
 import yaml
 
-from Applications.shared import TEMP, UTF8, int_, itemgetter_
+from Applications.shared import TEMP, UTF8, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+
+# ========================
+# Define custom namespace.
+# ========================
+class GetConfig(object):
+
+    def __init__(self, *args) -> None:
+        self._config = {arg["target"]: arg["workspace"] for arg in args}
+
+    @property
+    def config(self) -> Optional[Mapping[str, str]]:
+        return self._config
+
+    @classmethod
+    def get_fromjsonfile(cls, config: Union[str, Path], encoding: str = UTF8):
+        with open(config, encoding=encoding) as stream:
+            items = json.load(stream)
+        return cls(*items)
 
 
 # =============================
@@ -32,24 +51,21 @@ class GetTargets(argparse.Action):
         super(GetTargets, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
-        with open(getattr(namespace, "config"), encoding=getattr(namespace, "encoding")) as stream:
-            setattr(namespace, "config", {item["target"]: item["workspace"] for item in json.load(stream)})
-
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
-        setattr(namespace, self.dest, list(filter(itemgetter_(1)(partial(operator.eq, getattr(namespace, "workspace"))), getattr(namespace, "config").items())))
+        targets = list(filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items()))
 
         # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme.
         if values:
-            targets = list(chain.from_iterable(tuple(compress(item, [1, 0])) for item in filter(itemgetter_(1)(partial(eq, getattr(namespace, "workspace"))), getattr(namespace, "config").items())))
-            setattr(namespace, self.dest, list(filter(partial(contains, targets), values)))
+            targets = [target for target, _ in filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items())]
+            targets = list(filter(partial(contains, targets), values))
+
+        setattr(namespace, self.dest, list(chain.from_iterable(compress(target, [1, 0]) for target in targets)))
 
 
 # ================
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser()
-parser.set_defaults(config=Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json")
-parser.set_defaults(encoding=UTF8)
 parser.add_argument("workspace", choices=["documents", "miscellaneous", "music", "pictures", "videos"])
 parser.add_argument("targets", nargs="*", action=GetTargets)
 parser.add_argument("-f", "--full", action="store_true")
@@ -81,7 +97,8 @@ status, codes, = 100, []  # type: int, List[int]
 # ===============
 # Main algorithm.
 # ===============
-arguments = parser.parse_args()
+arguments = GetConfig.get_fromjsonfile(Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json")
+parser.parse_args(namespace=arguments)
 
 #    --------------------
 # 1. Log input arguments.
@@ -89,7 +106,7 @@ arguments = parser.parse_args()
 
 # 1.a. Targets available in JSON reference file.
 logger.debug("Configured targets.")
-for target, workspace in sorted(sorted(arguments.config.items(), key=int_(itemgetter_())), key=operator.itemgetter(1)):
+for target, workspace in sorted(sorted(arguments.config.items(), key=itemgetter_()(int)), key=operator.itemgetter(1)):
     logger.debug("\t%s: %s.".expandtabs(TABS), target, workspace)
 
 # 1.b. Targets given by parser.
