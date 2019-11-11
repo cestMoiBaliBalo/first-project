@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import argparse
+import locale
 import logging.config
 import os
 from pathlib import Path
@@ -13,6 +14,11 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+# ==========================
+# Define French environment.
+# ==========================
+locale.setlocale(locale.LC_ALL, "")
 
 # ========
 # Logging.
@@ -28,15 +34,16 @@ logger = logging.getLogger("MyPythonProject.AudioCD.{0}".format(os.path.splitext
 
 # Parse arguments.
 parser = argparse.ArgumentParser()
-parser.add_argument("file", help="String representing an audio file. Both path and name.")
+parser.add_argument("path", help="String representing an audio file. Both path and name.")
+parser.add_argument("action", help="Action code.", nargs="*")
 arguments = parser.parse_args()
 
 # Process digital audio file.
-path = Path(arguments.file)
+path = Path(arguments.path)
 parts = len(list(path.parents))
-dst = Path("//diskstation/music") / path.parents[parts - 3].parts[1:] / path.name[:12]
+dst = Path("//diskstation/music") / "/".join(path.parents[parts - 3].parts[1:]) / path.name[:12]
 logger.debug("Copy audio file.")
-logger.debug("\tFile        : %s".expandtabs(3), arguments.file)
+logger.debug("\tFile        : %s".expandtabs(3), arguments.path)
 logger.debug("\tDestination : %s".expandtabs(3), dst)
 with open(Path(os.path.expandvars("%_COMPUTING%")) / "Resources" / "rippedtracks.txt", mode="a", encoding=UTF8) as stream:
-    stream.write(f"{arguments.file}|{dst}\n")
+    stream.write(f"{arguments.path}|{dst}\n")

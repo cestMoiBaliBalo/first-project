@@ -10,7 +10,7 @@ from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import groupby
-from operator import contains, itemgetter
+from operator import contains, itemgetter, not_
 from pathlib import Path, WindowsPath
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
@@ -277,13 +277,13 @@ class AudioCDTags(MutableMapping):
         return self._otags["year"]
 
     @classmethod
-    def fromfile(cls, fil, sequence):
+    def fromfile(cls, fil, sequence, audiogenres):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
         for line in filcontents(fil):
             _match = regex.match(line)
             if _match:
                 mapping[_match.group(1).rstrip().lower()] = _match.group(2)
-        return cls(sequence, **SortedDict(**mapping))
+        return cls(audiogenres, sequence, **SortedDict(**mapping))
 
     @staticmethod
     def checktags(member, container):
@@ -330,7 +330,7 @@ class CommonAudioCDTags(AudioCDTags):
               "utctimestamp": False,
               "_albumart_1_front album cover": False}
 
-    def __init__(self, sequence, **kwargs):
+    def __init__(self, audiogenres, sequence, **kwargs):
         super(CommonAudioCDTags, self).__init__()
 
         # ----- Check mandatory input tags.
@@ -374,7 +374,7 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
-        self._otags["encodedby"] = f"{shared.get_rippingapplication()} on {now_readable}"
+        self._otags["encodedby"] = f"{shared.get_rippingapplication()[0]} on {now_readable}"
 
         # ----- Set taggingtime.
         self.logger.debug("Set taggingtime.")
@@ -420,18 +420,15 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Update genre.
         self.logger.debug("Update genre.")
-        for artist, genre in self.deserialize(GENRES):
-            if kwargs["artist"].lower() == artist.lower():
-                self._otags["genre"] = genre
-                break
+        self._otags["genre"] = audiogenres.get_genres(kwargs["artistsort"], kwargs["genre"])
 
         # ----- Update titlelanguage.
-        self.logger.debug("Update titlelanguage.")
+        # self.logger.debug("Update titlelanguage.")
         self._otags["titlelanguage"] = self._otags.get("tracklanguage", "English")
-        for artist, language in self.deserialize(LANGUAGES):
-            if kwargs["artist"].lower() == artist.lower():
-                self._otags["titlelanguage"] = language
-                break
+        # for artist, language in self.deserialize(LANGUAGES):
+        #     if kwargs["artist"].lower() == artist.lower():
+        #         self._otags["titlelanguage"] = language
+        #         break
 
         # ----- Update title.
         self.logger.debug("Update title.")
@@ -465,8 +462,8 @@ class DefaultAudioCDTags(CommonAudioCDTags):
               "upc": True,
               "year": True}
 
-    def __init__(self, sequence, **kwargs):
-        super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
+    def __init__(self, audiogenres, sequence, **kwargs):
+        super(DefaultAudioCDTags, self).__init__(audiogenres, sequence, **kwargs)
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -531,8 +528,8 @@ class BootlegAudioCDTags(CommonAudioCDTags):
               "bootlegdiscreference": False,
               "bonustrack": True}
 
-    def __init__(self, sequence, **kwargs):
-        super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
+    def __init__(self, audiogenres, sequence, **kwargs):
+        super(BootlegAudioCDTags, self).__init__(audiogenres, sequence, **kwargs)
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -614,6 +611,13 @@ class BootlegAudioCDTags(CommonAudioCDTags):
         return True, ""
 
 
+class AudioGenres(object):
+    _genres = {}
+
+    def get_genres(self, artistsort, fallback="Rock"):
+        return self._genres.get(artistsort, fallback)
+
+
 class TagsModifier(AudioCDTags):
     logger = logging.getLogger("{0}.TagsModifier".format(__name__))
 
@@ -638,7 +642,7 @@ class ChangeAlbumArtist(TagsModifier):
 class ChangeEncodedBy(TagsModifier):
     def __init__(self, obj):
         super(ChangeEncodedBy, self).__init__(obj)
-        self._otags["encodedby"] = "{0} on {1} from nugs.net bootleg Audio CD".format(shared.get_rippingapplication(), shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
+        self._otags["encodedby"] = "{0} on {1} from nugs.net bootleg Audio CD".format(shared.get_rippingapplication()[0], shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
 
 
 class ChangeMediaProvider(TagsModifier):
@@ -665,7 +669,7 @@ class RippedTrack(ContextDecorator):
     _tabs = 4
     _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
-    def __init__(self, rippingprofile, file, sequence, *decoratingprofiles):
+    def __init__(self, rippingprofile, file, sequence, *decoratingprofiles, audiogenres=None):
         self._audiotracktags = None
         self._decorators = None
         self._sequence = None
@@ -677,6 +681,9 @@ class RippedTrack(ContextDecorator):
         self.sequence = sequence
         self.profile = rippingprofile
         self.tags = file
+        self._audiogenres = audiogenres
+        if audiogenres is None:
+            self._audiogenres = AudioGenres()
 
     @property
     def profile(self):
@@ -803,7 +810,7 @@ class RippedTrack(ContextDecorator):
 
         # --> 4. Create AudioCDTags instance.
         self._tags.seek(0)
-        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
+        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence, self._audiogenres)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
         keys, values = zip(*sorted(self._audiotracktags, key=itemgetter(0)))
@@ -830,7 +837,7 @@ class RippedTrack(ContextDecorator):
             exclusions.append("folder")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_keys = shared.not_(shared.itemgetter_(0)(partial(contains, exclusions)))
+        filter_keys = shared.nested_(not_)((shared.itemgetter_(0)(partial(contains, exclusions))))
         outtags = dict(filter(filter_keys, sorted(self._audiotracktags, key=itemgetter(0))))
 
         # --> 2. Log output tags.
@@ -857,13 +864,14 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, **kwargs: Any) -> Tuple[int, AudioCDTags]:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, audiogenres=None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
     """
 
     :param profile:
     :param source:
     :param sequence:
     :param decorators:
+    :param audiogenres:
     :param kwargs:
     :return:
     """
@@ -874,7 +882,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     in_logger.debug("Profile is  : %s", profile)
     in_logger.debug("File name is: %s", source.name)
     try:
-        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators))
+        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, audiogenres=audiogenres))
     except ValueError as err:
         in_logger.debug(err)
         track, value = None, 100
@@ -1049,7 +1057,7 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     2))
+                     shared.get_rippingapplication()[1]))
     iterable = list(set(iterable))
     for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1162,7 +1170,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
                      providers[track.bootlegalbum_provider],
                      track.bootlegdisc_reference,
                      track.bootlegalbum_title,
-                     2))
+                     shared.get_rippingapplication()[1]))
     iterable = list(set(iterable))
     for item in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1356,8 +1364,8 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 # Constants.
 # ==========
 DFTPATTERN = r"^(?:\uFEFF)?(?!#)(?:z_)?([^=]+)=(?!\s)(.+)$"
-GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
-LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
+# GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
+# LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
 ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.yml")
 ENC_KEYS = ["name",
             "code",

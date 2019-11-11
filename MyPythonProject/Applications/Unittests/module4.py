@@ -17,7 +17,7 @@ from unittest.mock import Mock, PropertyMock, patch
 
 import yaml
 
-from ..AudioCD.shared import albums, dump_audiotags_tojson, get_tagsfile, upsert_audiotags
+from ..AudioCD.shared import AudioGenres, albums, dump_audiotags_tojson, get_tagsfile, upsert_audiotags
 from ..Tables.Albums.shared import defaultalbums, exist_albumid, get_albumidfromgenre, insert_albums_fromjson, update_defaultalbums, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
@@ -35,6 +35,38 @@ basename, exists, join = os.path.basename, os.path.exists, os.path.join
 # ===============
 # Global classes.
 # ===============
+class CustomAudioGenres(AudioGenres):
+    _genres = {"Arcade Fire": "Alternative Rock",
+               "Black Sabbath": "Hard Rock",
+               "Blue \u00D6yster Cult": "Hard Rock",
+               "Bon Jovi": "Hard Rock",
+               "Calogero": "French Pop",
+               "Cradle of Filth": "Black Metal",
+               "Deep Purple": "Hard Rock",
+               "Firehouse": "Hard Rock",
+               "Green Day": "Alternative Rock",
+               "Indochine": "French Pop",
+               "Iron Maiden": "Heavy Metal",
+               "Jethro Tull": "Progressive Rock",
+               "Judas Priest": "Heavy Metal",
+               "King Diamond": "Hard Rock",
+               "Kiss": "Hard Rock",
+               "Grande Sophie, La": "French Pop",
+               "Lady Gaga": "Pop",
+               "Megadeth": "Trash Metal",
+               "Metallica": "Trash Metal",
+               "Myl\u00E8ne Farmer": "French Pop",
+               "Nirvana": "Alternative Rock",
+               "Ozzy Osbourne": "Hard Rock",
+               "Paradise Lost": "Doom Metal",
+               "Pearl Jam": "Alternative Rock",
+               "Sandra": "Pop",
+               "Tears for Fears": "Pop",
+               "W.A.S.P.": "Hard Rock",
+               "WASP": "Hard Rock",
+               "Warrior Soul": "Hard Rock"}
+
+
 class Changes(object):
     logger = logging.getLogger(f"{__name__}")
 
@@ -261,7 +293,7 @@ class TestRippedTrack(unittest.TestCase):
                 config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        value, _ = upsert_audiotags(profile, stream, "C1", *decorators, **config)
+                        value, _ = upsert_audiotags(profile, stream, "C1", *decorators, audiogenres=CustomAudioGenres(), **config)
 
                 # -----
                 self.assertEqual(value, 0)
@@ -286,7 +318,7 @@ class TestRippedTrack(unittest.TestCase):
                 config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        _, track = upsert_audiotags(profile, stream, "C1", *decorators, **config)
+                        _, track = upsert_audiotags(profile, stream, "C1", *decorators, audiogenres=CustomAudioGenres(), **config)
 
                 # -----
                 for k, v in expected.items():
@@ -325,7 +357,7 @@ class TestRippedTrack(unittest.TestCase):
                 config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile, stream, "C1", *decorators, audiogenres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
@@ -371,7 +403,7 @@ class TestRippedTrack(unittest.TestCase):
                 config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile, stream, "C1", *decorators, audiogenres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
@@ -417,7 +449,7 @@ class TestRippedTrack(unittest.TestCase):
                 config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile, stream, "C1", *decorators, audiogenres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:

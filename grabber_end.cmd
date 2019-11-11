@@ -36,7 +36,6 @@ FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 :MAIN
 IF "%~1" EQU "" EXIT /B %_errorlevel%
 IF "%~1" EQU "1" GOTO STEP1
-IF "%~1" EQU "2" GOTO STEP2
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
 IF "%~1" EQU "5" GOTO STEP5

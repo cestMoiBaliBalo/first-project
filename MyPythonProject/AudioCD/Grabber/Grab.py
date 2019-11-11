@@ -6,21 +6,54 @@ import os
 import sys
 from contextlib import suppress
 from functools import partial
-from operator import contains
+from operator import contains, not_
 
 import yaml
 
-from Applications.AudioCD.shared import upsert_audiotags
+from Applications.AudioCD.shared import AudioGenres, upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import get_dirname, itemgetter_, mainscript, not_
+from Applications.shared import UTF8, get_dirname, itemgetter_, mainscript, nested_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+
+class CustomAudioGenres(AudioGenres):
+    _genres = {"Arcade Fire": "Alternative Rock",
+               "Black Sabbath": "Hard Rock",
+               "Blue \u00D6yster Cult": "Hard Rock",
+               "Bon Jovi": "Hard Rock",
+               "Calogero": "French Pop",
+               "Cradle of Filth": "Black Metal",
+               "Deep Purple": "Hard Rock",
+               "Firehouse": "Hard Rock",
+               "Green Day": "Alternative Rock",
+               "Indochine": "French Pop",
+               "Iron Maiden": "Heavy Metal",
+               "Jethro Tull": "Progressive Rock",
+               "Judas Priest": "Heavy Metal",
+               "King Diamond": "Hard Rock",
+               "Kiss": "Hard Rock",
+               "Grande Sophie, La": "French Pop",
+               "Lady Gaga": "Pop",
+               "Megadeth": "Trash Metal",
+               "Metallica": "Trash Metal",
+               "Myl\u00E8ne Farmer": "French Pop",
+               "Nirvana": "Alternative Rock",
+               "Ozzy Osbourne": "Hard Rock",
+               "Paradise Lost": "Doom Metal",
+               "Pearl Jam": "Alternative Rock",
+               "Sandra": "Pop",
+               "Tears for Fears": "Pop",
+               "W.A.S.P.": "Hard Rock",
+               "WASP": "Hard Rock",
+               "Warrior Soul": "Hard Rock"}
+
+
 # Define French environment.
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+locale.setlocale(locale.LC_ALL, "")
 
 # Define local constants.
 LOGGERS = ["Applications.AudioCD", "MyPythonProject"]
@@ -32,12 +65,12 @@ abspath, basename, join, expandvars, splitext = os.path.abspath, os.path.basenam
 arguments = vars(tags_grabber.parse_args())
 
 # Get audio tags processing profile.
-with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "profiles.yml"), encoding="UTF_8") as stream:
-    tags_config = yaml.load(stream)[arguments.get("tags_processing", "default")]
+with open(join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "profiles.yml"), encoding=UTF8) as stream:
+    tags_config = yaml.load(stream, Loader=yaml.FullLoader)[arguments.get("tags_processing", "default")]
 
 # Configure logging.
 if tags_config.get("debug", False):
-    with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as stream:
+    with open(join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding=UTF8) as stream:
         log_config = yaml.load(stream, Loader=yaml.FullLoader)
 
     for item in LOGGERS:
@@ -53,5 +86,6 @@ value, _ = upsert_audiotags(arguments["profile"],
                             arguments["source"],
                             arguments["sequence"],
                             *arguments.get("decorators", ()),
-                            **dict(filter(not_(itemgetter_()(partial(contains, ["debug", "console"]))), tags_config.items())))
+                            audiogenres=CustomAudioGenres(),
+                            **dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "console"]))), tags_config.items())))
 sys.exit(value)
