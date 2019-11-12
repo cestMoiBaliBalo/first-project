@@ -18,12 +18,12 @@ class AudioCDTags(MutableMapping):
 
 class AudioGenres(object):
     _genres: Mapping[str, str] = ...
-    def get_genre(self, artistsort: str, fallback: str = ...) -> str:
+    def get_genre(self, artistsort: str, *, fallback: str = ...) -> str:
 
 
 class AudioLanguages(object):
     _languages: Mapping[str, str] = ...
-    def get_language(self, artistsort: str, fallback: str = ...) -> str:
+    def get_language(self, artistsort: str, *, fallback: str = ...) -> str:
 
 
 class ChangeAlbum(AudioCDTags):

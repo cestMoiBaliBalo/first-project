@@ -332,8 +332,8 @@ class CommonAudioCDTags(AudioCDTags):
 
     def __init__(self, sequence, **kwargs):
         super(CommonAudioCDTags, self).__init__()
-        genres = kwargs["genres"]
-        languages = kwargs["languages"]
+        genres = kwargs.get("genres")
+        languages = kwargs.get("languages")
         kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
@@ -422,11 +422,14 @@ class CommonAudioCDTags(AudioCDTags):
         self._otags["disc"], self._otags[self._totaldiscs_key] = self.splitfield(kwargs["disc"], self.track_pattern)
 
         # ----- Update genre.
-        self.logger.debug("Update genre.")
-        self._otags["genre"] = genres.get_genre(kwargs["artistsort"], kwargs["genre"])
+        if genres is not None:
+            self.logger.debug("Update genre.")
+            self._otags["genre"] = genres.get_genre(kwargs["artistsort"], fallback=kwargs.get("genre", "Rock"))
 
         # ----- Update titlelanguage.
-        self._otags["titlelanguage"] = languages.get_language(kwargs["artistsort"], kwargs["tracklanguage"])
+        if languages is not None:
+            self.logger.debug("Update titlelanguage.")
+            self._otags["titlelanguage"] = languages.get_language(kwargs["artistsort"], fallback=kwargs.get("tracklanguage", "English"))
 
         # ----- Update title.
         self.logger.debug("Update title.")
@@ -614,14 +617,14 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 class AudioGenres(object):
     _genres = {}
 
-    def get_genre(self, artistsort, fallback="Rock"):
+    def get_genre(self, artistsort, *, fallback="Rock"):
         return self._genres.get(artistsort, fallback)
 
 
 class AudioLanguages(object):
     _languages = {}
 
-    def get_language(self, artistsort, fallback="English"):
+    def get_language(self, artistsort, *, fallback="English"):
         return self._languages.get(artistsort, fallback)
 
 
@@ -882,7 +885,7 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres=None, languages=None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres: Any = None, languages: Any = None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
     """
 
     :param profile:

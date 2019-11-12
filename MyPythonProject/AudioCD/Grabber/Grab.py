@@ -6,13 +6,14 @@ import os
 import sys
 from contextlib import suppress
 from functools import partial
-from operator import contains, not_
+from itertools import filterfalse
+from operator import contains
 
 import yaml
 
 from Applications.AudioCD.shared import AudioGenres, AudioLanguages, upsert_audiotags
 from Applications.parsers import tags_grabber
-from Applications.shared import UTF8, get_dirname, itemgetter_, mainscript, nested_
+from Applications.shared import UTF8, get_dirname, itemgetter_, mainscript
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -53,10 +54,10 @@ class CustomAudioGenres(AudioGenres):
 
 
 class CustomAudioLanguages(AudioLanguages):
-    _genres = {"Calogero": "French",
-               "Indochine": "French",
-               "Grande Sophie, La": "French",
-               "Myl\u00E8ne Farmer": "French"}
+    _languages = {"Calogero": "French",
+                  "Indochine": "French",
+                  "Grande Sophie, La": "French",
+                  "Myl\u00E8ne Farmer": "French"}
 
 
 # Define French environment.
@@ -95,5 +96,5 @@ value, _ = upsert_audiotags(arguments["profile"],
                             *arguments.get("decorators", ()),
                             genres=CustomAudioGenres(),
                             languages=CustomAudioLanguages(),
-                            **dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "console"]))), tags_config.items())))
+                            **dict(filterfalse(itemgetter_()(partial(contains, ["debug", "console"])), tags_config.items())))
 sys.exit(value)
