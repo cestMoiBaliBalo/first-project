@@ -10,7 +10,7 @@ from operator import contains, not_
 
 import yaml
 
-from Applications.AudioCD.shared import AudioGenres, upsert_audiotags
+from Applications.AudioCD.shared import AudioGenres, AudioLanguages, upsert_audiotags
 from Applications.parsers import tags_grabber
 from Applications.shared import UTF8, get_dirname, itemgetter_, mainscript, nested_
 
@@ -52,6 +52,13 @@ class CustomAudioGenres(AudioGenres):
                "Warrior Soul": "Hard Rock"}
 
 
+class CustomAudioLanguages(AudioLanguages):
+    _genres = {"Calogero": "French",
+               "Indochine": "French",
+               "Grande Sophie, La": "French",
+               "Myl\u00E8ne Farmer": "French"}
+
+
 # Define French environment.
 locale.setlocale(locale.LC_ALL, "")
 
@@ -86,6 +93,7 @@ value, _ = upsert_audiotags(arguments["profile"],
                             arguments["source"],
                             arguments["sequence"],
                             *arguments.get("decorators", ()),
-                            audiogenres=CustomAudioGenres(),
+                            genres=CustomAudioGenres(),
+                            languages=CustomAudioLanguages(),
                             **dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "console"]))), tags_config.items())))
 sys.exit(value)

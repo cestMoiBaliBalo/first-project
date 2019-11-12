@@ -9,7 +9,7 @@ from collections.abc import MutableMapping
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
-from itertools import groupby
+from itertools import filterfalse, groupby
 from operator import contains, itemgetter, not_
 from pathlib import Path, WindowsPath
 from string import Template
@@ -277,13 +277,13 @@ class AudioCDTags(MutableMapping):
         return self._otags["year"]
 
     @classmethod
-    def fromfile(cls, fil, sequence, audiogenres):
+    def fromfile(cls, fil, sequence, genres, languages):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
         for line in filcontents(fil):
             _match = regex.match(line)
             if _match:
                 mapping[_match.group(1).rstrip().lower()] = _match.group(2)
-        return cls(audiogenres, sequence, **SortedDict(**mapping))
+        return cls(sequence, genres=genres, languages=languages, **SortedDict(**mapping))
 
     @staticmethod
     def checktags(member, container):
@@ -330,8 +330,11 @@ class CommonAudioCDTags(AudioCDTags):
               "utctimestamp": False,
               "_albumart_1_front album cover": False}
 
-    def __init__(self, audiogenres, sequence, **kwargs):
+    def __init__(self, sequence, **kwargs):
         super(CommonAudioCDTags, self).__init__()
+        genres = kwargs["genres"]
+        languages = kwargs["languages"]
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -420,15 +423,10 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Update genre.
         self.logger.debug("Update genre.")
-        self._otags["genre"] = audiogenres.get_genres(kwargs["artistsort"], kwargs["genre"])
+        self._otags["genre"] = genres.get_genre(kwargs["artistsort"], kwargs["genre"])
 
         # ----- Update titlelanguage.
-        # self.logger.debug("Update titlelanguage.")
-        self._otags["titlelanguage"] = self._otags.get("tracklanguage", "English")
-        # for artist, language in self.deserialize(LANGUAGES):
-        #     if kwargs["artist"].lower() == artist.lower():
-        #         self._otags["titlelanguage"] = language
-        #         break
+        self._otags["titlelanguage"] = languages.get_language(kwargs["artistsort"], kwargs["tracklanguage"])
 
         # ----- Update title.
         self.logger.debug("Update title.")
@@ -462,8 +460,9 @@ class DefaultAudioCDTags(CommonAudioCDTags):
               "upc": True,
               "year": True}
 
-    def __init__(self, audiogenres, sequence, **kwargs):
-        super(DefaultAudioCDTags, self).__init__(audiogenres, sequence, **kwargs)
+    def __init__(self, sequence, **kwargs):
+        super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -528,8 +527,9 @@ class BootlegAudioCDTags(CommonAudioCDTags):
               "bootlegdiscreference": False,
               "bonustrack": True}
 
-    def __init__(self, audiogenres, sequence, **kwargs):
-        super(BootlegAudioCDTags, self).__init__(audiogenres, sequence, **kwargs)
+    def __init__(self, sequence, **kwargs):
+        super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -614,8 +614,15 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 class AudioGenres(object):
     _genres = {}
 
-    def get_genres(self, artistsort, fallback="Rock"):
+    def get_genre(self, artistsort, fallback="Rock"):
         return self._genres.get(artistsort, fallback)
+
+
+class AudioLanguages(object):
+    _languages = {}
+
+    def get_language(self, artistsort, fallback="English"):
+        return self._languages.get(artistsort, fallback)
 
 
 class TagsModifier(AudioCDTags):
@@ -669,7 +676,15 @@ class RippedTrack(ContextDecorator):
     _tabs = 4
     _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
 
-    def __init__(self, rippingprofile, file, sequence, *decoratingprofiles, audiogenres=None):
+    def __init__(self, rippingprofile, file, sequence, *decoratingprofiles, **kwargs):
+        """
+
+        :param rippingprofile:
+        :param file:
+        :param sequence:
+        :param decoratingprofiles:
+        :param kwargs:
+        """
         self._audiotracktags = None
         self._decorators = None
         self._sequence = None
@@ -681,9 +696,12 @@ class RippedTrack(ContextDecorator):
         self.sequence = sequence
         self.profile = rippingprofile
         self.tags = file
-        self._audiogenres = audiogenres
-        if audiogenres is None:
-            self._audiogenres = AudioGenres()
+        self._genres = kwargs.get("genres")
+        if kwargs.get("genres") is None:
+            self._genres = AudioGenres()
+        self._languages = kwargs.get("languages")
+        if kwargs.get("languages") is None:
+            self._languages = AudioLanguages()
 
     @property
     def profile(self):
@@ -810,7 +828,7 @@ class RippedTrack(ContextDecorator):
 
         # --> 4. Create AudioCDTags instance.
         self._tags.seek(0)
-        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence, self._audiogenres)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
+        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence, self._genres, self._languages)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
         keys, values = zip(*sorted(self._audiotracktags, key=itemgetter(0)))
@@ -864,14 +882,15 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, audiogenres=None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres=None, languages=None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
     """
 
     :param profile:
     :param source:
     :param sequence:
     :param decorators:
-    :param audiogenres:
+    :param genres:
+    :param languages:
     :param kwargs:
     :return:
     """
@@ -882,7 +901,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     in_logger.debug("Profile is  : %s", profile)
     in_logger.debug("File name is: %s", source.name)
     try:
-        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, audiogenres=audiogenres))
+        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, genres=genres, languages=languages))
     except ValueError as err:
         in_logger.debug(err)
         track, value = None, 100
