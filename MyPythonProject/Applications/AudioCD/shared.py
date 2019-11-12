@@ -277,13 +277,13 @@ class AudioCDTags(MutableMapping):
         return self._otags["year"]
 
     @classmethod
-    def fromfile(cls, fil, sequence, genres, languages):
+    def fromfile(cls, fil, sequence, genres, languages, encoders):
         regex, mapping = re.compile(DFTPATTERN, re.IGNORECASE), {}
         for line in filcontents(fil):
             _match = regex.match(line)
             if _match:
                 mapping[_match.group(1).rstrip().lower()] = _match.group(2)
-        return cls(sequence, genres=genres, languages=languages, **SortedDict(**mapping))
+        return cls(sequence, genres=genres, languages=languages, encoders=encoders, **SortedDict(**mapping))
 
     @staticmethod
     def checktags(member, container):
@@ -334,7 +334,8 @@ class CommonAudioCDTags(AudioCDTags):
         super(CommonAudioCDTags, self).__init__()
         genres = kwargs.get("genres")
         languages = kwargs.get("languages")
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
+        encoders = kwargs.get("encoders")
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -395,20 +396,16 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encoder attributes.
         self.logger.debug("Set encoder attributes.")
-        with open(ENCODERS, encoding=shared.UTF8) as stream:
-            encoders = yaml.load(stream, Loader=yaml.FullLoader)
-            for encoder, attributes in encoders.items():
-                if kwargs["encoder"].lower() == encoder.lower():
-                    self._encoder = Encoder(encoder, attributes["code"], attributes["folder"], attributes["extension"])
-                    self.logger.debug("Used encoder.")
-                    self.logger.debug("Name\t\t: %s".expandtabs(3), encoder)
-                    self.logger.debug("Code\t\t: %s".expandtabs(3), self._encoder.code)
-                    self.logger.debug("Folder\t: %s".expandtabs(3), self._encoder.folder)
-                    self.logger.debug("Extension: %s".expandtabs(3), self._encoder.extension)
-                    self._otags["encoder"] = kwargs["encoder"]
-                    self._otags["code"] = attributes["code"]
-                    self._otags["folder"] = attributes["folder"]
-                    break
+        encoder_attributes = encoders.get_encoder(kwargs["encoder"])
+        self._encoder = Encoder(kwargs["encoder"], encoder_attributes["code"], encoder_attributes["folder"], encoder_attributes["extension"])
+        self.logger.debug("Used encoder.")
+        self.logger.debug("Name\t\t: %s".expandtabs(3), kwargs["encoder"])
+        self.logger.debug("Code\t\t: %s".expandtabs(3), self._encoder.code)
+        self.logger.debug("Folder\t: %s".expandtabs(3), self._encoder.folder)
+        self.logger.debug("Extension: %s".expandtabs(3), self._encoder.extension)
+        self._otags["encoder"] = kwargs["encoder"]
+        self._otags["code"] = encoder_attributes["code"]
+        self._otags["folder"] = encoder_attributes["folder"]
 
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
@@ -465,7 +462,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
 
     def __init__(self, sequence, **kwargs):
         super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -532,7 +529,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 
     def __init__(self, sequence, **kwargs):
         super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["Genres", "Languages"])), kwargs.items()))
+        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -628,6 +625,19 @@ class AudioLanguages(object):
         return self._languages.get(artistsort, fallback)
 
 
+class AudioEncoders(object):
+    _encoders = {"FDK v2.0.0": {"code": "02", "extension": "m4a", "folder": "0.MPEG-4 AAC"},
+                 "FLAC 1.3.3 beta": {"code": "13", "extension": "flac", "folder": "1.Free Lossless Audio Codec"},
+                 "Lame 3.100.0": {"code": "01", "extension": "mp3", "folder": "0.MPEG 1 Layer III"},
+                 "Monkeys Audio v4.38": {"code": "12", "extension": "ape", "folder": "1.Monkey's Audio"},
+                 "ogg vorbis (aoTuV SSE3)": {"code": "05", "extension": "ogg", "folder": "0.Ogg Vorbis"},
+                 "SV8 mpcenc 1.30 stable": {"code": "03", "extension": "mpc", "folder": "0.Musepack"}
+                 }
+
+    def get_encoder(self, encoder):
+        return self._encoders.get(encoder)
+
+
 class TagsModifier(AudioCDTags):
     logger = logging.getLogger("{0}.TagsModifier".format(__name__))
 
@@ -705,6 +715,9 @@ class RippedTrack(ContextDecorator):
         self._languages = kwargs.get("languages")
         if kwargs.get("languages") is None:
             self._languages = AudioLanguages()
+        self._encoders = kwargs.get("encoders")
+        if kwargs.get("encoders") is None:
+            self._encoders = AudioEncoders()
 
     @property
     def profile(self):
@@ -831,7 +844,11 @@ class RippedTrack(ContextDecorator):
 
         # --> 4. Create AudioCDTags instance.
         self._tags.seek(0)
-        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags, self._sequence, self._genres, self._languages)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
+        self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags,
+                                                                       self._sequence,
+                                                                       self._genres,
+                                                                       self._languages,
+                                                                       self._encoders)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
 
         # --> 5. Log instance attributes.
         keys, values = zip(*sorted(self._audiotracktags, key=itemgetter(0)))
@@ -885,7 +902,7 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres: Any = None, languages: Any = None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
+def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres: Any = None, languages: Any = None, encoders: Any = None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
     """
 
     :param profile:
@@ -894,6 +911,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     :param decorators:
     :param genres:
     :param languages:
+    :param encoders:
     :param kwargs:
     :return:
     """
@@ -904,7 +922,7 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
     in_logger.debug("Profile is  : %s", profile)
     in_logger.debug("File name is: %s", source.name)
     try:
-        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, genres=genres, languages=languages))
+        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, genres=genres, languages=languages, encoders=encoders))
     except ValueError as err:
         in_logger.debug(err)
         track, value = None, 100
