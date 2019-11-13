@@ -334,7 +334,7 @@ class CommonAudioCDTags(AudioCDTags):
         super(CommonAudioCDTags, self).__init__()
         genres = kwargs.get("genres")
         languages = kwargs.get("languages")
-        encoders = kwargs.get("encoders")
+        self._encoders = kwargs.get("encoders")
         kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
@@ -343,7 +343,6 @@ class CommonAudioCDTags(AudioCDTags):
             raise ValueError(exception)
 
         # ----- Encoder dependent attributes.
-        Encoder = namedtuple("Encoder", "name code folder extension")
         self._totaltracks_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaltracks"]
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
@@ -396,7 +395,8 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Set encoder attributes.
         self.logger.debug("Set encoder attributes.")
-        encoder_attributes = encoders.get_encoder(kwargs["encoder"])
+        encoder_attributes = self._encoders.get_encoder(kwargs["encoder"])
+        Encoder = namedtuple("Encoder", "name code folder extension")
         self._encoder = Encoder(kwargs["encoder"], encoder_attributes["code"], encoder_attributes["folder"], encoder_attributes["extension"])
         self.logger.debug("Used encoder.")
         self.logger.debug("Name\t\t: %s".expandtabs(3), kwargs["encoder"])
@@ -442,9 +442,8 @@ class CommonAudioCDTags(AudioCDTags):
             return False, "track doesn\'t respect the expected pattern."
         if not self.track_pattern.match(kwargs["disc"]):
             return False, "disc doesn\'t respect the expected pattern."
-        with open(ENCODERS, encoding=shared.UTF8) as stream:
-            if kwargs["encoder"] not in list(yaml.load(stream, Loader=yaml.FullLoader)):
-                return False, f'\"{kwargs["encoder"]}\" as encoder isn\'t recognized.'
+        if kwargs["encoder"] not in self._encoders.get_encoders():
+            return False, f'\"{kwargs["encoder"]}\" as encoder isn\'t recognized.'
         return True, ""
 
 
@@ -636,6 +635,9 @@ class AudioEncoders(object):
 
     def get_encoder(self, encoder):
         return self._encoders.get(encoder)
+
+    def get_encoders(self):
+        return sorted(self._encoders)
 
 
 class TagsModifier(AudioCDTags):
@@ -1404,13 +1406,6 @@ Profile = namedtuple("profile", "exclusions isinstancedfrom")
 # Constants.
 # ==========
 DFTPATTERN = r"^(?:\uFEFF)?(?!#)(?:z_)?([^=]+)=(?!\s)(.+)$"
-# GENRES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Genres.json")
-# LANGUAGES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Languages.json")
-ENCODERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Encoders.yml")
-ENC_KEYS = ["name",
-            "code",
-            "folder",
-            "extension"]
 PROFILES = {"default": Profile(["albumsortyear",
                                 "bonustrack",
                                 "bootleg",
