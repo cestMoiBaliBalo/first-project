@@ -47,7 +47,7 @@ LOCAL = timezone("Europe/Paris")
 LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
 UTC = timezone("UTC")
 UTF8 = "UTF_8"
-UTF16 = "UTF_16LE"
+UTF16 = "UTF_16"
 UTF16BOM = "\uFEFF"
 WRITE = "w"
 
