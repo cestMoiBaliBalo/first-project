@@ -9,7 +9,8 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from functools import partial, wraps
-from operator import contains, itemgetter, not_
+from itertools import filterfalse
+from operator import contains, itemgetter
 from pathlib import PurePath
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Optional, Tuple
@@ -21,7 +22,7 @@ from ..AudioCD.shared import AudioGenres, albums, dump_audiotags_tojson, get_tag
 from ..Tables.Albums.shared import defaultalbums, exist_albumid, get_albumidfromgenre, insert_albums_fromjson, update_defaultalbums, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
-from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_, nested_
+from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -290,7 +291,7 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
                         value, _ = upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
@@ -315,7 +316,7 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
                         _, track = upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
@@ -354,7 +355,7 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
                         upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
@@ -400,7 +401,7 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
                         upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
@@ -446,7 +447,7 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filter(nested_(not_)(itemgetter_()(partial(contains, ["debug", "database", "console"]))), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
                         upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
