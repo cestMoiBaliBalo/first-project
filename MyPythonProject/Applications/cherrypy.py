@@ -18,7 +18,7 @@ from .Tables.RippedDiscs.shared import get_rippeddiscs
 # from .Tables.Albums.shared import get_albumheader, get_track, getartist, getlastplayeddate, updatelastplayeddate
 # from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 # from .Tables.RippedDiscs.shared import validyear
-from .shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, attrgetter_, eq_string, format_date, localize_date, normalize, normalize2
+from .shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, attrgetter_, eq_string_, format_date, localize_date, normalize, normalize2
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -605,7 +605,7 @@ class DigitalAudioCollection(object):
         mapping = set((disc.artistsort, disc.artist) for disc in self.rippeddiscs)  # type: Set[Tuple[str, str]]
         collection = list(self.sort_collection(self.rippeddiscs, *[("ripped", True), ("artistsort", False)]))  # type: Sequence[Any]
         if artistsort is not None:
-            collection = list(filter(attrgetter_("artistsort")(partial(eq_string, artistsort, sensitive=True)), collection))
+            collection = list(filter(attrgetter_("artistsort")(partial(eq_string_, artistsort, sensitive=True)), collection))
         kwargs = {"body": "view2",
                   "bold": artistsort,
                   "browser": OrderedDict(sorted(mapping, key=itemgetter(0), reverse=True)),
@@ -632,7 +632,7 @@ class DigitalAudioCollection(object):
         mapping = set((disc.genre, disc.genre) for disc in self.rippeddiscs)  # type: Set[Tuple[str, str]]
         collection = list(self.sort_collection(self.rippeddiscs, *[("ripped", True), ("genre", False)]))  # type: Sequence[Any]
         if genre is not None:
-            collection = list(filter(attrgetter_("genre")(partial(eq_string, genre, sensitive=False)), collection))
+            collection = list(filter(attrgetter_("genre")(partial(eq_string_, genre, sensitive=False)), collection))
         kwargs = {"body": "view2",
                   "bold": genre,
                   "browser": OrderedDict(sorted(mapping, key=itemgetter(0), reverse=True)),
