@@ -10,7 +10,7 @@ from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import filterfalse, groupby
-from operator import contains, itemgetter, not_
+from operator import contains, itemgetter
 from pathlib import Path, WindowsPath
 from string import Template
 from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
@@ -877,8 +877,8 @@ class RippedTrack(ContextDecorator):
             exclusions.append("folder")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_keys = shared.nested_(not_)((shared.itemgetter_(0)(partial(contains, exclusions))))
-        outtags = dict(filter(filter_keys, sorted(self._audiotracktags, key=itemgetter(0))))
+        filter_ = shared.itemgetter_(0)(partial(contains, exclusions))
+        outtags = dict(filterfalse(filter_, sorted(self._audiotracktags, key=itemgetter(0))))
 
         # --> 2. Log output tags.
         self._in_logger.debug(f'Processed track is: \"{self._audiotracktags}\"')

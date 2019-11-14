@@ -11,7 +11,8 @@ import unittest
 from collections.abc import MutableSequence
 from datetime import datetime
 from functools import partial, wraps
-from operator import contains, eq, gt, itemgetter, lt, not_
+from itertools import filterfalse
+from operator import contains, eq, gt, itemgetter, lt
 from pathlib import PurePath
 from typing import Union
 from unittest.mock import patch
@@ -198,21 +199,15 @@ class Test03(unittest.TestCase):
         self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
 
     def test_t01(self):
-        self.assertEqual(int(max(self.iterable).split("_")[1]), 101)
+        self.assertEqual(max(map(int, map(itemgetter(1), map(partial(split_, "_"), self.iterable)))), 456)
 
     def test_t02(self):
-        self.assertEqual(nested_(itemgetter(1), int)(partial(split_, "_"))(max(self.iterable)), 101)
-
-    def test_t03(self):
-        self.assertEqual(int(max([item.split("_")[1] for item in self.iterable])), 456)
-
-    def test_t04(self):
         self.assertEqual(max(map(nested_(itemgetter(1), int)(partial(split_, "_")), self.iterable)), 456)
 
-    def test_t05(self):
+    def test_t03(self):
         self.assertListEqual(sorted(self.iterable, key=nested_(itemgetter(1), int)(partial(split_, "_"))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
-    def test_t06(self):
+    def test_t04(self):
         self.assertListEqual(sorted(sorted(self.iterable, key=nested_(itemgetter(1), int)(partial(split_, "_"))), key=nested_(itemgetter(0), int)(partial(split_, "_"))),
                              ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
@@ -376,10 +371,10 @@ class TestDecorator05(unittest.TestCase):
         self.iterable = ("1.20160000.10",)
 
     def test_t01(self):
-        self.assertEqual(nested_(itemgetter(2), int)(itemgetter_()((partial(split_, "."))))(self.iterable), 10)
+        self.assertEqual(int(itemgetter(2)(itemgetter_()(partial(split_, "."))(self.iterable))), 10)
 
     def test_t02(self):
-        self.assertEqual(nested_(itemgetter(1), int)(itemgetter_()((partial(split_, "."))))(self.iterable), 20160000)
+        self.assertEqual(int(itemgetter(1)(itemgetter_()(partial(split_, "."))(self.iterable))), 20160000)
 
 
 class TestDecorator06(unittest.TestCase):
@@ -479,10 +474,10 @@ class TestDecorator07(unittest.TestCase):
 class TestDecorator08(unittest.TestCase):
 
     def test_t01(self):
-        self.assertListEqual(list(filter(nested_(not_)(partial(contains, ["A", "C", "E", "G"])), ["A", "B", "C", "D", "E", "F", "G"])), ["B", "D", "F"])
+        self.assertListEqual(list(filterfalse(partial(contains, ["A", "C", "E", "G"]), ["A", "B", "C", "D", "E", "F", "G"])), ["B", "D", "F"])
 
     def test_t02(self):
-        self.assertListEqual(list(filter(nested_(not_)(partial(contains, ["A", "B", "C", "D", "E", "F", "G"])), ["A", "C", "E", "G", "H"])), ["H"])
+        self.assertListEqual(list(filterfalse(partial(contains, ["A", "B", "C", "D", "E", "F", "G"]), ["A", "C", "E", "G", "H"])), ["H"])
 
 
 @patch("Applications.shared.datetime")
