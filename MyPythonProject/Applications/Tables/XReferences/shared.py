@@ -239,7 +239,9 @@ def _remove_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
         _stack.enter_context(_conn)
         _collection = iter(collection)
         _total_changes = 0  # type: int
-        for artistid, albumid in compress(_collection, [1, 1, 0, 0, 0, 0, 0, 0]):
+        for _track in _collection:
+            artistid, albumid = compress(_track, [1, 1, 0, 0, 0, 0, 0, 0])
+
             # Delete file(s).
             _conn.execute("DELETE FROM files WHERE artistid=? AND albumid=?", (artistid, albumid))
             _files_changes = _conn.total_changes - _total_changes

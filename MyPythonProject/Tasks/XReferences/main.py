@@ -27,7 +27,7 @@ def compress_(selectors, data):
 
 
 # -----
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+locale.setlocale(locale.LC_ALL, "")
 
 # -----
 SELECTORS = [0, 0, 0, 0, 0, 0, 1, 1]
@@ -35,7 +35,7 @@ GROUP_SELECTORS = [1, 1, 0, 0, 1, 0, 0, 0]
 
 # -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding=UTF8) as fp:
-    logging.config.dictConfig(yaml.load(fp))
+    logging.config.dictConfig(yaml.load(fp, Loader=yaml.FullLoader))
 logger = logging.getLogger("MyPythonProject.Tasks.XReferences.main")
 
 # -----

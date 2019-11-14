@@ -19,7 +19,7 @@ __status__ = "Production"
 # ==========================
 # Define French environment.
 # ==========================
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+locale.setlocale(locale.LC_ALL, "")
 
 # =================
 # Arguments parser.
