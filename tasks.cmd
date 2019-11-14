@@ -129,7 +129,7 @@ IF ERRORLEVEL 32 (
         PUSHD %_RESOURCES%
         IF EXIST !_commandsfile! (
             CLS
-            CALL !_commandsfile! && DEL !_commandsfile! && DEL !_tracksfile! 2> NUL
+            CALL !_commandsfile! 0 && DEL !_commandsfile! && DEL !_tracksfile! 2> NUL
             ECHO:
             ECHO:
             PAUSE
