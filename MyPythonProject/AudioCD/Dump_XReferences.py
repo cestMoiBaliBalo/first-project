@@ -13,8 +13,8 @@ __status__ = "Production"
 # Main script.
 # ============
 parser = argparse.ArgumentParser()
-parser.add_argument("track")
+parser.add_argument("path", help="String representing an audio file. Both path and name.")
 argument = parser.parse_args()
-found, references = get_xreferences(argument.track)
+found, references = get_xreferences(argument.path)
 if found:
     dump_xreferences(references)

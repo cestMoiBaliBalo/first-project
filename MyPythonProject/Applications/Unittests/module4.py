@@ -37,35 +37,7 @@ basename, exists, join = os.path.basename, os.path.exists, os.path.join
 # Global classes.
 # ===============
 class CustomAudioGenres(AudioGenres):
-    _genres = {"Arcade Fire": "Alternative Rock",
-               "Black Sabbath": "Hard Rock",
-               "Blue \u00D6yster Cult": "Hard Rock",
-               "Bon Jovi": "Hard Rock",
-               "Calogero": "French Pop",
-               "Cradle of Filth": "Black Metal",
-               "Deep Purple": "Hard Rock",
-               "Firehouse": "Hard Rock",
-               "Green Day": "Alternative Rock",
-               "Indochine": "French Pop",
-               "Iron Maiden": "Heavy Metal",
-               "Jethro Tull": "Progressive Rock",
-               "Judas Priest": "Heavy Metal",
-               "King Diamond": "Hard Rock",
-               "Kiss": "Hard Rock",
-               "Grande Sophie, La": "French Pop",
-               "Lady Gaga": "Pop",
-               "Megadeth": "Trash Metal",
-               "Metallica": "Trash Metal",
-               "Myl\u00E8ne Farmer": "French Pop",
-               "Nirvana": "Alternative Rock",
-               "Ozzy Osbourne": "Hard Rock",
-               "Paradise Lost": "Doom Metal",
-               "Pearl Jam": "Alternative Rock",
-               "Sandra": "Pop",
-               "Tears for Fears": "Pop",
-               "W.A.S.P.": "Hard Rock",
-               "WASP": "Hard Rock",
-               "Warrior Soul": "Hard Rock"}
+    _genres = {}
 
 
 class Changes(object):

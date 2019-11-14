@@ -6,7 +6,7 @@ import os
 from contextlib import ExitStack
 from pathlib import Path
 
-from Applications.shared import TemplatingEnvironment, itemgetter_, UTF8
+from Applications.shared import TemplatingEnvironment, itemgetter_, UTF8, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -59,7 +59,7 @@ template = TemplatingEnvironment(_THATFILE.parents[1] / "Templates")
 # Set copy commands file.
 with ExitStack() as stack:
     fr = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.txt", encoding=UTF8, newline=""))
-    fw = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.cmd", mode="w", encoding="ISO-8859-1"))
+    fw = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.cmd", mode=WRITE, encoding="ISO-8859-1"))
     reader = csv.reader(fr, dialect="dialect")
     tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)
     tracks = [(src, Path(src).name, dst) for src, dst in tracks]

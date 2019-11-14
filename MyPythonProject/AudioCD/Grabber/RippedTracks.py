@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from Applications.shared import UTF8, get_dirname
+from Applications.shared import APPEND, UTF8, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -45,5 +45,5 @@ dst = Path("//diskstation/music") / "/".join(path.parents[parts - 3].parts[1:]) 
 logger.debug("Copy audio file.")
 logger.debug("\tFile        : %s".expandtabs(3), arguments.path)
 logger.debug("\tDestination : %s".expandtabs(3), dst)
-with open(Path(os.path.expandvars("%_COMPUTING%")) / "Resources" / "rippedtracks.txt", mode="a", encoding=UTF8) as stream:
+with open(Path(os.path.expandvars("%_COMPUTING%")) / "Resources" / "rippedtracks.txt", mode=APPEND, encoding=UTF8) as stream:
     stream.write(f"{arguments.path}|{dst}\n")
