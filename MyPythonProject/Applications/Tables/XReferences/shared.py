@@ -6,7 +6,8 @@ import os
 import sqlite3
 from contextlib import ExitStack, suppress
 from datetime import datetime
-from itertools import chain, compress, filterfalse, repeat, tee
+from itertools import chain, compress, filterfalse, groupby, repeat, tee
+from operator import itemgetter
 from typing import IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
 from Applications import shared
@@ -127,7 +128,7 @@ def get_albums(artist: str, *extensions: str) -> Iterable[Tuple[str, str, str, s
 
 @shared.itemgetter_(2)
 @shared.partial_("recycle")
-def filter_albums_(kwd: str, strg: str) -> bool:
+def filter_(kwd: str, strg: str) -> bool:
     return kwd in strg.lower()
 
 
@@ -140,45 +141,66 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     """
     logger = logging.getLogger(f"{__name__}.get_albums")
 
-    # `_albums` is an iter object.
-    # Every yielded item is a 6-item tuple describing an album.
-    _albums = chain.from_iterable(filterfalse(filter_albums_, [(artistid,
-                                                                albumid,
-                                                                artist_path,
-                                                                album_path,
-                                                                album,
-                                                                is_bootleg) for album, album_path, albumid, is_bootleg in shared.get_albums(artist_path)]) for artistid, artist_path in shared.get_artists())
-    _albums_it1, _albums_it2, _albums_it3 = tee(_albums, 3)
-    header = "{0:{fil}<100}".format("LOCAL DRIVE ALBUMS ", fil="=")
-    logger.debug("# %s #", header)
-    for _item in _albums_it1:
-        logger.debug(_item)
+    # `_albums` is an iterator.
+    # Every item is a 6-item tuple describing an album.
+    _albums = [[(artistid,
+                 albumid,
+                 artist_path,
+                 album_path,
+                 album,
+                 is_bootleg) for album, album_path, albumid, is_bootleg in shared.get_albums(artist_path)] for artistid, artist_path in shared.get_artists()]
+    _albums = chain.from_iterable(_albums)
+    _albums = filterfalse(filter_, _albums)
+    _albums_it1, _albums_it2, _albums_it3, _albums_it4 = tee(_albums, 4)
+    _index = 0
+    logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE ALBUMS ", fil="="))
+    for _items in _albums_it1:
+        _items = list(_items)
+        _index += 1
+        _msg = f"{_index:>5d}.\t{_items[0]}"
+        _msg = _msg.expandtabs()
+        logger.debug(_msg)
+        for _item in _items[1:]:
+            _msg = f"\t{_item}"
+            _msg = _msg.expandtabs()
+            logger.debug(_msg)
 
-    # `_files` is a generator object.
-    # Every yielded item is a sequence composed of N 2-item tuples describing the audio files associated with an album.
-    # Every tuple is composed of the file basename and the file extension.
-    _files = ([(os.path.basename(os.path.splitext(file)[0]), os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it2)
-    _files_it1, _files_it2 = tee(_files)
-    header = "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="=")
-    logger.debug("# %s #", header)
-    for _item in _files_it1:  # type: ignore
-        logger.debug(_item)
+    # `_files` is an iterator used only for logging purposes.
+    # Every item is a 3-item tuple (album ID, file basename and file extension) describing an audio file associated with an album.
+    _files = [[(f"{_item[0]}.{_item[1]}",
+                os.path.basename(os.path.splitext(file)[0]),
+                os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it2]
+    _files = chain.from_iterable(_files)
+    _files = sorted(_files, key=itemgetter(2))
+    _files = sorted(_files, key=itemgetter(1))
+    _files = sorted(_files, key=itemgetter(0))
+    _files = groupby(_files, key=itemgetter(0))
+    _index = 0
+    logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="="))
+    for _key, _items in _files:  # type: ignore
+        _items = list(_items)
+        _index += 1
+        _msg = f"{_index:>5d}.\t{_key}"
+        _msg = _msg.expandtabs()
+        logger.debug(_msg)
+        for _item in _items:
+            _msg = f"\t{'.'.join(_item[1:])}"
+            _msg = _msg.expandtabs()
+            logger.debug(_msg)
 
-    first = True
+    # `_files` is a iter object.
+    # Every item is a sequence composed of N 2-item tuples (file basename and file extension) describing the audio files associated with an album.
+    _files = ([(os.path.basename(os.path.splitext(file)[0]), os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it3)
+
     # `_collection` below is a generator object.
     # Every yielded item is a zip object.
     # Every zip object yields a 2-items tuple:
     #     - The first item is a tuple describing an album.
     #     - The second item is a tuple describing an audio file associated with the album.
-    _collection = (zip(repeat(album), files) for album, files in zip(_albums_it3, _files_it2))
+    _collection = (zip(repeat(album), files) for album, files in zip(_albums_it4, _files))
     for _zipobj in _collection:
         for _item in _zipobj:  # type: ignore
             artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension = chain.from_iterable(_item)
-            if first:
-                first = False
-                header = "{0:{fil}<100}".format("LOCAL DRIVE COLLECTION ", fil="=")
-                logger.debug("# %s #", header)
-            logger.debug(_item)
             yield artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension
 
 

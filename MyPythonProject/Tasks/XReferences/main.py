@@ -12,7 +12,7 @@ from typing import Set, Tuple
 import yaml
 
 from Applications.Tables.XReferences.shared import get_database_albums, get_drive_albums, insert_albums, remove_albums
-from Applications.shared import LOCAL, UTF8, get_dirname
+from Applications.shared import LOCAL, UTF8, WRITE, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -85,7 +85,7 @@ if removed_albums:
 # -----
 dt_end = LOCAL.localize(datetime.now())
 elapsed = dt_end - dt_beg
-with open(os.path.join(os.path.expandvars("%TEMP%"), "tempfile.txt"), mode="w", encoding=UTF8) as stream:
+with open(os.path.join(os.path.expandvars("%TEMP%"), "tempfile.txt"), mode=WRITE, encoding=UTF8) as stream:
     stream.write(f"{int(elapsed.total_seconds())}|{inserted}|{removed}\n")
 
 # -----
