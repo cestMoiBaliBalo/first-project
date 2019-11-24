@@ -48,8 +48,9 @@ def sorted_(iterable: Iterator[Any], *indexes: int) -> Iterator[Any]:
 locale.setlocale(locale.LC_ALL, "")
 
 # -----
-SELECTORS = [0, 0, 0, 0, 0, 0, 1, 1]
 GROUP_SELECTORS = [1, 1, 0, 0, 1, 0, 0, 0]
+INDEXES = [6, 7, 4, 1, 0]
+SELECTORS = [0, 0, 0, 0, 0, 0, 1, 1]
 
 # -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding=UTF8) as fp:
@@ -68,11 +69,11 @@ albums_database = set(get_database_albums())  # type: Set[Tuple[str, str, str, s
 # Were some albums/tracks inserted into the local audio drive?
 inserted_albums = albums_drive.difference(albums_database)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if inserted_albums:
+    collection = list(sorted_(iter(inserted_albums), *INDEXES))
     header = "{0:{filler}<100}".format("Album inserted into the local audio drive ", filler="=")
-    collection = list(sorted_(iter(inserted_albums), 6, 7, 4, 1, 0))
+    logger.info("# %s #", header)
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("# %s #", header)
         logger.info("Artist ID: %s", artistid)
         logger.info("Album ID : %s", albumid)
         logger.info("Album    : %s", album)
@@ -89,11 +90,11 @@ if inserted_albums:
 # Were some albums/tracks removed from the local audio drive?
 removed_albums = albums_database.difference(albums_drive)  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 if removed_albums:
+    collection = list(sorted_(iter(inserted_albums), *INDEXES))
     header = "{0:{filler}<100}".format("Album removed from the local audio drive ", filler="=")
-    collection = list(sorted_(iter(inserted_albums), 6, 7, 4, 1, 0))
+    logger.info("# %s #", header)
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("# %s #", header)
         logger.info("Artist ID: %s", artistid)
         logger.info("Album ID : %s", albumid)
         logger.info("Album    : %s", album)
