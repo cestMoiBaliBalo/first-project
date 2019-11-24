@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import json
+import locale
 import logging.config
 import os
 import sqlite3
@@ -19,15 +20,15 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 # -----
-LOGGERS = ["Applications.Tables"]
+locale.setlocale(locale.LC_ALL, "")
 
 # -----
-with open(os.path.join(get_dirname(os.path.abspath(__file__), level=1), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    config = yaml.load(fp)
-for item in LOGGERS:
-    with suppress(KeyError):
-        config["loggers"][item]["level"] = "INFO"
-logging.config.dictConfig(config)
+with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    log_config = yaml.load(fp, Loader=yaml.FullLoader)
+with suppress(KeyError):
+    log_config["loggers"]["Applications.Tables.XReferences"]["level"] = "DEBUG"
+logging.config.dictConfig(log_config)
+logger = logging.getLogger("MyPythonProject.Tables.XReferences")
 
 # -----
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
