@@ -40,13 +40,11 @@ logger = logging.getLogger("MyPythonProject.Tasks.XReferences.main")
 
 # -----
 dt_beg = LOCAL.localize(datetime.now())
+inserted, removed = "  0", "  0"  # type: str, str
 
 # -----
 albums_drive = set(get_drive_albums())  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
 albums_database = set(get_database_albums())  # type: Set[Tuple[str, str, str, str, str, bool, str, str]]
-
-# -----
-inserted, removed = "  0", "  0"  # type: str, str
 
 # -----
 # Were some albums/tracks inserted into the local audio drive?
@@ -85,8 +83,8 @@ if removed_albums:
 # -----
 dt_end = LOCAL.localize(datetime.now())
 elapsed = dt_end - dt_beg
-with open(os.path.join(os.path.expandvars("%TEMP%"), "tempfile.txt"), mode=WRITE, encoding=UTF8) as stream:
-    stream.write(f"{int(elapsed.total_seconds())}|{inserted}|{removed}\n")
+with open(os.path.join(os.path.expandvars("%TEMP%"), "xreferences.txt"), mode=WRITE, encoding=UTF8) as stream:
+    stream.write(f"{int(elapsed.total_seconds())}|{inserted.strip()}|{removed.strip()}\n")
 
 # -----
 logger.info("Inserted records: %s", inserted)
