@@ -46,7 +46,7 @@ def get_name(path: str) -> str:
 # ==========
 # Constants.
 # ==========
-COMPUTING = Path(os.path.expandvars("%_COMPUTING%"))
+RESOURCES = Path(os.path.expandvars("%_RESOURCES%"))
 RIPPEDTRACKS = "rippedtracks"
 
 # ============
@@ -58,8 +58,8 @@ template = TemplatingEnvironment(_THATFILE.parents[1] / "Templates")
 
 # Set copy commands file.
 with ExitStack() as stack:
-    fr = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.txt", encoding=UTF8, newline=""))
-    fw = stack.enter_context(open(COMPUTING / "Resources" / f"{RIPPEDTRACKS}.cmd", mode=WRITE, encoding="ISO-8859-1"))
+    fr = stack.enter_context(open(RESOURCES / f"{RIPPEDTRACKS}.txt", encoding=UTF8, newline=""))
+    fw = stack.enter_context(open(RESOURCES / f"{RIPPEDTRACKS}.cmd", mode=WRITE, encoding="ISO-8859-1"))
     reader = csv.reader(fr, dialect="dialect")
     tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)
     tracks = [(src, Path(src).name, dst) for src, dst in tracks]

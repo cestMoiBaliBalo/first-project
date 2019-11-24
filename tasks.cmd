@@ -70,7 +70,7 @@ REM -----------------------
 REM Audio tables interface.
 REM -----------------------
 IF ERRORLEVEL 35 (
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\03"
+    PUSHD "%_PYTHONPROJECT%\Interfaces\Sources\03"
     python main.py
     POPD
     GOTO MENU
@@ -157,7 +157,7 @@ REM --------------------------------
 REM Update audio albums played date.
 REM --------------------------------
 IF ERRORLEVEL 30 (
-    PUSHD "%_PYTHONPROJECT%\GUI\Sources\06"
+    PUSHD "%_PYTHONPROJECT%\Interfaces\Sources\06"
     python main.py
     POPD
     GOTO MENU
@@ -385,7 +385,7 @@ IF ERRORLEVEL 17 (
     CLS
     PUSHD %TEMP% 
     DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py" --repository MyCloud
+    python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py" --repository MyCloud
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU
@@ -399,7 +399,7 @@ IF ERRORLEVEL 16 (
     CLS
     PUSHD %TEMP% 
     DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\GUI\Sources\02\main.py"
+    python "%_PYTHONPROJECT%\Interfaces\Sources\02\main.py"
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
@@ -428,7 +428,7 @@ IF ERRORLEVEL 13 (
     CLS
     PUSHD %TEMP% 
     DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\GUI\Sources\01\main.py"
+    python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py"
     IF NOT ERRORLEVEL 1 CALL :TOTO
     POPD
     GOTO MENU

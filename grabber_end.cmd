@@ -25,6 +25,7 @@ SET _errorlevel=0
 SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 SET _jsontags=%TEMP%\tags.json
 SET _jsonxreferences=%TEMP%\xreferences.json
+SET _txtfiles=%_RESOURCES%\rippedtracks.txt
 
 
 REM ============
@@ -91,7 +92,7 @@ REM        ----------------------------
 REM  4 --> Prepare NAS Syncing. Step 2.
 REM        ----------------------------
 :STEP4
-IF EXIST "%_txtfiles%" (
+IF EXIST %_txtfiles% (
     PUSHD %_grabber%
     python RippedTracks2NAS.py
     POPD
