@@ -15,10 +15,11 @@ import cherrypy
 from .Tables.Albums.shared import get_albumheader
 from .Tables.PlayedDiscs.shared import get_playeddiscs
 from .Tables.RippedDiscs.shared import get_rippeddiscs
+from .decorators import attrgetter_
 # from .Tables.Albums.shared import get_albumheader, get_track, getartist, getlastplayeddate, updatelastplayeddate
 # from .Views.RippedDiscs.shared import deletelog as deleterippedcd, getmonths, insertfromargs, selectlog, selectlogs, updatelog, valid_year
 # from .Tables.RippedDiscs.shared import validyear
-from .shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, attrgetter_, eq_string_, format_date, localize_date, normalize, normalize2
+from .shared import DATABASE, LOCAL, TEMPLATE4, TemplatingEnvironment, UTC, eq_string_, format_date, localize_date, normalize, normalize2
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

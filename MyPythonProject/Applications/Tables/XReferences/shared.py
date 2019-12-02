@@ -10,6 +10,7 @@ from itertools import chain, compress, filterfalse, groupby, repeat, tee
 from operator import itemgetter
 from typing import IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
+from Applications import decorators
 from Applications import shared
 from Applications.Tables.shared import DatabaseConnection, close_database
 from Applications.callables import filter_audiofiles, filterfalse_
@@ -126,8 +127,8 @@ def get_albums(artist: str, *extensions: str) -> Iterable[Tuple[str, str, str, s
             yield row["artistid"], row["albumid"], row["artist_path"], row["album"], row["album_path"]
 
 
-@shared.itemgetter_(2)
-@shared.partial_("recycle")
+@decorators.itemgetter_(2)
+@decorators.partial_("recycle")
 def filter_(kwd: str, strg: str) -> bool:
     return kwd in strg.lower()
 
@@ -218,7 +219,6 @@ def _insert_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
         _collection = iter(collection)
         _total_changes = 0  # type: int
         for artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension in _collection:
-
             # Insert artist.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("INSERT INTO artists (artistid, artist_path, utc_created) VALUES (?, ?, ?)", (artistid, artist_path, datetime.utcnow()))

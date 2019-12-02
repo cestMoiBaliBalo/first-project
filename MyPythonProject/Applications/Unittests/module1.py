@@ -20,7 +20,8 @@ from unittest.mock import patch
 import yaml
 
 from Applications.Tables.Albums import shared
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby, itemgetter_, nested_, nested_groupby, now, partial_
+from Applications.decorators import itemgetter_, nested_, partial_
+from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby, nested_groupby, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

@@ -18,7 +18,8 @@ from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tup
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, attrgetter_, booleanify, eq_string_, format_date, get_dirname, itemgetter_, partial_, pprint_sequence, valid_datetime
+from ...decorators import attrgetter_, itemgetter_, partial_
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string_, format_date, get_dirname, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -112,7 +113,6 @@ def hasbeen_played(a, b):
 COVER = Template("albumart/$letter/$artistsort/$albumsort/iPod-Front.jpg")
 FUNCTIONS = {"defaultalbums": check_defaultalbum,
              "bootlegalbums": check_bootlegalbum}
-
 
 # ====================
 # Regular expressions.

@@ -12,8 +12,9 @@ import iso8601
 import yaml
 
 from ..shared import DatabaseConnection, close_database
+from ...decorators import itemgetter_
 from ...parsers import tasks_parser
-from ...shared import DATABASE, LOCAL, UTC, UTF8, get_dirname, itemgetter_
+from ...shared import DATABASE, LOCAL, UTC, UTF8, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

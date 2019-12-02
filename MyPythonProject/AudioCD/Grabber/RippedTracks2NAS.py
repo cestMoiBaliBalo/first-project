@@ -6,7 +6,8 @@ import os
 from contextlib import ExitStack
 from pathlib import Path
 
-from Applications.shared import TemplatingEnvironment, itemgetter_, UTF8, WRITE
+from Applications.decorators import itemgetter_
+from Applications.shared import TemplatingEnvironment, UTF8, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

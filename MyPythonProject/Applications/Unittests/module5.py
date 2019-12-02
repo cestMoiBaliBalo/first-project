@@ -10,7 +10,8 @@ from operator import contains
 from pathlib import PureWindowsPath
 from typing import List, Tuple
 
-from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, itemgetter_, partitioner
+from Applications.decorators import itemgetter_
+from Applications.shared import DFTYEARREGEX, MUSIC, get_albums, partitioner
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
