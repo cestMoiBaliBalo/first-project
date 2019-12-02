@@ -139,7 +139,7 @@ class SetEndSeconds(argparse.Action):
 database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
 group = database_parser.add_mutually_exclusive_group()
 group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path to database storing digital albums.", type=database, dest="db")
-group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
+group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=SetDatabase, help="Use test database.")
 
 #     =========
 #  2. PARSER 2.

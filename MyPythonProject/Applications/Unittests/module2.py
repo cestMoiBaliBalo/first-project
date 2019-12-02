@@ -14,8 +14,8 @@ from unittest.mock import Mock, patch
 import iso8601
 
 from ..callables import filter_audiofiles, filter_extension, filter_extensions, filter_losslessaudiofiles, filter_portabledocuments, filterfalse_
-from ..parsers import database_parser, tags_grabber, tasks_parser
-from ..shared import GetPath, LOCAL, UTC, find_files, get_dirname
+from ..parsers import GetPath, database_parser, tags_grabber, tasks_parser
+from ..shared import LOCAL, UTC, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
