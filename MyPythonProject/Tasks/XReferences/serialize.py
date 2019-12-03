@@ -23,12 +23,16 @@ __status__ = "Production"
 locale.setlocale(locale.LC_ALL, "")
 
 # -----
+LOGGERS = ["Applications.Tables.XReferences", "MyPythonProject"]
+
+# -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     log_config = yaml.load(fp, Loader=yaml.FullLoader)
-with suppress(KeyError):
-    log_config["loggers"]["Applications.Tables.XReferences"]["level"] = "DEBUG"
+for logger in LOGGERS:
+    with suppress(KeyError):
+        log_config["loggers"][logger]["level"] = "DEBUG"
 logging.config.dictConfig(log_config)
-logger = logging.getLogger("MyPythonProject.Tables.XReferences")
+logger = logging.getLogger("MyPythonProject.Tasks.XReferences")
 
 # -----
 sqlite3.register_converter("boolean", convert_tobooleanvalue)
