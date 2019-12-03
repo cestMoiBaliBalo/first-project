@@ -60,7 +60,7 @@ def insert_albums(*collection: Sequence[Union[bool, str]]) -> int:
     :param collection:
     :return:
     """
-    return _insert_albums(*collection, logobj=logging.getLogger(f"{__name__}.insert_albums"))
+    return _insert_albums(*collection)
 
 
 def insert_albums_fromjson(*jsonfiles: IO) -> int:
@@ -69,7 +69,7 @@ def insert_albums_fromjson(*jsonfiles: IO) -> int:
     :param jsonfiles:
     :return:
     """
-    return _insert_albums(*chain.from_iterable(json.load(file) for file in jsonfiles), logobj=logging.getLogger(f"{__name__}.insert_albums_fromjson"))
+    return _insert_albums(*chain.from_iterable(json.load(file) for file in jsonfiles))
 
 
 def remove_albums(*collection: Sequence[Union[bool, str]]) -> int:
@@ -78,7 +78,7 @@ def remove_albums(*collection: Sequence[Union[bool, str]]) -> int:
     :param collection:
     :return:
     """
-    return _remove_albums(*collection, logobj=logging.getLogger(f"{__name__}.remove_albums"))
+    return _remove_albums(*collection)
 
 
 def get_artists(*extensions: str) -> Iterable[Tuple[str, str]]:
@@ -140,7 +140,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     """
 
     """
-    logger = logging.getLogger(f"{__name__}.get_albums")
+    _logger = logging.getLogger(f"{__name__}.get_albums")
 
     # `_albums` is an iterator.
     # Every item is a 6-item tuple describing an album.
@@ -154,17 +154,17 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     _albums = filterfalse(filter_, _albums)
     _albums_it1, _albums_it2, _albums_it3, _albums_it4 = tee(_albums, 4)
     _index = 0
-    logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE ALBUMS ", fil="="))
+    _logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE ALBUMS ", fil="="))
     for _items in _albums_it1:
         _items = list(_items)
         _index += 1
         _msg = f"{_index:>5d}.\t{_items[0]}"
         _msg = _msg.expandtabs()
-        logger.debug(_msg)
+        _logger.debug(_msg)
         for _item in _items[1:]:
             _msg = f"\t{_item}"
             _msg = _msg.expandtabs()
-            logger.debug(_msg)
+            _logger.debug(_msg)
 
     # `_files` is an iterator used only for logging purposes.
     # Every item is a 3-item tuple (album ID, file basename and file extension) describing an audio file associated with an album.
@@ -177,17 +177,17 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     _files = sorted(_files, key=itemgetter(0))
     _files = groupby(_files, key=itemgetter(0))
     _index = 0
-    logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="="))
+    _logger.debug("# %s #", "{0:{fil}<100}".format("LOCAL DRIVE FILES ", fil="="))
     for _key, _items in _files:  # type: ignore
         _items = list(_items)
         _index += 1
         _msg = f"{_index:>5d}.\t{_key}"
         _msg = _msg.expandtabs()
-        logger.debug(_msg)
+        _logger.debug(_msg)
         for _item in _items:
             _msg = f"\t{'.'.join(_item[1:])}"
             _msg = _msg.expandtabs()
-            logger.debug(_msg)
+            _logger.debug(_msg)
 
     # `_files` is a iter object.
     # Every item is a sequence composed of N 2-item tuples (file basename and file extension) describing the audio files associated with an album.
@@ -205,14 +205,14 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
             yield artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension
 
 
-def _insert_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
+def _insert_albums(*collection: Sequence[Union[bool, str]]) -> int:
     """
 
     :param collection:
-    :param logobj:
     :return:
     """
-    to_integer = {True: 1, False: 0}  # type: Mapping[bool, int]
+    _logger = logging.getLogger(f"{__name__}.insert_albums")
+    int_ = {True: 1, False: 0}  # type: Mapping[bool, int]
     with ExitStack() as _stack:
         _conn = _stack.enter_context(DatabaseConnection(os.path.expandvars("%_XREFERENCES%")))
         _stack.enter_context(_conn)
@@ -223,24 +223,21 @@ def _insert_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("INSERT INTO artists (artistid, artist_path, utc_created) VALUES (?, ?, ?)", (artistid, artist_path, datetime.utcnow()))
             _artists_changes = _conn.total_changes - _total_changes
-            if logobj:
-                logobj.info("{0:>3d} artist(s) inserted.".format(_artists_changes))
+            _logger.debug("{0:>3d} artist(s) inserted.".format(_artists_changes))
 
             # Insert album.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("INSERT INTO albums (artistid, albumid, album_path, album, is_bootleg, utc_created) VALUES (?, ?, ?, ?, ?, ?)",
-                              (artistid, albumid, album_path, album, to_integer[is_bootleg], datetime.utcnow()))
+                              (artistid, albumid, album_path, album, int_[is_bootleg], datetime.utcnow()))
             _albums_changes = _conn.total_changes - _total_changes - _artists_changes
-            if logobj:
-                logobj.info("{0:>3d} album(s) inserted.".format(_albums_changes))
+            _logger.debug("{0:>3d} album(s) inserted.".format(_albums_changes))
 
             # Insert file.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("INSERT INTO files (artistid, albumid, file, extension, utc_created) VALUES (?, ?, ?, ?, ?)", (artistid, albumid, file, extension, datetime.utcnow()))
             _files_changes = _conn.total_changes - _total_changes - _albums_changes - _artists_changes
             _total_changes = _conn.total_changes
-            if logobj:
-                logobj.info("{0:>3d} file(s) inserted.".format(_files_changes))
+            _logger.debug("{0:>3d} file(s) inserted.".format(_files_changes))
 
         _changes = _conn.total_changes  # type: int
         if not _changes:
@@ -249,13 +246,13 @@ def _insert_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
     return _changes
 
 
-def _remove_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
+def _remove_albums(*collection: Sequence[Union[bool, str]]) -> int:
     """
 
     :param collection:
-    :param logobj:
     :return:
     """
+    _logger = logging.getLogger(f"{__name__}.remove_albums")
     with ExitStack() as _stack:
         _conn = _stack.enter_context(DatabaseConnection(os.path.expandvars("%_XREFERENCES%")))
         _stack.enter_context(_conn)
@@ -267,23 +264,20 @@ def _remove_albums(*collection: Sequence[Union[bool, str]], logobj=None) -> int:
             # Delete file(s).
             _conn.execute("DELETE FROM files WHERE artistid=? AND albumid=?", (artistid, albumid))
             _files_changes = _conn.total_changes - _total_changes
-            if logobj:
-                logobj.info("{0:>3d} file(s) removed.".format(_files_changes))
+            _logger.debug("{0:>3d} file(s) removed.".format(_files_changes))
 
             # Delete album(s).
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("DELETE FROM albums WHERE artistid=? AND albumid=?", (artistid, albumid))
             _albums_changes = _conn.total_changes - _files_changes - _total_changes
-            if logobj:
-                logobj.info("{0:>3d} album(s) removed.".format(_albums_changes))
+            _logger.debug("{0:>3d} album(s) removed.".format(_albums_changes))
 
             # Delete artist.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("DELETE FROM artists WHERE artistid=?", (artistid,))
             _artists_changes = _conn.total_changes - _albums_changes - _files_changes - _total_changes
             _total_changes = _conn.total_changes
-            if logobj:
-                logobj.info("{0:>3d} artist(s) removed.".format(_artists_changes))
+            _logger.debug("{0:>3d} artist(s) removed.".format(_artists_changes))
 
         _changes = _conn.total_changes  # type: int
         if not _changes:

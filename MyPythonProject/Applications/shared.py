@@ -20,7 +20,6 @@ from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
 import jinja2
 import yaml
 from dateutil.parser import parserinfo
-from pandas import DataFrame  # type: ignore
 from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
@@ -970,16 +969,6 @@ def iter_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
     # Return formatted collection.
     for item in out_collection:
         yield item
-
-
-def get_dataframe(collection: Iterable[Tuple[Any, ...]], headers: List[str]):
-    """
-
-    :param collection:
-    :param headers:
-    :return:
-    """
-    return DataFrame(dict(zip(headers, zip(*collection))))
 
 
 def pprint_sequence(*items: Union[int, str]) -> Iterable[str]:

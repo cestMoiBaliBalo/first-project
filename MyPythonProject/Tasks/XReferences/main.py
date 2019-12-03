@@ -71,19 +71,19 @@ inserted_albums = albums_drive.difference(albums_database)  # type: Set[Tuple[st
 if inserted_albums:
     collection = list(sorted_(iter(inserted_albums), *INDEXES))
     header = "{0:{filler}<100}".format("Album inserted into the local audio drive ", filler="=")
-    logger.info("# %s #", header)
+    logger.debug("# %s #", header)
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("Artist ID: %s", artistid)
-        logger.info("Album ID : %s", albumid)
-        logger.info("Album    : %s", album)
+        logger.debug("Artist ID: %s", artistid)
+        logger.debug("Album ID : %s", albumid)
+        logger.debug("Album    : %s", album)
         first = True
         for file, extension in map(partial(compress_, SELECTORS), group):
             _msg = f"           {file}.{extension}"
             if first:
                 first = False
                 _msg = f"Files    : {file}.{extension}"
-            logger.info(_msg)
+            logger.debug(_msg)
     inserted = "{0:>3d}".format(insert_albums(*inserted_albums))
 
 # -----
@@ -92,19 +92,19 @@ removed_albums = albums_database.difference(albums_drive)  # type: Set[Tuple[str
 if removed_albums:
     collection = list(sorted_(iter(inserted_albums), *INDEXES))
     header = "{0:{filler}<100}".format("Album removed from the local audio drive ", filler="=")
-    logger.info("# %s #", header)
+    logger.debug("# %s #", header)
     for key, group in groupby(collection, key=partial(compress_, GROUP_SELECTORS)):
         artistid, albumid, album = key
-        logger.info("Artist ID: %s", artistid)
-        logger.info("Album ID : %s", albumid)
-        logger.info("Album    : %s", album)
+        logger.debug("Artist ID: %s", artistid)
+        logger.debug("Album ID : %s", albumid)
+        logger.debug("Album    : %s", album)
         first = True
         for file, extension in map(partial(compress_, SELECTORS), group):
             _msg = f"           {file}.{extension}"
             if first:
                 first = False
                 _msg = f"Files    : {file}.{extension}"
-            logger.info(_msg)
+            logger.debug(_msg)
     removed = "{0:>3d}".format(remove_albums(*removed_albums))
 
 # -----
