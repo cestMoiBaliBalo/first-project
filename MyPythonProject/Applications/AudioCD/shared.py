@@ -19,7 +19,7 @@ import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
 from pytz import timezone
-from sortedcontainers import SortedDict
+from sortedcontainers import SortedDict  # type: ignore
 
 from .. import decorators
 from .. import shared
@@ -612,14 +612,14 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 
 
 class AudioGenres(object):
-    _genres = {}
+    _genres = {}  # type: Mapping[str, str]
 
     def get_genre(self, artistsort, *, fallback="Rock"):
         return self._genres.get(artistsort, fallback)
 
 
 class AudioLanguages(object):
-    _languages = {}
+    _languages = {}  # type: Mapping[str, str]
 
     def get_language(self, artistsort, *, fallback="English"):
         return self._languages.get(artistsort, fallback)

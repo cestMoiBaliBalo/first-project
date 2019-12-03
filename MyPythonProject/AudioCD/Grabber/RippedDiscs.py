@@ -5,7 +5,7 @@ import locale
 import os
 from functools import partial
 
-import pandas
+import pandas  # type: ignore
 
 from Applications.Tables.RippedDiscs.shared import get_rippeddiscs
 from Applications.shared import TEMPLATE6, get_readabledate, localize_date

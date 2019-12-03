@@ -6,7 +6,7 @@ from contextlib import suppress
 from datetime import datetime
 
 from pytz import timezone
-from sortedcontainers import SortedDict
+from sortedcontainers import SortedDict  # type: ignore
 
 from Applications.AudioCD.shared import DFTPATTERN, filcontents
 from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, format_date, valid_albumsort
@@ -28,7 +28,7 @@ REGEX = re.compile(r"^(\d\.\d{2}\.)(.+)\.[a-z0-9]{3,4}$", re.IGNORECASE)
 # Pattern used by `AudioCD/Renamer.py` from dBpoweramp Audio CD ripping application.
 # 1. Used for renaming an audio file from the track title.
 # 2. Used for renaming an audio file from a subset taken from the file name.
-class FileNameDecorator(object):
+class FileNameDecorator():
     def __init__(self, obj):
         self.name, self.found, self.tags, self.extension = obj.name, obj.found, obj.tags, obj.extension
 

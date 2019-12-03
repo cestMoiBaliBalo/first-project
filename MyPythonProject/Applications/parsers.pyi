@@ -1,9 +1,13 @@
+import argparse
+from typing import Any
+
+
 def database(db: str) -> str: ...
 
 
-database_parser = ...
-tags_grabber = ...
-tasks_parser = ...
+database_parser = ...  # type: Any
+tags_grabber = ...  # type: Any
+tasks_parser = ...  # type: Any
 
 
 class ExcludeExtensions(argparse.Action):
