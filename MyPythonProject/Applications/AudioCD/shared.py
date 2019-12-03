@@ -19,8 +19,9 @@ import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
 from pytz import timezone
-from sortedcontainers import SortedDict
+from sortedcontainers import SortedDict  # type: ignore
 
+from .. import decorators
 from .. import shared
 from ..Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers
 
@@ -335,7 +336,7 @@ class CommonAudioCDTags(AudioCDTags):
         genres = kwargs.get("genres")
         languages = kwargs.get("languages")
         self._encoders = kwargs.get("encoders")
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
+        kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -347,7 +348,7 @@ class CommonAudioCDTags(AudioCDTags):
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
         # ----- Attributes taken from the input tags.
-        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
+        filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags = dict(filter(filter_keys, sorted(kwargs.items())))
 
         # ----- Step.
@@ -461,7 +462,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
 
     def __init__(self, sequence, **kwargs):
         super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
+        kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -469,7 +470,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
+        filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set origyear.
@@ -528,7 +529,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 
     def __init__(self, sequence, **kwargs):
         super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
-        kwargs = dict(filterfalse(shared.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
+        kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
         checked, exception = self.__validatetags(**kwargs)
@@ -536,7 +537,7 @@ class BootlegAudioCDTags(CommonAudioCDTags):
             raise ValueError(exception)
 
         # ----- Update tags.
-        filter_keys = shared.itemgetter_(0)(partial(contains, sorted(self.__tags)))
+        filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
         # ----- Set bootleg date.
@@ -611,14 +612,14 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 
 
 class AudioGenres(object):
-    _genres = {}
+    _genres = {}  # type: Mapping[str, str]
 
     def get_genre(self, artistsort, *, fallback="Rock"):
         return self._genres.get(artistsort, fallback)
 
 
 class AudioLanguages(object):
-    _languages = {}
+    _languages = {}  # type: Mapping[str, str]
 
     def get_language(self, artistsort, *, fallback="English"):
         return self._languages.get(artistsort, fallback)
@@ -877,7 +878,7 @@ class RippedTrack(ContextDecorator):
             exclusions.append("folder")
             exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_ = shared.itemgetter_(0)(partial(contains, exclusions))
+        filter_ = decorators.itemgetter_(0)(partial(contains, exclusions))
         outtags = dict(filterfalse(filter_, sorted(self._audiotracktags, key=itemgetter(0))))
 
         # --> 2. Log output tags.

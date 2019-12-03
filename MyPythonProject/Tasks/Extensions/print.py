@@ -10,7 +10,8 @@ from itertools import filterfalse
 from operator import eq, itemgetter
 from pathlib import PurePath
 
-from Applications.shared import TemplatingEnvironment, itemgetter_
+from Applications.decorators import itemgetter_
+from Applications.shared import TemplatingEnvironment
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

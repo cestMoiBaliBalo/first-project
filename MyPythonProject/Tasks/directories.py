@@ -8,7 +8,7 @@ from functools import wraps
 from itertools import repeat, tee
 from operator import itemgetter
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from Applications.shared import TemplatingEnvironment, pprint_count
 
@@ -55,7 +55,7 @@ def byparents(arg: Path) -> str:
     return str(arg.parents[0])
 
 
-def rjustify(arg, *, char: str = " ", length: int = 5) -> str:
+def rjustify(arg, *, char: Optional[str] = None, length: int = 5) -> str:
     """
 
     :param arg:
@@ -63,6 +63,8 @@ def rjustify(arg, *, char: str = " ", length: int = 5) -> str:
     :param length:
     :return:
     """
+    if char is None:
+        return "{0:>{1}d}".format(arg, length)
     return "{0:{1}>{2}d}".format(arg, char, length)
 
 
@@ -87,6 +89,7 @@ def valid_extensions(*extensions: str):
     :param extensions:
     :return:
     """
+
     @wraps(valid_extension)
     def wrapper(path: Path):
         return any(list(map(valid_extension, repeat(path), extensions)))

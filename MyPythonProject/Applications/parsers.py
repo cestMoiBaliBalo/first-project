@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 import operator
+import os
 
 from . import shared
 
@@ -8,6 +9,11 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+# ==================
+# Functions aliases.
+# ==================
+expandvars, join = os.path.expandvars, os.path.join
 
 
 # =================
@@ -26,13 +32,114 @@ def database(db: str) -> str:
     return _database
 
 
+# =======================
+# Custom parsing actions.
+# =======================
+class SetDatabase(argparse.Action):
+    """
+
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetDatabase, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if values:
+            setattr(namespace, "db", shared.TESTDATABASE)
+
+
+class GetPath(argparse.Action):
+    """
+    Set "destination" attribute with the full path corresponding to the "values".
+    """
+    destinations = {"documents": expandvars("%_MYDOCUMENTS%"),
+                    "temp": expandvars("%TEMP%"),
+                    "backup": expandvars("%_BACKUP%"),
+                    "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, self.destinations[values])
+
+
+class ExcludeExtensions(argparse.Action):
+    """
+    Set "exclude" attribute with a list of extensions to exclude.
+    Set "extensions" attribute with a list of extensions to process.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(ExcludeExtensions, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        lext = []
+        for ext in getattr(namespace, "extensions"):
+            if ext not in values:
+                lext.append(ext)
+        setattr(namespace, "extensions", lext)
+
+
+class KeepExtensions(argparse.Action):
+    """
+    Set "retain" attribute with a list of extensions to retain.
+    Set "extensions" attribute with a list of extensions to process.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(KeepExtensions, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        lext = []
+        for ext in values:
+            if ext in getattr(namespace, "extensions"):
+                lext.append(ext)
+        setattr(namespace, "extensions", lext)
+
+
+class IncludeExtensions(argparse.Action):
+    """
+    Set "include" attribute with a list of extensions to include.
+    Set "extensions" attribute with a list of extensions to process.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(IncludeExtensions, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        lext = getattr(namespace, "extensions")
+        for ext in values:
+            if ext not in lext:
+                lext.append(ext)
+        setattr(namespace, "extensions", lext)
+
+
+class SetEndSeconds(argparse.Action):
+    """
+    Set "end" attribute.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(SetEndSeconds, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        if not values:
+            setattr(namespace, self.dest, getattr(namespace, "beg"))
+
+
 #     =========
 #  1. PARSER 1.
 #     =========
 database_parser = argparse.ArgumentParser(description="Shared parser for database arguments.", add_help=False)
 group = database_parser.add_mutually_exclusive_group()
 group.add_argument("--database", nargs="?", default=shared.DATABASE, help="Path to database storing digital albums.", type=database, dest="db")
-group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=shared.SetDatabase, help="Use test database.")
+group.add_argument("-t", "--test", nargs="?", default=False, const=True, action=SetDatabase, help="Use test database.")
 
 #     =========
 #  2. PARSER 2.

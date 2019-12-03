@@ -1,7 +1,10 @@
 from collections.abc import MutableMapping
 from contextlib import ContextDecorator
 from pathlib import PureWindowsPath
-from typing import Any, Iterable,IO, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Iterable,IO, Mapping, Optional, Sequence, Tuple, Union
+
+
+DFTPATTERN = ...
 
 
 class AudioCDTags(MutableMapping):
@@ -18,17 +21,17 @@ class AudioCDTags(MutableMapping):
 
 class AudioGenres(object):
     _genres: Mapping[str, str] = ...
-    def get_genre(self, artistsort: str, *, fallback: str = ...) -> str:
+    def get_genre(self, artistsort: str, *, fallback: str = ...) -> str: ...
+
+
+class AudioEncoders(object):
+    _encoders = Mapping[str, Mapping[str, str]]
+    def get_encoder(self, encoder) -> Mapping[str, str]: ...
 
 
 class AudioLanguages(object):
     _languages: Mapping[str, str] = ...
-    def get_language(self, artistsort: str, *, fallback: str = ...) -> str:
-
-
-class AudioEncoders(object):
-    _encoders = Mapping[str, Mapping[str, str]] = ...
-    def get_encoder(self, encoder) -> Mapping[str, str]: ...
+    def get_language(self, artistsort: str, *, fallback: str = ...) -> str: ...
 
 
 class ChangeAlbum(AudioCDTags):

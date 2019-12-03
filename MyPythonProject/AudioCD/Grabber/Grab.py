@@ -12,8 +12,9 @@ from operator import contains
 import yaml
 
 from Applications.AudioCD.shared import AudioGenres, AudioLanguages, upsert_audiotags
+from Applications.decorators import itemgetter_
 from Applications.parsers import tags_grabber
-from Applications.shared import UTF8, get_dirname, itemgetter_, mainscript
+from Applications.shared import UTF8, get_dirname, mainscript
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

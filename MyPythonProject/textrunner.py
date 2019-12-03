@@ -39,7 +39,8 @@ if sys.platform.startswith("win"):
     import yaml
     from contextlib import suppress
     from functools import partial
-    from Applications.shared import attrgetter_, customfilter as cf
+    from Applications.decorators import attrgetter_
+    from Applications.shared import customfilter as cf
 
     # -----
     locale.setlocale(locale.LC_ALL, "")

@@ -16,7 +16,8 @@ from xml.etree.ElementTree import parse
 
 import yaml
 
-from Applications.shared import TEMP, UTF8, itemgetter_
+from Applications.decorators import itemgetter_
+from Applications.shared import TEMP, UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

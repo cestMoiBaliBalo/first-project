@@ -76,8 +76,8 @@ GOTO MAIN
 
 
 :STEP3
-PUSHD %_PYTHONPROJECT%\Tasks\Directories
-python main.py "%~2"
+PUSHD %_PYTHONPROJECT%\Tasks
+python directories.py "%~2"
 POPD
 SHIFT
 SHIFT

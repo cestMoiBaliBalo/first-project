@@ -22,7 +22,8 @@ from ..AudioCD.shared import AudioGenres, albums, dump_audiotags_tojson, get_tag
 from ..Tables.Albums.shared import defaultalbums, exist_albumid, get_albumidfromgenre, insert_albums_fromjson, update_defaultalbums, update_playeddisccount
 from ..Tables.RippedDiscs.shared import get_total_rippeddiscs
 from ..Tables.tables import DatabaseConnection, create_tables, drop_tables
-from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate, itemgetter_
+from ..decorators import itemgetter_
+from ..shared import DATABASE, LOCAL, UTC, UTF16, UTF8, copy, get_readabledate
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
