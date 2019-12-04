@@ -8,7 +8,7 @@ from contextlib import ExitStack, suppress
 from datetime import datetime
 from itertools import chain, compress, filterfalse, groupby, repeat, tee
 from operator import itemgetter
-from typing import IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, IO, Iterable, Mapping, Optional, Sequence, Tuple, Union
 
 from Applications import decorators
 from Applications import shared
@@ -149,7 +149,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
                  artist_path,
                  album_path,
                  album,
-                 is_bootleg) for album, album_path, albumid, is_bootleg in shared.get_albums(artist_path)] for artistid, artist_path in shared.get_artists()]
+                 is_bootleg) for album, album_path, albumid, is_bootleg in shared.get_albums(artist_path)] for artistid, artist_path in shared.get_artists()]  # type: Any
     _albums = chain.from_iterable(_albums)
     _albums = filterfalse(filter_, _albums)
     _albums_it1, _albums_it2, _albums_it3, _albums_it4 = tee(_albums, 4)
@@ -170,7 +170,7 @@ def _get_albums() -> Iterable[Tuple[str, str, str, str, str, bool, str, str]]:
     # Every item is a 3-item tuple (album ID, file basename and file extension) describing an audio file associated with an album.
     _files = [[(f"{_item[0]}.{_item[1]}",
                 os.path.basename(os.path.splitext(file)[0]),
-                os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it2]
+                os.path.splitext(file)[1][1:]) for file in shared.find_files(_item[3], excluded=filterfalse_(filter_audiofiles))] for _item in _albums_it2]  # type: Any
     _files = chain.from_iterable(_files)
     _files = sorted(_files, key=itemgetter(2))
     _files = sorted(_files, key=itemgetter(1))
@@ -218,7 +218,7 @@ def _insert_albums(*collection: Sequence[Union[bool, str]]) -> int:
         _stack.enter_context(_conn)
         _collection = iter(collection)
         _total_changes = 0  # type: int
-        for artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension in _collection:
+        for artistid, albumid, artist_path, album_path, album, is_bootleg, file, extension in _collection:  # type: str, str, str, str, str, bool, str, str
             # Insert artist.
             with suppress(sqlite3.IntegrityError):
                 _conn.execute("INSERT INTO artists (artistid, artist_path, utc_created) VALUES (?, ?, ?)", (artistid, artist_path, datetime.utcnow()))

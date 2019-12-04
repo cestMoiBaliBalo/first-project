@@ -21,22 +21,22 @@ __status__ = "Production"
 
 
 # -----
-def compress_(selectors: List[int], data: Sequence[Any]) -> Tuple[Any]:
+def compress_(selectors: List[int], data: Sequence[Any]) -> Tuple[Any, ...]:
     """
-    
-    :param selectors: 
-    :param data: 
-    :return: 
+
+    :param selectors
+    :param data
+    :return:
     """
     return tuple(compress(data, selectors))
 
 
 def sorted_(iterable: Iterator[Any], *indexes: int) -> Iterator[Any]:
     """
-    
-    :param iterable: 
-    :param indexes: 
-    :return: 
+
+    :param iterable:
+    :param indexes:
+    :return:
     """
     _iterable = list(iterable)
     for index in indexes:

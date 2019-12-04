@@ -94,11 +94,11 @@ def set_whereclause_album(*keys: str) -> Tuple[str, Tuple[str, ...]]:
     return _set_whereclause_album(*keys)
 
 
-def set_whereclause_disc(*keys: str) -> Tuple[str, Tuple[str, ...]]:
+def set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Any]:
     return _set_whereclause_disc(*keys)
 
 
-def set_whereclause_track(*keys: str) -> Tuple[str, Tuple[str, ...]]:
+def set_whereclause_track(*keys: str) -> Tuple[Optional[str], Any]:
     return _set_whereclause_track(*keys)
 
 
@@ -168,12 +168,12 @@ def _set_whereclause_album(*keys: str) -> Tuple[str, Tuple[str, ...]]:
     return clause, argw
 
 
-def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Optional[Tuple[Any, ...]]]:
+def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Any]:
     """
     :param keys:
     :return:
     """
-    clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
+    clause, argw = None, None  # type: Optional[str], Any
     _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(contains_, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
     if _keys:
         argw = ()
@@ -183,12 +183,12 @@ def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Optional[Tuple[Any
     return clause, argw
 
 
-def _set_whereclause_track(*keys: str) -> Tuple[Optional[str], Optional[Tuple[Any, ...]]]:
+def _set_whereclause_track(*keys: str) -> Tuple[Optional[str], Any]:
     """
     :param keys:
     :return:
     """
-    clause, argw = None, None  # type: Optional[str], Optional[Tuple[Any, ...]]
+    clause, argw = None, None  # type: Optional[str], Any
     _keys = list(
             compress(map(_split_trackid, keys),
                      map(operator.not_, map(partial(contains_, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
