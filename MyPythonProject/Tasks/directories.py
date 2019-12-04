@@ -8,7 +8,7 @@ from functools import wraps
 from itertools import repeat, tee
 from operator import itemgetter
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from Applications.shared import TemplatingEnvironment, pprint_count
 
@@ -126,6 +126,6 @@ if arguments.extensions:
     collection1 = list(filter(valid_extensions(arguments.extensions), collection1))
 collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), key=byparents)
 it1, it2 = tee(collection1)
-_extensions = filter(None, sorted([(key[1:], value) for key, value in pprint_count(*Counter(file.suffix for file in it1).items())], key=itemgetter(0)))
-_directories = filter(None, sorted([(str(key), value) for key, value in pprint_count(*Counter(file.parents[0] for file in it2).items())], key=itemgetter(0)))
+_extensions = filter(None, sorted([(key[1:], value) for key, value in pprint_count(*list(Counter(file.suffix for file in it1).items()))], key=itemgetter(0)))  # type: Any
+_directories = filter(None, sorted([(str(key), value) for key, value in pprint_count(*list(Counter(str(file.parents[0]) for file in it2).items()))], key=itemgetter(0)))  # type: Any
 print(template.get_template("T01").render(root=arguments.path, files=collection1, extensions=_extensions, directories=_directories, empty_directories=collection2))

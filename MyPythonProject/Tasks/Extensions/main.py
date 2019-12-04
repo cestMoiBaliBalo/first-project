@@ -8,8 +8,9 @@ import sys
 from collections import Counter
 from contextlib import suppress
 from pathlib import PurePath
+from typing import List, Dict
 
-import pandas
+import pandas  # type: ignore
 import yaml
 
 from Applications.shared import ChangeLocalCurrentDirectory, LOCAL, format_date

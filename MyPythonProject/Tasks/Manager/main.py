@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 import json
 import os
 import re
@@ -6,6 +7,7 @@ import sys
 from itertools import chain
 from pathlib import PurePath
 from subprocess import run
+from typing import List, Mapping
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -43,7 +45,7 @@ rex1 = re.compile(r"^\d\d?$")
 # ================
 # Initializations.
 # ================
-y, choice = [], 99
+y, choice = [], "99"  # type: List[str], str
 
 # ===============
 # Main algorithm.
@@ -53,7 +55,7 @@ y, choice = [], 99
 with open(THATFILE.parents[1] / "Resources" / "Menu.json") as fp:
     tasks = json.load(fp)
 
-codes = dict([(str(number), code) for task, number, code in tasks])
+codes = dict((str(number), code) for task, number, code in tasks)  # type: Mapping[str, int]
 
 for item in list(zip(*[iter(tasks)] * 3)):
     menu = ""
@@ -152,9 +154,8 @@ while True:
         if choice not in codes:
             continue
         break
-returncode = codes[choice]
 
 # ===============
 # Exit algorithm.
 # ===============
-sys.exit(returncode)
+sys.exit(codes[choice])

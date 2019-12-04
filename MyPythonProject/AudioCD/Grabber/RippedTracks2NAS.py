@@ -5,6 +5,7 @@ import itertools
 import os
 from contextlib import ExitStack
 from pathlib import Path
+from typing import Any
 
 from Applications.decorators import itemgetter_
 from Applications.shared import TemplatingEnvironment, UTF8, WRITE
@@ -62,6 +63,6 @@ with ExitStack() as stack:
     fr = stack.enter_context(open(RESOURCES / f"{RIPPEDTRACKS}.txt", encoding=UTF8, newline=""))
     fw = stack.enter_context(open(RESOURCES / f"{RIPPEDTRACKS}.cmd", mode=WRITE, encoding="ISO-8859-1"))
     reader = csv.reader(fr, dialect="dialect")
-    tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)
+    tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)  # type: Any
     tracks = [(src, Path(src).name, dst) for src, dst in tracks]
     fw.write(template.get_template("T02").render(collection=iter((key, list(group)) for key, group in itertools.groupby(tracks, key=get_parent))))

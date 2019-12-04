@@ -9,6 +9,7 @@ from functools import partial
 from itertools import filterfalse
 from operator import eq, itemgetter
 from pathlib import PurePath
+from typing import Any
 
 from Applications.decorators import itemgetter_
 from Applications.shared import TemplatingEnvironment
@@ -51,7 +52,7 @@ with open(f"{REPOSITORY}.csv", encoding="UTF_8", newline="") as stream:
     for row in reader:
         extensions.append((row["Extensions"], row["Current"], row["Previous"]))
 
-for extension, current, previous in sorted(extensions, key=itemgetter(0)):
+for extension, current, previous in sorted(extensions, key=itemgetter(0)):  # type: str, Any, Any
     current = int(current)
     previous = int(previous)
     _extension = "{0:<9}".format(extension)

@@ -7,6 +7,7 @@ import os
 import sqlite3
 from contextlib import ExitStack, suppress
 from operator import itemgetter
+from typing import Any
 
 import yaml
 
@@ -28,7 +29,7 @@ LOGGERS = ["Applications.Tables.XReferences", "MyPythonProject"]
 # -----
 with open(os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "logging.yml"), encoding="UTF_8") as fp:
     log_config = yaml.load(fp, Loader=yaml.FullLoader)
-for logger in LOGGERS:
+for logger in LOGGERS:  # type: Any
     with suppress(KeyError):
         log_config["loggers"][logger]["level"] = "DEBUG"
 logging.config.dictConfig(log_config)
