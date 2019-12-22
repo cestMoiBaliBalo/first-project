@@ -30,6 +30,7 @@ class CustomAudioGenres(AudioGenres):
                "Calogero": "French Pop",
                "Cradle of Filth": "Black Metal",
                "Deep Purple": "Hard Rock",
+               "Faith No More": "Alternative Rock",
                "Firehouse": "Hard Rock",
                "Green Day": "Alternative Rock",
                "Indochine": "French Pop",
