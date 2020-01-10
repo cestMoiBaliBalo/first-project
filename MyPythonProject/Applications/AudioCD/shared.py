@@ -373,7 +373,7 @@ class CommonAudioCDTags(AudioCDTags):
         now = datetime.utcnow()
         if int(self._otags.get("utctimestamp", 0)) > 0:
             now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
-        now = timezone(shared.DFTTIMEZONE).localize(now)
+        now = shared.UTC.localize(now).astimezone(shared.LOCAL)
         now_readable = shared.format_date(now)
 
         # ----- Set encodedby.
@@ -525,7 +525,9 @@ class BootlegAudioCDTags(CommonAudioCDTags):
               "bootlegalbumprovider": False,
               "bootlegalbumtitle": False,
               "bootlegdiscreference": False,
-              "bonustrack": True}
+              "bonustrack": True,
+              "label": False,
+              "year": False}
 
     def __init__(self, sequence, **kwargs):
         super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
@@ -584,8 +586,13 @@ class BootlegAudioCDTags(CommonAudioCDTags):
         self.logger.debug(self._otags["bootlegtracktour"])
 
         # ----- Set year.
-        self.logger.debug("Set year.")
-        self._otags["year"] = self._otags["bootlegalbumyear"][:4]
+        if self._otags.get("year") is None:
+            self.logger.debug("Set year.")
+            self._otags["year"] = self._otags["bootlegalbumyear"][:4]
+
+        # ----- Set origyear.
+        self.logger.debug("Set origyear.")
+        self._otags["origyear"] = self._otags["year"]
 
         # ----- Set albumsort.
         self.logger.debug("Set albumsort.")
@@ -663,13 +670,13 @@ class ChangeAlbumArtist(TagsModifier):
 
 
 class ChangeEncodedBy(TagsModifier):
-    def __init__(self, obj):
+    def __init__(self, obj, provider):
         super(ChangeEncodedBy, self).__init__(obj)
-        self._otags["encodedby"] = "{0} on {1} from nugs.net bootleg Audio CD".format(shared.get_rippingapplication()[0], shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
+        self._otags["encodedby"] = "{0} from {1} bootleg Audio CD".format(self._otags["encodedby"].rstrip(), provider)
 
 
 class ChangeMediaProvider(TagsModifier):
-    def __init__(self, obj, provider="nugs.net"):
+    def __init__(self, obj, provider):
         super(ChangeMediaProvider, self).__init__(obj)
         self._otags["mediaprovider"] = self._otags.get("bootlegalbumprovider", provider)
 
@@ -797,30 +804,33 @@ class RippedTrack(ContextDecorator):
             in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
 
             # Change `album`.
-            if decorator.lower() == "dftupdalbum":
+            if decorator.lower() == "default_album":
                 audiotrack = changealbum(audiotrack, "$albumsortyear.$albumsortcount - $album")
-            elif decorator.lower() == "altupdalbum":
-                audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
+            if decorator.lower() == "dft_bootleg_album":
+                audiotrack = changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")
+            if decorator.lower() == "alt_bootleg_album":
+                audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
+            # elif decorator.lower() == "altupdalbum":
+            #     audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
 
             # Change `tracknumber`.
-            elif decorator.lower() == "updtrack" and offset:
+            elif decorator.lower() == "offset_track" and offset:
                 audiotrack = changetrack(audiotrack, offset)
 
             # Change `totaltracks`.
-            elif decorator.lower() == "updtotaltracks" and int(totaltracks):
+            elif decorator.lower() == "change_totaltracks" and int(totaltracks):
                 audiotrack = changetotaltracks(audiotrack, totaltracks)
 
             # Changes requested by `nugs` decorating profile.
             elif decorator.lower() == "nugs":
                 if audiotrack.artist.lower() == "pearl jam":
-                    audiotrack = changemediaprovider(changeencodedby(changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")))
+                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
                 elif audiotrack.artist.lower() == "bruce springsteen":
-                    audiotrack = changemediaprovider(changealbumartist(changeencodedby(changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")),
-                                                                       "Bruce Springsteen And The E Street Band"))
+                    audiotrack = changemediaprovider(changealbumartist(changeencodedby(audiotrack), "Bruce Springsteen And The E Street Band"))
 
             # Changes requested by `sbootlegs` decorating profile.
-            elif decorator.lower() == "sbootlegs":
-                audiotrack = changealbum(changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band"), "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
+            # elif decorator.lower() == "sbootlegs":
+            #     audiotrack = changealbum(changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band"), "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
 
         return audiotrack
 
@@ -1021,12 +1031,12 @@ def changealbumartist(obj, albumartist):
     return ChangeAlbumArtist(obj, albumartist)
 
 
-def changeencodedby(obj):
-    return ChangeEncodedBy(obj)
+def changeencodedby(obj, *, provider="nugs.net"):
+    return ChangeEncodedBy(obj, provider)
 
 
-def changemediaprovider(obj):
-    return ChangeMediaProvider(obj)
+def changemediaprovider(obj, *, provider="nugs.net"):
+    return ChangeMediaProvider(obj, provider)
 
 
 def changetotaltracks(obj, totaltracks):
