@@ -496,6 +496,7 @@ def defaultalbums(db: str = DATABASE):
     """
     Album = NamedTuple("Album",
                        [("album_rowid", int),
+                        ("defaultalbum_rowid", int),
                         ("albumid", str),
                         ("artistsort", str),
                         ("albumsort", str),

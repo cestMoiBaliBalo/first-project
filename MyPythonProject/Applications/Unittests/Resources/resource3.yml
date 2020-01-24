@@ -25,8 +25,10 @@
     TrackLanguage: English
   - bootleg
   - - nugs
-    - updtrack
-    - updtotaltracks
+    - springsteen
+    - alt_bootleg_album
+    - offset_track
+    - change_totaltracks
   - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
@@ -72,16 +74,17 @@
     LiveDisc: Y
     LiveTrack: Y
     Offset: !!python/str 13
-    Profile: SBootlegs
+    Profile: springsteen
     Source: CD (Lossless)
     Title: Roll of the Dice
     TotalTracks: !!python/str 35
     Track: 5/7
     TrackLanguage: English
   - bootleg
-  - - sbootlegs
-    - updtrack
-    - updtotaltracks
+  - - alt_bootleg_album
+    - springsteen
+    - offset_track
+    - change_totaltracks
   - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.20021014.1.02
@@ -145,6 +148,8 @@
     TrackLanguage: English
   - bootleg
   - - nugs
+    - springsteen
+    - alt_bootleg_album
   - unittest_bootlegalbum
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02

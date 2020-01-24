@@ -48,6 +48,7 @@ class CustomAudioGenres(AudioGenres):
                "Ozzy Osbourne": "Hard Rock",
                "Paradise Lost": "Doom Metal",
                "Pearl Jam": "Alternative Rock",
+               "Queensr\u00FFche": "Hard Rock",
                "Sandra": "Pop",
                "Tears for Fears": "Pop",
                "W.A.S.P.": "Hard Rock",

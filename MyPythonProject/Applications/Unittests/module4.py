@@ -49,15 +49,16 @@ class Changes(object):
 
         :param db:
         """
-        self._artists, self._albums, self._defautlalbums, self._bootlegalbums, self._discs, self._rippeddiscs, self._bootlegdiscs, self._tracks, self._bonuses = defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int)
+        self._artists, self._albums, self._defautlalbums, self._bootlegalbums, self._livealbums, self._discs, self._rippeddiscs, self._bootlegdiscs, self._tracks, self._bonuses = defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int)
         self._database = db  # type: str
         self._changes = 0  # type: int
         self._db_album = None  # type: Optional[bool]
@@ -98,6 +99,7 @@ class Changes(object):
                 self._defautlalbums[self._albumid] += 1
             if self._db_bootleg:
                 self._bootlegalbums[self._albumid] += 1
+                self._livealbums[self._albumid] += 1
 
         # Disc.
         if not disc:
@@ -118,6 +120,7 @@ class Changes(object):
                         len(self._albums.keys()) + \
                         len(self._defautlalbums.keys()) + \
                         len(self._bootlegalbums.keys()) + \
+                        len(self._livealbums.keys()) + \
                         len(self._discs.keys()) + \
                         len(self._bootlegdiscs.keys()) + \
                         len(self._rippeddiscs.keys()) + \
@@ -129,6 +132,7 @@ class Changes(object):
         self.logger.debug("albums       : %s", self._albums)
         self.logger.debug("defautlalbums: %s", self._defautlalbums)
         self.logger.debug("bootlegalbums: %s", self._bootlegalbums)
+        self.logger.debug("livealbums   : %s", self._livealbums)
         self.logger.debug("discs        : %s", self._discs)
         self.logger.debug("bootlegdiscs : %s", self._bootlegdiscs)
         self.logger.debug("rippeddiscs  : %s", self._rippeddiscs)
@@ -246,6 +250,10 @@ class TestRippedTrack(unittest.TestCase):
             self.test_cases = yaml.load(stream, Loader=yaml.FullLoader)
         with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
+        with open(_THATFILE.parents[2] / "Resources" / "logging.yml", encoding=UTF8) as stream:
+            log_config = yaml.load(stream, Loader=yaml.FullLoader)
+        logging.config.dictConfig(log_config)
+        self._logger = logging.getLogger("Applications.Unittests.module4.TestRippedTrack")
 
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
     def test_t01a(self, mock_database):
@@ -382,6 +390,8 @@ class TestRippedTrack(unittest.TestCase):
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
+            self._logger.debug("inserted: %s", inserted)
+            self._logger.debug("expected: %s", changes.total_changes)
             self.assertEqual(inserted, changes.total_changes)
 
     def test_t04(self):
