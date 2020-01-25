@@ -250,10 +250,10 @@ class TestRippedTrack(unittest.TestCase):
             self.test_cases = yaml.load(stream, Loader=yaml.FullLoader)
         with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
-        with open(_THATFILE.parents[2] / "Resources" / "logging.yml", encoding=UTF8) as stream:
-            log_config = yaml.load(stream, Loader=yaml.FullLoader)
-        logging.config.dictConfig(log_config)
-        self._logger = logging.getLogger("Applications.Unittests.module4.TestRippedTrack")
+        # with open(_THATFILE.parents[2] / "Resources" / "logging.yml", encoding=UTF8) as stream:
+        #     log_config = yaml.load(stream, Loader=yaml.FullLoader)
+        # logging.config.dictConfig(log_config)
+        # self._logger = logging.getLogger("Applications.Unittests.module4.TestRippedTrack")
 
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
     def test_t01a(self, mock_database):
@@ -390,8 +390,8 @@ class TestRippedTrack(unittest.TestCase):
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
-            self._logger.debug("inserted: %s", inserted)
-            self._logger.debug("expected: %s", changes.total_changes)
+            # self._logger.debug("inserted: %s", inserted)
+            # self._logger.debug("expected: %s", changes.total_changes)
             self.assertEqual(inserted, changes.total_changes)
 
     def test_t04(self):
