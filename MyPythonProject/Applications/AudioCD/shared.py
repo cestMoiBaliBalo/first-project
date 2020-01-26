@@ -1168,6 +1168,7 @@ def album(track):
 def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.albums".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
+    countries = dict(get_countries(db))
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
     _fil = Path(shared.TEMP) / "tags.json"
@@ -1206,7 +1207,11 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     shared.get_rippingapplication()[1]))
+                     shared.get_rippingapplication()[1],
+                     track.bootlegalbum_date,
+                     track.bootlegalbum_city,
+                     countries.get(track.bootlegalbum_country),
+                     track.bootlegalbum_tour,))
     iterable = list(set(iterable))
     for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1215,9 +1220,9 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
 def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
+    countries = dict(get_countries(db))
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
-    countries = dict(get_countries(db))
     providers = dict(get_providers(db))
     _fil = Path(shared.TEMP) / "tags.json"
     if fil:

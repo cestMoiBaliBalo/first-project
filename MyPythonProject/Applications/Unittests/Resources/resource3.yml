@@ -434,3 +434,55 @@
     tracknumber: !!python/str 5
     tracklanguage: English
     upc: !!python/str 042282415028
+- - Album: "Live: 2000-11-06 Seattle, WA"
+    AlbumArtist: Pearl Jam
+    AlbumArtistSort: Pearl Jam
+    AlbumSortCount: !!python/str 1
+    Artist: Pearl Jam
+    ArtistSort: Pearl Jam
+    BonusTrack: N
+    Bootleg: N
+    BootlegAlbumCity: Seattle, WA
+    BootlegAlbumTour: Binaural Tour
+    BootlegAlbumYear: 2000 11 06
+    Deluxe: N
+    Disc: 1/2
+    Encoder: FDK v2.0.0
+    Genre: Alternative Rock
+    InCollection: Y
+    Label: Epic Records
+    LiveDisc: Y
+    LiveTrack: Y
+    Offset: !!python/str 0
+    Profile: Live
+    Source: CD (Lossless)
+    Title: Corduroy
+    TotalTracks: !!python/str 35
+    Track: 1/7
+    TrackLanguage: English
+    UPC: !!python/str 042282415028
+    Year: !!python/str 2000
+  - live
+  - - dft_bootleg_album
+    - offset_track
+    - change_totaltracks
+  - unittest_defaultalbum
+  - albumartist: Pearl Jam
+    albumsort: 2.20001106.1.02
+    artist: Pearl Jam
+    album: "Live: 2000-11-06 - Seattle, WA"
+    bootlegalbum_city: Seattle, WA
+    bootlegalbum_country: United States
+    bootlegalbum_date: !!python/str 2000-11-06
+    bootlegalbum_day: !!python/str 06
+    bootlegalbum_month: !!python/str 11
+    bootlegalbum_tour: Binaural Tour
+    bootlegalbum_year: !!python/str 2000
+    deluxe: N
+    discnumber: !!python/str 1
+    foldersortcount: N
+    genre: Alternative Rock
+    totaltracks: !!python/str 35
+    tracknumber: !!python/str 1
+    tracklanguage: English
+    upc: !!python/str 042282415028

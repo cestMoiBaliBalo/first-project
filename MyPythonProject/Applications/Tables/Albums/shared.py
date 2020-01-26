@@ -90,9 +90,21 @@ def discs_record(a, b, sensitive=False):
 
 
 @itemgetter_(1)
+@partial_("defaultalbums")
+def defaultalbums_record(a, b, sensitive=False):
+    return eq_string_(b, a, sensitive=sensitive)
+
+
+@itemgetter_(1)
 @partial_("bootlegalbums")
 def bootlegalbums_record(a, b, sensitive=False):
     return eq_string_(b, a, sensitive=sensitive)
+
+
+@itemgetter_(25)
+@partial_(None)
+def livealbums_record(a, b):
+    return not is_(b, a)
 
 
 @itemgetter_(27)
@@ -830,6 +842,15 @@ def _insert_albums(*iterables) -> int:
                 # Shared tables.
                 for track in tracks:
                     table = track[0]
+                    logger.debug("Table is: %s", table)
+                    logger.debug(track)
+                    with suppress(sqlite3.IntegrityError):
+                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        logger.debug(conn.total_changes)
+
+                # "livealbums" table.
+                table = "livealbums"
+                for track in filter(livealbums_record, filter(defaultalbums_record, tracks)):
                     logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
