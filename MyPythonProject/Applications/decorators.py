@@ -118,6 +118,30 @@ def compress_(*indexes: int):
     return outer_wrapper
 
 
+def map_(index: int):
+    """
+
+    :param index:
+    :return:
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args: Any):
+            iterable = tuple(args)
+            if 0 < index < len(args) - 1:
+                iterable = args[:index] + (func(operator.itemgetter(index)(args)),) + args[index + 1:]
+            elif index == 0:
+                iterable = (func(operator.itemgetter(index)(args)),) + args[index + 1:]
+            elif index == len(args) - 1:
+                iterable = args[:index] + (func(operator.itemgetter(index)(args)),)
+            return iter(iterable)
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def nested_(*functions):
     """
 

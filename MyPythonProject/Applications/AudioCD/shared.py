@@ -18,7 +18,6 @@ from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, S
 import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
-from pytz import timezone
 from sortedcontainers import SortedDict  # type: ignore
 
 from .. import decorators
@@ -337,7 +336,6 @@ class CommonAudioCDTags(AudioCDTags):
               "title": False,
               "tracklanguage": False,
               "track": True,
-              "utctimestamp": False,
               "_albumart_1_front album cover": False}
 
     def __init__(self, sequence, **kwargs):
@@ -379,11 +377,8 @@ class CommonAudioCDTags(AudioCDTags):
         self.logger.debug("Step %s for track %s.", self._step, f'{kwargs["track"]}{sequence}')
 
         # ----- Set encoding timestamp.
-        now = datetime.utcnow()
-        if int(self._otags.get("utctimestamp", 0)) > 0:
-            now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
-        now = shared.UTC.localize(now).astimezone(shared.LOCAL)
-        now_readable = shared.format_date(now)
+        now = shared.UTC.localize(datetime.utcnow()).astimezone(shared.LOCAL)
+        now_readable = shared.format_date(shared.UTC.localize(datetime.utcnow()).astimezone(shared.LOCAL))
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
@@ -396,8 +391,6 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
         self._otags["encodingtime"] = int(now.timestamp())
-        if int(self._otags.get("utctimestamp", 0)) > 0:
-            self._otags["encodingtime"] = int(timezone(shared.DFTTIMEZONE).localize(datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))).timestamp())
 
         # ----- Set encodingyear.
         self.logger.debug("Set encodingyear.")
@@ -1526,8 +1519,7 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "livedisc",
                                 "livetrack",
                                 "sample",
-                                "tracklanguage",
-                                "utctimestamp"], DefaultAudioCDTags.fromfile),
+                                "tracklanguage"], DefaultAudioCDTags.fromfile),
             "bootleg": Profile(["bonustrack",
                                 "bootleg",
                                 "bootlegalbumcity",
@@ -1544,8 +1536,7 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "livedisc",
                                 "livetrack",
                                 "sample",
-                                "tracklanguage",
-                                "utctimestamp"], BootlegAudioCDTags.fromfile),
+                                "tracklanguage"], BootlegAudioCDTags.fromfile),
             "live": Profile(["albumsortyear",
                              "bonustrack",
                              "bootleg",
@@ -1562,8 +1553,7 @@ PROFILES = {"default": Profile(["albumsortyear",
                              "livedisc",
                              "livetrack",
                              "sample",
-                             "tracklanguage",
-                             "utctimestamp"], LiveAudioCDTags.fromfile)
+                             "tracklanguage"], LiveAudioCDTags.fromfile)
             }
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)
