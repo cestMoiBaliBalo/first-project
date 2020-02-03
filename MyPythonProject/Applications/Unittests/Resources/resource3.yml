@@ -486,3 +486,58 @@
     tracknumber: !!python/str 1
     tracklanguage: English
     upc: !!python/str 042282415028
+- - Album: "Operation: Mindcrime"
+    AlbumArtist: Queensrÿche
+    AlbumArtistSort: Queensrÿche
+    AlbumSortCount: !!python/str 1
+    Artist: Queensrÿche
+    ArtistSort: Queensrÿche
+    BonusTrack: N
+    Bootleg: N
+    Deluxe: N
+    Disc: 1/1
+    Encoder: FLAC 1.3.3 beta
+    FolderSortCount: N
+    Genre: Rock
+    InCollection: Y
+    Label: Some Label
+    LiveDisc: N
+    LiveTrack: N
+    LossLess: !!python/str 2
+    Offset: !!python/str 0
+    OrigYear: !!python/str 1988
+    Profile: Default
+    Source: CD (Lossless)
+    Title: Some Title
+    TotalTracks: !!python/str 16
+    Track: 5/16
+    TrackLanguage: English
+    UPC: !!python/str 042282415028
+    Year: !!python/str 1988
+    _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp3F43.tmp\\17.bin
+  - default
+  - []
+  - unittest_defaultalbum
+  - albumartist: Queensrÿche
+    albumsort: 1.19880000.1.13
+    artist: Queensrÿche
+    album: "Operation: Mindcrime"
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    discnumber: !!python/str 1
+    foldersortcount: N
+    genre: Hard Rock
+    label: Some Label
+    mediaprovider: !!python/none
+    title: Some Title
+    totaltracks: !!python/str 16
+    tracknumber: !!python/str 5
+    tracklanguage: English
+    upc: !!python/str 042282415028

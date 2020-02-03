@@ -38,7 +38,7 @@ basename, exists, join = os.path.basename, os.path.exists, os.path.join
 # Global classes.
 # ===============
 class CustomAudioGenres(AudioGenres):
-    _genres = {}
+    _genres = {"Queensrÿche": "Hard Rock"}
 
 
 class Changes(object):
