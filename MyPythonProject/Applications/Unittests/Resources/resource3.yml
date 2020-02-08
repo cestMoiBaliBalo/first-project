@@ -25,8 +25,10 @@
     TrackLanguage: English
   - bootleg
   - - nugs
-    - updtrack
-    - updtotaltracks
+    - springsteen
+    - alt_bootleg_album
+    - offset_track
+    - change_totaltracks
   - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
@@ -72,16 +74,17 @@
     LiveDisc: Y
     LiveTrack: Y
     Offset: !!python/str 13
-    Profile: SBootlegs
+    Profile: springsteen
     Source: CD (Lossless)
     Title: Roll of the Dice
     TotalTracks: !!python/str 35
     Track: 5/7
     TrackLanguage: English
   - bootleg
-  - - sbootlegs
-    - updtrack
-    - updtotaltracks
+  - - alt_bootleg_album
+    - springsteen
+    - offset_track
+    - change_totaltracks
   - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.20021014.1.02
@@ -145,6 +148,8 @@
     TrackLanguage: English
   - bootleg
   - - nugs
+    - springsteen
+    - alt_bootleg_album
   - unittest_bootlegalbum
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
@@ -426,6 +431,113 @@
     mediaprovider: !!python/none
     title: Some Title
     totaltracks: !!python/str 10
+    tracknumber: !!python/str 5
+    tracklanguage: English
+    upc: !!python/str 042282415028
+- - Album: "Live: 2000-11-06 Seattle, WA"
+    AlbumArtist: Pearl Jam
+    AlbumArtistSort: Pearl Jam
+    AlbumSortCount: !!python/str 1
+    Artist: Pearl Jam
+    ArtistSort: Pearl Jam
+    BonusTrack: N
+    Bootleg: N
+    BootlegAlbumCity: Seattle, WA
+    BootlegAlbumTour: Binaural Tour
+    BootlegAlbumYear: 2000 11 06
+    Deluxe: N
+    Disc: 1/2
+    Encoder: FDK v2.0.0
+    Genre: Alternative Rock
+    InCollection: Y
+    Label: Epic Records
+    LiveDisc: Y
+    LiveTrack: Y
+    Offset: !!python/str 0
+    Profile: Live
+    Source: CD (Lossless)
+    Title: Corduroy
+    TotalTracks: !!python/str 35
+    Track: 1/7
+    TrackLanguage: English
+    UPC: !!python/str 042282415028
+    Year: !!python/str 2000
+  - live
+  - - dft_bootleg_album
+    - offset_track
+    - change_totaltracks
+  - unittest_defaultalbum
+  - albumartist: Pearl Jam
+    albumsort: 2.20001106.1.02
+    artist: Pearl Jam
+    album: "Live: 2000-11-06 - Seattle, WA"
+    bootlegalbum_city: Seattle, WA
+    bootlegalbum_country: United States
+    bootlegalbum_date: !!python/str 2000-11-06
+    bootlegalbum_day: !!python/str 06
+    bootlegalbum_month: !!python/str 11
+    bootlegalbum_tour: Binaural Tour
+    bootlegalbum_year: !!python/str 2000
+    deluxe: N
+    discnumber: !!python/str 1
+    foldersortcount: N
+    genre: Alternative Rock
+    totaltracks: !!python/str 35
+    tracknumber: !!python/str 1
+    tracklanguage: English
+    upc: !!python/str 042282415028
+- - Album: "Operation: Mindcrime"
+    AlbumArtist: Queensrÿche
+    AlbumArtistSort: Queensrÿche
+    AlbumSortCount: !!python/str 1
+    Artist: Queensrÿche
+    ArtistSort: Queensrÿche
+    BonusTrack: N
+    Bootleg: N
+    Deluxe: N
+    Disc: 1/1
+    Encoder: FLAC 1.3.3 beta
+    FolderSortCount: N
+    Genre: Rock
+    InCollection: Y
+    Label: Some Label
+    LiveDisc: N
+    LiveTrack: N
+    LossLess: !!python/str 2
+    Offset: !!python/str 0
+    OrigYear: !!python/str 1988
+    Profile: Default
+    Source: CD (Lossless)
+    Title: Some Title
+    TotalTracks: !!python/str 16
+    Track: 5/16
+    TrackLanguage: English
+    UPC: !!python/str 042282415028
+    Year: !!python/str 1988
+    _albumart_1_Front Album Cover: C:\\Users\\Xavier\\AppData\\Local\\Temp\\dbp3F43.tmp\\17.bin
+  - default
+  - []
+  - unittest_defaultalbum
+  - albumartist: Queensrÿche
+    albumsort: 1.19880000.1.13
+    artist: Queensrÿche
+    album: "Operation: Mindcrime"
+    bootlegalbum_city: !!python/none
+    bootlegalbum_country: !!python/none
+    bootlegalbum_date: !!python/none
+    bootlegalbum_day: !!python/none
+    bootlegalbum_month: !!python/none
+    bootlegalbum_provider: !!python/none
+    bootlegalbum_tour: !!python/none
+    bootlegalbum_year: !!python/none
+    deluxe: N
+    discnumber: !!python/str 1
+    foldersortcount: N
+    genre: Hard Rock
+    label: Some Label
+    mediaprovider: !!python/none
+    title: Some Title
+    totaltracks: !!python/str 16
     tracknumber: !!python/str 5
     tracklanguage: English
     upc: !!python/str 042282415028

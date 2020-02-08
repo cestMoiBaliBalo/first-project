@@ -168,7 +168,7 @@ parser_sub.add_argument("days", type=int)
 #     =========
 tags_grabber = argparse.ArgumentParser()
 tags_grabber.add_argument("source", help="UTF16-LE with BOM encoded TXT audio tags file", type=argparse.FileType(mode="r+", encoding="UTF_16"))
-tags_grabber.add_argument("profile", help="ripping profile", choices=["default", "bootleg"])
+tags_grabber.add_argument("profile", help="ripping profile", choices=["default", "bootleg", "live"])
 tags_grabber.add_argument("sequence", help="audio encoder sequence")
 tags_grabber.add_argument("decorators", nargs="*", help="decorating profile(s)")
 tags_grabber.add_argument("--tags_processing", nargs="?", default="default", help="audio database processing profile")

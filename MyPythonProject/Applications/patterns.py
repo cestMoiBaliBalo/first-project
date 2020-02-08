@@ -16,44 +16,45 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+
 # ==========
 # Constants.
 # ==========
-REGEX = re.compile(r"^(\d\.\d{2}\.)(.+)\.[a-z0-9]{3,4}$", re.IGNORECASE)
+# REGEX = re.compile(r"^(\d\.\d{2}\.)(.+)\.[a-z0-9]{3,4}$", re.IGNORECASE)
 
 
 # ==========
 # Pattern 1.
 # ==========
-# Pattern used by `AudioCD/Renamer.py` from dBpoweramp Audio CD ripping application.
+# Pattern used by `AudioCD/Convert.py` from dBpoweramp Audio CD ripping application.
 # 1. Used for renaming an audio file from the track title.
 # 2. Used for renaming an audio file from a subset taken from the file name.
-class FileNameDecorator():
-    def __init__(self, obj):
-        self.name, self.found, self.tags, self.extension = obj.name, obj.found, obj.tags, obj.extension
-
-
-class RightTrim(FileNameDecorator):
-    def __init__(self, obj, length=30):
-        super(RightTrim, self).__init__(obj)
-        if self.found:
-            self.name = self.name[:length]
-
-
-class RenameWithTitle(FileNameDecorator):
-    def __init__(self, obj):
-        super(RenameWithTitle, self).__init__(obj)
-        if self.found:
-            _name = self.tags["title"]
-            for char in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
-                _name = _name.replace(char, "_")
-            self.name = _name
+# class FileNameDecorator():
+#     def __init__(self, obj):
+#         self.name, self.found, self.tags, self.extension = obj.name, obj.found, obj.tags, obj.extension
+#
+#
+# class RightTrim(FileNameDecorator):
+#     def __init__(self, obj, length=30):
+#         super(RightTrim, self).__init__(obj)
+#         if self.found:
+#             self.name = self.name[:length]
+#
+#
+# class RenameWithTitle(FileNameDecorator):
+#     def __init__(self, obj):
+#         super(RenameWithTitle, self).__init__(obj)
+#         if self.found:
+#             _name = self.tags["title"]
+#             for char in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
+#                 _name = _name.replace(char, "_")
+#             self.name = _name
 
 
 # ==========
 # Pattern 2.
 # ==========
-# Pattern used by `AudioCD/Converter/Main.py` from dBpoweramp Batch Converter.
+# Pattern used by `AudioCD/Converter/Convert.py` from dBpoweramp Batch Converter.
 # Used for processing audio tags.
 class AudioTagsInterface(MutableMapping):
     def __init__(self, **kwargs):
@@ -106,6 +107,12 @@ class DefaultTags(TagsDecorator):
         for tag in ["copyright", "description", "mediaprovider", "profile", "purchasedate"]:
             with suppress(KeyError):
                 del self._tags[tag]
+
+
+class EncodedFromFLACFile(TagsDecorator):
+    def __init__(self, obj):
+        super(EncodedFromFLACFile, self).__init__(obj)
+        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class EncodedFromLegalFLACFile(TagsDecorator):

@@ -25,11 +25,12 @@ __status__ = "Production"
 class CustomAudioGenres(AudioGenres):
     _genres = {"Arcade Fire": "Alternative Rock",
                "Black Sabbath": "Hard Rock",
-               "Blue \u00D6yster Cult": "Hard Rock",
+               "Blue Öyster Cult": "Hard Rock",
                "Bon Jovi": "Hard Rock",
                "Calogero": "French Pop",
                "Cradle of Filth": "Black Metal",
                "Deep Purple": "Hard Rock",
+               "Faith No More": "Alternative Rock",
                "Firehouse": "Hard Rock",
                "Green Day": "Alternative Rock",
                "Indochine": "French Pop",
@@ -42,11 +43,12 @@ class CustomAudioGenres(AudioGenres):
                "Lady Gaga": "Pop",
                "Megadeth": "Trash Metal",
                "Metallica": "Trash Metal",
-               "Myl\u00E8ne Farmer": "French Pop",
+               "Mylène Farmer": "French Pop",
                "Nirvana": "Alternative Rock",
                "Ozzy Osbourne": "Hard Rock",
                "Paradise Lost": "Doom Metal",
                "Pearl Jam": "Alternative Rock",
+               "Queensrÿche": "Hard Rock",
                "Sandra": "Pop",
                "Tears for Fears": "Pop",
                "W.A.S.P.": "Hard Rock",
@@ -58,7 +60,7 @@ class CustomAudioLanguages(AudioLanguages):
     _languages = {"Calogero": "French",
                   "Indochine": "French",
                   "Grande Sophie, La": "French",
-                  "Myl\u00E8ne Farmer": "French"}
+                  "Mylène Farmer": "French"}
 
 
 # Define French environment.

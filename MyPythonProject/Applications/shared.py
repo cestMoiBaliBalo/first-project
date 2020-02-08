@@ -1003,7 +1003,7 @@ def pprint_count(*iterables: Tuple[str, int], length: int = 5) -> Iterable[Tuple
     """
     sequence = iter(iterables)  # type: Iterable[Tuple[str, int]]
     keys, values = zip(*sequence)
-    for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0: >{1}d}".format(value, length) for value in values)):
+    for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0:>{1}d}".format(value, length) for value in values)):
         yield key, value
 
 

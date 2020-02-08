@@ -28,6 +28,10 @@ selectors:
       - 1
       - 0
       - 0
+      - 0
+      - 0
+      - 0
+      - 0
 
     albums:
       - 0
@@ -55,6 +59,10 @@ selectors:
       - 0
       - 1
       - 0
+      - 0
+      - 0
+      - 0
+      - 0
 
     discs:
       - 0
@@ -73,6 +81,10 @@ selectors:
       - 0
       - 0
       - 1
+      - 0
+      - 0
+      - 0
+      - 0
       - 0
       - 0
       - 0
@@ -109,6 +121,10 @@ selectors:
       - 0
       - 0
       - 0
+      - 0
+      - 0
+      - 0
+      - 0
 
     rippeddiscs:
       - 0
@@ -136,6 +152,10 @@ selectors:
       - 0
       - 0
       - 1
+      - 0
+      - 0
+      - 0
+      - 0
 
     defaultalbums:
       - 0
@@ -163,6 +183,41 @@ selectors:
       - 0
       - 0
       - 0
+      - 0
+      - 0
+      - 0
+      - 0
+
+    livealbums:
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 1
+      - 1
+      - 1
 
   bootlegalbums:
 
@@ -342,6 +397,38 @@ selectors:
       - 0
       - 0
       - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 1
+      - 0
+
+    livealbums:
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
       - 1
       - 1
       - 1
@@ -353,9 +440,9 @@ selectors:
       - 0
       - 0
       - 0
-      - 1
       - 0
-      - 1
+      - 0
+      - 0
       - 0
 
     bootlegdiscs:
@@ -429,10 +516,11 @@ statements:
       albums: INSERT INTO albums (albumid, discs, genreid, is_bootleg, is_deluxe, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       discs: INSERT INTO discs (albumid, discid, tracks, is_live) VALUES (?, ?, ?, ?)
       tracks: INSERT INTO tracks (albumid, discid, trackid, is_bonus, is_live, title) VALUES (?, ?, ?, ?, ?, ?)
+      livealbums: INSERT INTO livealbums (albumid, date, city, countryid, tour) VALUES (?, ?, ?, ?, ?)
       rippeddiscs: INSERT INTO rippeddiscs (albumid, discid, applicationid) VALUES (?, ?, ?)
-      bootlegalbums: INSERT INTO bootlegalbums (albumid, bootleg_date, bootleg_city, bootleg_countryid, bootleg_tour, bootleg_providerid, bootleg_name) VALUES (?, ?, ?, ?, ?, ?, ?)
-      bootlegdiscs: INSERT INTO bootlegdiscs (albumid, discid, disc_reference) VALUES (?, ?, ?)
-      bonuses: INSERT INTO bonuses (albumid, discid, trackid, bootleg_date, bootleg_city, bootleg_countryid, bootleg_tour) VALUES (?, ?, ?, ?, ?, ?, ?)
+      bootlegalbums: INSERT INTO bootlegalbums (albumid, providerid, title) VALUES (?, ?, ?)
+      bootlegdiscs: INSERT INTO bootlegdiscs (albumid, discid, referenceid) VALUES (?, ?, ?)
+      bonuses: INSERT INTO bonuses (albumid, discid, trackid, date, city, countryid, tour) VALUES (?, ?, ?, ?, ?, ?, ?)
       defaultalbums: INSERT INTO defaultalbums (albumid, origyear, year, album, label, upc) VALUES (?, ?, ?, ?, ?, ?)
   bootlegalbums:
       albums: INSERT INTO albums (albumid, discs, genreid, is_bootleg, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -450,4 +538,5 @@ tables:
     - albums
     - discs
     - tracks
+    - livealbums
     - bootlegalbums

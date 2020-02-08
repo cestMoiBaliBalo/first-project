@@ -38,7 +38,7 @@ basename, exists, join = os.path.basename, os.path.exists, os.path.join
 # Global classes.
 # ===============
 class CustomAudioGenres(AudioGenres):
-    _genres = {}
+    _genres = {"Queensrÿche": "Hard Rock"}
 
 
 class Changes(object):
@@ -49,20 +49,22 @@ class Changes(object):
 
         :param db:
         """
-        self._artists, self._albums, self._defautlalbums, self._bootlegalbums, self._discs, self._rippeddiscs, self._bootlegdiscs, self._tracks, self._bonuses = defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int), \
-                                                                                                                                                                 defaultdict(int)
+        self._artists, self._albums, self._defautlalbums, self._bootlegalbums, self._livealbums, self._discs, self._rippeddiscs, self._bootlegdiscs, self._tracks, self._bonuses = defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int), \
+                                                                                                                                                                                   defaultdict(int)
         self._database = db  # type: str
         self._changes = 0  # type: int
         self._db_album = None  # type: Optional[bool]
         self._db_bootleg = None  # type: Optional[bool]
         self._bonus = None  # type: Optional[str]
+        self._bootlegdate = None  # type: Optional[str]
         self._bootlegdisc = None  # type: Optional[str]
         self._artistid = None  # type: Optional[str]
         self._albumsort = None  # type: Optional[str]
@@ -79,13 +81,14 @@ class Changes(object):
         self._db_album = kwargs.get("db_album", False)
         self._db_bootleg = kwargs.get("db_bootleg", False)
         self._bonus = kwargs.get("bonus", "N")
+        self._bootlegdate = kwargs.get("bootlegalbumyear")
         self._bootlegdisc = kwargs.get("bootlegdisc")
         self._artistid = kwargs["artistsort"]
         self._albumsort = kwargs["albumsort"][:-3]
         self._albumid = f"{self._artistid[0]}.{self._artistid}.{self._albumsort}"
         self._discid = int(kwargs["discnumber"])
         self._trackid = int(kwargs["tracknumber"])
-        artist, album, disc, track, bonus, bootlegdisc = self._exists(self._artistid, self._albumid, self._discid, self._trackid, db=self._database)
+        artist, album, livealbum, disc, track, bonus, bootlegdisc = self._exists(self._artistid, self._albumid, self._discid, self._trackid, db=self._database)
 
         # Artist.
         if not artist:
@@ -98,6 +101,11 @@ class Changes(object):
                 self._defautlalbums[self._albumid] += 1
             if self._db_bootleg:
                 self._bootlegalbums[self._albumid] += 1
+
+        # Live album
+        if not livealbum:
+            if self._bootlegdate:
+                self._livealbums[self._albumid] += 1
 
         # Disc.
         if not disc:
@@ -118,6 +126,7 @@ class Changes(object):
                         len(self._albums.keys()) + \
                         len(self._defautlalbums.keys()) + \
                         len(self._bootlegalbums.keys()) + \
+                        len(self._livealbums.keys()) + \
                         len(self._discs.keys()) + \
                         len(self._bootlegdiscs.keys()) + \
                         len(self._rippeddiscs.keys()) + \
@@ -129,6 +138,7 @@ class Changes(object):
         self.logger.debug("albums       : %s", self._albums)
         self.logger.debug("defautlalbums: %s", self._defautlalbums)
         self.logger.debug("bootlegalbums: %s", self._bootlegalbums)
+        self.logger.debug("livealbums   : %s", self._livealbums)
         self.logger.debug("discs        : %s", self._discs)
         self.logger.debug("bootlegdiscs : %s", self._bootlegdiscs)
         self.logger.debug("rippeddiscs  : %s", self._rippeddiscs)
@@ -136,7 +146,7 @@ class Changes(object):
         self.logger.debug("bonuses      : %s", self._bonuses)
 
     @staticmethod
-    def _exists(artistid: str, albumid: str, discid: int, trackid: int, db: str = DATABASE) -> Tuple[bool, ...]:
+    def _exists(artistid: str, albumid: str, discid: int, trackid: int, *, db: str = DATABASE) -> Tuple[bool, ...]:
         """
 
         :param artistid:
@@ -157,6 +167,10 @@ class Changes(object):
             curs.execute("SELECT count(*) FROM albums WHERE albumid=?", (albumid,))
             (album,) = curs.fetchone()
 
+            # livealbums.
+            curs.execute("SELECT count(*) FROM livealbums WHERE albumid=?", (albumid,))
+            (livealbum,) = curs.fetchone()
+
             # discs.
             curs.execute("SELECT count(*) FROM discs WHERE albumid=? AND discid=?", (albumid, discid))
             (disc,) = curs.fetchone()
@@ -173,7 +187,7 @@ class Changes(object):
             curs.execute("SELECT count(*) FROM bonuses WHERE albumid=? AND discid=? AND trackid=?", (albumid, discid, trackid))
             (bonus,) = curs.fetchone()
 
-        return bool(artist), bool(album), bool(disc), bool(track), bool(bonus), bool(bootlegdisc)
+        return bool(artist), bool(album), bool(livealbum), bool(disc), bool(track), bool(bonus), bool(bootlegdisc)
 
     @property
     def total_changes(self) -> int:
@@ -246,9 +260,10 @@ class TestRippedTrack(unittest.TestCase):
             self.test_cases = yaml.load(stream, Loader=yaml.FullLoader)
         with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
+        self._logger = logging.getLogger("Applications.Unittests.module4.TestRippedTrack")
 
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
-    def test_t01a(self, mock_database):
+    def test_t01(self, mock_database):
         """
         Test that value returned by `upsert_audiotags` function is the expected one.
         """
@@ -273,7 +288,7 @@ class TestRippedTrack(unittest.TestCase):
                 self.assertEqual(value, 0)
 
     @patch("Applications.AudioCD.shared.AudioCDTags.database", new_callable=PropertyMock)
-    def test_t01b(self, mock_database):
+    def test_t02(self, mock_database):
         """
         Test that audio tags returned by `upsert_audiotags` function are the expected ones.
         """
@@ -300,7 +315,7 @@ class TestRippedTrack(unittest.TestCase):
                         self.assertEqual(v, getattr(track, k, None))
 
     @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-    def test_t02(self):
+    def test_t03(self):
         """
         Test `upsert_audiotags` function.
         Test that total ripped discs are coherent after inserting new discs.
@@ -339,7 +354,7 @@ class TestRippedTrack(unittest.TestCase):
             self.assertEqual(total_rippeddiscs + rippeddiscs, get_total_rippeddiscs(database))
 
     @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-    def test_t03(self):
+    def test_t04(self):
         """
         Test `upsert_audiotags` main function.
         Test that total database changes are coherent.
@@ -382,9 +397,11 @@ class TestRippedTrack(unittest.TestCase):
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
+            self._logger.debug("inserted: %s", inserted)
+            self._logger.debug("expected: %s", changes.total_changes)
             self.assertEqual(inserted, changes.total_changes)
 
-    def test_t04(self):
+    def test_t05(self):
         """
         Test `upsert_audiotags` main function.
         Test that total database changes are coherent.

@@ -18,7 +18,6 @@ from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, S
 import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
-from pytz import timezone
 from sortedcontainers import SortedDict  # type: ignore
 
 from .. import decorators
@@ -167,15 +166,24 @@ class AudioCDTags(MutableMapping):
 
     @property
     def bootlegtrack_day(self):
-        return self._otags.get("bootlegtrackday")[-2:]
+        bootlegtrackday = self._otags.get("bootlegtrackday")
+        if bootlegtrackday is not None:
+            return bootlegtrackday[-2:]
+        return None
 
     @property
     def bootlegtrack_month(self):
-        return self._otags.get("bootlegtrackday")[5:-3]
+        bootlegtrackday = self._otags.get("bootlegtrackday")
+        if bootlegtrackday is not None:
+            return bootlegtrackday[5:-3]
+        return None
 
     @property
     def bootlegtrack_year(self):
-        return self._otags.get("bootlegtrackday")[:4]
+        bootlegtrackday = self._otags.get("bootlegtrackday")
+        if bootlegtrackday is not None:
+            return bootlegtrackday[:4]
+        return None
 
     @property
     def bootlegtrack_tour(self):
@@ -328,7 +336,6 @@ class CommonAudioCDTags(AudioCDTags):
               "title": False,
               "tracklanguage": False,
               "track": True,
-              "utctimestamp": False,
               "_albumart_1_front album cover": False}
 
     def __init__(self, sequence, **kwargs):
@@ -370,11 +377,8 @@ class CommonAudioCDTags(AudioCDTags):
         self.logger.debug("Step %s for track %s.", self._step, f'{kwargs["track"]}{sequence}')
 
         # ----- Set encoding timestamp.
-        now = datetime.utcnow()
-        if int(self._otags.get("utctimestamp", 0)) > 0:
-            now = datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))
-        now = timezone(shared.DFTTIMEZONE).localize(now)
-        now_readable = shared.format_date(now)
+        now = shared.UTC.localize(datetime.utcnow()).astimezone(shared.LOCAL)
+        now_readable = shared.format_date(shared.UTC.localize(datetime.utcnow()).astimezone(shared.LOCAL))
 
         # ----- Set encodedby.
         self.logger.debug("Set encodedby.")
@@ -387,8 +391,6 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Set encodingtime.
         self.logger.debug("Set encodingtime.")
         self._otags["encodingtime"] = int(now.timestamp())
-        if int(self._otags.get("utctimestamp", 0)) > 0:
-            self._otags["encodingtime"] = int(timezone(shared.DFTTIMEZONE).localize(datetime.utcfromtimestamp(int(self._otags["utctimestamp"]))).timestamp())
 
         # ----- Set encodingyear.
         self.logger.debug("Set encodingyear.")
@@ -510,6 +512,95 @@ class DefaultAudioCDTags(CommonAudioCDTags):
         return True, ""
 
 
+class LiveAudioCDTags(DefaultAudioCDTags):
+    logger = logging.getLogger("{0}.LiveAudioCDTags".format(__name__))
+    REX1 = re.compile(r"\W+")
+    REX2 = re.compile(r", ([A-Z][a-z]+)$")
+    DFTCOUNTRY = "United States"
+    __tags = {"bootlegalbumtour": True,
+              "bootlegalbumyear": True,
+              "bootlegalbumcity": True}
+
+    def __init__(self, sequence, **kwargs):
+        super(LiveAudioCDTags, self).__init__(sequence, **kwargs)
+        kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
+
+        # ----- Check mandatory input tags.
+        checked, exception = self.__validatetags(**kwargs)
+        if not checked:
+            raise ValueError(exception)
+
+        # ----- Update tags.
+        filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
+        self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
+
+        # ----- Set bootleg date.
+        self._otags["dottedbootlegalbumyear"] = self.REX1.sub(".", self._otags["bootlegalbumyear"])
+        self._otags["dashedbootlegalbumyear"] = self.REX1.sub("-", self._otags["bootlegalbumyear"])
+
+        # ----- Set bootlegalbumday.
+        day = parser.parse(self.REX1.sub("-", self._otags["bootlegalbumyear"]), default=datetime.utcnow())
+        self._otags["bootlegalbumday"] = day.date().isoformat()
+
+        # ----- Set bootlegtrackday.
+        day = parser.parse(self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"])), default=datetime.utcnow())
+        self._otags["bootlegtrackday"] = day.date().isoformat()
+
+        # ----- Set bootlegtrackyear.
+        self.logger.debug("Update bootlegtrackyear.")
+        self._otags["bootlegtrackyear"] = self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"]))
+        self.logger.debug(self._otags["bootlegtrackyear"])
+
+        # ----- Set bootlegtrackcity.
+        bootlegtrackcity = self._otags.get("bootlegtrackcity", self._otags["bootlegalbumcity"])
+        self._otags["bootlegtrackcity"] = bootlegtrackcity
+        self.logger.debug(self._otags["bootlegtrackcity"])
+
+        # ----- Set bootlegtrackcountry.
+        self.logger.debug("Set bootlegtrackcountry.")
+        self._otags["bootlegtrackcountry"] = self.DFTCOUNTRY
+        match = self.REX2.search(bootlegtrackcity)
+        if match:
+            self._otags["bootlegtrackcountry"] = match.group(1)
+        self.logger.debug(self._otags["bootlegtrackcountry"])
+
+        # ----- Set bootlegalbumcountry.
+        self.logger.debug("Set bootlegalbumcountry.")
+        self._otags["bootlegalbumcountry"] = self.DFTCOUNTRY
+        match = self.REX2.search(self._otags["bootlegalbumcity"])
+        if match:
+            self._otags["bootlegalbumcountry"] = match.group(1)
+        self.logger.debug(self._otags["bootlegalbumcountry"])
+
+        # ----- Set bootlegtracktour.
+        self.logger.debug("Set bootlegtracktour.")
+        self._otags["bootlegtracktour"] = self._otags.get("bootlegtracktour", self._otags["bootlegalbumtour"])
+        self.logger.debug(self._otags["bootlegtracktour"])
+
+        # ----- Set albumsort.
+        self.logger.debug("Set albumsort.")
+        self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self.REX1.sub("", self._otags["bootlegalbumyear"]),
+                                                                 uid=self._otags["albumsortcount"],
+                                                                 enc=self._encoder.code)
+        self.logger.debug(self._otags["albumsort"])
+
+        # ----- Set titlesort.
+        self.logger.debug("Set titlesort.")
+        self._otags["titlesort"] = "D{disc}.T{track}.{bonustrack}{livetrack}{bootleg}".format(disc=self._otags["disc"],
+                                                                                              track=self._otags["track"].zfill(2),
+                                                                                              bonustrack=self._otags["bonustrack"],
+                                                                                              livetrack=self._otags["livetrack"],
+                                                                                              bootleg=self._otags["bootleg"])
+
+    def __validatetags(self, **kwargs):
+        checktags = partial(self.checktags, container=self.__tags)
+        for item in filter(checktags, self.__tags.keys()):
+            self.logger.debug("BootlegAudioCDTags: %s.", item)
+            if item not in kwargs:
+                return False, "{0} isn\'t available.".format(item)
+        return True, ""
+
+
 class BootlegAudioCDTags(CommonAudioCDTags):
     logger = logging.getLogger("{0}.BootlegAudioCDTags".format(__name__))
     REX1 = re.compile(r"\W+")
@@ -587,6 +678,10 @@ class BootlegAudioCDTags(CommonAudioCDTags):
         self.logger.debug("Set year.")
         self._otags["year"] = self._otags["bootlegalbumyear"][:4]
 
+        # ----- Set origyear.
+        self.logger.debug("Set origyear.")
+        self._otags["origyear"] = self._otags["year"]
+
         # ----- Set albumsort.
         self.logger.debug("Set albumsort.")
         self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self.REX1.sub("", self._otags["bootlegalbumyear"]),
@@ -663,13 +758,13 @@ class ChangeAlbumArtist(TagsModifier):
 
 
 class ChangeEncodedBy(TagsModifier):
-    def __init__(self, obj):
+    def __init__(self, obj, provider):
         super(ChangeEncodedBy, self).__init__(obj)
-        self._otags["encodedby"] = "{0} on {1} from nugs.net bootleg Audio CD".format(shared.get_rippingapplication()[0], shared.format_date(datetime.now(tz=timezone(shared.DFTTIMEZONE))))
+        self._otags["encodedby"] = "{0} from {1} bootleg Audio CD".format(self._otags["encodedby"].rstrip(), provider)
 
 
 class ChangeMediaProvider(TagsModifier):
-    def __init__(self, obj, provider="nugs.net"):
+    def __init__(self, obj, provider):
         super(ChangeMediaProvider, self).__init__(obj)
         self._otags["mediaprovider"] = self._otags.get("bootlegalbumprovider", provider)
 
@@ -789,6 +884,7 @@ class RippedTrack(ContextDecorator):
 
         :param audiotrack:
         :param decorators: 
+        :param kwargs: 
         :return: 
         """
         in_logger = logging.getLogger(f"{__name__}.RippedDisc.alter_tags")
@@ -796,31 +892,34 @@ class RippedTrack(ContextDecorator):
         for decorator in decorators:
             in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
 
+            # Change `albumartist`.
+            if decorator.lower() == "springsteen":
+                audiotrack = changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band")
+
             # Change `album`.
-            if decorator.lower() == "dftupdalbum":
+            elif decorator.lower() == "default_album":
                 audiotrack = changealbum(audiotrack, "$albumsortyear.$albumsortcount - $album")
-            elif decorator.lower() == "altupdalbum":
-                audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
+            elif decorator.lower() == "dft_bootleg_album":
+                audiotrack = changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")
+            elif decorator.lower() == "alt_bootleg_album":
+                audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
+            # elif decorator.lower() == "altupdalbum":
+            #     audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
 
             # Change `tracknumber`.
-            elif decorator.lower() == "updtrack" and offset:
+            elif decorator.lower() == "offset_track" and offset:
                 audiotrack = changetrack(audiotrack, offset)
 
             # Change `totaltracks`.
-            elif decorator.lower() == "updtotaltracks" and int(totaltracks):
+            elif decorator.lower() == "change_totaltracks" and int(totaltracks):
                 audiotrack = changetotaltracks(audiotrack, totaltracks)
 
             # Changes requested by `nugs` decorating profile.
             elif decorator.lower() == "nugs":
                 if audiotrack.artist.lower() == "pearl jam":
-                    audiotrack = changemediaprovider(changeencodedby(changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")))
+                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
                 elif audiotrack.artist.lower() == "bruce springsteen":
-                    audiotrack = changemediaprovider(changealbumartist(changeencodedby(changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")),
-                                                                       "Bruce Springsteen And The E Street Band"))
-
-            # Changes requested by `sbootlegs` decorating profile.
-            elif decorator.lower() == "sbootlegs":
-                audiotrack = changealbum(changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band"), "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
+                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
 
         return audiotrack
 
@@ -1021,12 +1120,12 @@ def changealbumartist(obj, albumartist):
     return ChangeAlbumArtist(obj, albumartist)
 
 
-def changeencodedby(obj):
-    return ChangeEncodedBy(obj)
+def changeencodedby(obj, *, provider="nugs.net"):
+    return ChangeEncodedBy(obj, provider)
 
 
-def changemediaprovider(obj):
-    return ChangeMediaProvider(obj)
+def changemediaprovider(obj, *, provider="nugs.net"):
+    return ChangeMediaProvider(obj, provider)
 
 
 def changetotaltracks(obj, totaltracks):
@@ -1062,6 +1161,7 @@ def album(track):
 def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.albums".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
+    countries = dict(get_countries(db))
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
     _fil = Path(shared.TEMP) / "tags.json"
@@ -1100,7 +1200,11 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     shared.get_rippingapplication()[1]))
+                     shared.get_rippingapplication()[1],
+                     track.bootlegalbum_date,
+                     track.bootlegalbum_city,
+                     countries.get(track.bootlegalbum_country),
+                     track.bootlegalbum_tour,))
     iterable = list(set(iterable))
     for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1109,9 +1213,9 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
 def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
     iterable = []  # type: List[Sequence[Union[int, str]]]
+    countries = dict(get_countries(db))
     genres = dict(get_genres(db))
     languages = dict(get_languages(db))
-    countries = dict(get_countries(db))
     providers = dict(get_providers(db))
     _fil = Path(shared.TEMP) / "tags.json"
     if fil:
@@ -1415,10 +1519,8 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "livedisc",
                                 "livetrack",
                                 "sample",
-                                "tracklanguage",
-                                "utctimestamp"], DefaultAudioCDTags.fromfile),
-            "bootleg": Profile(["albumsortyear",
-                                "bonustrack",
+                                "tracklanguage"], DefaultAudioCDTags.fromfile),
+            "bootleg": Profile(["bonustrack",
                                 "bootleg",
                                 "bootlegalbumcity",
                                 "bootlegalbumcountry",
@@ -1434,8 +1536,24 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "livedisc",
                                 "livetrack",
                                 "sample",
-                                "tracklanguage",
-                                "utctimestamp"], BootlegAudioCDTags.fromfile)
+                                "tracklanguage"], BootlegAudioCDTags.fromfile),
+            "live": Profile(["albumsortyear",
+                             "bonustrack",
+                             "bootleg",
+                             "bootlegalbumcity",
+                             "bootlegalbumcountry",
+                             "bootlegalbumday",
+                             "bootlegalbumtour",
+                             "bootlegalbumyear",
+                             "bootlegtrackday",
+                             "database",
+                             "deluxe",
+                             "dashedbootlegalbumyear",
+                             "dottedbootlegalbumyear",
+                             "livedisc",
+                             "livetrack",
+                             "sample",
+                             "tracklanguage"], LiveAudioCDTags.fromfile)
             }
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)

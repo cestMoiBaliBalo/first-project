@@ -4,7 +4,6 @@ import argparse
 import locale
 import logging.config
 import os
-import re
 from contextlib import suppress
 from operator import itemgetter
 from pathlib import PurePath
@@ -13,21 +12,20 @@ from typing import List, Mapping, Tuple
 import yaml
 
 from Applications import patterns
-from Applications.AudioCD.shared import DFTPATTERN
-from Applications.shared import TemplatingEnvironment, UTF16, WRITE, left_justify, mainscript
+from Applications.shared import TemplatingEnvironment, UTF16, WRITE, mainscript, pprint_mapping
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-locale.setlocale(locale.LC_ALL, ("french", "fr_FR.ISO8859-1"))
+locale.setlocale(locale.LC_ALL, "")
 
 # ==========
 # Constants.
 # ==========
 _MAPPING = {True: "debug", False: "info"}  # type: Mapping[bool, str]
-_REGEX = re.compile(DFTPATTERN, re.IGNORECASE)
+# _REGEX = re.compile(DFTPATTERN, re.IGNORECASE)  # type: # Any
 _THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 
 # =================
@@ -44,7 +42,7 @@ argument = parser.parse_args()
 # Logging.
 # ========
 with open(os.fspath(_THATFILE.parents[2] / "Resources" / "logging.yml"), encoding="UTF_8") as fp:
-    log_config = yaml.load(fp)
+    log_config = yaml.load(fp, Loader=yaml.FullLoader)
 with suppress(KeyError):
     log_config["loggers"]["MyPythonProject"]["level"] = _MAPPING[argument.debug].upper()
 logging.config.dictConfig(log_config)
@@ -69,8 +67,7 @@ if pairs:
     logger.debug("==========")
     logger.debug("INPUT Tags")
     logger.debug("==========")
-    keys, values = list(zip(*pairs))
-    for key, value in zip(*[list(left_justify(keys)), values]):
+    for key, value in pprint_mapping(*pairs):
         logger.debug("%s: %s", key, value)
 
 # Process audio tags.
@@ -78,6 +75,8 @@ tags = patterns.DefaultTags(tags)
 for profile in argument.profiles:
     if profile.lower() == "albumsort":
         tags = patterns.AlbumSort(tags, argument.encoder)
+    elif profile.lower() == "encodedfromflac":
+        tags = patterns.EncodedFromFLACFile(tags)
     elif profile.lower() == "encodedfromlegalflac":
         tags = patterns.EncodedFromLegalFLACFile(tags)
     elif profile.lower() == "encodedfromlegaldsd":
@@ -89,8 +88,7 @@ if pairs:
     logger.debug("===========")
     logger.debug("OUTPUT Tags")
     logger.debug("===========")
-    keys, values = list(zip(*pairs))
-    for key, value in zip(*[list(left_justify(keys)), values]):
+    for key, value in pprint_mapping(*pairs):
         logger.debug("%s: %s", key, value)
 
 # Get back audio tags to dBpoweramp Batch Converter.

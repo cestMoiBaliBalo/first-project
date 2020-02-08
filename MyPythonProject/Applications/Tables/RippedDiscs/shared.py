@@ -240,10 +240,10 @@ def _get_rippeddiscs(db: str, **kwargs):
                   "album, " \
                   "coalesce(label, '') AS label, " \
                   "coalesce(upc, '') AS upc, " \
-                  "bootleg_date, " \
-                  "bootleg_city, " \
-                  "bootleg_country, " \
-                  "bootleg_tour, " \
+                  "live_date, " \
+                  "live_city, " \
+                  "live_country, " \
+                  "live_tour, " \
                   "modified_date " \
                   "FROM rippeddiscs_vw "
 
@@ -341,10 +341,10 @@ def _get_rippeddiscs(db: str, **kwargs):
                                      row["album"],
                                      row["label"],
                                      row["upc"],
-                                     row["bootleg_date"],
-                                     row["bootleg_city"],
-                                     row["bootleg_country"],
-                                     row["bootleg_tour"],
+                                     row["live_date"],
+                                     row["live_city"],
+                                     row["live_country"],
+                                     row["live_tour"],
                                      row["modified_date"],
                                      cover)))
     for row in rows:
