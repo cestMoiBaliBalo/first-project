@@ -832,20 +832,22 @@ def _insert_albums(*iterables) -> int:
                 conn = stack.enter_context(DatabaseConnection(database))
                 stack.enter_context(conn)
                 tracks = list(map(merge, product(_tables[profile], secondary_group)))
-                statements = _statements.get(profile, _statements["default"])
+                statements = dict(_statements["default"])
+                statements.update(_statements.get(profile, {}))
                 logger.debug("Profile   : %s", profile)
                 logger.debug("Statements:")
-                keys, values = zip(*statements.items())
-                for key, value in zip(pprint_sequence(*sorted(keys)), values):
+                keys, values = zip(*sorted(statements.items(), key=itemgetter(0)))
+                for key, value in zip(pprint_sequence(*keys), values):
                     logger.debug("\t%s: %s".expandtabs(3), key, value)
 
                 # Shared tables.
                 for track in tracks:
                     table = track[0]
-                    logger.debug("Table is: %s", table)
+                    logger.debug("Table is     : %s", table)
+                    logger.debug("Statements is: %s", statements[table])
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "livealbums" table.
@@ -854,7 +856,7 @@ def _insert_albums(*iterables) -> int:
                     logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "rippeddiscs" table.
@@ -863,7 +865,7 @@ def _insert_albums(*iterables) -> int:
                     logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "bonuses" table.
@@ -872,7 +874,7 @@ def _insert_albums(*iterables) -> int:
                     logger.debug("Table is: %s", table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "bootlegdiscs" table.
@@ -881,7 +883,7 @@ def _insert_albums(*iterables) -> int:
                     logger.debug(table)
                     logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements.get(table, _statements["default"][table]), tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 total_changes += conn.total_changes

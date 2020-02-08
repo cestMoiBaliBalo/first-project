@@ -146,7 +146,7 @@ class Changes(object):
         self.logger.debug("bonuses      : %s", self._bonuses)
 
     @staticmethod
-    def _exists(artistid: str, albumid: str, discid: int, trackid: int, db: str = DATABASE) -> Tuple[bool, ...]:
+    def _exists(artistid: str, albumid: str, discid: int, trackid: int, *, db: str = DATABASE) -> Tuple[bool, ...]:
         """
 
         :param artistid:

@@ -66,8 +66,8 @@ class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):
 
 class ChangeLocalCurrentDirectory(ContextDecorator):
     def __init__(self, directory: Union[str, PurePath]) -> None: 
-        self._dir: str = None
-        self._cwd: str = None
+        self._dir: Optional[str] = None
+        self._cwd: Optional[str] = None
     def __enter__(self): ...
     def __exit__(self, *exc): ...
 
