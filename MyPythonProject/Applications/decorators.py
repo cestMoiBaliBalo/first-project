@@ -15,10 +15,38 @@ __status__ = "Production"
 _THATFILE = PurePath(os.path.abspath(__file__))
 
 
+def int_(base: int = 10):
+    """
+    That decorator allows running any function requiring as argument a base 10 integer number when the only available argument is a characters string representing a number.
+    The decorator converts the characters string to a base 10 integer number and provides the result to the decorated function.
+
+    ''''''''''''''
+    How to use it:
+    ''''''''''''''
+    @int_()
+    def some_callable(arg):
+        pass
+    1. map(some_callable, [arg1, arg2, arg3, ...]) --> some_callable(int(arg1)), some_callable(int(arg2)), some_callable(int(arg3))
+    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
+
+    :param base. decimal base used to perform the conversion.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return func(int(arg, base=base))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def attrgetter_(attr: str):
     """
-    That decorator allows running any function using as argument an object attribute named `attribute`.
-    It must be used everywhere a callable object with an object as argument is required.
+    That decorator allows running any function when the only available argument is an object with attributes.
+    The decorator grabs the attribute "attr" and provides it to the decorated function.
 
     ''''''''''''''
     How to use it:
@@ -45,8 +73,8 @@ def attrgetter_(attr: str):
 
 def itemgetter_(index: int = 0):
     """
-    That decorator allows running any function using as argument a sequence item located at index `index`.
-    It must be used everywhere a callable object with a sequence as argument is required.
+    That decorator allows running any function when the only available argument is a sequence.
+    The decorator grabs the item located at position "index" and provides it to the decorated function.
 
     ''''''''''''''
     How to use it:
@@ -71,35 +99,9 @@ def itemgetter_(index: int = 0):
     return outer_wrapper
 
 
-def int_(base: int = 10):
-    """
-
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @int_()
-    def some_callable(arg):
-        pass
-    1. map(some_callable, [arg1, arg2, arg3, ...]) --> some_callable(int(arg1)), some_callable(int(arg2)), some_callable(int(arg3))
-    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
-
-    :param base.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg: str):
-            return func(int(arg, base=base))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 def compress_(*indexes: int):
     """
+    Creates a callable object.
 
     :param indexes:
     :return:
@@ -120,6 +122,7 @@ def compress_(*indexes: int):
 
 def map_(index: int):
     """
+    Creates a callable object.
 
     :param index:
     :return:
@@ -144,8 +147,10 @@ def map_(index: int):
 
 def nested_(*functions):
     """
+    Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
+    The result of the last function is then returned to the caller object.
 
-    :param functions: sequence of callables.
+    :param functions: sequence of functions.
     :return: callable object.
     """
 

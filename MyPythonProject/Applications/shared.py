@@ -42,7 +42,7 @@ COPYRIGHT = "\u00A9"
 DFTENCODING = "UTF_8"
 DFTTIMEZONE = "Europe/Paris"
 LOCAL = timezone("Europe/Paris")
-LOGPATTERN = "%(asctime)s [%(name)s]: %(message)s"
+LOGPATTERN = "%(asctime)s - %(levelname)s - [%(name)s]: %(message)s"
 UTC = timezone("UTC")
 UTF8 = "UTF_8"
 UTF16 = "UTF_16"
@@ -50,7 +50,7 @@ UTF16BOM = "\uFEFF"
 WRITE = "w"
 
 # Resources.
-ARECA = str(PurePath("C:/Program Files", "Areca", "areca_cl.exe"))
+ARECA = str(PurePath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 DATABASE = str(_THATFILE.parents[1] / "Resources" / "database.db")
 TESTDATABASE = str(_THATFILE.parent / "Unittests" / "Resources" / "database.db")
 XREFERENCES = str(_THATFILE.parents[1] / "Resources" / "xreferences.db")
@@ -127,7 +127,7 @@ LOCALMONTHS = ["Janvier",
 # Global classes.
 # ===============
 class CustomFormatter(logging.Formatter):
-    converter = datetime.fromtimestamp  # type: ignore
+    converter = datetime.fromtimestamp
     default_time_format = "%d/%m/%Y %H:%M:%S"
     default_localizedtime_format = "%Z (UTC%z)"
     default_format = "%s %s,%03d %s"
@@ -161,7 +161,7 @@ class ChangeLocalCurrentDirectory(ContextDecorator):
     Context manager to change the current directory of a local system.
     """
 
-    def __init__(self, directory: Union[str, PurePath]):
+    def __init__(self, directory):
         self._dir = str(directory)
         self._cwd = os.getcwd()
 
@@ -236,7 +236,7 @@ class TitleCaseBaseConverter(ABC):
     roman_numbers_regex2 = re.compile(r"(?i)\b(?:(?=[CL])C{,3}L?X{,3}|X{1,3})?I[VX]\b")
     roman_numbers_regex3 = re.compile(r"(?i)\bC{,3}X[CL](?:V?I{,3}|I[VX])\b")
 
-    def __init__(self) -> None:
+    def __init__(self):
 
         # Initializations.
         self.alw_lowercase, self.alw_uppercase, self.alw_capital, self.capitalize_firstword, self.capitalize_lastword = None, None, None, None, None
@@ -259,7 +259,7 @@ class TitleCaseBaseConverter(ABC):
             self.capitalize_lastword = re.compile(r"\b([a-z]+)$", re.IGNORECASE)
 
     @abstractmethod
-    def convert(self, title: str) -> str:
+    def convert(self, title):
         """
 
         :param title:
@@ -274,10 +274,10 @@ class TitleCaseConverter(TitleCaseBaseConverter):
     """
     _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
-    def __init__(self) -> None:
+    def __init__(self):
         super(TitleCaseConverter, self).__init__()
 
-    def convert(self, title: str) -> str:
+    def convert(self, title):
         """
         
         :param title: 
@@ -865,7 +865,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> Tuple[str, Opt
     return application[next(it)]
 
 
-def find_files(directory: Union[str, Path], *, excluded=None) -> Iterable[str]:
+def find_files(directory: Union[str, Path], *, excluded=None) -> Iterator[str]:
     """
     Return a generator object yielding files stored into `directory` argument.
     :param directory: Directory to walk through. Must be a string representing an existing path.
@@ -888,7 +888,7 @@ def find_files(directory: Union[str, Path], *, excluded=None) -> Iterable[str]:
         yield file
 
 
-def get_drives() -> Iterable[str]:
+def get_drives() -> Iterator[str]:
     """
 
     :return:
@@ -899,7 +899,7 @@ def get_drives() -> Iterable[str]:
         yield drive
 
 
-def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3, gap: int = 3, group: Optional[int] = 15) -> Iterable[Tuple[str, ...]]:
+def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3, gap: int = 3, group: Optional[int] = 15) -> Iterator[Tuple[str, ...]]:
     """
 
     :param collection:
@@ -920,7 +920,7 @@ def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3
         yield item
 
 
-def iter_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3, group: Optional[int] = 50) -> Iterable[str]:
+def iter_collection(collection, headers, *, char="=", tabsize=3, gap=3, group=50):
     """
 
     :param collection:
@@ -971,7 +971,7 @@ def iter_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
         yield item
 
 
-def pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
+def pprint_sequence(*items):
     """
 
     :param items:
@@ -981,7 +981,7 @@ def pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
         yield item
 
 
-def pprint_mapping(*iterables: Tuple[Union[int, str], Union[int, str]]) -> Iterable[Tuple[str, Union[int, str]]]:
+def pprint_mapping(*iterables):
     """
 
     :param iterables:
@@ -994,7 +994,7 @@ def pprint_mapping(*iterables: Tuple[Union[int, str], Union[int, str]]) -> Itera
         yield key, value
 
 
-def pprint_count(*iterables: Tuple[str, int], length: int = 5) -> Iterable[Tuple[str, str]]:
+def pprint_count(*iterables, length=5):
     """
 
     :param iterables:
@@ -1007,7 +1007,7 @@ def pprint_count(*iterables: Tuple[str, int], length: int = 5) -> Iterable[Tuple
         yield key, value
 
 
-def sort_by_insertion(*items: Any, reverse: bool = False) -> Iterable[Any]:
+def sort_by_insertion(*items: Any, reverse=False):
     """
 
     :param items:
@@ -1025,7 +1025,7 @@ def sort_by_insertion(*items: Any, reverse: bool = False) -> Iterable[Any]:
 # ============================
 # Audio directories functions.
 # ============================
-def get_artists(directory: Union[str, PurePath] = MUSIC) -> Iterable[Tuple[str, str]]:
+def get_artists(directory: Union[str, PurePath] = MUSIC) -> Iterator[Tuple[str, str]]:
     """
     Get artists composing the local music drive.
     Yield 2-items tuples composed of both artist's name and artist's folder path.
@@ -1037,10 +1037,10 @@ def get_artists(directory: Union[str, PurePath] = MUSIC) -> Iterable[Tuple[str, 
         yield _artist, _artist_path
 
 
-def get_albums(directory: Union[PureWindowsPath, WindowsPath, str]) -> Iterable[Tuple[str, str, str, bool]]:
+def get_albums(directory: Union[PureWindowsPath, WindowsPath, str]) -> Iterator[Tuple[str, str, str, bool]]:
     """
     Get albums composing an artist folder.
-    Yield 3-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
+    Yield 4-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
 
     :param directory: artist folder path.
     :return: 4-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
@@ -1084,7 +1084,7 @@ def get_albums(directory: Union[PureWindowsPath, WindowsPath, str]) -> Iterable[
                             yield _name, _path, f"{category}.{year}{month}{day}.{sort}", isbootleg.get(category, False)
 
 
-def get_folders(directory: str) -> Iterable[Tuple[str, str]]:
+def get_folders(directory: str) -> Iterator[Tuple[str, str]]:
     """
     Get folders composing a directory.
     Yield a 2-item tuples composed of both folder name and folder path.

@@ -77,10 +77,10 @@ for profile in argument.profiles:
         tags = patterns.AlbumSort(tags, argument.encoder)
     elif profile.lower() == "encodedfromflac":
         tags = patterns.EncodedFromFLACFile(tags)
-    elif profile.lower() == "encodedfromlegalflac":
-        tags = patterns.EncodedFromLegalFLACFile(tags)
-    elif profile.lower() == "encodedfromlegaldsd":
-        tags = patterns.EncodedFromLegalDSDFile(tags)
+    elif profile.lower() == "encodedfromnugsflac":
+        tags = patterns.EncodedFromNugsFLACFile(tags)
+    elif profile.lower() == "encodedfromnugsdsd":
+        tags = patterns.EncodedFromNugsDSDFile(tags)
 
 # Log output tags.
 pairs = sorted(tags.items(), key=itemgetter(0))
