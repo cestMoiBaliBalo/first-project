@@ -1358,7 +1358,7 @@ def split_(*indexes):
         def inner_wrapper(arg):
             out = ()  # type: Tuple[str, ...]
             for index in indexes:
-                out += callables.group_(index)(func)(arg)
+                out += (callables.group_(index)(func)(arg),)
             return out
 
         return inner_wrapper
