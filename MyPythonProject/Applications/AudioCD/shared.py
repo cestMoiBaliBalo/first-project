@@ -406,14 +406,14 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
-        self._otags["track"], self._otags[self._totaltracks_key] = splitfield(1, 2)(self.track_pattern.match)(kwargs["track"])
+        self._otags["track"], self._otags[self._totaltracks_key] = split_(1, 2)(self.track_pattern.match)(kwargs["track"])
 
         # ----- Backup track number.
         self._otags["origtrack"] = self._otags["track"]
 
         # ----- Both update disc and set total discs.
         self.logger.debug("Set disc.")
-        self._otags["disc"], self._otags[self._totaldiscs_key] = splitfield(1, 2)(self.track_pattern.match)(kwargs["disc"])
+        self._otags["disc"], self._otags[self._totaldiscs_key] = split_(1, 2)(self.track_pattern.match)(kwargs["disc"])
 
         # ----- Update genre.
         if genres is not None:
@@ -1353,7 +1353,7 @@ def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -
         dump_mapping_tojson(samples, **mapping)
 
 
-def splitfield(*indexes):
+def split_(*indexes):
     def outer_wrapper(func):
         def inner_wrapper(arg):
             out = ()  # type: Tuple[str, ...]
