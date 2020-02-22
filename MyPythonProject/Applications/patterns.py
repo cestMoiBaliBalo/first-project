@@ -115,15 +115,15 @@ class EncodedFromFLACFile(TagsDecorator):
         self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class EncodedFromLegalFLACFile(TagsDecorator):
+class EncodedFromNugsFLACFile(TagsDecorator):
     def __init__(self, obj):
-        super(EncodedFromLegalFLACFile, self).__init__(obj)
+        super(EncodedFromNugsFLACFile, self).__init__(obj)
         self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class EncodedFromLegalDSDFile(TagsDecorator):
+class EncodedFromNugsDSDFile(TagsDecorator):
     def __init__(self, obj):
-        super(EncodedFromLegalDSDFile, self).__init__(obj)
+        super(EncodedFromNugsDSDFile, self).__init__(obj)
         self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 

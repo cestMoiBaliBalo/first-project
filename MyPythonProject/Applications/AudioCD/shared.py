@@ -11,15 +11,16 @@ from datetime import datetime
 from functools import partial
 from itertools import filterfalse, groupby
 from operator import contains, itemgetter
-from pathlib import Path, WindowsPath
+from pathlib import Path
 from string import Template
-from typing import Any, Callable, Dict, IO, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, IO, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
 import yaml
 from dateutil import parser
 from jinja2 import Environment, FileSystemLoader
 from sortedcontainers import SortedDict  # type: ignore
 
+from .. import callables
 from .. import decorators
 from .. import shared
 from ..Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers
@@ -304,13 +305,6 @@ class AudioCDTags(MutableMapping):
             for item in json.load(fr):
                 yield item
 
-    @staticmethod
-    def splitfield(fld, rex):
-        match = rex.match(fld)
-        if match:
-            return match.group(1, 2)
-        return ()
-
 
 class CommonAudioCDTags(AudioCDTags):
     logger = logging.getLogger("{0}.CommonAudioCDTags".format(__name__))
@@ -365,7 +359,7 @@ class CommonAudioCDTags(AudioCDTags):
         sequences = Path(shared.TEMP) / "sequences.json"
         self._step, tracks = 2, []
         if sequences.exists():
-            tracks = list(self.deserialize(sequences))
+            tracks = list(self.deserialize(str(sequences)))
         self.logger.debug(tracks)
         self.logger.debug("Track is %s.", f'{kwargs["track"]}{sequence}')
         if f'{kwargs["track"]}{sequence}' not in tracks:
@@ -412,14 +406,14 @@ class CommonAudioCDTags(AudioCDTags):
 
         # ----- Both update track and set total tracks.
         self.logger.debug("Set track.")
-        self._otags["track"], self._otags[self._totaltracks_key] = self.splitfield(kwargs["track"], self.track_pattern)
+        self._otags["track"], self._otags[self._totaltracks_key] = splitfield(1, 2)(self.track_pattern.match)(kwargs["track"])
 
         # ----- Backup track number.
         self._otags["origtrack"] = self._otags["track"]
 
         # ----- Both update disc and set total discs.
         self.logger.debug("Set disc.")
-        self._otags["disc"], self._otags[self._totaldiscs_key] = self.splitfield(kwargs["disc"], self.track_pattern)
+        self._otags["disc"], self._otags[self._totaldiscs_key] = splitfield(1, 2)(self.track_pattern.match)(kwargs["disc"])
 
         # ----- Update genre.
         if genres is not None:
@@ -1158,13 +1152,13 @@ def album(track):
     return track.album
 
 
-def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
+def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterator[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.albums".format(__name__))
-    iterable = []  # type: List[Sequence[Union[int, str]]]
-    countries = dict(get_countries(db))
-    genres = dict(get_genres(db))
-    languages = dict(get_languages(db))
-    _fil = Path(shared.TEMP) / "tags.json"
+    iterable = []  # type: List[Sequence[Any]]
+    countries = dict(get_countries(db))  # type: Mapping[str, int]
+    genres = dict(get_genres(db))  # type: Mapping[str, int]
+    languages = dict(get_languages(db))  # type: Mapping[str, int]
+    _fil = Path(shared.TEMP) / "tags.json"  # type: Path
     if fil:
         _fil = Path(fil)
 
@@ -1210,14 +1204,14 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
         yield str(_fil), item
 
 
-def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterable[Tuple[str, Sequence[Union[int, str]]]]:
+def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterator[Tuple[str, Sequence[Union[int, str]]]]:
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
-    iterable = []  # type: List[Sequence[Union[int, str]]]
-    countries = dict(get_countries(db))
-    genres = dict(get_genres(db))
-    languages = dict(get_languages(db))
-    providers = dict(get_providers(db))
-    _fil = Path(shared.TEMP) / "tags.json"
+    iterable = []  # type: List[Sequence[Any]]
+    countries = dict(get_countries(db))  # type: Mapping[str, int]
+    genres = dict(get_genres(db))  # type: Mapping[str, int]
+    languages = dict(get_languages(db))  # type: Mapping[str, int]
+    providers = dict(get_providers(db))  # type: Mapping[str, int]
+    _fil = Path(shared.TEMP) / "tags.json"  # type: Path
     if fil:
         _fil = Path(fil)
 
@@ -1359,10 +1353,23 @@ def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -
         dump_mapping_tojson(samples, **mapping)
 
 
+def splitfield(*indexes):
+    def outer_wrapper(func):
+        def inner_wrapper(arg):
+            out = ()  # type: Tuple[str, ...]
+            for index in indexes:
+                out += callables.group_(index)(func)(arg)
+            return out
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 # ================
 # Other functions.
 # ================
-def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = None, encoding: str = shared.UTF8) -> None:
+def dump_xreferences(track, *, fil=None, encoding=shared.UTF8):
     _collection = []  # type: List[Sequence[Union[bool, str]]]
     _fil = Path(shared.TEMP) / "xreferences.json"
     if fil:
@@ -1385,7 +1392,7 @@ def dump_xreferences(track: Sequence[Union[bool, str]], *, fil: Optional[str] = 
         json.dump(sorted(sorted(sorted(_collection, key=itemgetter(6)), key=itemgetter(1)), key=itemgetter(0)), fw, indent=4, sort_keys=True, ensure_ascii=False)
 
 
-def get_xreferences(track: Union[str, WindowsPath]) -> Tuple[bool, Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], bool, Optional[str], Optional[str]]]:
+def get_xreferences(track):
     """
     return artistid, albumid, artist_path, album_path, album, is_bootleg, track basename and track extension.
 
