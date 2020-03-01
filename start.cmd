@@ -128,29 +128,29 @@ REM     --------------------------
 REM  7. Sync xreferences database.
 REM     --------------------------
 :STEP5
-ECHO:
-ECHO:
-ECHO ============================
-ECHO Sync audio cross-references.
-ECHO ============================
-ECHO It can take a while.
-SET _elapsed=
-SET _inserted=
-SET _removed=
-PUSHD "%TEMP%"
-python "%_PYTHONPROJECT%\Tasks\XReferences\main.py"
-IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
-    SET _elapsed=%%I
-    SET _inserted=%%J
-    SET _removed=%%K
-)
-POPD
-ECHO Done.
-IF DEFINED _inserted ECHO %_inserted% album(s) inserted.
-IF DEFINED _removed ECHO %_removed% album(s) removed.
-SET _elapsed=
-SET _inserted=
-SET _removed=
+REM ECHO:
+REM ECHO:
+REM ECHO ============================
+REM ECHO Sync audio cross-references.
+REM ECHO ============================
+REM ECHO It can take a while.
+REM SET _elapsed=
+REM SET _inserted=
+REM SET _removed=
+REM PUSHD "%TEMP%"
+REM python "%_PYTHONPROJECT%\Tasks\XReferences\main.py"
+REM IF EXIST "tempfile.txt" FOR /F "usebackq delims=| tokens=1-3" %%I IN ("tempfile.txt") DO (
+REM     SET _elapsed=%%I
+REM     SET _inserted=%%J
+REM     SET _removed=%%K
+REM )
+REM POPD
+REM ECHO Done.
+REM IF DEFINED _inserted ECHO %_inserted% album(s) inserted.
+REM IF DEFINED _removed ECHO %_removed% album(s) removed.
+REM SET _elapsed=
+REM SET _inserted=
+REM SET _removed=
 SHIFT
 GOTO MAIN
 

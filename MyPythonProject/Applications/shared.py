@@ -53,7 +53,6 @@ WRITE = "w"
 ARECA = str(PurePath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 DATABASE = str(_THATFILE.parents[1] / "Resources" / "database.db")
 TESTDATABASE = str(_THATFILE.parent / "Unittests" / "Resources" / "database.db")
-XREFERENCES = str(_THATFILE.parents[1] / "Resources" / "xreferences.db")
 
 # Regular expressions.
 BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"

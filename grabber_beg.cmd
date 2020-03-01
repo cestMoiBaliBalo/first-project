@@ -28,18 +28,18 @@ SET _idtags=idtags.txt
 REM ===========
 REM Main logic.
 REM ===========
-PUSHD %TEMP%
+REM PUSHD %TEMP%
 
 REM Log both date and time.
-ECHO = %DATE% - %TIME% =================================================>> %_grabber%
-ECHO %~1>> %_grabber%
-ECHO %~2>> %_grabber%
-ECHO %~3>> %_grabber%
-ECHO %~5>> %_grabber%
+REM ECHO = %DATE% - %TIME% =================================================>> %_grabber%
+REM ECHO %~1>> %_grabber%
+REM ECHO %~2>> %_grabber%
+REM ECHO %~3>> %_grabber%
+REM ECHO %~5>> %_grabber%
 
 REM Log input tags.
-ECHO = %DATE% - %TIME% =================================================>> %_idtags%
-TYPE "%~1">> %_idtags%
+REM ECHO = %DATE% - %TIME% =================================================>> %_idtags%
+REM TYPE "%~1">> %_idtags%
 
 REM Alter tags.
 :LOOP
@@ -53,7 +53,7 @@ python Grab.py "%~1" %~2 %~3 %_decorators%--tags_processing %~5
 POPD
 
 REM Exit script.
-POPD
+REM POPD
 SET _decorators=
 SET _grabber=
 SET _idtags=

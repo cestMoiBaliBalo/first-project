@@ -13,7 +13,7 @@ from functools import partial
 from itertools import chain, compress, groupby, product, starmap
 from operator import contains, eq, gt, is_, itemgetter
 from string import Template
-from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
 
@@ -285,7 +285,7 @@ def get_albumdetail(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
         yield row
 
 
-def get_albumidfromartistsort(artistsort: str, *, db: str = DATABASE) -> Iterable[str]:
+def get_albumidfromartistsort(artistsort: str, *, db: str = DATABASE) -> Iterator[str]:
     """
     Get album(s) ID matching the input artistsort.
 
@@ -297,7 +297,7 @@ def get_albumidfromartistsort(artistsort: str, *, db: str = DATABASE) -> Iterabl
         yield albumid
 
 
-def get_albumidfromalbumsort(albumsort: str, *, db: str = DATABASE) -> Iterable[str]:
+def get_albumidfromalbumsort(albumsort: str, *, db: str = DATABASE) -> Iterator[str]:
     """
     Get album(s) ID matching the input albumsort.
 
@@ -309,7 +309,7 @@ def get_albumidfromalbumsort(albumsort: str, *, db: str = DATABASE) -> Iterable[
         yield albumid
 
 
-def get_albumidfromgenre(genre: str, *, db: str = DATABASE) -> Iterable[str]:
+def get_albumidfromgenre(genre: str, *, db: str = DATABASE) -> Iterator[str]:
     """
     Get album(s) ID matching the input genre.
 
@@ -321,7 +321,7 @@ def get_albumidfromgenre(genre: str, *, db: str = DATABASE) -> Iterable[str]:
         yield albumid
 
 
-def get_bootlegalbums(db: str = DATABASE) -> Iterable[str]:
+def get_bootlegalbums(db: str = DATABASE) -> Iterator[str]:
     """
 
     :param db:
@@ -620,7 +620,7 @@ def delete_album_fromuid(uid: int, *, db: str = DATABASE) -> Tuple[Optional[str]
     return albumid, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 
-def aggregate_albums_by_artistsort(db: str = DATABASE, artistsort: Optional[str] = None) -> Iterable[Tuple[str, int]]:
+def aggregate_albums_by_artistsort(db: str = DATABASE, artistsort: Optional[str] = None) -> Iterator[Tuple[str, int]]:
     k_artistsort: List[str] = []
     if artistsort is not None:
         k_artistsort = [artistsort]
@@ -629,7 +629,7 @@ def aggregate_albums_by_artistsort(db: str = DATABASE, artistsort: Optional[str]
         yield k, v  # type: ignore
 
 
-def aggregate_albums_by_genre(db: str = DATABASE, genre: Optional[str] = None) -> Iterable[Tuple[str, int]]:
+def aggregate_albums_by_genre(db: str = DATABASE, genre: Optional[str] = None) -> Iterator[Tuple[str, int]]:
     k_genre: List[str] = []
     if genre is not None:
         k_genre = [genre]
@@ -745,7 +745,7 @@ def get_artists(db: str = DATABASE):
             yield artist
 
 
-def get_genres(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
+def get_genres(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
     """
 
     :param db:
@@ -756,7 +756,7 @@ def get_genres(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
             yield genre
 
 
-def get_languages(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
+def get_languages(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
     """
 
     :param db:
@@ -767,7 +767,7 @@ def get_languages(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
             yield language
 
 
-def get_supports(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
+def get_supports(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
     """
 
     :param db:
@@ -778,7 +778,7 @@ def get_supports(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
             yield support
 
 
-def get_countries(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
+def get_countries(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
     """
 
     :param db:
@@ -789,7 +789,7 @@ def get_countries(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
             yield country
 
 
-def get_providers(db: str = DATABASE) -> Iterable[Tuple[str, int]]:
+def get_providers(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
     """
 
     :param db:
