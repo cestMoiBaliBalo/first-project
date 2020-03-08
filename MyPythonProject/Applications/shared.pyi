@@ -54,7 +54,6 @@ UTF8 = ...  # type: str
 UTF16 = ...  # type: str
 UTF16BOM = ...  # type: str
 WRITE = ...  # type: str
-XREFERENCES = ...  # type: str
 
 
 class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):

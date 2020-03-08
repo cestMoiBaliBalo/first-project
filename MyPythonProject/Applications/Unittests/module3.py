@@ -5,12 +5,11 @@ import locale
 import os
 import re
 import unittest
-from pathlib import PurePath, PureWindowsPath
+from pathlib import PurePath
 
 from pytz import timezone
 
 from .. import shared
-from ..AudioCD.shared import get_xreferences
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -19,48 +18,6 @@ __status__ = "Production"
 
 _THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
 locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
-
-
-class TestRegexT01(unittest.TestCase):
-
-    def test_t01(self):
-        found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
-                PureWindowsPath("F:/") / "K" / "Kiss" / "1" / "1975.2 - Alive_" / "CD2" / "1.Monkey's Audio" / "1.19750000.2.12.D2.T01.ape")
-        self.assertTrue(found)
-        self.assertEqual(artistid, "Kiss")
-        self.assertEqual(albumid, "1.19750000.2")
-        self.assertEqual(artist_path, r"F:\K\Kiss")
-        self.assertEqual(album_path, r"F:\K\Kiss\1\1975.2 - Alive_")
-        self.assertEqual(album, "Alive_")
-        self.assertFalse(is_bootleg)
-        self.assertEqual(basename, "1.19750000.2.12.D2.T01")
-        self.assertEqual(extension, "ape")
-
-    def test_t02(self):
-        found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
-                PureWindowsPath("F:/") / "J" / "Judas Priest" / "1990 - Painkiller" / "1.Free Lossless Audio Codec" / "1.19900000.1.13.D1.T01.flac")
-        self.assertTrue(found)
-        self.assertEqual(artistid, "Judas Priest")
-        self.assertEqual(albumid, "1.19900000.1")
-        self.assertEqual(artist_path, r"F:\J\Judas Priest")
-        self.assertEqual(album_path, r"F:\J\Judas Priest\1990 - Painkiller")
-        self.assertEqual(album, "Painkiller")
-        self.assertFalse(is_bootleg)
-        self.assertEqual(basename, "1.19900000.1.13.D1.T01")
-        self.assertEqual(extension, "flac")
-
-    def test_t03(self):
-        found, (artistid, albumid, artist_path, album_path, album, is_bootleg, basename, extension) = get_xreferences(
-                PureWindowsPath("F:/") / "J" / "Judas Priest" / "1990 - Painkiller" / "1.Free Lossless Audio Codec" / "1.19900000.1.01.D1.T01.flac")
-        self.assertFalse(found)
-        self.assertIsNone(artistid)
-        self.assertIsNone(albumid)
-        self.assertIsNone(artist_path)
-        self.assertIsNone(album_path)
-        self.assertIsNone(album)
-        self.assertFalse(is_bootleg)
-        self.assertIsNone(basename)
-        self.assertIsNone(extension)
 
 
 class TestRegexT02(unittest.TestCase):

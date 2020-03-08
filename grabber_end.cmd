@@ -1,4 +1,4 @@
-@ECHO off
+REM @ECHO off
 
 
 REM __author__ = 'Xavier ROSSET'
@@ -35,7 +35,18 @@ FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 
 
 :MAIN
-IF "%~1" EQU "" EXIT /B %_errorlevel%
+IF "%~1" EQU "" (
+    SET _cp=
+    SET _errorlevel=
+    SET _grabber=
+    SET _jsontags=
+    SET _jsonxreferences=
+    SET _txtfiles=
+    SET _me=
+    SET _myparent=
+    ENDLOCAL
+    EXIT /B %_errorlevel%
+)
 IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
 IF "%~1" EQU "3" GOTO STEP3
@@ -65,14 +76,14 @@ REM        ---------------------------------------------
 REM  2 --> Append ripped tracks to XReferences database.
 REM        ---------------------------------------------
 :STEP2
-IF EXIST "%_jsonxreferences%" (
-    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-    PUSHD !_parent!
-    python Insert_XReferences.py "%_jsonxreferences%"
-    POPD
-    SET _parent=
-    DEL "%_jsonxreferences%" 2>NUL
-)
+REM IF EXIST "%_jsonxreferences%" (
+REM     FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
+REM     PUSHD !_parent!
+REM     python Insert_XReferences.py "%_jsonxreferences%"
+REM     POPD
+REM     SET _parent=
+REM     DEL "%_jsonxreferences%" 2>NUL
+REM )
 SHIFT
 GOTO MAIN
 
