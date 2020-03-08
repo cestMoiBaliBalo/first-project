@@ -22,25 +22,20 @@ REM Initializations 2.
 REM ==================
 SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
 SET _cp=1252
-SET _echo=0
 SET _local_avchd=G:\Videos\AVCHD Videos
-SET _exclusions=%_RESOURCES%\exclusions1.txt
 SET _xxcopy=xxcopy.cmd
 
 
 REM ============
 REM Main script.
 REM ============
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
+FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
 
 
 REM ===========================
 REM Set ECHO on for debug mode.
 REM ===========================
-IF /I ["%~1"] EQU ["DEBUG"] (
-    @ECHO on
-    @SET _echo=1
-)
+IF /I ["%~1"] EQU ["DEBUG"] @ECHO on
 
 
 REM -------------
@@ -195,7 +190,7 @@ IF ERRORLEVEL 28 (
         POPD
         GOTO END_TARGETS
     )
-    FOR /F "usebackq delims=| tokens=1,2" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
+    FOR /F "usebackq tokens=1,2 delims=|" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
     IF NOT DEFINED _target (
         POPD
         SET /A "_error+=1"
@@ -386,7 +381,7 @@ IF ERRORLEVEL 17 (
     PUSHD %TEMP% 
     DEL %_xxcopy% 2> NUL
     python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py" --repository MyCloud
-    IF NOT ERRORLEVEL 1 CALL :TOTO
+    IF NOT ERRORLEVEL 1 CALL :CONFIRM
     POPD
     GOTO MENU
 )
@@ -415,12 +410,6 @@ IF ERRORLEVEL 16 (
 )
 
 
-REM ----------------
-REM Images renaming.
-REM ----------------
-IF ERRORLEVEL 15 GOTO P01
-
-
 REM ------------------------------
 REM Sync local audio repositories.
 REM ------------------------------
@@ -429,7 +418,7 @@ IF ERRORLEVEL 13 (
     PUSHD %TEMP% 
     DEL %_xxcopy% 2> NUL
     python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py"
-    IF NOT ERRORLEVEL 1 CALL :TOTO
+    IF NOT ERRORLEVEL 1 CALL :CONFIRM
     POPD
     GOTO MENU
 )
@@ -598,29 +587,6 @@ CLS
 EXIT /B 0
 
 
-REM ===================================
-REM Specific parts for renaming images.
-REM ===================================
-:P01
-rem PUSHD %_PYTHONPROJECT%
-rem python some_interface.py
-rem IF ERRORLEVEL 1 (
-rem     SET _argument=%ERRORLEVEL%
-rem     GOTO P01A
-rem )
-rem IF ERRORLEVEL 0 (
-rem     POPD
-rem     GOTO MENU
-rem )
-SET _argument=2018
-
-
-:P01A
-CALL %_RESOURCES%\images.cmd %_argument%
-IF ERRORLEVEL 11 GOTO MENU
-IF ERRORLEVEL 10 GOTO P01A
-
-
 :QUESTION
 SET %5=Y
 ECHO:
@@ -630,14 +596,14 @@ IF ERRORLEVEL 2 SET %5=N
 EXIT /B 0
 
 
-:TOTO
+:CONFIRM
 PUSHD "%TEMP%"
 IF EXIST "%_xxcopy%" (
     CLS
     ECHO The following XXCOPY commands will be run:
     ECHO:
     ECHO:
-    FOR /F "usebackq delims=. tokens=1,*" %%I IN ("%_xxcopy%") DO IF [%%I] EQU [XXCOPY] CALL ECHO %%I.%%J
+    FOR /F "usebackq tokens=1,* delims=." %%I IN ("%_xxcopy%") DO IF [%%I] EQU [XXCOPY] CALL ECHO %%I.%%J
     ECHO:
     ECHO:
     CALL :QUESTION "YN" "90" "N" "Would you like to continue? " _answer
