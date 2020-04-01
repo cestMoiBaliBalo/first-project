@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import fnmatch
+import operator
 from functools import partial, wraps
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import Any, Optional, Set, Union
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -102,6 +103,48 @@ def group_(index: int = 1):
         return inner_wrapper
 
     return outer_wrapper
+
+
+def map_(index: int):
+    """
+    :param index:
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args: Any):
+            iterable = tuple(args)
+            if 0 < index < len(args) - 1:
+                iterable = args[:index] + (func(operator.itemgetter(index)(args)),) + args[index + 1:]
+            elif index == 0:
+                iterable = (func(operator.itemgetter(index)(args)),) + args[index + 1:]
+            elif index == len(args) - 1:
+                iterable = args[:index] + (func(operator.itemgetter(index)(args)),)
+            return iter(iterable)
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def nested_(func, *functions):
+    """
+    Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
+    The result of the last function is then returned to the caller object.
+
+    :param func: initial function.
+    :param functions: additional functions.
+    :return: callable object.
+    """
+
+    def wrapper(arg):
+        returned = func(arg)
+        for function in functions:
+            returned = function(returned)
+        return returned
+
+    return wrapper
 
 
 filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")

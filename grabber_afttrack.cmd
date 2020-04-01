@@ -1,33 +1,33 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+@REM __author__ = 'Xavier ROSSET'
+@REM __maintainer__ = 'Xavier ROSSET'
+@REM __email__ = 'xavier.python.computing@protonmail.com'
+@REM __status__ = "Production"
 
 
 SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 
 
-REM ==================
-REM Initializations 1.
-REM ==================
+@REM ==================
+@REM Initializations 1.
+@REM ==================
 SET _me=%~n0
 SET _myparent=%~dp0
 
 
-REM ==================
-REM Initializations 2.
-REM ==================
+@REM ==================
+@REM Initializations 2.
+@REM ==================
 SET _cp=1252
 SET _errorlevel=0
 SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 
 
-REM ============
-REM Main script.
-REM ============
+@REM ============
+@REM Main script.
+@REM ============
 FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
 
 
@@ -48,33 +48,33 @@ SHIFT /2
 GOTO MAIN
 
 
-REM        -------------------------------------
-REM  1 --> Prepare XReferences database syncing.
-REM        -------------------------------------
+@REM        -------------------------------------
+@REM  1 --> Prepare XReferences database syncing.
+@REM        -------------------------------------
 :STEP1
-REM FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-REM PUSHD %_parent%
-REM python Dump_XReferences.py "%~1"
-REM POPD
-REM SET _parent=
+@REM FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
+@REM PUSHD %_parent%
+@REM python Dump_XReferences.py "%~1"
+@REM POPD
+@REM SET _parent=
 SHIFT /2 
 GOTO MAIN
 
 
-REM        ----------------------------
-REM  2 --> Prepare NAS Syncing. Step 1.
-REM        ----------------------------
+@REM        ----------------------------
+@REM  2 --> Prepare NAS Syncing. Step 1.
+@REM        ----------------------------
 :STEP2
-REM PUSHD %_grabber%
-REM python RippedTracks.py "%~1"
-REM POPD
+@REM PUSHD %_grabber%
+@REM python RippedTracks.py "%~1"
+@REM POPD
 SHIFT /2
 GOTO MAIN
 
 
 :STEP3
-REM PUSHD %TEMP%
-REM ECHO "%~1">> cdgrabber.txt
-REM POPD
+@REM PUSHD %TEMP%
+@REM ECHO "%~1">> cdgrabber.txt
+@REM POPD
 SHIFT /2
 GOTO MAIN

@@ -109,58 +109,11 @@ def compress_(*indexes: int):
 
     def outer_wrapper(func):
         @wraps(func)
-        def inner_wrapper(arg: Tuple[Any]):
+        def inner_wrapper(arg: Tuple[Any, ...]):
             selectors = [0] * len(arg)
             for index in indexes:
                 selectors[index] = 1
             return func(*compress(arg, selectors))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def map_(index: int):
-    """
-    Creates a callable object.
-
-    :param index:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args: Any):
-            iterable = tuple(args)
-            if 0 < index < len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == 0:
-                iterable = (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),)
-            return iter(iterable)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def nested_(*functions):
-    """
-    Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
-    The result of the last function is then returned to the caller object.
-
-    :param functions: sequence of functions.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            returned = func(arg)
-            for function in functions:
-                returned = function(returned)
-            return returned
 
         return inner_wrapper
 

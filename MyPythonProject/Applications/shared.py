@@ -705,16 +705,16 @@ def nested_groupby(iterable, *args):
         yield key, group
 
 
-def grouper(iterable, n, *, fillvalue=None):
+def grouper(n, *iterables, fillvalue=None):
     """
 
-    :param iterable:
     :param n:
+    :param iterables:
     :param fillvalue:
     :return:
     """
-    args = [iter(iterable)] * n
-    return zip_longest(*args, fillvalue=fillvalue)
+    obj = [iter(iterables)] * n
+    return zip_longest(*obj, fillvalue=fillvalue)
 
 
 def partitioner(iterable, *, predicate=None):
@@ -737,23 +737,37 @@ def get_dirname(path: str, *, level: int = 1) -> str:
     :param level:
     :return:
     """
-    _dirname, _level = path, 1  # type: str, int
-    while _level <= level:
-        _dirname = dirname(_dirname)
-        _level += 1
-    return _dirname
+    _dirname = [os.path.abspath(path)]
+    _dirname.extend([".."] * level)
+    return os.path.abspath(os.path.join(*_dirname))
 
 
-def get_readabledate(dt: datetime, *, template: str = TEMPLATE4, tz=None) -> str:
+def get_readabledate(dt: datetime, *, template: str = TEMPLATE4, tz: Any = None) -> str:
     """
-    Return a human readable (naive or aware) date respective to the local time zone.
+    Return a human readable datetime object respective to the local time zone.
+    Datetime object can be naive and needs to be localized into the time zone got as keyword argument.
 
     :param dt: datetime object.
-    :param template: template used to display the date.
-    :param tz: datetime object time zone.
-    :return: string.
+    :param template: template used to display the object representation.
+    :param tz: object time zone.
+    :return: object representation as a human readable string.
     """
     return _get_readabledate(dt, template, tz)
+
+
+def get_utcreadabledate(dt: datetime, *, template: str = TEMPLATE4, tz: Any = timezone("Europe/Paris")) -> str:
+    """
+    Return a human readable UTC localized datetime object respective to a specific time zone got as keyword argument.
+
+    :param dt: UTC localized datetime object.
+    :param template: template used to display the object representation.
+    :param tz: specific time zone.
+    :return: object representation as a human readable string.
+    """
+    datobj = dt.astimezone(tz)
+    with suppress(ValueError):
+        datobj = UTC.localize(dt).astimezone(tz)
+    return _format_date(datobj, template)
 
 
 def now(*, template: str = TEMPLATE4) -> str:
@@ -769,15 +783,15 @@ def format_date(dt: Union[date, datetime], *, template: str = TEMPLATE4) -> str:
     Return a human readable datetime object.
 
     :param dt: datetime object.
-    :param template: template used to display the date.
-    :return: string.
+    :param template: template used to display the object representation.
+    :return: object representation as a human readable string.
     """
     return _format_date(dt, template)
 
 
 def localize_date(dt: datetime, tz=UTC) -> datetime:
     """
-    Return a datetime object localized into the local time zone from a different time zone.
+    Return a datetime object localized into the local time zone from a time zone got as keyword argument.
 
     :param dt: datetime object.
     :param tz: datetime object time zone.
@@ -786,14 +800,14 @@ def localize_date(dt: datetime, tz=UTC) -> datetime:
     return _localize_date(dt, tz)
 
 
-def convert_timestamp(timestamp: int, tz=UTC) -> datetime:
+def convert_timestamp(utc_timestamp: int, tz: Any = UTC) -> datetime:
     """
 
-    :param timestamp:
+    :param utc_timestamp:
     :param tz:
     :return:
     """
-    return _convert_timestamp(timestamp, tz)
+    return _convert_timestamp(utc_timestamp, tz)
 
 
 def adjust_datetime(year: int, month: int, day: int, hour: int, minutes: int, seconds: int) -> Optional[datetime]:
@@ -898,76 +912,20 @@ def get_drives() -> Iterator[str]:
         yield drive
 
 
-def format_collection(collection: Iterable[Tuple[Any, ...]], *, tabsize: int = 3, gap: int = 3, group: Optional[int] = 15) -> Iterator[Tuple[str, ...]]:
+def format_collection(*args: str, gap: int = 0, char: str = "", length: Optional[int] = None) -> Tuple[int, Iterator[str]]:
     """
 
-    :param collection:
-    :param tabsize:
+    :param args:
     :param gap:
-    :param group:
-    :return:
-
-    :how to use it:
-    collection = list(format_collection(somecollection, group=15))
-    template.render(collection=collection[somepage])
-    """
-    _collection: Iterable[Tuple[Any, ...]]
-    _, _, _collection = _set_collection(collection, None, tabsize=tabsize, gap=gap)
-    if group:
-        _collection = zip_longest(*[list(_collection)] * group, fillvalue=None)
-    for item in _collection:
-        yield item
-
-
-def iter_collection(collection, headers, *, char="=", tabsize=3, gap=3, group=50):
-    """
-
-    :param collection:
-    :param headers:
     :param char:
-    :param tabsize:
-    :param gap:
-    :param group:
+    :param length:
     :return:
-
-    :how to use it:
-    1. for item in iter_collection(somecollection, someheaders):
-           print(item)
-    2. with open("somefile") as stream:
-           for item in iter_collection(somecollection, someheaders):
-               stream.write(item)
     """
-    separators, headers, in_collection = _set_collection(collection, headers, char=char, tabsize=tabsize, gap=gap)
-    if group:
-        in_collection = zip_longest(*[in_collection] * group, fillvalue=None)
-    out_collection = []  # type: List[str]
-
-    # Both headers and groups.
-    if all([bool(headers), bool(group)]):
-        for _group in in_collection:
-            out_collection.extend(["", "", "".join(separators), "".join(headers), "".join(separators)])
-            out_collection.extend("".join(item) for item in filter(None, _group))
-        out_collection = out_collection[2:]
-
-    # Headers only.
-    elif headers and not group:
-        out_collection = ["".join(separators), "".join(headers), "".join(separators)]
-        out_collection.extend("".join(item) for item in in_collection)
-
-    # Groups only.
-    elif not headers and group:
-        for _group in in_collection:
-            out_collection.extend(["", ""])
-            out_collection.extend("".join(item) for item in filter(None, _group))
-        out_collection = out_collection[2:]
-
-    # Neither headers nor groups.
-    elif not any([bool(headers), bool(group)]):
-        out_collection = ["".join(item) for item in in_collection]
-
-    # Return formatted collection.
-    for item in out_collection:
-        yield item
+    _length = max(len(arg) for arg in args)
+    if length:
+        if length > _length:
+            _length = int(length)
+    return _length, iter("{0:<{1}}{2}".format(arg, _length + gap, char) for arg in args)
 
 
 def pprint_sequence(*items):
@@ -1117,7 +1075,7 @@ def stringify(arg):
     return arg
 
 
-@stringify.register(int)
+@stringify.register(int)  # type: ignore
 def _(arg: int) -> str:
     return str(arg)
 
@@ -1226,7 +1184,7 @@ def _localize_date(dt: datetime, tz) -> datetime:
     :param tz: datetime object time zone.
     :return: datetime object.
     """
-    return tz.localize(dt).astimezone(LOCAL)  # type: ignore
+    return tz.localize(dt).astimezone(LOCAL)
 
 
 def _get_readabledate(dt: datetime, template: str, tz) -> str:
@@ -1244,7 +1202,7 @@ def _get_readabledate(dt: datetime, template: str, tz) -> str:
     return _format_date(datobj, template)
 
 
-def _convert_timestamp(timestamp: int, tz) -> datetime:
+def _convert_timestamp(timestamp: int, tz: Any) -> datetime:
     return UTC.localize(datetime.utcfromtimestamp(timestamp)).astimezone(tz)
 
 
@@ -1299,10 +1257,9 @@ def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Ite
     out_collection = OrderedDict()  # type: Any
 
     # 2. Gather data per header.
-    in_collection = list(collection)  # type: Any
-    length = len(in_collection)  # type: int
-    in_collection = zip(*in_collection)
-    _headers = iter(f"header_{str(item).zfill(2)}" for item in range(1, length + 1))
+    in_collection = zip(*collection)  # type: Any
+    in_collection = list(in_collection)
+    _headers = iter(f"header_{str(item).zfill(2)}" for item in range(1, len(in_collection) + 1))
     if headers is not None:
         _headers = iter(headers)
     in_collection = OrderedDict(zip(_headers, in_collection))

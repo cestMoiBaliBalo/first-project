@@ -77,7 +77,7 @@ REM Backup files to USB drive.
 REM --------------------------
 IF ERRORLEVEL 34 (
     CLS
-    "C:/Program Files/Areca/areca_cl.exe" backup -f -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
+    "C:/Program Files/Areca/areca_cl.exe" backup -f -c -wdir "%TEMP%/tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
     ECHO:
     ECHO:
     PAUSE
