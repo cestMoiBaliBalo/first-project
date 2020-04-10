@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import fnmatch
-import operator
 from functools import partial, wraps
 from pathlib import Path
-from typing import Any, Optional, Set, Union
+from typing import Optional, Set, Union
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -99,29 +98,6 @@ def group_(index: int = 1):
             if match:
                 return match.group(index)
             return arg
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def map_(index: int):
-    """
-    :param index:
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args: Any):
-            iterable = tuple(args)
-            if 0 < index < len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == 0:
-                iterable = (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),)
-            return iter(iterable)
 
         return inner_wrapper
 

@@ -2,8 +2,9 @@
 # pylint: disable=invalid-name
 import operator
 import os
+from collections import deque
 from functools import partial, wraps
-from itertools import compress
+from itertools import chain, compress, islice, tee
 from pathlib import PurePath
 from typing import Any, Tuple
 
@@ -99,9 +100,38 @@ def itemgetter_(index: int = 0):
     return outer_wrapper
 
 
+def map_(index: int):
+    """
+
+    :param index:
+    :return:
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*iterables: Tuple[Any, ...]):
+            it1, it2 = tee(iterables)  # type: Any, Any
+            if index > 0:
+                collection = deque(iterables)
+                collection.rotate(-index)
+                it1, it2 = tee(collection)
+            obj1 = iter([tuple(map(func, chain(*islice(it1, 1))))])
+            obj2 = islice(it2, 1, None)
+            collection = chain(obj1, obj2)
+            if index > 0:
+                collection = deque(collection)
+                collection.rotate(index)
+                collection = iter(collection)
+            for item in collection:
+                yield item
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def compress_(*indexes: int):
     """
-    Creates a callable object.
 
     :param indexes:
     :return:
@@ -120,7 +150,7 @@ def compress_(*indexes: int):
     return outer_wrapper
 
 
-def partial_(*args, **kwargs):
+def partial_(*args: Any, **kwargs: Any):
     """
 
     :param args:
@@ -130,7 +160,7 @@ def partial_(*args, **kwargs):
 
     def outer_wrapper(func):
         @wraps(func)
-        def inner_wrapper(arg):
+        def inner_wrapper(arg: Any):
             return partial(func, *args, **kwargs)(arg)
 
         return inner_wrapper
