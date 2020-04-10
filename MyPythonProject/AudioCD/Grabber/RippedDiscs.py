@@ -23,7 +23,7 @@ locale.setlocale(locale.LC_ALL, "")
 # ============
 # Main script.
 # ============
-collection = [list(itertools.compress(item, [1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])) for item in get_rippeddiscs()]
+collection = iter(tuple(itertools.compress(item, [1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])) for item in get_rippeddiscs())
 index, albumid, ripped_date, ripped_year, ripped_month, artist, albumsort, genre, application, disc, album, upc = zip(*collection)
 series = {"Album ID": pandas.Series(albumid, index=index),
           "Artist": pandas.Series(artist, index=index),

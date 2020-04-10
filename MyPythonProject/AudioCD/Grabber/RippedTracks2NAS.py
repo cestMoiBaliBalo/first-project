@@ -64,5 +64,5 @@ with ExitStack() as stack:
     fw = stack.enter_context(open(RESOURCES / f"{RIPPEDTRACKS}.cmd", mode=WRITE, encoding="ISO-8859-1"))
     reader = csv.reader(fr, dialect="dialect")
     tracks = sorted(sorted(filter(None, reader), key=get_name), key=get_parent)  # type: Any
-    tracks = [(src, Path(src).name, dst) for src, dst in tracks]
+    tracks = iter((src, Path(src).name, dst) for src, dst in tracks)
     fw.write(template.get_template("T02").render(collection=iter((key, list(group)) for key, group in itertools.groupby(tracks, key=get_parent))))
