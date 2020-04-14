@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import calendar
+import csv
 import logging.handlers
 import operator
 import os
@@ -126,6 +127,14 @@ LOCALMONTHS = ["Janvier",
 # ===============
 # Global classes.
 # ===============
+class CustomDialect(csv.Dialect):
+    delimiter = "|"
+    escapechar = "`"
+    doublequote = False
+    quoting = csv.QUOTE_NONE
+    lineterminator = "\r\n"
+
+
 class CustomFormatter(logging.Formatter):
     converter = datetime.fromtimestamp
     default_time_format = "%d/%m/%Y %H:%M:%S"

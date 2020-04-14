@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-from Applications.shared import ChangeLocalCurrentDirectory, WRITE
+from Applications.shared import ChangeLocalCurrentDirectory, CustomDialect, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -20,18 +20,6 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # Define French environment.
 # ==========================
 locale.setlocale(locale.LC_ALL, "")
-
-
-# ==============
-# Local classes.
-# ==============
-class CustomDialect(csv.Dialect):
-    delimiter = "|"
-    escapechar = "`"
-    doublequote = False
-    quoting = csv.QUOTE_NONE
-    lineterminator = "\r\n"
-
 
 # ============
 # Main script.

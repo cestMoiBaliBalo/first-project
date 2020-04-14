@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Iterator, List, Mapping, Tuple
 
 from Applications.decorators import itemgetter_
-from Applications.shared import TemplatingEnvironment, UTF8, WRITE
+from Applications.shared import CustomDialect, TemplatingEnvironment, UTF8, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -51,17 +51,6 @@ def break_(item: Tuple[str, ...]) -> Iterator[str]:
 # ==============
 # Local classes.
 # ==============
-class CustomDialect(csv.Dialect):
-    """
-
-    """
-    delimiter = "|"
-    escapechar = "`"
-    doublequote = False
-    quoting = csv.QUOTE_NONE
-    lineterminator = "\r\n"
-
-
 class GetPath(argparse.Action):
     """
 
