@@ -19,7 +19,8 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = Path(os.path.abspath(__file__))
+_ME = Path(os.path.abspath(__file__))
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==========================
 # Define French environment.
@@ -52,7 +53,7 @@ arguments = parser.parse_args()
 # =========
 # Template.
 # =========
-template = TemplatingEnvironment(_THATFILE.parent)
+template = TemplatingEnvironment(_MYPARENT)
 
 # ===============
 # Main algorithm.
@@ -60,8 +61,8 @@ template = TemplatingEnvironment(_THATFILE.parent)
 
 # Get targets collection.
 with ExitStack() as stack1:
-    json_file = stack1.enter_context(open(_THATFILE.parent / "backup.json", mode=WRITE, encoding=UTF8))
-    txt_file = stack1.enter_context(open(_THATFILE.parents[2] / "MyJavaProject" / "targets.txt", mode=WRITE, encoding="ISO-8859-1"))
+    json_file = stack1.enter_context(open(_MYPARENT / "backup.json", mode=WRITE, encoding=UTF8))
+    txt_file = stack1.enter_context(open(_MYPARENT.parents[1] / "MyJavaProject" / "targets.txt", mode=WRITE, encoding="ISO-8859-1"))
     collection = []  # type: List[Tuple[Any, ...]]
     for argument in arguments.path:
         workspace = str(argument).split(".")[-1]
