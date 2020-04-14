@@ -17,7 +17,8 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = Path(os.path.abspath(__file__))
+_ME = Path(os.path.abspath(__file__))
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 
 # ================
@@ -77,8 +78,8 @@ class GetPath(argparse.Action):
 # Local constants.
 # ================
 RESOURCES = Path(os.path.expandvars("%_RESOURCES%"))  # type: Path
-TEMPLATES = {(Path(_THATFILE.parent / "AudioCD" / "Templates"), "T00a"): [0, 0, 1, 1],
-             (Path(_THATFILE.parent / "AudioCD" / "Templates"), "T00b"): [0, 0, 1]}  # type: Mapping[Tuple[Path, str], List[int]]
+TEMPLATES = {(_MYPARENT / "AudioCD" / "Templates", "T00a"): [0, 0, 1, 1],
+             (_MYPARENT / "AudioCD" / "Templates", "T00b"): [0, 0, 1]}  # type: Mapping[Tuple[Path, str], List[int]]
 
 # ================
 # Parse arguments.

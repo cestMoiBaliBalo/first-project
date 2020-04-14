@@ -11,14 +11,15 @@ from pathlib import Path
 from typing import Any, DefaultDict, Iterator, List, Optional, Tuple
 
 from Applications.callables import match_
-from Applications.shared import TemplatingEnvironment, UTF8, WRITE, pprint_count, ChangeLocalCurrentDirectory
+from Applications.shared import ChangeLocalCurrentDirectory, TemplatingEnvironment, UTF8, WRITE, pprint_count
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = Path(os.path.abspath(__file__))
+_ME = Path(os.path.abspath(__file__))
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==========================
 # Define French environment.
@@ -116,25 +117,26 @@ children = defaultdict(int)  # type: DefaultDict[Path, int]
 # ===============
 # Local template.
 # ===============
-template = TemplatingEnvironment(_THATFILE.parent, keep_trailing_newline=False, filters={"rjustify": rjustify})
+template = TemplatingEnvironment(_MYPARENT, keep_trailing_newline=False, filters={"rjustify": rjustify})
 
 # ============
 # Main script.
 # ============
 LETTERS = dict(enumerate(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), start=1))
 
-# Walk through argument path.
-for root, directories, files in os.walk(arguments.path):
-
-    # Get files.
-    collection1.extend(Path(root) / file for file in files)
-
-    # Get empty directories.
-    if not any([directories, files]):
-        collection2.append(Path(root))
-
-# Walk through children of argument path.
 with ChangeLocalCurrentDirectory(arguments.path):
+
+    # 1. Walk through argument path.
+    for root, directories, files in os.walk("."):
+
+        # Get files.
+        collection1.extend((Path(root) / file).resolve() for file in files)
+
+        # Get empty directories.
+        if not any([directories, files]):
+            collection2.append(Path(root))
+
+    # 2. Walk through descendants of argument path.
     for directory in os.scandir("."):
         for _, _, files in os.walk(directory.path):
             if arguments.pattern:

@@ -27,7 +27,8 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PurePath(os.path.abspath(__file__))
+_ME = Path(os.path.abspath(__file__))
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==================
 # Functions aliases.
@@ -51,8 +52,8 @@ WRITE = "w"
 
 # Resources.
 ARECA = str(PurePath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
-DATABASE = str(_THATFILE.parents[1] / "Resources" / "database.db")
-TESTDATABASE = str(_THATFILE.parent / "Unittests" / "Resources" / "database.db")
+DATABASE = str(_MYPARENT.parent / "Resources" / "database.db")
+TESTDATABASE = str(_MYPARENT / "Unittests" / "Resources" / "database.db")
 
 # Regular expressions.
 BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
@@ -216,7 +217,7 @@ class TitleCaseBaseConverter(ABC):
     """
 
     # Define class-level configuration.
-    with open(join(_THATFILE.parent / "Resources" / "resource1.yml"), encoding=UTF8) as fp:
+    with open(join(_MYPARENT / "Resources" / "resource1.yml"), encoding=UTF8) as fp:
         config = yaml.load(fp, Loader=yaml.FullLoader)
 
     # Define class-level regular expressions.
@@ -626,7 +627,7 @@ def customfilehandler(maxbytes, backupcount, encoding=UTF8):
     :param encoding:
     :return:
     """
-    return logging.handlers.RotatingFileHandler(join(_THATFILE.parents[2] / "Log" / "pyscripts.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
+    return logging.handlers.RotatingFileHandler(str(_ME.parents[2] / "Log" / "pyscripts.log"), maxBytes=maxbytes, backupCount=backupcount, encoding=encoding)
 
 
 def customfilter(func, record):
@@ -958,7 +959,7 @@ def pprint_count(*iterables, length=5):
     :param length:
     :return:
     """
-    sequence = iter(iterables)  # type: Iterable[Tuple[str, int]]
+    sequence = iter(iterables)  # type: Iterator[Tuple[str, int]]
     keys, values = zip(*sequence)
     for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0:>{1}d}".format(value, length) for value in values)):
         yield key, value

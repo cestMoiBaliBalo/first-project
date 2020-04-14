@@ -8,10 +8,22 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+# -----
 tmpdir = mkdtemp()
+
+# -----
 _, ymltmp = mkstemp(dir=tmpdir)
+print(ymltmp)
+
+# -----
 _, txttmp = mkstemp(dir=tmpdir)
+print(txttmp)
+
+# -----
 _, jsontmp = mkstemp(dir=tmpdir)
+print(jsontmp)
+
+# -----
 run(f"SETX _TMPDIR {tmpdir}")
 run(f"SETX _TMPYML {ymltmp}")
 run(f"SETX _TMPTXT {txttmp}")

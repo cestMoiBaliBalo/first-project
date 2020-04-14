@@ -111,6 +111,7 @@ IF DEFINED _targetid (
 )
 
 :STEP4B
+FOR /F "usebackq" %%A IN ('%_TMPTXT%') DO RMDIR %%~dpA /S /Q 2> NUL
 PUSHD ..
 SET _path=%PATH%
 SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%

@@ -13,7 +13,8 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Development"
 
-_THATFILE = Path(os.path.abspath(__file__))
+_ME = Path(os.path.abspath(__file__))
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==========================
 # Define French environment.
@@ -40,15 +41,16 @@ class CustomDialect(csv.Dialect):
 level = 100
 
 # -----
-with ChangeLocalCurrentDirectory(Path(_THATFILE.parents[1])):
+with ChangeLocalCurrentDirectory(Path(_MYPARENT.parent)):
     collection = list(enumerate([item.name for item in os.scandir("VirtualEnv") if item.is_dir()], start=1))
     collection.append(("99", "Exit"))
 
 # -----
 if collection:
-    with open(Path(os.path.expandvars("%_TMPTXT%")), mode=WRITE, encoding="ISO-8859-1", newline="") as stream:
-        csv.writer(stream, dialect=CustomDialect).writerows(collection)
-        level = 0
+    with ChangeLocalCurrentDirectory(Path(os.path.expandvars("%_TMPTXT%")).parent):
+        with open(Path(os.path.expandvars("%_TMPTXT%")).name, mode=WRITE, encoding="ISO-8859-1", newline="") as stream:
+            csv.writer(stream, dialect=CustomDialect).writerows(collection)
+            level = 0
 
 # -----
 sys.exit(level)

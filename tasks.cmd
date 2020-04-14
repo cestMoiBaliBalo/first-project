@@ -511,7 +511,8 @@ IF ERRORLEVEL 8 (
 :STEP8D
     REM Use delayed expansion here because global variable PATH contains a path with parenthesis.
     REM Because they are embedded into a parenthesis block the internal parenthesis counter is faked
-    REM and leads to a fatal error.
+    REM and leads therefore to a fatal error.
+    FOR /F "usebackq" %%A IN ('%_TMPTXT%') DO RMDIR %%~dpA /S /Q 2> NUL
     PUSHD ..
     SET _path=!PATH!
     SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;!PATH!

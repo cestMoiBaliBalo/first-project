@@ -104,7 +104,7 @@ def group_(index: int = 1):
     return outer_wrapper
 
 
-def nested_(func, *functions):
+def chain_(*functions):
     """
     Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
     The result of the last function is then returned to the caller object.
@@ -114,13 +114,17 @@ def nested_(func, *functions):
     :return: callable object.
     """
 
-    def wrapper(arg):
-        returned = func(arg)
-        for function in functions:
-            returned = function(returned)
-        return returned
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            returned = func(arg)
+            for function in functions:
+                returned = function(returned)
+            return returned
 
-    return wrapper
+        return inner_wrapper
+
+    return outer_wrapper
 
 
 filter_audiofiles = filter_extensions("ape", "dsf", "flac", "mp3", "m4a", "ogg")
