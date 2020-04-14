@@ -1,0 +1,32 @@
+@ECHO off
+SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SET _mycp=
+SET _cp=1252
+SET _errorlevel=0
+
+REM Set code page.
+SET _chcp=
+FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+IF DEFINED _chcp (
+    SET _mycp=%_chcp%
+    IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
+)
+
+REM Get code page.
+SET _chcp=
+FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+IF DEFINED _chcp ECHO Code page is %_chcp%.
+ECHO Les caractères accentués sont restitués proprement ^^!
+FOR /F "usebackq delims=|" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
+{% block body %}{% endblock  %}
+IF DEFINED _mycp (
+    CHCP %_mycp% > NUL
+    ECHO:
+    ECHO:
+    ECHO Code page is now %_mycp%.
+    SET _mycp=
+)
+SET _chcp=
+SET _cp=
+ENDLOCAL
+EXIT /B %_errorlevel%

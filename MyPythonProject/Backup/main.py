@@ -4,14 +4,15 @@ import argparse
 import json
 import logging.config
 import operator
+import os
 import subprocess
 import sys
 from functools import partial
 from itertools import chain, compress
 from operator import contains, eq
-from os.path import abspath, exists, expandvars, join, normpath
+from os.path import exists, expandvars, join, normpath
 from pathlib import Path
-from typing import List, Mapping, Optional, Union
+from typing import Any, List, Mapping, Optional, Union
 from xml.etree.ElementTree import parse
 
 import yaml
@@ -23,6 +24,8 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_THATFILE = Path(os.path.abspath(__file__))
 
 
 # ========================
@@ -48,19 +51,32 @@ class GetConfig(object):
 # Define custom parsing action.
 # =============================
 class GetTargets(argparse.Action):
+
     def __init__(self, option_strings, dest, **kwargs):
+        """
+
+        :param option_strings:
+        :param dest:
+        :param kwargs:
+        """
         super(GetTargets, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parsobj, namespace, values, option_string=None):
+        """
+
+        :param parsobj:
+        :param namespace:
+        :param values:
+        :param option_string:
+        :return:
+        """
         # Tous les scripts associés au workspace sont sélectionnés par défaut.
-        targets = list(filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items()))
-
         # Les scripts n'appartenant pas au workspace sont éliminés si une liste de scripts est reçue par le programme.
+        targets = filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items())  # type: Any
         if values:
-            targets = [target for target, _ in filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items())]
-            targets = list(filter(partial(contains, targets), values))
-
-        setattr(namespace, self.dest, list(chain.from_iterable(compress(target, [1, 0]) for target in targets)))
+            targets = filter(itemgetter_(0)(partial(contains, values)), targets)
+        targets = iter(compress(target, [1, 0]) for target in targets)
+        setattr(namespace, self.dest, list(chain(*targets)))
 
 
 # ================
@@ -76,13 +92,13 @@ parser.add_argument("-t", "--test", action="store_true")
 # ===========================
 # Load logging configuration.
 # ===========================
-with open(Path(expandvars("%_PYTHONPROJECT%")) / "Resources" / "logging.yml", encoding=UTF8) as stream:
+with open(_THATFILE.parents[1] / "Resources" / "logging.yml", encoding=UTF8) as stream:
     logging.config.dictConfig(yaml.load(stream, Loader=yaml.FullLoader))
 
 # ==============
 # Define logger.
 # ==============
-logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(Path(abspath(__file__)).stem)))
+logger = logging.getLogger("MyPythonProject.Areca.{0}".format(str(_THATFILE.stem)))
 
 # ========================
 # Define global constants.
@@ -98,7 +114,7 @@ status, codes, = 100, []  # type: int, List[int]
 # ===============
 # Main algorithm.
 # ===============
-arguments = GetConfig.get_fromjsonfile(Path(expandvars("%_PYTHONPROJECT%")) / "Backup" / "backup.json")
+arguments = GetConfig.get_fromjsonfile(_THATFILE.parent / "backup.json")
 parser.parse_args(namespace=arguments)
 
 #    --------------------

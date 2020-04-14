@@ -1,0 +1,107 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
+import argparse
+import csv
+import os
+from contextlib import suppress
+from itertools import compress, groupby
+from operator import itemgetter
+from pathlib import Path
+from typing import Any, Iterator, List, Mapping, Tuple
+
+from Applications.decorators import itemgetter_
+from Applications.shared import TemplatingEnvironment, UTF8, WRITE
+
+__author__ = 'Xavier ROSSET'
+__maintainer__ = 'Xavier ROSSET'
+__email__ = 'xavier.python.computing@protonmail.com'
+__status__ = "Production"
+
+_THATFILE = Path(os.path.abspath(__file__))
+
+
+# ================
+# Local functions.
+# ================
+@itemgetter_(2)
+def get_parent(path: str) -> Path:
+    return Path(path).parent
+
+
+@itemgetter_(2)
+def get_name(path: str) -> str:
+    return Path(path).name
+
+
+def break_(item: Tuple[str, ...]) -> Iterator[str]:
+    item = iter(item)
+    with suppress(StopIteration):
+        nexti = next(item)
+        yield str(Path(nexti).parent)
+        yield Path(nexti).name
+    while True:
+        try:
+            nexti = next(item)
+            yield nexti
+        except StopIteration:
+            break
+
+
+# ==============
+# Local classes.
+# ==============
+class CustomDialect(csv.Dialect):
+    """
+
+    """
+    delimiter = "|"
+    escapechar = "`"
+    doublequote = False
+    quoting = csv.QUOTE_NONE
+    lineterminator = "\r\n"
+
+
+class GetPath(argparse.Action):
+    """
+
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, Path(values))
+
+
+# ================
+# Local constants.
+# ================
+RESOURCES = Path(os.path.expandvars("%_RESOURCES%"))  # type: Path
+TEMPLATES = {(Path(_THATFILE.parent / "AudioCD" / "Templates"), "T00a"): [0, 0, 1, 1],
+             (Path(_THATFILE.parent / "AudioCD" / "Templates"), "T00b"): [0, 0, 1]}  # type: Mapping[Tuple[Path, str], List[int]]
+
+# ================
+# Parse arguments.
+# ================
+parser = argparse.ArgumentParser()
+parser.add_argument("path", action=GetPath)
+parser.add_argument("--encoding", const=UTF8, nargs="?")
+arguments = parser.parse_args()
+
+# ============
+# Main script.
+# ============
+with open(arguments.path, encoding=arguments.encoding, newline="") as fr:
+    collection = csv.reader(fr, dialect=CustomDialect())  # type: Any
+    collection = sorted(collection, key=get_name)
+    collection = sorted(collection, key=get_parent)
+    collection = sorted(collection, key=itemgetter(1))
+    collection = sorted(collection, key=itemgetter(0))
+    for key, group in groupby(collection, key=itemgetter(0)):
+        template = TemplatingEnvironment(key)
+        for sub_key, sub_group in groupby(group, key=itemgetter(1)):
+            with open(RESOURCES / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
+                files = iter(tuple(compress(item, TEMPLATES.get((Path(key), sub_key)))) for item in sub_group)  # type: Any
+                files = iter(tuple(break_(file)) for file in files)
+                files = groupby(files, key=itemgetter(0))
+                fw.write(template.get_template(sub_key).render(collection=files))
