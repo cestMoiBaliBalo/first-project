@@ -83,9 +83,9 @@ SHIFT
 GOTO MAIN
 
 
-@REM     -------------
-@REM  3. Clear %TEMP%.
-@REM     -------------
+@REM      -------------
+@REM  3a. Clear %TEMP%.
+@REM      -------------
 @REM     /DB#1 Removes files older than or equal to 1 day.
 @REM     /RS   Removes files in the source (the only) directory.
 @REM     /S    Processes directories and subdirectories except empty ones.
@@ -99,7 +99,12 @@ GOTO MAIN
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /X%TEMP%\areca_config_backup /oA:%_XXCOPYLOG%
+
+
+@REM      ----------------------------------------
+@REM  3b. Then set up a new temporary environment.
+@REM      ----------------------------------------
 PUSHD %_PYTHONPROJECT%
 SET _path=%PATH%
 SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
@@ -136,9 +141,11 @@ GOTO MAIN
 @REM     -----------------------
 @REM     /DB#14: removes files older than or equal to 14 days.
 :STEP4
-ECHO:
-ECHO:
-IF EXIST %_BACKUP% XXCOPY /EC %_BACKUP%\*\?*\*.log /DB#14 /R /H /RSY /PD0 /Y /ED /oA:%_XXCOPYLOG%
+IF EXIST %_BACKUP% (
+    ECHO:
+    ECHO:
+    XXCOPY /EC %_BACKUP%\*\?*\*.log /DB#14 /R /H /RSY /PD0 /Y /ED /oA:%_XXCOPYLOG%
+)
 SHIFT
 GOTO MAIN
 
@@ -171,10 +178,14 @@ GOTO MAIN
 @REM     /DB#21: removes files older than or equal to 21 days.
 @REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
-ECHO:
-ECHO:
-IF EXIST y:\Computing XXCOPY /EC y:\Computing\ /S /RS /FC /DB#21 /R /H /Y /PD0
-XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+IF EXIST y:\Computing (
+    ECHO:
+    ECHO:
+    XXCOPY /EC y:\Computing\ /S /RS /FC /DB#21 /R /H /Y /PD0
+    ECHO:
+    ECHO:
+    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+)
 SHIFT
 GOTO MAIN
 
@@ -196,9 +207,13 @@ GOTO MAIN
 @REM     --------------------
 @REM     Extra files are deleted.
 :STEP9
+IF EXIST z: (
+    ECHO:
+    ECHO:
+    XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "z:\Z123456789\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
+)
 ECHO:
 ECHO:
-IF EXIST "z:" XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "z:\Z123456789\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 XXCOPY /EC "%_MYDOCUMENTS%\Administratif\*\?*\*.pdf" "%_CLOUDSTATION%\Documents\Administratif\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
@@ -209,9 +224,11 @@ GOTO MAIN
 @REM     -----------------
 @REM     Extra files are deleted.
 :STEP10
-ECHO:
-ECHO:
-IF EXIST "z:" XXCOPY /EC "%_MYDOCUMENTS%\Album Art\*\*?\*.jpg" "z:\Z123456790\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
+IF EXIST z: (
+    ECHO:
+    ECHO:
+    XXCOPY /EC "%_MYDOCUMENTS%\Album Art\*\*?\*.jpg" "z:\Z123456790\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
+)
 SHIFT
 GOTO MAIN
 
@@ -221,9 +238,11 @@ GOTO MAIN
 @REM     ---------------------------
 @REM     Extra files are deleted.
 :STEP11
-ECHO:
-ECHO:
-IF EXIST "z:" XXCOPY /EC "%APPDATA%\MP3Tag\" "z:\Z123456791\" /IP /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
+IF EXIST z: (
+    ECHO:
+    ECHO:
+    XXCOPY /EC "%APPDATA%\MP3Tag\" "z:\Z123456791\" /IP /X:*.log /X:*.zip /CLONE /PZ0 /oA:%_XXCOPYLOG%
+)
 SHIFT
 GOTO MAIN
 
@@ -315,10 +334,14 @@ GOTO MAIN
 @REM     /DB#21: removes files older than or equal to 21 days.
 @REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP23
-ECHO:
-ECHO:
-IF EXIST y:\Documents XXCOPY /EC y:\Documents\ /S /RS /FC /DB#21 /R /H /Y /PD0
-XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$\ /IA /KS /oA:%_XXCOPYLOG%
+IF EXIST y:\Documents (
+    ECHO:
+    ECHO:
+    XXCOPY /EC y:\Documents\ /S /RS /FC /DB#21 /R /H /Y /PD0
+    ECHO:
+    ECHO:
+    XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$\ /IA /KS /oA:%_XXCOPYLOG%
+)
 SHIFT
 GOTO MAIN
 
