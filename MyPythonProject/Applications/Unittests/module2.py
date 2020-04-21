@@ -22,7 +22,8 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
+_ME = PurePath(os.path.abspath(__file__))  # type: PurePath
+_MYPARENT = PurePath(os.path.abspath(__file__)).parent  # type: PurePath
 USERPROFILE = PurePath("C:/") / "Users" / "Xavier"  # type: PurePath
 BACKUP = str(PurePath("Y:/") / "Backup")  # type: str
 MYDOCUMENTS = str(USERPROFILE / "Documents")  # type: str
@@ -188,7 +189,7 @@ class Test03(unittest.TestCase):
 
     def setUp(self):
         self.arguments = None
-        self.resource = str(PurePath(_THATFILE.parent, "Resources", "resource1.txt"))
+        self.resource = str(PurePath(_MYPARENT, "Resources", "resource1.txt"))
 
     def test_t01(self):
         self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])
