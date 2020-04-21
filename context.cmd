@@ -62,20 +62,6 @@ GOTO MAIN
 
 
 :STEP2
-REM SET _count=counts.txt
-REM SET _drive=%~2
-REM SET _drive=%_drive:\=/%
-REM PUSHD %TEMP%
-REM DEL %_count% 2> NUL
-REM PUSHD G:\Computing\MyPythonProject\Tasks\Extensions
-REM python main.py "%_drive%" && python print.py
-REM IF ERRORLEVEL 1 (
-REM     POPD
-REM     IF EXIST %_count% TYPE %_count%
-REM )
-REM POPD
-REM SET _count=
-REM SET _drive=
 SHIFT
 SHIFT
 GOTO MAIN
@@ -84,9 +70,9 @@ GOTO MAIN
 :STEP3
 PUSHD %_PYTHONPROJECT%
 SET _path=%PATH%
-SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 python walk.py "%~2"
-SET path=%_path%
+SET PATH=%_path%
 SET _path=
 POPD
 SHIFT
@@ -100,9 +86,9 @@ GOTO MAIN
 PUSHD %_PYTHONPROJECT%\Backup
 SET _targetid=
 SET _path=%PATH%
-SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 python target.py "%~2"
-SET path=%_path%
+SET PATH=%_path%
 IF EXIST %_TMPTXT% FOR /F "usebackq delims=|" %%A IN ("%_TMPTXT%") DO SET _targetid=%%A
 IF DEFINED _targetid (
     PUSHD C:\Program Files\Areca
@@ -114,9 +100,9 @@ IF DEFINED _targetid (
 FOR /F "usebackq" %%A IN ('%_TMPTXT%') DO RMDIR %%~dpA /S /Q 2> NUL
 PUSHD ..
 SET _path=%PATH%
-SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 python temporaryenv.py > NUL
-SET path=%_path%
+SET PATH=%_path%
 POPD
 
 :STEP4C
@@ -132,19 +118,6 @@ GOTO MAIN
 
 
 :STEP5
-REM SET _xxcopy=xxcopy.cmd
-REM PUSHD C:\Computing\Python
-REM python -m shared.shared "%~2"
-REM PUSHD %TEMP%
-REM IF EXIST "%_xxcopy%" (
-REM     CALL "%_xxcopy%"
-REM     PUSHD %_PYTHONPROJECT%
-REM     python -m Applications.Tables.Tasks.shared "123456800" "update"
-REM     POPD
-REM )
-REM POPD
-REM POPD
-REM SET _xxcopy=
 SHIFT
 SHIFT
 GOTO MAIN

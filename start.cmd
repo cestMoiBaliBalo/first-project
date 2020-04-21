@@ -35,12 +35,11 @@ SET _xxcopy=xxcopy.cmd
 @REM ===============
 @REM Main algorithm.
 @REM ===============
-COLOR 0E
 
 
-@REM     ----------------------------------------------------------
-@REM  1. Allow interface to decode Windows 1252 encoded characters.
-@REM     ----------------------------------------------------------
+@REM     -----------------------------------------------------
+@REM  1. Allow interface to decode Latin-1 encoded characters.
+@REM     -----------------------------------------------------
 
 @REM     Set code page.
 SET _chcp=
@@ -54,7 +53,7 @@ IF DEFINED _chcp (
 CALL :GET_CODEPAGE _chcp
 IF DEFINED _chcp ECHO Code page is %_chcp%.
 ECHO Les caractères accentués sont restitués proprement ^^!
-FOR /F "usebackq delims=|" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
+FOR /F "usebackq tokens=*" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
 
 
 @REM     -------------------
@@ -94,12 +93,12 @@ GOTO MAIN
 @REM     /PD0  Suppresses the prompt which would appear on a directory.
 @REM     /Y    Suppresses the prompt prior to each file-delete.
 @REM     /ED1  Preserves %TEMP% but all empty directories under %TEMP% are removed.
-@REM           /ED0 would have removed %TEMP%.
-@REM           /ED  would have preserved both %TEMP% and empty directories under %TEMP%.
+@REM     /ED0 would have removed %TEMP%.
+@REM     /ED  would have preserved both %TEMP% and empty directories under %TEMP%.
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /X%TEMP%\areca_config_backup /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /oA:%_XXCOPYLOG%
 
 
 @REM      ----------------------------------------
@@ -107,9 +106,9 @@ XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /X%TEMP%\areca_config_backup 
 @REM      ----------------------------------------
 PUSHD %_PYTHONPROJECT%
 SET _path=%PATH%
-SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
-python temporaryenv.py > NUL
-SET path=%_path%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+python temporaryenv.py --files --glob > NUL
+SET PATH=%_path%
 SET _path=
 POPD
 SHIFT
@@ -156,14 +155,14 @@ GOTO MAIN
 @REM     /Y:  suppresses prompt when overwriting existing files.
 @REM     /BI: backs up incrementally. Different, by time/size, files only.
 :STEP5
-ECHO:
-ECHO:
 SET _first=1
-FOR /F "usebackq tokens=* eol=# delims=|" %%F IN ("%_dailybkp%") DO (
+FOR /F "usebackq tokens=* eol=#" %%F IN ("%_dailybkp%") DO (
     SET _switch=/CE
     IF !_first! EQU 1 SET _switch=/EC
     SET _first=0
     CALL SET _file=%%~F
+    ECHO:
+    ECHO:
     XXCOPY !_switch! "!_file!" %_MYDOCUMENTS%\ /KS /Y /BI /FF /oA:%_XXCOPYLOG%
     )
 SET _first=
@@ -179,12 +178,28 @@ GOTO MAIN
 @REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
 IF EXIST y:\Computing (
+
+:STEP6A
     ECHO:
     ECHO:
     XXCOPY /EC y:\Computing\ /S /RS /FC /DB#21 /R /H /Y /PD0
+
+:STEP6B
     ECHO:
     ECHO:
-    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+    SET _prefix=
+    SET _count=-1
+
+:STEP6C
+    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$!_prefix!\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 47 (
+        SHIFT
+        GOTO MAIN
+    )
+    IF ERRORLEVEL 46 (
+        CALL :GET_PREFIX _count _prefix
+        IF DEFINED _prefix GOTO STEP6C
+    )
 )
 SHIFT
 GOTO MAIN
@@ -252,69 +267,27 @@ GOTO MAIN
 @REM     -------------------------------
 :STEP13
 SETLOCAL
-SET _errorlevel=
 SET _taskid=123456798
-CALL :CHECK_TASK %_taskid% "8" _errorlevel
-IF [%_errorlevel%] EQU [1] (
+CALL :CHECK_TASK %_taskid% "8"
+IF ERRORLEVEL 1 (
+    @ECHO:
+    @ECHO:
     @ECHO ===============================
     @ECHO Delete GNUCash sandbox content.
     @ECHO ===============================
     "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && @ECHO GNUCash sandbox content successfully removed.
-    CALL :UPDATE_TASK %_taskid% _errorlevel
+    CALL :UPDATE_TASK %_taskid%
 )
-SET _errorlevel=
 SET _taskid=
 ENDLOCAL
 SHIFT
 GOTO MAIN
 
 
-@REM     -----------------
-@REM 14. Backup documents.
-@REM     -----------------
+@REM     ----------
+@REM 14. Available.
+@REM     ----------
 :STEP18
-@REM SETLOCAL
-@REM SET _directory=%TEMP%\tmp-Xavier
-@REM IF EXIST "y:" (
-@REM     SET _errorlevel=
-@REM     SET _taskid=123456803
-@REM     SET _workspace=%_BACKUP%/workspace.documents/34258241.bcfg
-@REM     CALL :CHECK_TASK !_taskid! "4" _errorlevel
-@REM     IF [!_errorlevel!] EQU [1] (
-@REM         @ECHO:
-@REM         @ECHO:
-@REM         @ECHO =======================================
-@REM         @ECHO Backup personal documents to USB drive.
-@REM         @ECHO =======================================
-@REM         "%_areca%" backup -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
-@REM         SET _errorlevel=
-@REM         SET _taskid=123456802
-@REM         CALL :CHECK_TASK !_taskid! "20" _errorlevel
-@REM         IF [!_errorlevel!] EQU [1] "%_areca%" merge -c -k -wdir "!_directory!" -config "!_workspace!" -from 0 -to 0 && CALL :UPDATE_TASK !_taskid! _errorlevel
-@REM     )
-@REM     SET _errorlevel=
-@REM     SET _workspace=
-@REM     SET _taskid=
-@REM )
-@REM IF EXIST "z:" (
-@REM     SET _errorlevel=
-@REM     SET _taskid=123456804
-@REM     SET _workspace=%_BACKUP%/workspace.documents/1282856126.bcfg
-@REM     CALL :CHECK_TASK !_taskid! "4" _errorlevel
-@REM     IF [!_errorlevel!] EQU [1] (
-@REM         @ECHO:
-@REM         @ECHO:
-@REM         @ECHO ===============================================
-@REM         @ECHO Backup personal documents to external WD drive.
-@REM         @ECHO ===============================================
-@REM         "%_areca%" backup -f -c -wdir "!_directory!" -config "!_workspace!" && CALL :UPDATE_TASK !_taskid! _errorlevel
-@REM     )
-@REM     SET _errorlevel=
-@REM     SET _workspace=
-@REM     SET _taskid=
-@REM )
-@REM SET _directory=
-@REM ENDLOCAL
 SHIFT
 GOTO MAIN
 
@@ -335,12 +308,28 @@ GOTO MAIN
 @REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP23
 IF EXIST y:\Documents (
+
+:STEP23A
     ECHO:
     ECHO:
     XXCOPY /EC y:\Documents\ /S /RS /FC /DB#21 /R /H /Y /PD0
+
+:STEP23B
     ECHO:
     ECHO:
-    XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$\ /IA /KS /oA:%_XXCOPYLOG%
+    SET _prefix=
+    SET _count=-1
+
+:STEP23C
+    XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$!_prefix!\ /IA /KS /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 47 (
+        SHIFT
+        GOTO MAIN
+    )
+    IF ERRORLEVEL 46 (
+        CALL :GET_PREFIX _count _prefix
+        IF DEFINED _prefix GOTO STEP23C
+    )
 )
 SHIFT
 GOTO MAIN
@@ -389,14 +378,12 @@ EXIT /B %ERRORLEVEL%
 @REM =================
 :CHECK_TASK
 python -m Applications.Tables.Tasks.shared "%~1" check --delta "%~2"
-SET %~3=%ERRORLEVEL%
-EXIT /B 0
+EXIT /B %ERRORLEVEL%
 
 
 :UPDATE_TASK
 python -m Applications.Tables.Tasks.shared "%~1" update
-SET %~2=%ERRORLEVEL%
-EXIT /B 0
+EXIT /B %ERRORLEVEL%
 
 
 :DELAY_TASK
@@ -425,5 +412,27 @@ IF %_switch% EQU 1 SET switch=/CE
     ENDLOCAL
     IF %_switch% EQU 0 SET _switch=1
     SET %1=/EC
+)
+EXIT /B 0
+
+
+:GET_PREFIX
+SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SET _count=!%~1!
+SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
+:LOOP
+(
+    SET _prefix=
+    SET /A "_count+=1"
+    IF !_count! LEQ 25 CALL SET _prefix=%%_prefixes:~!_count!,1%%
+)
+IF DEFINED _prefix SET _prefix=%_prefix%
+(
+    SET _count=
+    SET _prefix=
+    SET _prefixes=
+    ENDLOCAL
+    SET %1=%_count%
+    SET %2=%_prefix%
 )
 EXIT /B 0

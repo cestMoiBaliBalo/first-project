@@ -30,21 +30,21 @@ SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
 REM ============
 REM Main script.
 REM ============
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 
 :MENU
-IF [%~1] EQU [] GOTO THE_END
 IF [%~1] EQU [1] GOTO STEP1
 IF [%~1] EQU [2] GOTO STEP2
+IF [%~1] EQU [] GOTO THE_END
 SHIFT
 GOTO MENU
 
 :STEP1
-%_areca% backup -c -wdir %TEMP%\tmp-Xavier -config %_BACKUP%/workspace.documents/1832340664.bcfg
+"%_areca%" backup -c -wdir %TEMP%\tmp-Xavier -config %_BACKUP%/workspace.documents/1832340664.bcfg
 SHIFT
 GOTO MENU
 
@@ -54,11 +54,11 @@ GOTO MENU
 
 :THE_END
 IF DEFINED _mycp CHCP %_mycp% > NUL
-SET _areca=
 SET _cp=
-SET _chcp=
 SET _me=
+SET _chcp=
 SET _mycp=
+SET _areca=
 SET _myparent=
 (
     SET _errorlevel=
