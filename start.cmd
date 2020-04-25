@@ -7,7 +7,7 @@
 @REM __status__ = "Production"
 
 
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 @REM ==================
@@ -426,7 +426,6 @@ SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
     SET /A "_count+=1"
     IF !_count! LEQ 25 CALL SET _prefix=%%_prefixes:~!_count!,1%%
 )
-IF DEFINED _prefix SET _prefix=%_prefix%
 (
     SET _count=
     SET _prefix=

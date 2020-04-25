@@ -33,9 +33,9 @@ FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 
 
 REM ===========================
-REM Set ECHO on for debug mode.
+REM Set ECHO ON for debug mode.
 REM ===========================
-IF /I ["%~1"] EQU ["DEBUG"] @ECHO on
+IF /I "%~1" EQU "DEBUG" @ECHO on
 
 
 REM -------------
@@ -139,9 +139,9 @@ IF ERRORLEVEL 32 (
 )
 
 
-REM --------------------------------------
-REM Update Audio database with new albums.
-REM --------------------------------------
+REM ---------------------------------
+REM Insert audio discs into database.
+REM ---------------------------------
 IF ERRORLEVEL 31 (
     PUSHD %TEMP%
     python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
@@ -212,9 +212,9 @@ IF ERRORLEVEL 28 (
 )
 
 
-REM ------------------------------------
-REM Copy HDtracks files to backup drive.
-REM ------------------------------------
+REM ----------------------------------------
+REM Copy HDtracks.com files to backup drive.
+REM ----------------------------------------
 IF ERRORLEVEL 27 (
     CLS
     IF EXIST z: (
@@ -303,9 +303,9 @@ IF ERRORLEVEL 22 (
 )
 
 
-REM -------------------------------------------
-REM PRun python ripped audio albums unit tests.
-REM -------------------------------------------
+REM -----------------------------------------
+REM Run python ripped audio discs unit tests.
+REM -----------------------------------------
 IF ERRORLEVEL 21 (
     CLS
     ECHO:
@@ -351,9 +351,9 @@ IF ERRORLEVEL 19 (
 )
 
 
-REM --------------------
-REM Sync MyCloud videos.
-REM --------------------
+REM -------------------------
+REM Sync MyCloud video files.
+REM -------------------------
 REM Delete extra files.
 IF ERRORLEVEL 18 (
     GOTO FIN18
@@ -377,9 +377,9 @@ IF ERRORLEVEL 18 (
 )
 
 
-REM -------------------
-REM sync MyCloud audio.
-REM -------------------
+REM -------------------------
+REM Sync MyCloud audio files.
+REM -------------------------
 IF ERRORLEVEL 17 (
     CLS
     PUSHD %TEMP% 
@@ -428,9 +428,9 @@ IF ERRORLEVEL 13 (
 )
 
 
-REM ----------------------------------------------------
-REM Run python Audio CDs ripping application unit tests.
-REM ----------------------------------------------------
+REM ------------------------------------------------------
+REM Run python audio discs ripping application unit tests.
+REM ------------------------------------------------------
 IF ERRORLEVEL 12 (
     CLS
     ECHO:
@@ -544,9 +544,9 @@ IF ERRORLEVEL 6 (
 )
 
 
-REM ----------------------
-REM Backup artists  [P-T].
-REM ----------------------
+REM ---------------------
+REM Backup artists [P-T].
+REM ---------------------
 IF ERRORLEVEL 5 (
     CLS
     CALL :BACKUP 1535780732
@@ -554,9 +554,9 @@ IF ERRORLEVEL 5 (
 )
 
 
-REM ----------------------
-REM Backup artists  [K-O].
-REM ----------------------
+REM ---------------------
+REM Backup artists [K-O].
+REM ---------------------
 IF ERRORLEVEL 4 (
     CLS
     CALL :BACKUP 1196865155
@@ -564,9 +564,9 @@ IF ERRORLEVEL 4 (
 )
 
 
-REM ----------------------
-REM Backup artists  [F-J].
-REM ----------------------
+REM ---------------------
+REM Backup artists [F-J].
+REM ---------------------
 IF ERRORLEVEL 3 (
     CLS
     CALL :BACKUP 1674209532
@@ -574,9 +574,9 @@ IF ERRORLEVEL 3 (
 )
 
 
-REM ----------------------
-REM Backup artists  [A-E].
-REM ----------------------
+REM ---------------------
+REM Backup artists [A-E].
+REM ---------------------
 IF ERRORLEVEL 2 (
     CLS
     CALL :BACKUP 854796030
@@ -708,7 +708,8 @@ IF ERRORLEVEL 100 (
 )
 
 REM ----- B.4. Backup is required.
-CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? [Y/N] "
+ECHO:
+CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? Press [Y] for Yes or [N] for No. "
 
 REM ----- Backup is aborted.
 IF ERRORLEVEL 2 (
@@ -718,8 +719,9 @@ IF ERRORLEVEL 2 (
 
 REM ----- B.5. Backup is run.
 CLS
-ECHO: The following backup command will be run: python main.py -c music%_arguments%
-CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? [Y/N] "
+ECHO The following backup command will be run: python main.py -c music%_arguments%
+ECHO:
+CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? Press [Y] for Yes or [N] for No. "
 IF ERRORLEVEL 2 (
     POPD
     CLS
