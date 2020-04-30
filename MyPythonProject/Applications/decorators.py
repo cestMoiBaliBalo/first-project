@@ -2,8 +2,9 @@
 # pylint: disable=invalid-name
 import operator
 import os
+from collections import deque
 from functools import partial, wraps
-from itertools import compress
+from itertools import chain, compress, islice, tee
 from pathlib import PurePath
 from typing import Any, Tuple
 
@@ -99,9 +100,38 @@ def itemgetter_(index: int = 0):
     return outer_wrapper
 
 
+def map_(index: int):
+    """
+
+    :param index:
+    :return:
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*iterables: Tuple[Any, ...]):
+            it1, it2 = tee(iterables)  # type: Any, Any
+            if index > 0:
+                collection = deque(iterables)
+                collection.rotate(-index)
+                it1, it2 = tee(collection)
+            obj1 = iter([tuple(map(func, chain(*islice(it1, 1))))])
+            obj2 = islice(it2, 1, None)
+            collection = chain(obj1, obj2)
+            if index > 0:
+                collection = deque(collection)
+                collection.rotate(index)
+                collection = iter(collection)
+            for item in collection:
+                yield item
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def compress_(*indexes: int):
     """
-    Creates a callable object.
 
     :param indexes:
     :return:
@@ -109,7 +139,7 @@ def compress_(*indexes: int):
 
     def outer_wrapper(func):
         @wraps(func)
-        def inner_wrapper(arg: Tuple[Any]):
+        def inner_wrapper(arg: Tuple[Any, ...]):
             selectors = [0] * len(arg)
             for index in indexes:
                 selectors[index] = 1
@@ -120,54 +150,7 @@ def compress_(*indexes: int):
     return outer_wrapper
 
 
-def map_(index: int):
-    """
-    Creates a callable object.
-
-    :param index:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args: Any):
-            iterable = tuple(args)
-            if 0 < index < len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == 0:
-                iterable = (func(operator.itemgetter(index)(args)),) + args[index + 1:]
-            elif index == len(args) - 1:
-                iterable = args[:index] + (func(operator.itemgetter(index)(args)),)
-            return iter(iterable)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def nested_(*functions):
-    """
-    Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
-    The result of the last function is then returned to the caller object.
-
-    :param functions: sequence of functions.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            returned = func(arg)
-            for function in functions:
-                returned = function(returned)
-            return returned
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def partial_(*args, **kwargs):
+def partial_(*args: Any, **kwargs: Any):
     """
 
     :param args:
@@ -177,7 +160,7 @@ def partial_(*args, **kwargs):
 
     def outer_wrapper(func):
         @wraps(func)
-        def inner_wrapper(arg):
+        def inner_wrapper(arg: Any):
             return partial(func, *args, **kwargs)(arg)
 
         return inner_wrapper

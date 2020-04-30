@@ -1,0 +1,42 @@
+{% extends "T00" %}
+{% block body %}
+
+REM Initialize variables.
+SET _count=0
+SET _step=0
+
+REM Run script.
+:MAIN
+IF [%~1] EQU [] GOTO THE_END
+IF [%~1] EQU [0] SET /A "_step+=1"
+IF [%~1] NEQ [0] SET /A _step=%~1
+    {% for key, group in collection %}
+
+        {% if loop.index < 10 %}
+REM  {{ loop.index }}. Copy "{{ key }}" folder content to NAS.
+        {% endif %}
+        {% if loop.index >= 10 %}
+REM {{ loop.index }}. Copy "{{ key }}" folder content to NAS.
+        {% endif %}
+IF %_step% EQU {{ loop.index }} (
+    PUSHD "{{ key }}"
+        {% for _, file in group %}
+    DEL "{{ file }}" && SET /A "_count+=1"
+        {% endfor %}
+    POPD
+    IF [%~1] EQU [0] SET /A "_step+=1"
+    IF [%~1] NEQ [0] (
+        SHIFT /1
+        GOTO MAIN
+    )
+)
+    {% endfor %}
+
+REM Exit script.
+:THE_END
+ECHO:
+ECHO:
+ECHO: %_count% file(s) successfully deleted.
+SET _count=
+SET _step=
+{% endblock  %}

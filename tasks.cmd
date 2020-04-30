@@ -33,9 +33,9 @@ FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 
 
 REM ===========================
-REM Set ECHO on for debug mode.
+REM Set ECHO ON for debug mode.
 REM ===========================
-IF /I ["%~1"] EQU ["DEBUG"] @ECHO on
+IF /I "%~1" EQU "DEBUG" @ECHO on
 
 
 REM -------------
@@ -73,14 +73,16 @@ IF ERRORLEVEL 35 (
 
 
 REM --------------------------
-REM Backup files to USB drive.
+REM Sync targets repositories.
 REM --------------------------
 IF ERRORLEVEL 34 (
-    CLS
-    "C:/Program Files/Areca/areca_cl.exe" backup -f -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%/workspace.documents/34258241.bcfg"
-    ECHO:
-    ECHO:
-    PAUSE
+    SET _path=!PATH!
+    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    PUSHD %_PYTHONPROJECT%\Backup
+    python targets.py
+    POPD
+    SET PATH=!_path!
+    SET _path=
     GOTO MENU
 )
 
@@ -137,22 +139,22 @@ IF ERRORLEVEL 32 (
 )
 
 
-REM --------------------------------------
-REM Update Audio database with new albums.
-REM --------------------------------------
+REM ---------------------------------
+REM Insert audio discs into database.
+REM ---------------------------------
 IF ERRORLEVEL 31 (
-    PUSHD "%TEMP%"
+    PUSHD %TEMP%
     python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
     POPD
     GOTO MENU
 )
 
 
-REM --------------------------------
-REM Update audio albums played date.
-REM --------------------------------
+REM -------------------------------
+REM Update audio discs played date.
+REM -------------------------------
 IF ERRORLEVEL 30 (
-    PUSHD "%_PYTHONPROJECT%\Interfaces\Sources\06"
+    PUSHD %_PYTHONPROJECT%\Interfaces\Sources\06
     python main.py
     POPD
     GOTO MENU
@@ -177,7 +179,6 @@ REM ------------------------
 REM Additional backup tasks.
 REM ------------------------
 IF ERRORLEVEL 28 (
-    SET _error=0
 
 :TARGETS
     CLS
@@ -193,16 +194,10 @@ IF ERRORLEVEL 28 (
     FOR /F "usebackq tokens=1,2 delims=|" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
     IF NOT DEFINED _target (
         POPD
-        SET /A "_error+=1"
         GOTO TARGETS
     )
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music !_target!
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
-    POPD
+    CALL :BACKUP !_target!
     POPD
     ECHO:
     ECHO:
@@ -211,7 +206,6 @@ IF ERRORLEVEL 28 (
 
 :END_TARGETS
     SET _answer=
-    SET _error=
     SET _target=
     GOTO MENU
 
@@ -219,25 +213,23 @@ IF ERRORLEVEL 28 (
 
 
 REM ----------------------------------------
-REM Backup personal files to SD memory card.
+REM Copy HDtracks.com files to backup drive.
 REM ----------------------------------------
+IF ERRORLEVEL 27 (
+    CLS
+    IF EXIST z: (
+        XXCOPY /EC %_MYMUSIC%\HDtracks\ z:\HDtracks\ /S /KS /RCY /PD0 /ED1 /oF3 /Fo%TEMP%\FileList /oA%_XXCOPYLOG%
+        PAUSE
+    )
+    GOTO MENU
+)
+
+
+REM ---------------
+REM I am available.
+REM ---------------
 IF ERRORLEVEL 24 (
     CLS
-    PUSHD "%TEMP%"
-    DEL %_xxcopy% 2> NUL
-    python "%_PYTHON_SECONDPROJECT%\backup.py"
-    IF ERRORLEVEL 1 (
-        ECHO:
-        ECHO:
-        PAUSE
-        POPD
-        GOTO MENU
-    )
-    IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
-    ECHO:
-    ECHO:
-    PAUSE
-    POPD
     GOTO MENU
 )
 
@@ -255,7 +247,7 @@ IF ERRORLEVEL 23 (
 
     REM -->  1. Check if new files have been inserted since the previous sync.
     CLS
-    XXCOPY "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
@@ -275,7 +267,7 @@ IF ERRORLEVEL 23 (
     ECHO:
     PAUSE
 
-    REM -->  4. Reverse both source and destination. Then remove brand new files in order to preserve some folders content.
+    REM -->  4. Reverse both source and destination. Then remove brand new files in order to preserve specific folders content.
     REM         - "RECYCLER".
     REM         - "$RECYCLE.BIN".
     REM         - "SYSTEM VOLUME INFORMATION".
@@ -295,6 +287,9 @@ IF ERRORLEVEL 23 (
 )
 
 
+REM --------------------------
+REM Run all python unit tests.
+REM --------------------------
 IF ERRORLEVEL 22 (
     CLS
     ECHO:
@@ -308,6 +303,9 @@ IF ERRORLEVEL 22 (
 )
 
 
+REM -----------------------------------------
+REM Run python ripped audio discs unit tests.
+REM -----------------------------------------
 IF ERRORLEVEL 21 (
     CLS
     ECHO:
@@ -319,6 +317,9 @@ IF ERRORLEVEL 21 (
 )
 
 
+REM ------------------------------------------
+REM Run python regular expressions unit tests.
+REM ------------------------------------------
 IF ERRORLEVEL 20 (
     SET _command=python -m unittest -v
     FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests2.txt") DO SET _command=!_command! %%A
@@ -333,6 +334,9 @@ IF ERRORLEVEL 20 (
 )
 
 
+REM ------------------------------------------------
+REM Run python data validation functions unit tests.
+REM ------------------------------------------------
 IF ERRORLEVEL 19 (
     SET _command=python -m unittest -v
     FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests1.txt") DO SET _command=!_command! %%A
@@ -347,12 +351,12 @@ IF ERRORLEVEL 19 (
 )
 
 
-REM -------------------
-REM MyCloud video sync.
-REM -------------------
+REM -------------------------
+REM Sync MyCloud video files.
+REM -------------------------
 REM Delete extra files.
 IF ERRORLEVEL 18 (
-    GOTO MENU
+    GOTO FIN18
     CLS
 
 :MENU18
@@ -373,9 +377,9 @@ IF ERRORLEVEL 18 (
 )
 
 
-REM -------------------
-REM MyCloud audio sync.
-REM -------------------
+REM -------------------------
+REM Sync MyCloud audio files.
+REM -------------------------
 IF ERRORLEVEL 17 (
     CLS
     PUSHD %TEMP% 
@@ -422,16 +426,11 @@ IF ERRORLEVEL 13 (
     POPD
     GOTO MENU
 )
-REM python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
-REM IF NOT ERRORLEVEL 1 (
-    REM IF EXIST "%_xmldigitalaudiobase%" (
-        REM java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"
-        REM DEL "%_xmldigitalaudiobase%"
-    REM )
-REM )
-REM GOTO MENU
 
 
+REM ------------------------------------------------------
+REM Run python audio discs ripping application unit tests.
+REM ------------------------------------------------------
 IF ERRORLEVEL 12 (
     CLS
     ECHO:
@@ -443,11 +442,21 @@ IF ERRORLEVEL 12 (
 )
 
 REM -------------------------------
-REM Python installed packages list.
+REM List python installed packages.
 REM -------------------------------
 IF ERRORLEVEL 11 (
+    SET _name=
+    SET _venv=
+    CALL :GET_VIRTUALENV _venv _name 0
+    IF ERRORLEVEL 100 GOTO MENU
     CLS
+    SET _path=!PATH!
+    SET PATH=!_venv!;!PATH!
     pip list
+    SET PATH=!_path!
+    SET _name=
+    SET _path=
+    SET _venv=
     ECHO:
     ECHO:
     PAUSE
@@ -456,11 +465,21 @@ IF ERRORLEVEL 11 (
 
 
 REM ------------------------------
-REM Python outdated packages list.
+REM List Python outdated packages.
 REM ------------------------------
 IF ERRORLEVEL 10 (
+    SET _name=
+    SET _venv=
+    CALL :GET_VIRTUALENV _venv _name 0
+    IF ERRORLEVEL 100 GOTO MENU
     CLS
+    SET _path=!PATH!
+    SET PATH=!_venv!;!PATH!
     pip list -o
+    SET PATH=!_path!
+    SET _name=
+    SET _path=
+    SET _venv=
     ECHO:
     ECHO:
     PAUSE
@@ -472,8 +491,18 @@ REM ------------
 REM Upgrade pip.
 REM ------------
 IF ERRORLEVEL 9 (
+    SET _name=
+    SET _venv=
+    CALL :GET_VIRTUALENV _venv _name 0
+    IF ERRORLEVEL 100 GOTO MENU
     CLS
+    SET _path=!PATH!
+    SET PATH=!_venv!;!PATH!
     python -m pip install --upgrade pip
+    SET PATH=!_path!
+    SET _name=
+    SET _path=
+    SET _venv=
     ECHO:
     ECHO:
     PAUSE
@@ -485,83 +514,72 @@ REM -------------------------------------
 REM Toggle to python virtual environment.
 REM -------------------------------------
 IF ERRORLEVEL 8 (
+
+:STEP8A
+    SET _name=
+    SET _venv=
+    CALL :GET_VIRTUALENV _venv _name 1
+    IF ERRORLEVEL 100 GOTO STEP8B
     CLS
-    SET /P _answer=Please enter virtual environment name: 
-    IF EXIST "%_PYTHONPROJECT%\VirtualEnv\!_answer!" (
-        CALL "%_COMPUTING%\environment.cmd" A !_answer!
-        CMD /K PROMPT [!_answer! environment]$G
-        CALL "%_COMPUTING%\environment.cmd" D
-    )
+    CALL "%_COMPUTING%\environment.cmd" A !_name!
+    CMD /K PROMPT [!_name! environment]$G
+    CALL "%_COMPUTING%\environment.cmd" D
+    GOTO STEP8A
+
+:STEP8B
+    SET _name=
+    SET _venv=
     GOTO MENU
+
 )
 
 
-REM --------------
-REM Artists [U-Z].
-REM --------------
+REM ---------------------
+REM Backup artists [U-Z].
+REM ---------------------
 IF ERRORLEVEL 6 (
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 204959095
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL :BACKUP 204959095
     GOTO MENU
 )
 
 
-REM --------------
-REM Artists [P-T].
-REM --------------
+REM ---------------------
+REM Backup artists [P-T].
+REM ---------------------
 IF ERRORLEVEL 5 (
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 1535780732
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL :BACKUP 1535780732
     GOTO MENU
 )
 
 
-REM --------------
-REM Artists [K-O].
-REM --------------
+REM ---------------------
+REM Backup artists [K-O].
+REM ---------------------
 IF ERRORLEVEL 4 (
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 1196865155
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL :BACKUP 1196865155
     GOTO MENU
 )
 
 
-REM --------------
-REM Artists [F-J].
-REM --------------
+REM ---------------------
+REM Backup artists [F-J].
+REM ---------------------
 IF ERRORLEVEL 3 (
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 1674209532
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL :BACKUP 1674209532
     GOTO MENU
 )
 
 
-REM --------------
-REM Artists [A-E].
-REM --------------
+REM ---------------------
+REM Backup artists [A-E].
+REM ---------------------
 IF ERRORLEVEL 2 (
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 854796030
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL :BACKUP 854796030
     GOTO MENU
 )
 
@@ -570,11 +588,8 @@ REM ---------------------------
 REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
-    CALL "%_COMPUTING%\environment.cmd" A venv36
-    PUSHD %_PYTHONPROJECT%\Backup
-    python backup.py -c music 854796030 1674209532 1196865155 1535780732 204959095
-    POPD
-    CALL "%_COMPUTING%\environment.cmd" D
+    CLS
+    CALL :BACKUP 854796030 1674209532 1196865155 1535780732 204959095
     GOTO MENU
 )
 
@@ -585,6 +600,11 @@ REM ==========
 :EXIT
 CLS
 EXIT /B 0
+
+
+REM ================
+REM Local functions.
+REM ================
 
 
 :QUESTION
@@ -617,3 +637,245 @@ IF EXIST "%_xxcopy%" (
 )
 POPD
 EXIT /B 0
+
+
+:BACKUP
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _arguments=
+SET _output=%TEMP%\backup.txt
+
+REM -----
+DEL %_output% 2> NUL
+
+REM -----
+PUSHD %_COMPUTING%\MyJavaProject
+
+REM    ----------
+REM A. Java step.
+REM    ----------
+REM    Enumerate files.
+:STEP1
+IF [%~1] EQU [] GOTO STEP2
+SET _arguments=%_arguments% %~1
+
+REM -----
+FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
+    IF [%%~A] EQU [%~1] (
+        SET _target=%%~A
+        SET _environment=%%~B
+        SET _path=%%~C
+        SET _regex=%%~D
+        SET _command="!_path!" "!_target!" "!_environment!" --output "%_output%"
+        IF DEFINED _regex SET _command=!_command! --regex "!_regex!"
+        PUSHD out\production\MyJavaProject
+        java com.xavier.computing.Finder !_command! > NUL
+        POPD
+    )
+)
+SHIFT /1
+GOTO STEP1
+
+REM    ------------
+REM B. Python step.
+REM    ------------
+REM    Check if backup is required.
+:STEP2
+IF NOT EXIST %_output% GOTO STEP4
+
+REM ----- B.1. Define 3.8 as python interpreter.
+SET _path=%PATH%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+ECHO: PATH is composed of the following directories.
+ECHO:
+CALL :GET_PATHS "%PATH%"
+ECHO:
+ECHO:
+PAUSE
+CLS
+
+REM ----- B.2. Run checker.
+PUSHD ..\MyPythonProject\Backup
+python check.py "%_output%" "\.(?:ape|dsf|flac)$" --pprint
+
+REM ----- B.3. Backup isn't required.
+IF ERRORLEVEL 100 (
+    POPD
+    ECHO:
+    ECHO:
+    PAUSE
+    CLS
+    GOTO STEP3
+)
+
+REM ----- B.4. Backup is required.
+ECHO:
+CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? Press [Y] for Yes or [N] for No. "
+
+REM ----- Backup is aborted.
+IF ERRORLEVEL 2 (
+    CLS
+    GOTO STEP3
+)
+
+REM ----- B.5. Backup is run.
+CLS
+ECHO The following backup command will be run: python main.py -c music%_arguments%
+ECHO:
+CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? Press [Y] for Yes or [N] for No. "
+IF ERRORLEVEL 2 (
+    POPD
+    CLS
+    GOTO STEP3
+)
+python main.py -c music%_arguments%
+POPD
+ECHO:
+ECHO:
+PAUSE
+ECHO:
+ECHO:
+
+REM    ---------------
+REM C. End of routine.
+REM    ---------------
+
+REM -----
+:STEP3
+SET PATH=%_path%
+SET _path=
+ECHO: PATH is now composed of the following folders.
+ECHO:
+CALL :GET_PATHS "%PATH%"
+ECHO:
+ECHO:
+PAUSE
+CLS
+
+REM -----
+:STEP4
+SET _arguments=
+SET _environment=
+SET _output=
+SET _path=
+SET _regex=
+SET _target=
+POPD
+ENDLOCAL
+EXIT /B 0
+
+
+REM -------------------------------------
+REM Get the list of paths composing PATH.
+REM -------------------------------------
+:GET_PATHS
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _index=0
+SET _path=%~1
+:R04_LOOP
+FOR /F "usebackq tokens=1* delims=;" %%A IN ('!_path!') DO (
+    SET /A "_index+=1"
+    IF !_index! LEQ 9 ECHO    !_index!. %%A
+    IF !_index! GTR 9 IF !_index! LEQ 99 ECHO   !_index!. %%A
+    IF !_index! GTR 99 IF !_index! LEQ 999 ECHO  !_index!. %%A
+    SET _path=%%B
+    GOTO R04_LOOP
+)
+SET _path=
+ENDLOCAL
+EXIT /B 0
+
+
+REM -----------------------------------------------
+REM Get the list of available virtual environments.
+REM -----------------------------------------------
+:GET_VIRTUALENV
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _exit=0
+PUSHD %_PYTHONPROJECT%\VirtualEnv
+
+:R05_STEP1
+CLS
+
+REM -----
+IF %~3 EQU 0 (
+    ECHO:
+    ECHO Available (virtual^) environment(s^):
+    ECHO:
+)
+IF %~3 EQU 1 (
+    ECHO:
+    ECHO Available virtual environment(s^):
+    ECHO:
+)
+REM -----
+IF %~3 EQU 0 (
+    SET _index=1
+    ECHO:  !_index!. Default environment.
+    SET _dir01=%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts
+)
+IF %~3 EQU 1 SET _index=0
+
+REM -----
+FOR /F "usebackq tokens=*" %%A IN (`DIR /B /AD /ON`) DO (
+    SET /A "_index+=1"
+    SET _ok=0
+    IF !_ok! EQU 0 IF !_index! LEQ 9 (
+        ECHO:  !_index!. %%~A.
+        SET _dir0!_index!=%%~A
+        SET _ok=1
+    )
+    IF !_ok! EQU 0 IF !_index! LEQ 99 (
+        ECHO: !_index!. %%~A.
+        SET _dir!_index!=%%~A
+        SET _ok=1
+    )
+)
+IF %_index% EQU 0 SET _exit=100&& GOTO R05_STEP5
+ECHO:
+ECHO:  99. Exit
+
+REM Get user input.
+:R05_STEP2
+ECHO:
+ECHO:
+SET /P _answer="Please choose environment: "
+
+REM Check user input.
+:R05_STEP3
+SET _ko=
+FOR /F "usebackq delims=0123456789" %%A IN ('%_answer%') DO SET _ko=%%A
+IF DEFINED _ko GOTO R05_STEP1
+IF NOT DEFINED _ko IF %_answer% EQU 99 SET _exit=100&& GOTO R05_STEP5
+IF NOT DEFINED _ko IF %_answer% GTR %_index% GOTO R05_STEP1
+
+REM Get virtual environment respective directory.
+:R05_STEP4
+SET _name=!_dir%_answer%!
+IF %_answer% LEQ 9 SET _name=!_dir0%_answer%!
+SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
+
+:R05_STEP5
+(
+    POPD
+    SET _ok=
+    SET _exit=
+    SET _name=
+    SET _venv=
+    SET _index=
+    SET _answer=
+    SET _ko=
+    ENDLOCAL
+    SET %1=%_venv%
+    SET %2=%_name%
+    EXIT /B %_exit%
+)
+
+
+REM python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
+REM IF NOT ERRORLEVEL 1 (
+    REM IF EXIST "%_xmldigitalaudiobase%" (
+        REM java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"
+        REM DEL "%_xmldigitalaudiobase%"
+    REM )
+REM )
+REM GOTO MENU

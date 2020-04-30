@@ -20,7 +20,8 @@ from unittest.mock import patch
 import yaml
 
 from Applications.Tables.Albums import shared
-from Applications.decorators import itemgetter_, nested_, partial_
+from Applications.callables import chain_
+from Applications.decorators import itemgetter_, partial_
 from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby, nested_groupby, now
 
 __author__ = 'Xavier ROSSET'
@@ -84,21 +85,21 @@ def split2_(char: str, strg: str):
     return strg.split(char)
 
 
-@nested_(itemgetter(2), int)
+@chain_(itemgetter(2), int)
 @itemgetter_(1)
 @partial_(".")
 def split3_(char: str, strg: str):
     return strg.split(char)
 
 
-@nested_(itemgetter(1), int)
+@chain_(itemgetter(1), int)
 @itemgetter_(1)
 @partial_(".")
 def split4_(char: str, strg: str):
     return strg.split(char)
 
 
-@nested_(itemgetter(0), int)
+@chain_(itemgetter(0), int)
 @itemgetter_(1)
 @partial_(".")
 def split5_(char: str, strg: str):
@@ -135,7 +136,7 @@ class Test02(unittest.TestCase):
 
             def __init__(self, seq):
                 self._index = -1
-                self._seq = sorted(sorted(sorted(seq, key=nested_(itemgetter(2), int)(partial(split_, "."))), key=nested_(itemgetter(0))(partial(split_, "."))), key=nested_(itemgetter(1))(partial(split_, ".")))
+                self._seq = sorted(sorted(sorted(seq, key=chain_(itemgetter(2), int)(partial(split_, "."))), key=chain_(itemgetter(0))(partial(split_, "."))), key=chain_(itemgetter(1))(partial(split_, ".")))
 
             def __getitem__(self, item):
                 return self._seq[item]
@@ -203,13 +204,13 @@ class Test03(unittest.TestCase):
         self.assertEqual(max(map(int, map(itemgetter(1), map(partial(split_, "_"), self.iterable)))), 456)
 
     def test_t02(self):
-        self.assertEqual(max(map(nested_(itemgetter(1), int)(partial(split_, "_")), self.iterable)), 456)
+        self.assertEqual(max(map(chain_(itemgetter(1), int)(partial(split_, "_")), self.iterable)), 456)
 
     def test_t03(self):
-        self.assertListEqual(sorted(self.iterable, key=nested_(itemgetter(1), int)(partial(split_, "_"))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertListEqual(sorted(self.iterable, key=chain_(itemgetter(1), int)(partial(split_, "_"))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_t04(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=nested_(itemgetter(1), int)(partial(split_, "_"))), key=nested_(itemgetter(0), int)(partial(split_, "_"))),
+        self.assertListEqual(sorted(sorted(self.iterable, key=chain_(itemgetter(1), int)(partial(split_, "_"))), key=chain_(itemgetter(0), int)(partial(split_, "_"))),
                              ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
@@ -388,7 +389,7 @@ class TestDecorator06(unittest.TestCase):
                          "2.20170101.13", "1.20160422.02"]
 
     def test_t01(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=nested_(itemgetter(2), int)(partial(split_, "."))), key=nested_(itemgetter(1), int)(partial(split_, "."))), ["2.19841102.13",
+        self.assertListEqual(sorted(sorted(self.iterable, key=chain_(itemgetter(2), int)(partial(split_, "."))), key=chain_(itemgetter(1), int)(partial(split_, "."))), ["2.19841102.13",
                                                                                                                                                                            "2.19990822.13",
                                                                                                                                                                            "2.20000823.13",
                                                                                                                                                                            "2.20021014.13",
@@ -403,8 +404,8 @@ class TestDecorator06(unittest.TestCase):
 
     def test_t02(self):
         self.assertListEqual(
-                sorted(sorted(sorted(self.iterable, key=nested_(itemgetter(2), int)(partial(split_, "."))), key=nested_(itemgetter(1), int)(partial(split_, "."))),
-                       key=nested_(itemgetter(0), int)(partial(split_, "."))),
+                sorted(sorted(sorted(self.iterable, key=chain_(itemgetter(2), int)(partial(split_, "."))), key=chain_(itemgetter(1), int)(partial(split_, "."))),
+                       key=chain_(itemgetter(0), int)(partial(split_, "."))),
                 ["1.20160422.02",
                  "1.20160422.13",
                  "1.20160625.13",
@@ -429,7 +430,7 @@ class TestDecorator07(unittest.TestCase):
                          ("I", "2.19990822.13"), ("K", "2.20021014.13"), ("L", "2.20000823.13"), ("M", "2.20170101.13"), ("N", "1.20160422.02")]
 
     def test_t01(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=nested_(itemgetter(2), int)(split2_)), key=nested_(itemgetter(1), int)(split2_)), [("H", "2.19841102.13"),
+        self.assertListEqual(sorted(sorted(self.iterable, key=chain_(itemgetter(2), int)(split2_)), key=chain_(itemgetter(1), int)(split2_)), [("H", "2.19841102.13"),
                                                                                                                                                  ("I", "2.19990822.13"),
                                                                                                                                                  ("L", "2.20000823.13"),
                                                                                                                                                  ("K", "2.20021014.13"),
@@ -443,7 +444,7 @@ class TestDecorator07(unittest.TestCase):
                                                                                                                                                  ("M", "2.20170101.13")])
 
     def test_t02(self):
-        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=nested_(itemgetter(2), int)(split2_)), key=nested_(itemgetter(1), int)(split2_)), key=nested_(itemgetter(0), int)(split2_)),
+        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=chain_(itemgetter(2), int)(split2_)), key=chain_(itemgetter(1), int)(split2_)), key=chain_(itemgetter(0), int)(split2_)),
                              [("N", "1.20160422.02"),
                               ("E", "1.20160422.13"),
                               ("D", "1.20160625.13"),

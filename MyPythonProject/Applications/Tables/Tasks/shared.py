@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     # Configure logging.
     with open(os.path.join(get_dirname(os.path.abspath(__file__), level=4), "Resources", "logging.yml"), encoding=UTF8) as fp:
-        config = yaml.load(fp)
+        config = yaml.load(fp, Loader=yaml.FullLoader)
     for logger in ["Applications.Tables.Tasks"]:
         with suppress(KeyError):
             config["loggers"][logger]["level"] = LOG_LEVELS[arguments.get("debug", False)].upper()
