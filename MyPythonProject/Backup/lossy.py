@@ -75,7 +75,6 @@ collection = iter(Path(file).parent.parent for file, exist in collection if not 
 collection = chain(*iter([(path.parent, Path(path.name) / "*" / "*?" / f"*.{extension}", TEMPDIR / "/".join(path.parts[1:])) for extension in ["m4a", "mp3"]] for path in set(collection)))
 collection = sorted(collection, key=itemgetter(1))
 collection = sorted(collection, key=itemgetter(0))
-# print(list(collection))
 collection = groupby(collection, key=itemgetter(0))
 
 # -----

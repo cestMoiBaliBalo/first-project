@@ -11,17 +11,12 @@ __status__ = "Production"
 
 # -----
 parser = argparse.ArgumentParser()
-parser.add_argument("--output", type=argparse.FileType(mode="w", encoding="ISO-8859-1"))
 parser.add_argument("--files", action="store_true")
 parser.add_argument("--glob", action="store_true")
 arguments = parser.parse_args()
 
 # -----
 tmpdir = mkdtemp()
-
-# -----
-if arguments.output:
-    arguments.output.write(f"{tmpdir}\n")
 
 # -----
 if arguments.files:
@@ -38,6 +33,10 @@ if arguments.files:
     _, jsontmp = mkstemp(dir=tmpdir)
     print(jsontmp)
 
+    # -----
+    _, tmp = mkstemp(dir=tmpdir)
+    print(tmp)
+
 # -----
 if arguments.glob:
     run(f"SETX _TMPDIR {tmpdir}")
@@ -45,3 +44,4 @@ if arguments.glob:
         run(f"SETX _TMPYML {ymltmp}")
         run(f"SETX _TMPTXT {txttmp}")
         run(f"SETX _TMPJSON {jsontmp}")
+        run(f"SETX _TMPFIL {tmp}")

@@ -22,12 +22,13 @@ SET _myparent=%~dp0
 @REM ==================
 SET _chcp=
 SET _mycp=
+SET _flag=0
 SET _cp=1252
-SET _switch=0
 SET _areca=C:/Program Files/Areca/areca_cl.exe
 SET _dailybkp=%_COMPUTING%\Resources\daily_backup.txt
 SET _exclusions2=%_COMPUTING%\Resources\exclusions2.txt
 SET _exclusions3=%_COMPUTING%\Resources\exclusions3.txt
+SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
 SET _videos=%USERPROFILE%\videos
 SET _xxcopy=xxcopy.cmd
 
@@ -210,8 +211,8 @@ GOTO MAIN
 @REM     -------------------------------------------------------------------------
 @REM     Extra files are deleted.
 :STEP7
-@REM SET switch=
-@REM CALL :GET_SWITCH switch
+@REM SET _switch=
+@REM CALL :GET_SWITCH _flag _switch
 @REM XXCOPY /EC "\\Diskstation\backup\Images\Samsung S5\" "G:\Videos\Samsung S5\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
@@ -405,21 +406,22 @@ EXIT /B 0
 
 
 :GET_SWITCH
-SETLOCAL ENABLEEXTENSIONS
-SET switch=/EC
-IF %_switch% EQU 1 SET switch=/CE
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _flag=!%~1!
+SET _switch=/EC
+IF %_flag% EQU 1 SET _switch=/CE
+IF %_flag% EQU 0 SET _flag=1
 (
     ENDLOCAL
-    IF %_switch% EQU 0 SET _switch=1
-    SET %1=/EC
+    SET %1=%_flag%
+    SET %2=%_switch%
 )
 EXIT /B 0
 
 
 :GET_PREFIX
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _count=!%~1!
-SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
 :LOOP
 (
     SET _prefix=
@@ -429,7 +431,6 @@ SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
 (
     SET _count=
     SET _prefix=
-    SET _prefixes=
     ENDLOCAL
     SET %1=%_count%
     SET %2=%_prefix%

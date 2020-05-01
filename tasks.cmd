@@ -56,7 +56,9 @@ REM Sync PDF documents to local CloudStation.
 REM -----------------------------------------
 IF ERRORLEVEL 36 (
     CLS
-    CALL %_COMPUTING%\start.cmd 9
+    PUSHD %_myparent%
+    CALL start.cmd 9
+    POPD
     GOTO MENU
 )
 
@@ -225,11 +227,15 @@ IF ERRORLEVEL 27 (
 )
 
 
-REM ---------------
-REM I am available.
-REM ---------------
-IF ERRORLEVEL 24 (
+REM ----------------------------------------------
+REM Copy single lossy audio files to backup drive.
+REM ----------------------------------------------
+REM Both M4A and MP3 without lossless version (iTunes, amazon, etc).
+IF ERRORLEVEL 26 (
     CLS
+    PUSHD %_myparent%
+    CALL lossy.cmd P
+    POPD
     GOTO MENU
 )
 
@@ -382,7 +388,7 @@ REM Sync MyCloud audio files.
 REM -------------------------
 IF ERRORLEVEL 17 (
     CLS
-    PUSHD %TEMP% 
+    PUSHD %TEMP%
     DEL %_xxcopy% 2> NUL
     python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py" --repository MyCloud
     IF NOT ERRORLEVEL 1 CALL :CONFIRM
@@ -396,7 +402,7 @@ REM Sync mobile devices from local audio repositories.
 REM --------------------------------------------------
 IF ERRORLEVEL 16 (
     CLS
-    PUSHD %TEMP% 
+    PUSHD %TEMP%
     DEL %_xxcopy% 2> NUL
     python "%_PYTHONPROJECT%\Interfaces\Sources\02\main.py"
     IF ERRORLEVEL 1 (
@@ -419,7 +425,7 @@ REM Sync local audio repositories.
 REM ------------------------------
 IF ERRORLEVEL 13 (
     CLS
-    PUSHD %TEMP% 
+    PUSHD %TEMP%
     DEL %_xxcopy% 2> NUL
     python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py"
     IF NOT ERRORLEVEL 1 CALL :CONFIRM
@@ -857,13 +863,13 @@ SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 :R05_STEP5
 (
     POPD
+    SET _ko=
     SET _ok=
     SET _exit=
     SET _name=
     SET _venv=
     SET _index=
     SET _answer=
-    SET _ko=
     ENDLOCAL
     SET %1=%_venv%
     SET %2=%_name%
