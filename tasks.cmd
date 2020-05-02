@@ -7,7 +7,7 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 REM ==================
@@ -78,13 +78,12 @@ REM --------------------------
 REM Sync targets repositories.
 REM --------------------------
 IF ERRORLEVEL 34 (
-    SET _path=!PATH!
+    SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD %_PYTHONPROJECT%\Backup
-    python targets.py
+    python targets.py %_BACKUP%\workspace.music
     POPD
-    SET PATH=!_path!
-    SET _path=
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -451,21 +450,21 @@ REM -------------------------------
 REM List python installed packages.
 REM -------------------------------
 IF ERRORLEVEL 11 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
     CALL :GET_VIRTUALENV _venv _name 0
-    IF ERRORLEVEL 100 GOTO MENU
+    IF ERRORLEVEL 100 (
+        ENDLOCAL
+        GOTO MENU
+    )
     CLS
-    SET _path=!PATH!
     SET PATH=!_venv!;!PATH!
     pip list
-    SET PATH=!_path!
-    SET _name=
-    SET _path=
-    SET _venv=
     ECHO:
     ECHO:
     PAUSE
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -474,21 +473,21 @@ REM ------------------------------
 REM List Python outdated packages.
 REM ------------------------------
 IF ERRORLEVEL 10 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
     CALL :GET_VIRTUALENV _venv _name 0
-    IF ERRORLEVEL 100 GOTO MENU
+    IF ERRORLEVEL 100 (
+        ENDLOCAL
+        GOTO MENU
+    )
     CLS
-    SET _path=!PATH!
     SET PATH=!_venv!;!PATH!
     pip list -o
-    SET PATH=!_path!
-    SET _name=
-    SET _path=
-    SET _venv=
     ECHO:
     ECHO:
     PAUSE
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -497,21 +496,21 @@ REM ------------
 REM Upgrade pip.
 REM ------------
 IF ERRORLEVEL 9 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
     CALL :GET_VIRTUALENV _venv _name 0
-    IF ERRORLEVEL 100 GOTO MENU
+    IF ERRORLEVEL 100 (
+        ENDLOCAL
+        GOTO MENU
+    )
     CLS
-    SET _path=!PATH!
     SET PATH=!_venv!;!PATH!
     python -m pip install --upgrade pip
-    SET PATH=!_path!
-    SET _name=
-    SET _path=
-    SET _venv=
     ECHO:
     ECHO:
     PAUSE
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -645,10 +644,15 @@ POPD
 EXIT /B 0
 
 
+REM ===================
+REM BACKUP AUDIO FILES.
+REM ===================
+REM Check at first if backup is required then backup if confirmed by user interface.
 :BACKUP
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _arguments=
 SET _output=%TEMP%\backup.txt
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 
 REM -----
 DEL %_output% 2> NUL
@@ -689,11 +693,9 @@ REM    Check if backup is required.
 IF NOT EXIST %_output% GOTO STEP4
 
 REM ----- B.1. Define 3.8 as python interpreter.
-SET _path=%PATH%
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 ECHO: PATH is composed of the following directories.
 ECHO:
-CALL :GET_PATHS "%PATH%"
+CALL :GET_PATHS "!PATH!"
 ECHO:
 ECHO:
 PAUSE
@@ -709,28 +711,26 @@ IF ERRORLEVEL 100 (
     ECHO:
     ECHO:
     PAUSE
-    CLS
     GOTO STEP3
 )
 
 REM ----- B.4. Backup is required.
 ECHO:
 CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? Press [Y] for Yes or [N] for No. "
+CLS
 
 REM ----- Backup is aborted.
 IF ERRORLEVEL 2 (
-    CLS
+    POPD
     GOTO STEP3
 )
 
 REM ----- B.5. Backup is run.
-CLS
 ECHO The following backup command will be run: python main.py -c music%_arguments%
 ECHO:
 CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? Press [Y] for Yes or [N] for No. "
 IF ERRORLEVEL 2 (
     POPD
-    CLS
     GOTO STEP3
 )
 python main.py -c music%_arguments%
@@ -741,38 +741,43 @@ PAUSE
 ECHO:
 ECHO:
 
-REM    ---------------
-REM C. End of routine.
-REM    ---------------
+REM    ----------------
+REM C. End of function.
+REM    ----------------
 
 REM -----
 :STEP3
-SET PATH=%_path%
-SET _path=
-ECHO: PATH is now composed of the following folders.
-ECHO:
-CALL :GET_PATHS "%PATH%"
-ECHO:
-ECHO:
-PAUSE
 CLS
+POPD
+(
+    ENDLOCAL
+    ECHO: PATH is now composed of the following folders.
+    ECHO:
+    CALL :GET_PATHS "!PATH!"
+    ECHO:
+    ECHO:
+    PAUSE
+    CLS
+    EXIT /B 0
+)
 
 REM -----
 :STEP4
-SET _arguments=
-SET _environment=
-SET _output=
-SET _path=
-SET _regex=
-SET _target=
+CLS
 POPD
-ENDLOCAL
-EXIT /B 0
+(
+    ENDLOCAL
+    ECHO:
+    ECHO:
+    PAUSE
+    CLS
+    EXIT /B 0
+)
 
 
-REM -------------------------------------
-REM Get the list of paths composing PATH.
-REM -------------------------------------
+REM =====================================
+REM GET THE LIST OF PATHS COMPOSING PATH.
+REM =====================================
 :GET_PATHS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _index=0
@@ -791,12 +796,15 @@ ENDLOCAL
 EXIT /B 0
 
 
-REM -----------------------------------------------
-REM Get the list of available virtual environments.
-REM -----------------------------------------------
+REM ===============================================
+REM GET THE LIST OF AVAILABLE VIRTUAL ENVIRONMENTS.
+REM ===============================================
 :GET_VIRTUALENV
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _index=0
 SET _exit=0
+SET _name=0
+SET _venv=0
 PUSHD %_PYTHONPROJECT%\VirtualEnv
 
 :R05_STEP1
@@ -819,7 +827,6 @@ IF %~3 EQU 0 (
     ECHO:  !_index!. Default environment.
     SET _dir01=%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts
 )
-IF %~3 EQU 1 SET _index=0
 
 REM -----
 FOR /F "usebackq tokens=*" %%A IN (`DIR /B /AD /ON`) DO (
@@ -861,15 +868,8 @@ IF %_answer% LEQ 9 SET _name=!_dir0%_answer%!
 SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 
 :R05_STEP5
+POPD
 (
-    POPD
-    SET _ko=
-    SET _ok=
-    SET _exit=
-    SET _name=
-    SET _venv=
-    SET _index=
-    SET _answer=
     ENDLOCAL
     SET %1=%_venv%
     SET %2=%_name%

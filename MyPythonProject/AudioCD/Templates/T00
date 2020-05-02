@@ -1,6 +1,6 @@
 @ECHO off
 CLS
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _mycp=
 SET _cp=1252
 SET _errorlevel=0
@@ -29,5 +29,8 @@ IF DEFINED _mycp (
     ECHO:
     ECHO Code page is now %_mycp%.
 )
-ENDLOCAL
-EXIT /B %_errorlevel%
+(
+    SET _errorlevel=
+    ENDLOCAL
+    EXIT /B %_errorlevel%
+)

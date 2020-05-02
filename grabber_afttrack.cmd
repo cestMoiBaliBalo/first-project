@@ -7,7 +7,7 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 REM ==================
@@ -46,15 +46,10 @@ SHIFT /2
 GOTO MAIN
 
 
-REM        -------------------------------------
-REM  1 --> Prepare XReferences database syncing.
-REM        -------------------------------------
+REM        ----------
+REM  1 --> Available.
+REM        ----------
 :STEP1
-REM FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-REM PUSHD %_parent%
-REM python Dump_XReferences.py "%~1"
-REM POPD
-REM SET _parent=
 SHIFT /2 
 GOTO MAIN
 
@@ -63,20 +58,20 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-REM PUSHD %_grabber%
-REM python RippedTracks.py "%~1"
-REM POPD
+SETLOCAL
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+PUSHD %_grabber%
+python RippedTracks.py "%~1"
+POPD
+ENDLOCAL
 SHIFT /2
 GOTO MAIN
 
 
-REM        ----------------
-REM  3 --> Log input track.
-REM        ----------------
+REM        ----------
+REM  3 --> Available.
+REM        ----------
 :STEP3
-REM PUSHD %TEMP%
-REM ECHO "%~1">> cdgrabber.txt
-REM POPD
 SHIFT /2
 GOTO MAIN
 
@@ -85,13 +80,15 @@ REM        ------------
 REM  4 --> Exit script.
 REM        ------------
 :THE_END
-IF DEFINED _mycp CHCP %_mycp% > NUL
-SET _cp=
-SET _chcp=
-SET _errorlevel=
-SET _grabber=
-SET _me=
-SET _mycp=
-SET _myparent=
-ENDLOCAL
-EXIT /B %_errorlevel%
+(
+    SET _cp=
+    SET _me=
+    SET _chcp=
+    SET _mycp=
+    SET _grabber=
+    SET _myparent=
+    SET _errorlevel=
+    IF DEFINED _mycp CHCP %_mycp% > NUL
+    ENDLOCAL
+    EXIT /B %_errorlevel%
+)

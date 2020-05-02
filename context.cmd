@@ -42,10 +42,8 @@ FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN 
 IF DEFINED _chcp ECHO Code page is %_chcp%.
 
 
-CLS
-
-
 :MAIN
+CLS
 IF "%~1" EQU "" GOTO THE_END
 IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
@@ -68,27 +66,28 @@ GOTO MAIN
 
 
 :STEP3
-PUSHD %_PYTHONPROJECT%
-SET _path=%PATH%
+SETLOCAL ENABLEEXTENSIONS
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_PYTHONPROJECT%
 python walk.py "%~2"
-SET PATH=%_path%
-SET _path=
 POPD
+ENDLOCAL
+ECHO:
+ECHO:
+PAUSE
 SHIFT
 SHIFT
 GOTO MAIN
 
 
 :STEP4
+SETLOCAL ENABLEEXTENSIONS
+SET _targetid=
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 
 :STEP4A
 PUSHD %_PYTHONPROJECT%\Backup
-SET _targetid=
-SET _path=%PATH%
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 python target.py "%~2"
-SET PATH=%_path%
 IF EXIST %_TMPTXT% FOR /F "usebackq delims=|" %%A IN ("%_TMPTXT%") DO SET _targetid=%%A
 IF DEFINED _targetid (
     PUSHD C:\Program Files\Areca
@@ -99,16 +98,12 @@ IF DEFINED _targetid (
 :STEP4B
 FOR /F "usebackq" %%A IN ('%_TMPTXT%') DO RMDIR %%~dpA /S /Q 2> NUL
 PUSHD ..
-SET _path=%PATH%
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 python temporaryenv.py > NUL
-SET PATH=%_path%
 POPD
 
 :STEP4C
-SET _path=
-SET _targetid=
 POPD
+ENDLOCAL
 ECHO:
 ECHO:
 PAUSE
@@ -125,13 +120,10 @@ GOTO MAIN
 
 :THE_END
 IF DEFINED _mycp CHCP %_mycp% > NUL
-SET _chcp=
 SET _cp=
 SET _me=
+SET _chcp=
 SET _mycp=
 SET _myparent=
 ENDLOCAL
-ECHO:
-ECHO:
-PAUSE
 EXIT /B 0

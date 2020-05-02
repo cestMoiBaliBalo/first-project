@@ -74,14 +74,14 @@ TEMPLATES = {(_MYPARENT / "AudioCD" / "Templates", "T00a"): [0, 0, 1, 1],
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser()
-parser.add_argument("path", action=GetPath)
-parser.add_argument("--encoding", const=UTF8, nargs="?")
+parser.add_argument("--collection", default=Path(os.path.expandvars("%TEMP%")) / "tmp6k11k3_f" / "tmp3qgkq_z9", nargs="?", action=GetPath)
+parser.add_argument("--encoding", default=UTF8, nargs="?")
 arguments = parser.parse_args()
 
 # ============
 # Main script.
 # ============
-with open(arguments.path, encoding=arguments.encoding, newline="") as fr:
+with open(arguments.collection, encoding=arguments.encoding, newline="") as fr:
     collection = csv.reader(fr, dialect=CustomDialect())  # type: Any
     collection = sorted(collection, key=get_name)
     collection = sorted(collection, key=get_parent)
@@ -90,7 +90,7 @@ with open(arguments.path, encoding=arguments.encoding, newline="") as fr:
     for key, group in groupby(collection, key=itemgetter(0)):
         template = TemplatingEnvironment(key)
         for sub_key, sub_group in groupby(group, key=itemgetter(1)):
-            with open(RESOURCES / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
+            with open(Path(os.path.expandvars("%TEMP%")) / "tmp6k11k3_f" / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
                 files = iter(tuple(compress(item, TEMPLATES.get((Path(key), sub_key)))) for item in sub_group)  # type: Any
                 files = iter(tuple(break_(file)) for file in files)
                 files = groupby(files, key=itemgetter(0))

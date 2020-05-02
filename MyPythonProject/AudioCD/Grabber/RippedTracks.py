@@ -61,7 +61,7 @@ arguments = parser.parse_args()
 # Get output file.
 output = arguments.output
 if not arguments.output:
-    output = open(_MYPARENT.parents[2] / "Resources" / "rippedtracks.txt", mode=APPEND, encoding=UTF8)
+    output = open(Path(os.path.expandvars("%TEMP%")) / "tmp6k11k3_f" / "tmp3qgkq_z9", mode=APPEND, encoding=UTF8)
 
 # Process digital audio file.
 for path in arguments.path:

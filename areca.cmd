@@ -7,7 +7,7 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 REM ==================

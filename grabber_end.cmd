@@ -7,7 +7,7 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 REM ==================
@@ -56,33 +56,23 @@ REM  1 --> Append ripped tracks to digital audio database.
 REM        -----------------------------------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    SET _path=%PATH%
-    SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;!PATH!
     FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
     PUSHD !_parent!
     python Insert_Albums.py "%_jsontags%"
     POPD
-    SET path=%_path%
-    SET _path=
-    SET _parent=
+    ENDLOCAL
     DEL "%_jsontags%" 2>NUL
 )
 SHIFT
 GOTO MAIN
 
 
-REM        ---------------------------------------------
-REM  2 --> Append ripped tracks to XReferences database.
-REM        ---------------------------------------------
+REM        ----------
+REM  2 --> Available.
+REM        ----------
 :STEP2
-REM IF EXIST "%_jsonxreferences%" (
-REM     FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-REM     PUSHD !_parent!
-REM     python Insert_XReferences.py "%_jsonxreferences%"
-REM     POPD
-REM     SET _parent=
-REM     DEL "%_jsonxreferences%" 2>NUL
-REM )
 SHIFT
 GOTO MAIN
 
@@ -91,26 +81,20 @@ REM        ------------------------------
 REM  3 --> Update ripped discs dashboard.
 REM        ------------------------------
 :STEP3
-SET _path=%PATH%
-SET path=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+SETLOCAL
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
 PUSHD %_grabber%
 python RippedDiscs.py
 POPD
-SET path=%_path%
-SET _path=
+ENDLOCAL
 SHIFT
 GOTO MAIN
 
 
-REM        ----------------------------
-REM  4 --> Prepare NAS Syncing. Step 2.
-REM        ----------------------------
+REM        ----------
+REM  4 --> Available.
+REM        ----------
 :STEP4
-REM IF EXIST %_txtfiles% (
-REM     PUSHD %_grabber%
-REM     python RippedTracks2NAS.py
-REM     POPD
-REM )
 SHIFT
 GOTO MAIN
 
@@ -130,17 +114,19 @@ REM        ------------
 REM  6 --> Exit script.
 REM        ------------
 :THE_END
-IF DEFINED _mycp CHCP %_mycp% > NUL
-SET _chcp=
-SET _cp=
-SET _errorlevel=
-SET _grabber=
-SET _jsontags=
-SET _jsonxreferences=
-SET _me=
-SET _mycp=
-SET _myparent=
-SET _path=
-SET _txtfiles=
-ENDLOCAL
-EXIT /B %_errorlevel%
+(
+    SET _cp=
+    SET _me=
+    SET _chcp=
+    SET _mycp=
+    SET _path=
+    SET _grabber=
+    SET _jsontags=
+    SET _myparent=
+    SET _txtfiles=
+    SET _errorlevel=
+    SET _jsonxreferences=
+    IF DEFINED _mycp CHCP %_mycp% > NUL
+    ENDLOCAL
+    EXIT /B %_errorlevel%
+)

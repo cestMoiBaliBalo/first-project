@@ -99,19 +99,18 @@ GOTO MAIN
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp6k11k3_f\ /oA:%_XXCOPYLOG%
 
 
 @REM      ----------------------------------------
 @REM  3b. Then set up a new temporary environment.
 @REM      ----------------------------------------
-PUSHD %_PYTHONPROJECT%
-SET _path=%PATH%
+SETLOCAL
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_PYTHONPROJECT%
 python temporaryenv.py --files --glob > NUL
-SET PATH=%_path%
-SET _path=
 POPD
+ENDLOCAL
 SHIFT
 GOTO MAIN
 
