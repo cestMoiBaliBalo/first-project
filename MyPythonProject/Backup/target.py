@@ -39,6 +39,7 @@ class GetPath(argparse.Action):
 # =================
 parser = argparse.ArgumentParser()
 parser.add_argument("path", action=GetPath)
+parser.add_argument("output", type=argparse.FileType(mode=WRITE, encoding="ISO-8859-1"))
 arguments = parser.parse_args()
 
 # ============
@@ -50,12 +51,9 @@ drive = f"{arguments.path.drive}/"
 
 # -----
 mapping = {}  # type: Mapping[str, Tuple[str, str]]
-stack = ExitStack()
-rea_stream = stack.enter_context(open(_MYPARENT / "targets.yml", encoding="UTF_8"))
-wrt_stream = stack.enter_context(open(os.path.expandvars("%_TMPTXT%"), mode=WRITE, encoding="ISO-8859-1"))
-with stack:
-    mappings = yaml.load(rea_stream, Loader=yaml.FullLoader)
+with open(_MYPARENT / "targets.yml", encoding="UTF_8") as stream:
+    mappings = yaml.load(stream, Loader=yaml.FullLoader)
     if mappings:
         target = mappings.get(arguments.path.relative_to(drive).parts[0].upper())
         if target:
-            wrt_stream.write("{0}\n".format("|".join(target)))
+            arguments.output.write("{0}\n".format("|".join(target)))

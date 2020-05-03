@@ -20,17 +20,18 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
-SET _mycp=
 SET _cp=1252
 
 
 REM ===============
 REM Main algorithm.
 REM ===============
+PUSHD %_COMPUTING%
 
 REM Set code page.
 SET _chcp=
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
@@ -38,8 +39,11 @@ IF DEFINED _chcp (
 
 REM Get code page.
 SET _chcp=
-FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp ECHO Code page is %_chcp%.
+
+POPD
 
 
 :MAIN
@@ -66,7 +70,7 @@ GOTO MAIN
 
 
 :STEP3
-SETLOCAL ENABLEEXTENSIONS
+SETLOCAL
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 PUSHD %_PYTHONPROJECT%
 python walk.py "%~2"
@@ -82,27 +86,42 @@ GOTO MAIN
 
 :STEP4
 SETLOCAL ENABLEEXTENSIONS
+SET _index=0
 SET _targetid=
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
 
 :STEP4A
-PUSHD %_PYTHONPROJECT%\Backup
-python target.py "%~2"
-IF EXIST %_TMPTXT% FOR /F "usebackq delims=|" %%A IN ("%_TMPTXT%") DO SET _targetid=%%A
+PUSHD %_PYTHONPROJECT%
+
+REM -----
+FOR /F "usebackq tokens=*" %%A IN (`python temporaryenv.py dir -f`) DO (
+    IF !_index! EQU 0 SET _tempdir=%%A
+    IF !_index! EQU 1 SET _tempfil=%%A
+    SET /A "_index+=1"
+)
+
+REM -----
+IF DEFINED _tempfil IF EXIST %_tempfil% (
+    PUSHD Backup
+    python target.py "%~2" %_tempfil%
+    POPD
+    FOR /F "usebackq delims=|" %%A IN ("%_tempfil%") DO SET _targetid=%%A
+)
+
+REM -----
+POPD
+
+REM -----
 IF DEFINED _targetid (
-    PUSHD C:\Program Files\Areca
+    PUSHD %PROGRAMFILES%\Areca
     areca_cl.exe backup -f -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%\workspace.music\%_targetid%.bcfg"
     POPD
 )
 
 :STEP4B
-FOR /F "usebackq" %%A IN ('%_TMPTXT%') DO RMDIR %%~dpA /S /Q 2> NUL
-PUSHD ..
-python temporaryenv.py > NUL
-POPD
+IF DEFINED _tempdir IF EXIST %_tempdir% RMDIR %_tempdir% /S /Q 2> NUL
 
 :STEP4C
-POPD
 ENDLOCAL
 ECHO:
 ECHO:
@@ -120,10 +139,5 @@ GOTO MAIN
 
 :THE_END
 IF DEFINED _mycp CHCP %_mycp% > NUL
-SET _cp=
-SET _me=
-SET _chcp=
-SET _mycp=
-SET _myparent=
 ENDLOCAL
 EXIT /B 0

@@ -21,9 +21,9 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
-SET _cp=1252
 SET _local_avchd=G:\Videos\AVCHD Videos
 SET _xxcopy=xxcopy.cmd
+SET _cp=1252
 
 
 REM ============
@@ -453,7 +453,7 @@ IF ERRORLEVEL 11 (
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
-    CALL :GET_VIRTUALENV _venv _name 0
+    CALL :GET_VIRTUALENV 0
     IF ERRORLEVEL 100 (
         ENDLOCAL
         GOTO MENU
@@ -476,7 +476,7 @@ IF ERRORLEVEL 10 (
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
-    CALL :GET_VIRTUALENV _venv _name 0
+    CALL :GET_VIRTUALENV 0
     IF ERRORLEVEL 100 (
         ENDLOCAL
         GOTO MENU
@@ -499,7 +499,7 @@ IF ERRORLEVEL 9 (
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
-    CALL :GET_VIRTUALENV _venv _name 0
+    CALL :GET_VIRTUALENV 0
     IF ERRORLEVEL 100 (
         ENDLOCAL
         GOTO MENU
@@ -523,7 +523,7 @@ IF ERRORLEVEL 8 (
 :STEP8A
     SET _name=
     SET _venv=
-    CALL :GET_VIRTUALENV _venv _name 1
+    CALL :GET_VIRTUALENV 1
     IF ERRORLEVEL 100 GOTO STEP8B
     CLS
     CALL "%_COMPUTING%\environment.cmd" A !_name!
@@ -695,7 +695,7 @@ IF NOT EXIST %_output% GOTO STEP4
 REM ----- B.1. Define 3.8 as python interpreter.
 ECHO: PATH is composed of the following directories.
 ECHO:
-CALL :GET_PATHS "!PATH!"
+CALL :GET_PATHS
 ECHO:
 ECHO:
 PAUSE
@@ -753,7 +753,7 @@ POPD
     ENDLOCAL
     ECHO: PATH is now composed of the following folders.
     ECHO:
-    CALL :GET_PATHS "!PATH!"
+    CALL :GET_PATHS
     ECHO:
     ECHO:
     PAUSE
@@ -781,7 +781,7 @@ REM =====================================
 :GET_PATHS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _index=0
-SET _path=%~1
+SET _path=%PATH%
 :R04_LOOP
 FOR /F "usebackq tokens=1* delims=;" %%A IN ('!_path!') DO (
     SET /A "_index+=1"
@@ -791,7 +791,6 @@ FOR /F "usebackq tokens=1* delims=;" %%A IN ('!_path!') DO (
     SET _path=%%B
     GOTO R04_LOOP
 )
-SET _path=
 ENDLOCAL
 EXIT /B 0
 
@@ -803,26 +802,26 @@ REM ===============================================
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _index=0
 SET _exit=0
-SET _name=0
-SET _venv=0
+SET _name=
+SET _venv=
 PUSHD %_PYTHONPROJECT%\VirtualEnv
 
 :R05_STEP1
 CLS
 
 REM -----
-IF %~3 EQU 0 (
+IF %~1 EQU 0 (
     ECHO:
     ECHO Available (virtual^) environment(s^):
     ECHO:
 )
-IF %~3 EQU 1 (
+IF %~1 EQU 1 (
     ECHO:
     ECHO Available virtual environment(s^):
     ECHO:
 )
 REM -----
-IF %~3 EQU 0 (
+IF %~1 EQU 0 (
     SET _index=1
     ECHO:  !_index!. Default environment.
     SET _dir01=%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts
@@ -871,8 +870,8 @@ SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 POPD
 (
     ENDLOCAL
-    SET %1=%_venv%
-    SET %2=%_name%
+    SET _name=%_name%
+    SET _venv=%_venv%
     EXIT /B %_exit%
 )
 
