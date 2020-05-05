@@ -1,10 +1,17 @@
 {% extends "T00" %}
 {% block body %}
 
-REM Initialize variables.
+
+REM ========================
+REM D. Initialize variables.
+REM ========================
+SETLOCAL ENABLEEXTENSIONS
 SET _step=0
 
-REM Run script.
+
+REM    ===========
+REM E. Run script.
+REM    ===========
 :MAIN
 IF [%~1] EQU [] GOTO THE_END
 IF [%~1] EQU [0] SET /A "_step+=1"
@@ -37,7 +44,10 @@ IF %_step% EQU {{ loop.index }} (
 )
     {% endfor %}
 
-REM Exit script.
+
+REM    ============
+REM E. Exit script.
+REM    ============
 :THE_END
 IF EXIST z: (
     ECHO:
@@ -45,7 +55,7 @@ IF EXIST z: (
     XXCOPY /EC {{ tempdir }}\ z:\Z123456792\ /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
-    XXCOPY.EXE /CE {{ tempdir }}\ /RSY /S /ED0 /PD0 /oA:%_XXCOPYLOG%
+    XXCOPY.EXE /CE {{ tempdir }}\ /RSY /S /ED1 /PD0 /oA:%_XXCOPYLOG%
 )
-SET _step=
+ENDLOCAL
 {% endblock  %}

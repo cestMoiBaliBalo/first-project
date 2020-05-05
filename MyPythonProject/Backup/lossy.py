@@ -5,13 +5,14 @@ import csv
 import locale
 import os
 import re
-from itertools import chain, compress, groupby, tee
+from itertools import chain, compress, groupby, tee, filterfalse
 from operator import itemgetter
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, Iterator, Tuple
 
 from Applications.shared import CustomDialect, TemplatingEnvironment, UTF8, WRITE
+from Applications.callables import match_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -50,12 +51,14 @@ arguments = parser.parse_args()
 # ============
 # Main script.
 # ============
-REGEX = re.compile(r"\b(0[1-9])(\.D[1-9]\.T(?:0[1-9]|[1-5]\d)\.([A-Z0-9]{3,4}))", re.IGNORECASE)
-TEMPDIR = Path(mkdtemp())
+REGEX1 = re.compile(r"\b(0[1-9])(\.D[1-9]\.T(?:0[1-9]|[1-5]\d)\.([A-Z0-9]{3,4}))", re.IGNORECASE)
+REGEX2 = re.compile(r"\bRECYCLE\b", re.IGNORECASE)
+TEMPDIR = Path(os.path.expandvars("%_TMPDIR%"))
 
 # -----
-collection = csv.reader(arguments.collection, dialect=CustomDialect)
-collection = chain(*iter(tuple(compress(item, [0, 0, 1, 0, 0])) for item in collection))  # type: Any
+collection = csv.reader(arguments.collection, dialect=CustomDialect)  # type: Any
+collection = chain(*iter(tuple(compress(item, [0, 0, 1, 0, 0])) for item in collection))
+collection = filterfalse(match_(REGEX2.search), collection)
 
 # -----
 it1, it2, it3 = tee(collection, 3)
@@ -65,7 +68,7 @@ flac = iter((file, Path(file).parent.parent / "1.Free Lossless Audio Codec" / f"
 
 # -----
 collection = chain.from_iterable([ape, dsf, flac])  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
-collection = iter((file, Path(REGEX.sub(sub_, str(path)))) for file, path in collection)  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
+collection = iter((file, Path(REGEX1.sub(sub_, str(path)))) for file, path in collection)  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
 collection = iter((file, path.exists()) for file, path in collection)  # (file1.m4a, False), (file1.m4a, False), (file1.m4a, True), ...
 collection = sorted(collection, key=itemgetter(1))
 collection = sorted(collection, key=itemgetter(0))

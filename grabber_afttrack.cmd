@@ -7,30 +7,35 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
+CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
 
 
-REM ==================
-REM Initializations 1.
-REM ==================
+REM    ==================
+REM A. Initializations 1.
+REM    ==================
 SET _me=%~n0
 SET _myparent=%~dp0
 
 
-REM ==================
-REM Initializations 2.
-REM ==================
-SET _mycp=
+REM    ==================
+REM B. Initializations 2.
+REM    ==================
 SET _cp=1252
 SET _errorlevel=0
 SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 
 
-REM ============
-REM Main script.
-REM ============
+REM    ============
+REM C. Main script.
+REM    ============
+
+:CODEPAGE
 SET _chcp=
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+SET _mycp=
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
@@ -58,12 +63,9 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-SETLOCAL
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
 PUSHD %_grabber%
 python RippedTracks.py "%~1"
 POPD
-ENDLOCAL
 SHIFT /2
 GOTO MAIN
 
@@ -90,5 +92,6 @@ REM        ------------
     SET _errorlevel=
     IF DEFINED _mycp CHCP %_mycp% > NUL
     ENDLOCAL
+    CLS
     EXIT /B %_errorlevel%
 )

@@ -7,7 +7,9 @@ REM __email__ = 'xavier.python.computing@protonmail.com'
 REM __status__ = "Production"
 
 
+CLS
 SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+PUSHD %_COMPUTING%
 
 
 REM ==================
@@ -26,7 +28,6 @@ SET _cp=1252
 REM ===============
 REM Main algorithm.
 REM ===============
-PUSHD %_COMPUTING%
 
 REM Set code page.
 SET _chcp=
@@ -43,8 +44,6 @@ SET _step=1
 CALL shared.cmd
 IF DEFINED _chcp ECHO Code page is %_chcp%.
 
-POPD
-
 
 :MAIN
 CLS
@@ -53,7 +52,6 @@ IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
 IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
-IF "%~1" EQU "5" GOTO STEP5
 
 
 :STEP1
@@ -89,9 +87,9 @@ SETLOCAL ENABLEEXTENSIONS
 SET _index=0
 SET _targetid=
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_PYTHONPROJECT%
 
 :STEP4A
-PUSHD %_PYTHONPROJECT%
 
 REM -----
 FOR /F "usebackq tokens=*" %%A IN (`python temporaryenv.py dir -f`) DO (
@@ -109,9 +107,6 @@ IF DEFINED _tempfil IF EXIST %_tempfil% (
 )
 
 REM -----
-POPD
-
-REM -----
 IF DEFINED _targetid (
     PUSHD %PROGRAMFILES%\Areca
     areca_cl.exe backup -f -c -wdir "%TEMP%\tmp-Xavier" -config "%_BACKUP%\workspace.music\%_targetid%.bcfg"
@@ -122,16 +117,11 @@ IF DEFINED _targetid (
 IF DEFINED _tempdir IF EXIST %_tempdir% RMDIR %_tempdir% /S /Q 2> NUL
 
 :STEP4C
-ENDLOCAL
 ECHO:
 ECHO:
 PAUSE
-SHIFT
-SHIFT
-GOTO MAIN
-
-
-:STEP5
+POPD
+ENDLOCAL
 SHIFT
 SHIFT
 GOTO MAIN
@@ -139,5 +129,7 @@ GOTO MAIN
 
 :THE_END
 IF DEFINED _mycp CHCP %_mycp% > NUL
+POPD
 ENDLOCAL
+CLS
 EXIT /B 0
