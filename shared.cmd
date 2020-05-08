@@ -52,6 +52,19 @@ IF %_step% EQU 3 (
 )
 
 REM -----
+IF %_step% EQU 4 CALL :CHECK_TASK
+IF %_step% EQU 4 (
+    ENDLOCAL
+    SET _errorlevel=%_errorlevel%
+)
+
+REM -----
+IF %_step% EQU 5 CALL :UPDATE_TASK
+IF %_step% EQU 5 (
+    ENDLOCAL
+    SET _errorlevel=%_errorlevel%
+)
+REM -----
 EXIT /B 0
 
 
@@ -91,5 +104,27 @@ IF %_flag% EQU 0 SET _flag=1
     ENDLOCAL
     SET _flag=%_flag%
     SET _switch=%_switch%
+)
+EXIT /B 0
+
+
+:CHECK_TASK
+SETLOCAL
+python -m Applications.Tables.Tasks.shared %_taskid% check --delta %_delta%
+SET _errorlevel=%ERRORLEVEL%
+(
+    ENDLOCAL
+    SET _errorlevel=%_errorlevel%
+)
+EXIT /B 0
+
+
+:UPDATE_TASK
+SETLOCAL
+python -m Applications.Tables.Tasks.shared %_taskid% update
+SET _errorlevel=%ERRORLEVEL%
+(
+    ENDLOCAL
+    SET _errorlevel=%_errorlevel%
 )
 EXIT /B 0

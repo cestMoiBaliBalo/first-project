@@ -8,7 +8,7 @@ REM __status__ = "Production"
 
 
 CLS
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 PUSHD %_COMPUTING%
 
 
@@ -46,7 +46,7 @@ IF DEFINED _chcp ECHO Code page is %_chcp%.
 
 
 :MAIN
-CLS
+REM CLS
 IF "%~1" EQU "" GOTO THE_END
 IF "%~1" EQU "1" GOTO STEP1
 IF "%~1" EQU "2" GOTO STEP2
@@ -83,27 +83,16 @@ GOTO MAIN
 
 
 :STEP4
-SETLOCAL ENABLEEXTENSIONS
-SET _index=0
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _first=1
 SET _targetid=
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_PYTHONPROJECT%
-
-:STEP4A
+PUSHD %_PYTHONPROJECT%\Backup
 
 REM -----
-FOR /F "usebackq tokens=*" %%A IN (`python temporaryenv.py dir -f`) DO (
-    IF !_index! EQU 0 SET _tempdir=%%A
-    IF !_index! EQU 1 SET _tempfil=%%A
-    SET /A "_index+=1"
-)
-
-REM -----
-IF DEFINED _tempfil IF EXIST %_tempfil% (
-    PUSHD Backup
-    python target.py "%~2" %_tempfil%
-    POPD
-    FOR /F "usebackq delims=|" %%A IN ("%_tempfil%") DO SET _targetid=%%A
+FOR /F "usebackq" %%A IN (`python target.py "%~2"`) DO (
+    IF !_first! EQU 1 SET _targetid=%%A
+    SET _first=0
 )
 
 REM -----
@@ -113,10 +102,6 @@ IF DEFINED _targetid (
     POPD
 )
 
-:STEP4B
-IF DEFINED _tempdir IF EXIST %_tempdir% RMDIR %_tempdir% /S /Q 2> NUL
-
-:STEP4C
 ECHO:
 ECHO:
 PAUSE
