@@ -74,7 +74,6 @@ IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
 IF "%~1" EQU "5" GOTO STEP5
 IF "%~1" EQU "6" GOTO STEP6
-IF "%~1" EQU "7" GOTO STEP7
 IF "%~1" EQU "9" GOTO STEP9
 IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
@@ -82,7 +81,6 @@ IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "23" GOTO STEP23
-IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
 IF "%~1" EQU "26" GOTO STEP26
 SHIFT
@@ -214,16 +212,6 @@ SHIFT
 GOTO MAIN
 
 
-@REM     -------------------------------------------------------------------------
-@REM  9. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
-@REM     -------------------------------------------------------------------------
-@REM     Extra files are deleted.
-:STEP7
-@REM XXCOPY /EC "\\Diskstation\backup\Images\Samsung S5\" "G:\Videos\Samsung S5\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
-SHIFT
-GOTO MAIN
-
-
 @REM     --------------------
 @REM 10. Clone PDF documents.
 @REM     --------------------
@@ -345,17 +333,8 @@ SHIFT
 GOTO MAIN
 
 
-@REM     -------------------------------
-@REM 17. Backup AVCHD videos to X drive.
-@REM     -------------------------------
-:STEP24
-XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
-SHIFT
-GOTO MAIN
-
-
 @REM     ----------
-@REM 18. Available.
+@REM 17. Available.
 @REM     ----------
 :STEP25
 SHIFT
@@ -363,7 +342,7 @@ GOTO MAIN
 
 
 @REM     ----------
-@REM 19. Available.
+@REM 18. Available.
 @REM     ----------
 :STEP26
 SHIFT

@@ -20,8 +20,6 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
-SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
-SET _local_avchd=G:\Videos\AVCHD Videos
 SET _xxcopy=xxcopy.cmd
 SET _cp=1252
 
@@ -190,7 +188,7 @@ IF ERRORLEVEL 28 (
     SET /P _answer= || GOTO TARGETS
     IF [!_answer!] EQU [99] (
         POPD
-        GOTO END_TARGETS
+        GOTO END28
     )
     FOR /F "usebackq tokens=1,2 delims=|" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
     IF NOT DEFINED _target (
@@ -205,7 +203,7 @@ IF ERRORLEVEL 28 (
     PAUSE
     GOTO TARGETS
 
-:END_TARGETS
+:END28
     SET _answer=
     SET _target=
     GOTO MENU
@@ -219,7 +217,9 @@ REM ----------------------------------------
 IF ERRORLEVEL 27 (
     CLS
     IF EXIST z: (
-        XXCOPY /EC %_MYMUSIC%\HDtracks\ z:\HDtracks\ /S /KS /RCY /PD0 /ED1 /oF3 /Fo%TEMP%\FileList /oA%_XXCOPYLOG%
+        XXCOPY /EC %_MYMUSIC%\HDtracks\ z:\HDtracks\ /S /KS /RCY /PD0 /ED1 /oA%_XXCOPYLOG%
+        ECHO:
+        ECHO:
         PAUSE
     )
     GOTO MENU
@@ -239,54 +239,191 @@ IF ERRORLEVEL 26 (
 )
 
 
-REM -------------------------------------------------------------------
-REM Clone "\\DISKSTATION\backup\Images\Collection" to local collection.
-REM -------------------------------------------------------------------
-IF ERRORLEVEL 23 (
-    CLS
+REM -----------------------------------------------
+REM Backup AVCHD videos collection to backup drive.
+REM -----------------------------------------------
+REM It is a one way syncing! Extra files are preserved.
+IF ERRORLEVEL 25 (
 
-:MENU23
-    SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive H." _answer
-    IF [!_answer!] EQU [N] GOTO FIN23
-
-    REM -->  1. Check if new files have been inserted since the previous sync.
     CLS
-    XXCOPY /EC "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
-    IF ERRORLEVEL 1 (
-        ECHO:
-        ECHO:
-        ECHO No new files inserted: syncing is not required. Task is going to end.
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET _collection=G:\Videos\AVCHD Videos
+    PUSHD %_COMPUTING%
+    SET _drive=
+    SET _step=6
+    SET _type=3
+    SET _name=AVCHD
+    CALL shared.cmd
+    IF NOT DEFINED _drive (
+        ECHO No drive named AVCHD. Task is going to be aborted^^!
         ECHO:
         ECHO:
         PAUSE
-        GOTO FIN23
+        GOTO END25
     )
 
-    REM -->  2. Clone "\\DISKSTATION\Images\Collection" to local drive H. Don't delete extra files and directories!
+    REM 1. Check if new videos have been inserted since the previous sync.
     CLS
-    XXCOPY /EC "\\DISKSTATION\backup\Images\Collection\*\?*\*.jpg" "H:\" /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO Check if new videos have been inserted since the previous sync...
+    XXCOPY "!_collection!\" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO Syncing is not required. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END25
+    )
 
-    REM -->  3. Then pause.
+    REM 2. Clone collection to backup drive. Don't delete extra files and directories!
+    CLS
+    SET _answer=
+    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy videos to local drive !_drive:~0,-1!."
+    IF NOT DEFINED _answer GOTO END25
+    IF [!_answer!] EQU [N] GOTO END25
+    CLS
+    XXCOPY /EC "!_collection!\" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
 
-    REM -->  4. Reverse both source and destination. Then remove brand new files in order to preserve specific folders content.
-    REM         - "RECYCLER".
-    REM         - "$RECYCLE.BIN".
-    REM         - "SYSTEM VOLUME INFORMATION".
-    REM         - "IPHONE".
-    REM         - "RECOVER".
-    CLS
-    XXCOPY /CE "H:\" "\\DISKSTATION\backup\Images\Collection\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+:END25
+    POPD
+    ENDLOCAL
+    GOTO MENU
 
-    REM -->  5. Then pause.
+)
+
+
+REM ---------------------------------------------------------------
+REM Clone Samsung S5 images local collection to distant collection.
+REM ---------------------------------------------------------------
+REM It is a two ways syncing! Extra files are deleted.
+IF ERRORLEVEL 24 (
+
+    CLS
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET _collection=G:\Videos\Samsung S5
+
+    REM 1. Check if new images have been inserted since the previous sync.
+    CLS
+    ECHO Check if new images have been inserted/removed since the previous sync...
+    XXCOPY "!_collection!\" "\\DISKSTATION\backup\Images\Samsung S5\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO Syncing is not required. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END24
+    )
+
+    REM 2. Clone collection to distant drive. Delete extra files!
+    CLS
+    SET _answer=
+    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to distant drive with extra files removal."
+    IF NOT DEFINED _answer GOTO END24
+    IF [!_answer!] EQU [N] GOTO END24
+    CLS
+    XXCOPY /EC "!_collection!\" "\\DISKSTATION\backup\Images\Samsung S5\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
 
-:FIN23
+:END24
+    ENDLOCAL
+    GOTO MENU
+
+)
+
+
+REM -----------------------------------------------
+REM Clone distant images collection to local drive.
+REM -----------------------------------------------
+REM Distant collection MUST be the master collection!
+REM It is a two ways syncing! Extra files are deleted.
+REM xxcopy /EC H:\ \\DISKSTATION\backup\Images\Collection\ /L /CLONE /Z0 /X*recycle*\ /X*volume*\
+IF ERRORLEVEL 23 (
+
+    CLS
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET _collection=\\DISKSTATION\backup\Images\Collection
+    PUSHD %_COMPUTING%
+    SET _drive=
+    SET _step=6
+    SET _type=3
+    SET _name=PICTURES
+    CALL shared.cmd
+    IF NOT DEFINED _drive (
+        ECHO No drive named PICTURES. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END23
+    )
+
+    REM 1. Check at first if new images have been inserted into the local drive since the previous sync.
+    CLS
+    ECHO Check if new images have been inserted into the local drive since the previous sync...
+    ECHO:
+    ECHO:
+    XXCOPY "!_drive!\*\?*\*.jpg" "!_collection!\" /S /L /BB /ZS /Q3 /Fo%TEMP%\FileList /oA:%_XXCOPYLOG%
+    IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
+        CLS
+        ECHO New images have been inserted into the local drive since the previous sync. Please check %TEMP%\FileList.
+        ECHO:
+        ECHO:
+        PAUSE
+        CLS
+        SET _answer=
+        CALL :QUESTION "YN" "20" "N" "Would you like to copy new local images to the distant collection?"
+        IF DEFINED _answer IF [!_answer!] EQU [Y] (
+            CLS
+            ECHO:
+            ECHO:
+            XXCOPY "!_drive!\*\?*\*.jpg" "!_collection!\" /S /BB /ZS /Q3 /oF0 /oA:%_XXCOPYLOG%
+            IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 DEL %TEMP%\FileList 2> NUL
+        )
+    )
+
+    REM 2. Check if new images have been inserted since the previous sync.
+    CLS
+    ECHO Check if new images have been inserted since the previous sync...
+    XXCOPY "!_collection!\*\?*\*.jpg" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO Syncing is not required. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END23
+    )
+
+    REM 3. Clone collection to local drive. Don't delete extra files and directories!
+    CLS
+    SET _answer=
+    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive !_drive:~0,-1! with extra files removal."
+    IF NOT DEFINED _answer GOTO END23
+    IF [!_answer!] EQU [N] GOTO END23
+    CLS
+    XXCOPY /EC "!_collection!\*\?*\*.jpg" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO:
+    ECHO:
+    PAUSE
+
+    REM 4. Reverse both source and destination. Then remove brand new files in order to preserve specific folders content.
+    REM    Exclude the following directories:
+    REM       - "RECYCLER".
+    REM       - "$RECYCLE.BIN".
+    REM       - "SYSTEM VOLUME INFORMATION".
+    REM       - "IPHONE".
+    REM       - "RECOVER".
+    CLS
+    XXCOPY /CE "!_drive!\" "\!_collection!\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+    ECHO:
+    ECHO:
+    PAUSE
+
+:END23
+    POPD
+    ENDLOCAL
     GOTO MENU
 
 )
@@ -356,27 +493,43 @@ IF ERRORLEVEL 19 (
 )
 
 
-REM -------------------------
-REM Sync MyCloud video files.
-REM -------------------------
-REM Delete extra files.
+REM -----------------------------------------------
+REM Clone AVCHD videos collection to distant drive.
+REM -----------------------------------------------
+REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 18 (
-    GOTO FIN18
-    CLS
 
-:MENU18
-    SET _answer=
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy local Hi-Res video files to MyCloud." _answer
-    IF [!_answer!] EQU [N] GOTO FIN18
     CLS
-    XXCOPY /EC "%_local_avchd%\?*\*.mts" "%_cloud_avchd%\" /BI /FF /KS /Y /oA:%_XXCOPYLOG%
-    XXCOPY /CE "%_local_avchd%\?*\*.m2ts" "%_cloud_avchd%\" /BI /FF /KS /Y /oA:%_XXCOPYLOG%
-    XXCOPY /CE "%_cloud_avchd%\" "%_local_avchd%\" /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
+    SET _local_avchd=G:\Videos\AVCHD Videos
+
+    REM 1. Check if new videos have been inserted since the previous sync.
+    CLS
+    ECHO Check if new videos have been inserted since the previous sync...
+    XXCOPY "!_local_avchd!\" "!_cloud_avchd!\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO Syncing is not required. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END18
+    )
+
+    REM 2. Clone collection to distant drive. Delete extra files and directories!
+    CLS
+    SET _answer=
+    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy videos to distant drive."
+    IF NOT DEFINED _answer GOTO END18
+    IF [!_answer!] EQU [N] GOTO END18
+    CLS
+    XXCOPY /EC "!_local_avchd!\" "!_cloud_avchd!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
 
-:FIN18
+:END18
+    ENDLOCAL
     GOTO MENU
 
 )
@@ -416,6 +569,47 @@ IF ERRORLEVEL 16 (
     PAUSE
     POPD
     GOTO MENU
+)
+
+
+REM -----------------------------------------------------------------
+REM Clone Samsung S5 images local collection from distant collection.
+REM -----------------------------------------------------------------
+REM It is a two ways syncing! Extra files are deleted.
+IF ERRORLEVEL 15 (
+
+    CLS
+    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+    SET _collection=G:\Videos\Samsung S5
+
+    REM 1. Check if new images have been inserted since the previous sync.
+    CLS
+    ECHO Check if new images have been inserted/removed since the previous sync...
+    XXCOPY "\\DISKSTATION\backup\Images\Samsung S5\" "!_collection!\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        ECHO Syncing is not required. Task is going to be aborted^^!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO END15
+    )
+
+    REM 2. Clone collection to local drive. Delete extra files!
+    CLS
+    SET _answer=
+    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to local drive with extra files removal."
+    IF NOT DEFINED _answer GOTO END15
+    IF [!_answer!] EQU [N] GOTO END15
+    CLS
+    XXCOPY /EC "\\DISKSTATION\backup\Images\Samsung S5\" "!_collection!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    ECHO:
+    ECHO:
+    PAUSE
+
+:END15
+    ENDLOCAL
+    GOTO MENU
+
 )
 
 
@@ -613,16 +807,23 @@ REM ================
 
 
 :QUESTION
-SET %5=Y
+SETLOCAL
+SET _answer=Y
 ECHO:
 ECHO:
 CHOICE /C %~1 /T %~2 /N /D %~3 /M "%~4 Press [Y] for Yes or [N] for No."
-IF ERRORLEVEL 2 SET %5=N
+IF ERRORLEVEL 2 SET _answer=N
+(
+    ENDLOCAL
+    SET _answer=%_answer%
+)
 EXIT /B 0
 
 
 :CONFIRM
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 PUSHD "%TEMP%"
+SET _answer=
 IF EXIST "%_xxcopy%" (
     CLS
     ECHO The following XXCOPY commands will be run:
@@ -631,8 +832,8 @@ IF EXIST "%_xxcopy%" (
     FOR /F "usebackq tokens=1,* delims=." %%I IN ("%_xxcopy%") DO IF [%%I] EQU [XXCOPY] CALL ECHO %%I.%%J
     ECHO:
     ECHO:
-    CALL :QUESTION "YN" "90" "N" "Would you like to continue? " _answer
-    IF [!_answer!] EQU [Y] (
+    CALL :QUESTION "YN" "90" "N" "Would you like to continue? "
+    IF DEFINED _answer IF [!_answer!] EQU [Y] (
         CLS
         CALL "%_xxcopy%"
         ECHO:
@@ -641,6 +842,7 @@ IF EXIST "%_xxcopy%" (
     )
 )
 POPD
+ENDLOCAL
 EXIT /B 0
 
 
@@ -719,13 +921,13 @@ ECHO:
 CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? Press [Y] for Yes or [N] for No. "
 CLS
 
-REM ----- Backup is aborted.
+REM ----- B.5. Backup is aborted.
 IF ERRORLEVEL 2 (
     POPD
     GOTO STEP3
 )
 
-REM ----- B.5. Backup is run.
+REM ----- B.6. Confirm backup.
 ECHO The following backup command will be run: python main.py -c music%_arguments%
 ECHO:
 CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? Press [Y] for Yes or [N] for No. "

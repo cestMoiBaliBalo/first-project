@@ -887,11 +887,11 @@ class RippedTrack(ContextDecorator):
             in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
 
             # Change `albumartist`.
-            if decorator.lower() == "springsteen":
-                audiotrack = changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band")
+            # if decorator.lower() == "springsteen":
+            #     audiotrack = changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band")
 
             # Change `album`.
-            elif decorator.lower() == "default_album":
+            if decorator.lower() == "default_album":
                 audiotrack = changealbum(audiotrack, "$albumsortyear.$albumsortcount - $album")
             elif decorator.lower() == "dft_bootleg_album":
                 audiotrack = changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")

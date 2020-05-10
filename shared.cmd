@@ -64,6 +64,14 @@ IF %_step% EQU 5 (
     ENDLOCAL
     SET _errorlevel=%_errorlevel%
 )
+
+REM -----
+IF %_step% EQU 6 CALL :GET_LETTER
+IF %_step% EQU 6 (
+    ENDLOCAL
+    SET _drive=%_drive%
+)
+
 REM -----
 EXIT /B 0
 
@@ -126,5 +134,25 @@ SET _errorlevel=%ERRORLEVEL%
 (
     ENDLOCAL
     SET _errorlevel=%_errorlevel%
+)
+EXIT /B 0
+
+
+:GET_LETTER
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _first=1
+SET _found=0
+FOR /F "usebackq tokens=1,2,3" %%A IN (`"WMIC LOGICALDISK GET Name, VolumeName, DriveType"`) DO (
+    IF !_first! NEQ 1 (
+        IF !_found! EQU 0 IF %%~A EQU %_type% IF /I [%%~C] EQU [%_name%] (
+            SET _drive=%%~B
+            SET _found=1
+        )
+    )
+    SET _first=0
+)
+(
+    ENDLOCAL
+    SET _drive=%_drive%
 )
 EXIT /B 0
