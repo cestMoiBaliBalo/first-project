@@ -864,6 +864,13 @@ IF [%~1] EQU [] GOTO STEP2
 SET _arguments=%_arguments% %~1
 
 REM -----
+IF NOT EXIST "targets.txt" (
+    ECHO Targets repository ("%_COMPUTING%\MyJavaProject\targets.txt"^) can't be found. Please check^^!
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO STEP4
+)
 FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
     IF [%%~A] EQU [%~1] (
         SET _target=%%~A
