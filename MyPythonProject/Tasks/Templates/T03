@@ -3,28 +3,34 @@
         **********************************                      **************************                              **************
         * BACKUP --> DIGITAL AUDIO FILES *                      * BACKUP --> OTHER TASKS *                              * UNIT TESTS *
         **********************************                      **************************                              **************
-{{ menu[:7]|join("\n") }}
+{% for item in collection[:7] %}
+        {{ item }}
+{% endfor %}
 
 
 
         ******************                                      **********************                                  *************
         * TABLES EDITING *                                      * TABLES MAINTENANCE *                                  * COMPUTING *
         ******************                                      **********************                                  *************
-{{ menu[7:11]|join("\n") }}
+{% for item in collection[7:11] %}
+        {{ item }}
+{% endfor %}
 
 
 
         ***************                                         ***************                                         **********
         * AUDIO FILES *                                         * VIDEO FILES *                                         * IMAGES *
         ***************                                         ***************                                         **********
-{{ menu[11:-1]|join("\n") }}
+{% for item in collection[11:-1] %}
+        {{ item }}
+{% endfor %}
 
 
 
         ********
         * EXIT *
         ********
-{{ menu[-1] }}
+        {{ collection[-1] }}
 
 
 

@@ -1,0 +1,18 @@
+
+
+        **************************************                  ******************************
+        * BRUCE SPRINGSTEEN DIGITAL BOOTLEGS *                  * PEARL JAM DIGITAL BOOTLEGS *
+        **************************************                  ******************************
+{% for item in collection[:-1] %}
+        {{ item }}
+{% endfor %}
+
+
+
+        ********
+        * EXIT *
+        ********
+        {{ collection[-1] }}
+
+
+

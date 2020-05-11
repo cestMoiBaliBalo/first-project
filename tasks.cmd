@@ -178,36 +178,17 @@ REM ------------------------
 REM Additional backup tasks.
 REM ------------------------
 IF ERRORLEVEL 28 (
-
-:TARGETS
-    CLS
-    SET _answer=
-    SET _target=
-    PUSHD %_RESOURCES%
-    TYPE backup_menu.txt
-    SET /P _answer= || GOTO TARGETS
-    IF [!_answer!] EQU [99] (
-        POPD
-        GOTO END28
-    )
-    FOR /F "usebackq tokens=1,2 delims=|" %%I IN ("backup_targets.txt") DO IF [%%I] EQU [!_answer!] SET _target=%%J
-    IF NOT DEFINED _target (
-        POPD
-        GOTO TARGETS
-    )
-    CLS
-    CALL :BACKUP !_target!
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    PUSHD %_PYTHONPROJECT%\Tasks\Manager
+    python music.py
+    IF ERRORLEVEL 100 CALL :BACKUP !ERRORLEVEL!
     POPD
+    ENDLOCAL
     ECHO:
     ECHO:
     PAUSE
-    GOTO TARGETS
-
-:END28
-    SET _answer=
-    SET _target=
     GOTO MENU
-
 )
 
 

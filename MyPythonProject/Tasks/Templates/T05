@@ -1,0 +1,18 @@
+
+
+        **************                                          **************
+        * JPG Images *                                          * RAW Images *
+        **************                                          **************
+{% for item in collection[:-1] %}
+        {{ item }}
+{% endfor %}
+
+
+
+        ********
+        * EXIT *
+        ********
+        {{ collection[-1] }}
+
+
+

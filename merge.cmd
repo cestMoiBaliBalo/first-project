@@ -34,7 +34,8 @@ SET _errorlevel=0
 REM ============
 REM Main script.
 REM ============
-FOR /F "usebackq delims=: tokens=2" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
@@ -51,10 +52,12 @@ SET _step=4
 SET _errorlevel=
 CALL shared.cmd
 IF DEFINED _errorlevel IF %_errorlevel% EQU 1 (
-    FOR /F "usebackq" %%A IN (`python -m Applications.some_file "1" "add"`) DO (
+    PUSHD MyPythonProject\Tasks\Manager
+    FOR /F "usebackq" %%A IN (`python merge.py "1" "add"`) DO (
         SET /A "_index+=1"
         IF !_index! EQU 2 SET _date=%%A
     )
+    POPD
     IF DEFINED _date (
         "%PROGRAMFILES%/Areca/areca_cl.exe" merge -k -c -wdir %TEMP%\tmp-Xavier -config %_BACKUP%/workspace.documents/1832340664.bcfg -date !_date!
         IF ERRORLEVEL 1 (
