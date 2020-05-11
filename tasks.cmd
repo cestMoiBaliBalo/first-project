@@ -182,13 +182,24 @@ IF ERRORLEVEL 28 (
     SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD %_PYTHONPROJECT%\Tasks\Manager
     python music.py
-    IF ERRORLEVEL 100 CALL :BACKUP !ERRORLEVEL!
-    POPD
-    ENDLOCAL
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
+    IF ERRORLEVEL 100 (
+        POPD
+        ENDLOCAL
+        CALL :BACKUP !ERRORLEVEL!
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO MENU
+    )
+    IF ERRORLEVEL 99 (
+        POPD
+        ENDLOCAL
+        ECHO:
+        ECHO:
+        PAUSE
+        GOTO MENU
+    )
+
 )
 
 
@@ -832,6 +843,7 @@ REM BACKUP AUDIO FILES.
 REM ===================
 REM Check at first if backup is required then backup if confirmed by user interface.
 :BACKUP
+CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _arguments=
 SET _output=%TEMP%\backup.txt
@@ -891,6 +903,7 @@ python check.py "%_output%" "\.(?:ape|dsf|flac)$" --pprint
 REM ----- B.3. Backup isn't required.
 IF ERRORLEVEL 100 (
     POPD
+    ECHO Backup isn't required^^!
     ECHO:
     ECHO:
     PAUSE
