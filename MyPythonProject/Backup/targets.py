@@ -7,7 +7,7 @@ import os
 from contextlib import ExitStack
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Iterator, List, Tuple
+from typing import Any, List, Tuple
 
 from lxml import etree  # type: ignore
 
@@ -53,7 +53,7 @@ arguments = parser.parse_args()
 # =========
 # Template.
 # =========
-template = TemplatingEnvironment(_MYPARENT)
+environment = TemplatingEnvironment(_MYPARENT)
 
 # ===============
 # Main algorithm.
@@ -99,12 +99,12 @@ with ExitStack() as stack1:
     json.dump([dict([("workspace", workspace), ("description", name), ("target", uid)]) for workspace, uid, name, _, _, _ in collection], json_file, ensure_ascii=False, indent=4)
 
     # Dump targets configuration into a TXT file.
-    main_content = []  # type: List[Tuple[str, str, str, Iterator[Iterator[Tuple[str, ...]]]]]
+    main_content = []  # type: List[Tuple[str, str, str, List[List[Tuple[str, ...]]]]]
     for workspace, uid, name, source, destination, regexes in collection:
         if regexes:
-            content = []  # type: List[Iterator[Tuple[str, ...]]]
+            content = []  # type: List[List[Tuple[str, ...]]]
             separator = "-" * (len(name) + 1)  # type: str
             for regex in regexes:
-                content.append(iter([(uid, "PRODUCTION", source, regex), (uid, "BACKUP", destination)]))
-            main_content.append((separator, f"{name}.", separator, iter(content)))
-    txt_file.write(template.get_template("targets.tpl").render(content=iter(main_content)))
+                content.append([(uid, "PRODUCTION", source, regex), (uid, "BACKUP", destination)])
+            main_content.append((separator, f"{name}.", separator, content))
+    txt_file.write(environment.get_template("targets.tpl").render(content=iter(main_content)))

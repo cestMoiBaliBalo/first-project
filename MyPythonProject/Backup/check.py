@@ -63,20 +63,20 @@ def format_(*iterables: Tuple[str, ...]) -> Iterator[Tuple[str, int]]:
     """
 
     # 1. Compress collection. Keep only file and last change UTC date.
-    collection = iter(tuple(compress(file, [0, 0, 1, 1, 0])) for file in iterables)  # type: Any
+    collection = [tuple(compress(file, [0, 0, 1, 1, 0])) for file in iterables]  # type: Any
 
     # 2. Filter collection. Keep only FLAC files.
     collection = filter(itemgetter_(0)(match_(arguments.pattern.search)), collection)
 
     # 3. Convert last change UTC date into timestamp.
-    collection = iter(zip(*map_(1)(get_timestamp)(*zip(*collection))))
+    collection = zip(*map_(1)(get_timestamp)(*zip(*collection)))
 
     # 4. Remove duplicate files. Keep only the most recent last change UTC date for every file.
     collection = {key: list(group) for key, group in groupby(collection, key=itemgetter(0))}
     for key, values in collection.items():
-        collection[key] = iter(values)
+        collection[key] = values
         if len(values) > 1:
-            collection[key] = iter((key, max(itemgetter(1)(value))) for value in values)
+            collection[key] = [(key, max(itemgetter(1)(value))) for value in values]
 
     # 5. Yield collection content.
     for _, container in collection.items():
@@ -95,8 +95,8 @@ parser.add_argument("--pprint", action="store_true")
 # =======================
 # Templating environment.
 # =======================
-template = TemplatingEnvironment(_MYPARENT)
-template.set_environment(filters={"format_": format_index_})
+environment = TemplatingEnvironment(_MYPARENT)
+environment.set_environment(filters={"format_": format_index_})
 
 # ===========
 # Main logic.
@@ -140,7 +140,7 @@ for target, group in groupby(csv.reader(arguments.files, CustomDialect()), key=i
 
 # Output results.
 if arguments.pprint:
-    print(template.get_template("check.tpl").render(contents=content))
+    print(environment.get_template("check.tpl").render(contents=content))
 
 # Exit script.
 sys.exit(level)

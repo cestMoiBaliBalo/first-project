@@ -406,6 +406,10 @@ class TemplatingEnvironment(object):
 # ======================
 # Jinja2 custom filters.
 # ======================
+def ljustify(strg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}<{1}}".format(str(strg), width, char)
+
+
 def rjustify(strg: str, width: int, *, char: str = "") -> str:
     return "{0:{2}>{1}}".format(str(strg), width, char)
 

@@ -5,14 +5,13 @@ import csv
 import locale
 import os
 import re
-from itertools import chain, compress, groupby, tee, filterfalse
+from itertools import chain, compress, filterfalse, groupby
 from operator import itemgetter
 from pathlib import Path
-from tempfile import mkdtemp
-from typing import Any, Iterator, Tuple
+from typing import Any, List, Tuple
 
-from Applications.shared import CustomDialect, TemplatingEnvironment, UTF8, WRITE
 from Applications.callables import match_
+from Applications.shared import CustomDialect, TemplatingEnvironment, UTF8, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -57,29 +56,28 @@ TEMPDIR = Path(os.path.expandvars("%_TMPDIR%"))
 
 # -----
 collection = csv.reader(arguments.collection, dialect=CustomDialect)  # type: Any
-collection = chain(*iter(tuple(compress(item, [0, 0, 1, 0, 0])) for item in collection))
-collection = filterfalse(match_(REGEX2.search), collection)
+collection = chain(*[tuple(compress(item, [0, 0, 1, 0, 0])) for item in collection])
+collection = list(filterfalse(match_(REGEX2.search), collection))
 
 # -----
-it1, it2, it3 = tee(collection, 3)
-ape = iter((file, Path(file).parent.parent / "1.Monkey's Audio" / f"{Path(file).stem}.ape") for file in it1)  # type: Iterator[Tuple[str, Path]]
-dsf = iter((file, Path(file).parent.parent / "1.DSD 64" / f"{Path(file).stem}.dsf") for file in it2)  # type: Iterator[Tuple[str, Path]]
-flac = iter((file, Path(file).parent.parent / "1.Free Lossless Audio Codec" / f"{Path(file).stem}.flac") for file in it3)  # type: Iterator[Tuple[str, Path]]
+ape = [(file, Path(file).parent.parent / "1.Monkey's Audio" / f"{Path(file).stem}.ape") for file in collection]  # type: List[Tuple[str, Path]]
+dsf = [(file, Path(file).parent.parent / "1.DSD 64" / f"{Path(file).stem}.dsf") for file in collection]  # type: List[Tuple[str, Path]]
+flac = [(file, Path(file).parent.parent / "1.Free Lossless Audio Codec" / f"{Path(file).stem}.flac") for file in collection]  # type: List[Tuple[str, Path]]
 
 # -----
 collection = chain.from_iterable([ape, dsf, flac])  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
-collection = iter((file, Path(REGEX1.sub(sub_, str(path)))) for file, path in collection)  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
-collection = iter((file, path.exists()) for file, path in collection)  # (file1.m4a, False), (file1.m4a, False), (file1.m4a, True), ...
+collection = [(file, Path(REGEX1.sub(sub_, str(path)))) for file, path in collection]  # (file1.m4a, file1.ape), (file1.m4a, file1.dsf), (file1.m4a, file1.flac), ...
+collection = [(file, path.exists()) for file, path in collection]  # (file1.m4a, False), (file1.m4a, False), (file1.m4a, True), ...
 collection = sorted(collection, key=itemgetter(1))
 collection = sorted(collection, key=itemgetter(0))
-collection = groupby(collection, key=itemgetter(0))  # (file1.m4a, Iterator[(file1.m4a, False), (file1.m4a, False), (file1.m4a, True)]), ...
-collection = iter((key, iter(exist for _, exist in group)) for key, group in collection)  # (file1.m4a, Iterator[(False, False, True)]), (file2.m4a, Iterator[(False, False, False)]), ...
-collection = iter(Path(file).parent.parent for file, exist in collection if not any(exist))  # file2.m4a, ...
-collection = chain(*iter([(path.parent, Path(path.name) / "*" / "*?" / f"*.{extension}", TEMPDIR / "/".join(path.parts[1:])) for extension in ["m4a", "mp3"]] for path in set(collection)))
+collection = groupby(collection, key=itemgetter(0))  # (file1.m4a, ((file1.m4a, False), (file1.m4a, False), (file1.m4a, True))), ...
+collection = [(key, [exist for _, exist in group]) for key, group in collection]  # (file1.m4a, [False, False, True]), (file2.m4a, [False, False, False]), ...
+collection = [Path(file).parent.parent for file, exist in collection if not any(exist)]  # file2.m4a, ...
+collection = chain(*[[(path.parent, Path(path.name) / "*" / "*?" / f"*.{extension}", TEMPDIR / "/".join(path.parts[1:])) for extension in ["m4a", "mp3"]] for path in set(collection)])
 collection = sorted(collection, key=itemgetter(1))
 collection = sorted(collection, key=itemgetter(0))
 collection = groupby(collection, key=itemgetter(0))
 
 # -----
-template = TemplatingEnvironment(_MYPARENT.parent / "AudioCD" / "Templates")
-arguments.commands.write(template.get_template("T00c").render(collection=collection, tempdir=TEMPDIR))
+environment = TemplatingEnvironment(_MYPARENT.parent / "AudioCD" / "Templates")
+arguments.commands.write(environment.get_template("T00c").render(collection=collection, tempdir=TEMPDIR))

@@ -85,7 +85,7 @@ def byparent(arg: Path) -> str:
     return str(arg.parent)
 
 
-def rjustify(arg, *, char: Optional[str] = None, length: int = 5) -> str:
+def rjustify(arg: int, *, char: Optional[str] = None, length: int = 5) -> str:
     """
 
     :param arg:
@@ -94,8 +94,8 @@ def rjustify(arg, *, char: Optional[str] = None, length: int = 5) -> str:
     :return:
     """
     if char is None:
-        return "{0:>{1}d}".format(arg, length)
-    return "{0:{1}>{2}d}".format(arg, char, length)
+        return "{0:>{length}d}".format(arg, length=length)
+    return "{0:{char}>{length}d}".format(arg, char=char, length=length)
 
 
 # =================
@@ -108,6 +108,11 @@ parser.add_argument("--output", type=argparse.FileType(mode=WRITE, encoding=UTF8
 arguments = parser.parse_args()
 
 # ================
+# Local constants.
+# ================
+LETTERS = dict(enumerate(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), start=1))
+
+# ================
 # Local variables.
 # ================
 collection1, collection2, content = [], [], []  # type: List[Path], List[Path], List[Tuple[str, str, str, Iterator[Any]]]
@@ -117,13 +122,11 @@ children = defaultdict(int)  # type: DefaultDict[Path, int]
 # ===============
 # Local template.
 # ===============
-template = TemplatingEnvironment(_MYPARENT, keep_trailing_newline=False, filters={"rjustify": rjustify})
+environment = TemplatingEnvironment(_MYPARENT, keep_trailing_newline=False, filters={"rjustify": rjustify})
 
 # ============
 # Main script.
 # ============
-LETTERS = dict(enumerate(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), start=1))
-
 with ChangeLocalCurrentDirectory(arguments.path):
 
     # 1. Walk through argument path.
@@ -184,4 +187,4 @@ if arguments.output:
         arguments.output.write(f"{file}\n")
 
 # Display results.
-print(template.get_template("walk.tpl").render(root=str(arguments.path), content=iter(content)))
+print(environment.get_template("walk.tpl").render(root=str(arguments.path), content=iter(content)))

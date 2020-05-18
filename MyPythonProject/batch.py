@@ -88,10 +88,10 @@ with open(arguments.collection, encoding=arguments.encoding, newline="") as fr:
     collection = sorted(collection, key=itemgetter(1))
     collection = sorted(collection, key=itemgetter(0))
     for key, group in groupby(collection, key=itemgetter(0)):
-        template = TemplatingEnvironment(key)
+        environment = TemplatingEnvironment(key)
         for sub_key, sub_group in groupby(group, key=itemgetter(1)):
             with open(Path(os.path.expandvars("%TEMP%")) / "tmp6k11k3_f" / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
-                files = iter(tuple(compress(item, TEMPLATES.get((Path(key), sub_key)))) for item in sub_group)  # type: Any
-                files = iter(tuple(break_(file)) for file in files)
+                files = [tuple(compress(item, TEMPLATES.get((Path(key), sub_key)))) for item in sub_group]  # type: Any
+                files = [tuple(break_(file)) for file in files]
                 files = groupby(files, key=itemgetter(0))
-                fw.write(template.get_template(sub_key).render(collection=files))
+                fw.write(environment.get_template(sub_key).render(collection=files))
