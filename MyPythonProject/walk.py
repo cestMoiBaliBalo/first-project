@@ -19,6 +19,7 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==========================
@@ -115,7 +116,7 @@ LETTERS = dict(enumerate(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), start=1))
 # ================
 # Local variables.
 # ================
-collection1, collection2, content = [], [], []  # type: List[Path], List[Path], List[Tuple[str, str, str, Iterator[Any]]]
+primary_collection, secondary_collection, content = [], [], []  # type: List[Path], List[Path], List[Tuple[str, str, Iterator[Any]]]
 index = 0  # type: int
 children = defaultdict(int)  # type: DefaultDict[Path, int]
 
@@ -128,16 +129,15 @@ environment = TemplatingEnvironment(_MYPARENT, keep_trailing_newline=False, filt
 # Main script.
 # ============
 with ChangeLocalCurrentDirectory(arguments.path):
-
     # 1. Walk through argument path.
     for root, directories, files in os.walk("."):
 
         # Get files.
-        collection1.extend((Path(root) / file).resolve() for file in files)
+        primary_collection.extend((Path(root) / file).resolve() for file in files)
 
         # Get empty directories.
         if not any([directories, files]):
-            collection2.append(Path(root))
+            secondary_collection.append(Path(root))
 
     # 2. Walk through descendants of argument path.
     for directory in os.scandir("."):
@@ -148,42 +148,42 @@ with ChangeLocalCurrentDirectory(arguments.path):
 
 # Filter files collection.
 if arguments.pattern:
-    collection1 = list(map(Path, filter(match_(arguments.regex.match), map(str, collection1))))
+    primary_collection = list(map(Path, filter(match_(arguments.regex.match), map(str, primary_collection))))
 
 # Sort files collection.
-collection1 = sorted(sorted(sorted(collection1, key=byname), key=byextension), key=byparent)
+primary_collection = sorted(sorted(sorted(primary_collection, key=byname), key=byextension), key=byparent)
 
 # Display argument path content.
-if collection1:
+if primary_collection:
     index += 1
-    content.append(("   ======", f"{LETTERS.get(index, 'Z')}. Files.", "   ======", iter(collection1)))
+    content.append(("   ======", f"{LETTERS.get(index, 'Z')}. Files.", iter(primary_collection)))
 
 # Extensions.
-_extensions = list(filter(None, sorted([f"{key[1:].upper()}: {value}" for key, value in pprint_count(*Counter(file.suffix for file in collection1).items())], key=itemgetter(0))))  # type: Any
-if _extensions:
+extensions = list(filter(None, sorted([f"{key[1:].upper()}: {value}" for key, value in pprint_count(*Counter(file.suffix for file in primary_collection).items())], key=itemgetter(0))))  # type: Any
+if extensions:
     index += 1
-    content.append(("   ===========", f"{LETTERS.get(index, 'Z')}. Extensions.", "   ===========", iter(_extensions)))
+    content.append(("   ===========", f"{LETTERS.get(index, 'Z')}. Extensions.", iter(extensions)))
 
 # Directories.
-_directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*children.items())], key=itemgetter(0))))  # type: Any
-if _directories:
+directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*children.items())], key=itemgetter(0))))  # type: Any
+if directories:
     index += 1
-    content.append(("   ============", f"{LETTERS.get(index, 'Z')}. Directories.", "   ============", iter(_directories)))
+    content.append(("   ============", f"{LETTERS.get(index, 'Z')}. Directories.", iter(directories)))
 
 # Detailed directories.
-_directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*Counter(str(file.parent) for file in collection1).items())], key=itemgetter(0))))
-if _directories:
+directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*Counter(str(file.parent) for file in primary_collection).items())], key=itemgetter(0))))
+if directories:
     index += 1
-    content.append(("   =====================", f"{LETTERS.get(index, 'Z')}. Detailed directories.", "   =====================", iter(_directories)))
+    content.append(("   =====================", f"{LETTERS.get(index, 'Z')}. Detailed directories.", iter(directories)))
 
 # Empty directories.
-if collection2:
+if secondary_collection:
     index += 1
-    content.append(("   ==================", f"{LETTERS.get(index, 'Z')}. Empty directories.", "   ==================", iter(collection2)))
+    content.append(("   ==================", f"{LETTERS.get(index, 'Z')}. Empty directories.", iter(secondary_collection)))
 
 # Store results.
 if arguments.output:
-    for file in collection1:
+    for file in primary_collection:
         arguments.output.write(f"{file}\n")
 
 # Display results.

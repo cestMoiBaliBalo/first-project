@@ -45,8 +45,7 @@ collection2 = list(shared.format_collection(*sorted(collection2, key=itemgetter(
 
 # -----
 collection = zip_longest(collection1, collection2, fillvalue=(None, None, None))  # ((target1, 1, 1234), (target3, 3, 9012)), ((target2, 2, 5678), (None, None, None)), ...
-collection = chain.from_iterable(collection)  # (target1, 1, 1234), (target3, 3, 9012), (target2, 2, 5678), (None, None, None), ...
-collection = list(collection)
+collection = list(chain.from_iterable(collection))  # (target1, 1, 1234), (target3, 3, 9012), (target2, 2, 5678), (None, None, None), ...
 collection.extend([("Exit", 99, 99), (None, None, None)])
 
 # -----

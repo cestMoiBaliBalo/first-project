@@ -38,7 +38,7 @@ def timedelta_(datobj: date = date.today(), days: int = 0, kallable=operator.add
 
 if __name__ == "__main__":
     import argparse
-    import holidays
+    import holidays  # type: ignore
     from itertools import islice, tee
 
 

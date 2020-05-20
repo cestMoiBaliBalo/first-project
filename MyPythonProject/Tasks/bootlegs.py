@@ -3,12 +3,11 @@
 import argparse
 import fnmatch
 import os
-from collections import namedtuple
 from functools import partial
 from itertools import chain, compress, filterfalse, groupby, repeat
 from operator import eq, itemgetter
 from pathlib import Path
-from typing import Any, Iterator, List, Sized, Tuple, Union
+from typing import Any, Iterator, List, NamedTuple, Sized, Tuple, Union
 
 from mutagen.flac import FLAC  # type: ignore
 
@@ -17,11 +16,16 @@ from Applications.decorators import itemgetter_
 __author__ = "Xavier ROSSET"
 __maintainer__ = "Xavier ROSSET"
 __email__ = "xavier.python.computing@protonmail.com"
-__status__ = "Development"
+__status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
+
+# ========
+# Objects.
+# ========
+Bootlegs = NamedTuple("Bootlegs", [("bootleg", str), ("artist", str), ("year", str), ("in_collection", str), ("provider", str)])
 
 
 # ===============
@@ -68,7 +72,7 @@ class Files(object):
 
 class AudioFLACTags(object):
 
-    def __init__(self, path: Union[Path, str]):
+    def __init__(self, path: Union[Path, str]) -> None:
         """
 
         :param path:
@@ -104,28 +108,28 @@ class Formatter(object):
     GAP = 8  # type: int
     SEP = "*"  # type: str
 
-    def __init__(self, *iterables: Tuple[str, ...]) -> None:
+    def __init__(self, *iterables: Bootlegs) -> None:
         """
 
         :param iterables:
         """
-        self._iterables = tuple(iterables)  # type: Tuple[Tuple[str, ...], ...]
+        self._iterables = tuple(iterables)  # type: Tuple[Bootlegs, ...]
 
         # 1. Get bootlegs maximum width.
-        bootlegs = chain(*tuple(compress(item, [1, 0, 0, 0, 0]) for item in iterables))  # type: Iterator[str]
-        self._width_bootlegs = self.get_width(*bootlegs)  # type: int
+        bootlegs = [compress(item, [1, 0, 0, 0, 0]) for item in iterables]  # type: List[Iterator[str]]
+        self._width_bootlegs = self.get_width(*chain.from_iterable(bootlegs))  # type: int
 
         # 2. Get artists maximum width.
-        artists = chain(*tuple(compress(item, [0, 1, 0, 0, 0]) for item in iterables))  # type: Iterator[str]
-        self._width_artists = self.get_width(*artists)  # type: int
+        artists = [compress(item, [0, 1, 0, 0, 0]) for item in iterables]  # type: List[Iterator[str]]
+        self._width_artists = self.get_width(*chain.from_iterable(artists))  # type: int
 
         # 3. Get years maximum width.
-        years = chain(*tuple(compress(item, [0, 0, 1, 0, 0]) for item in iterables))  # type: Iterator[str]
-        self._width_years = self.get_width(*years)  # type: int
+        years = [compress(item, [0, 0, 1, 0, 0]) for item in iterables]  # type: List[Iterator[str]]
+        self._width_years = self.get_width(*chain.from_iterable(years))  # type: int
 
         # 4. Get providers maximum width.
-        providers = chain(*tuple(compress(item, [0, 0, 0, 0, 1]) for item in iterables))  # type: Iterator[str]
-        providers = filter(None, providers)
+        providers = [compress(item, [0, 0, 0, 0, 1]) for item in iterables]  # type: Any
+        providers = filter(None, chain.from_iterable(providers))
         self._width_providers = self.get_width(*providers)  # type: int
 
         # 5. Set headers delimiters.
@@ -161,15 +165,15 @@ class Formatter(object):
         self.delimiters = f"{header_artist}{header_year}{header_bootleg}{header_provider}"  # type: str
         self.headers = f"{title_artist}{title_year}{title_bootleg}{title_provider}"  # type: str
 
-    def __call__(self):
+    def __call__(self) -> Iterator[str]:
         """
 
         :return:
         """
         for key_artist, group in groupby(self._iterables, key=itemgetter(1)):
-            artist = True
+            rup_artist = True
             for key_year, sub_group in groupby(group, key=itemgetter(2)):
-                year = True
+                rup_year = True
                 for item in sub_group:
                     bootleg = self.justify(item.bootleg, self._width_bootlegs + self.GAP)
                     provider = None
@@ -179,7 +183,7 @@ class Formatter(object):
                     if provider:
                         detail = f"{item.in_collection}{provider}"
 
-                    if all([artist, year]):
+                    if all([rup_artist, rup_year]):
                         artist = self.justify(key_artist, self._width_artists + self.GAP)
                         year = self.justify(key_year, self._width_years + self.GAP)
                         yield ""
@@ -189,17 +193,17 @@ class Formatter(object):
                         yield self.delimiters
                         yield f"{artist}{year}{bootleg}{detail}"
 
-                    elif any([artist, year]) and not artist:
+                    elif any([rup_artist, rup_year]) and not rup_artist:
                         year = self.justify(key_year, self._width_years + self.GAP)
                         year = self.justify(year, self._width_artists + self._width_years + 2 * self.GAP, justify=">")
                         yield f"{year}{bootleg}{detail}"
 
-                    elif not any([artist, year]):
+                    elif not any([rup_artist, rup_year]):
                         detail = f"{bootleg}{detail}"
                         yield self.justify(detail, self._width_artists + self._width_years + self._width_bootlegs + self._width_providers + 4 * self.GAP + 1, justify=">")
 
-                    artist = False
-                    year = False
+                    rup_artist = False
+                    rup_year = False
 
     @staticmethod
     def get_width(*items: Sized) -> int:
@@ -241,12 +245,6 @@ class GetPath(argparse.Action):
 # =================
 parser = argparse.ArgumentParser()
 parser.add_argument("path", nargs="+", action=GetPath)
-arguments = parser.parse_args()
-
-# ========
-# Objects.
-# ========
-Bootlegs = namedtuple("Bootlegs", ["bootleg", "artist", "year", "in_collection", "provider"])
 
 # ==========
 # Constants.
@@ -301,7 +299,8 @@ EXCLUDED = ["accurateripdiscid",
 
 if __name__ == "__main__":
 
-    bootlegs = []  # type: List[Tuple[str, ...]]
+    bootlegs = []  # type: Any
+    arguments = parser.parse_args()
 
     # Get bootlegs collection.
     for path in arguments.path:
@@ -319,7 +318,7 @@ if __name__ == "__main__":
     bootlegs = sorted(bootlegs, key=itemgetter(2))
     bootlegs = sorted(bootlegs, key=itemgetter(3))
     bootlegs = sorted(bootlegs, key=itemgetter(1))
-    bootlegs = [tuple(compress(item, [1, 1, 0, 1, 1, 1])) for item in bootlegs]
+    bootlegs = [compress(item, [1, 1, 0, 1, 1, 1]) for item in bootlegs]
     bootlegs = [Bootlegs(*item) for item in bootlegs]
     for bootleg in Formatter(*bootlegs)():
         print(bootleg)
