@@ -56,8 +56,8 @@ TEMPDIR = Path(os.path.expandvars("%_TMPDIR%"))
 
 # -----
 collection = csv.reader(arguments.collection, dialect=CustomDialect)  # type: Any
-collection = chain(*[tuple(compress(item, [0, 0, 1, 0, 0])) for item in collection])
-collection = list(filterfalse(match_(REGEX2.search), collection))
+collection = [compress(item, [0, 0, 1, 0, 0]) for item in collection]
+collection = list(filterfalse(match_(REGEX2.search), chain.from_iterable(collection)))
 
 # -----
 ape = [(file, Path(file).parent.parent / "1.Monkey's Audio" / f"{Path(file).stem}.ape") for file in collection]  # type: List[Tuple[str, Path]]

@@ -5,12 +5,12 @@ import fnmatch
 import os
 from collections import namedtuple
 from functools import partial
-from itertools import chain, compress, filterfalse, groupby, tee
+from itertools import chain, compress, filterfalse, groupby, repeat
 from operator import eq, itemgetter
 from pathlib import Path
-from typing import Any, Iterator, Mapping, Optional, Tuple, Union
+from typing import Any, Iterator, List, Sized, Tuple, Union
 
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC  # type: ignore
 
 from Applications.decorators import itemgetter_
 
@@ -24,9 +24,82 @@ _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 
-# ==============
-# Local classes.
-# ==============
+# ===============
+# Global classes.
+# ===============
+class Files(object):
+
+    def __init__(self, path: Union[Path, str], *included: str) -> None:
+
+        """
+
+        :param path:
+        :param included:
+        :return:
+        """
+        collection: Any = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]  # [root1/file1.flac, root1/file2.flac], [root2/file1.m4a, root2/file2.m4a], ...
+        extensions = tuple(included)  # type: Tuple[str, ...]
+
+        if len(extensions) == 1:
+            (extension,) = extensions
+            collection = list(filter(None, fnmatch.filter(group, f"*.{extension}")) for group in collection)  # [root1/file1.flac, root1/file2.flac], ...
+
+        elif len(extensions) > 1:
+
+            # [[root1/file1.flac, root1/file2.flac], []], [[], [root2/file1.m4a, root2/file2.m4a]], ...
+            collection = [[fnmatch.filter(group, f"*.{extension}") for group in groups] for groups, extension in zip(repeat(collection, len(extensions)), extensions)]
+
+            # [root1/file1.flac, root1/file2.flac], [root2/file1.m4a, root2/file2.m4a], ...
+            collection = list(chain.from_iterable(collection))
+
+        # root1/file1.flac, root1/file2.flac, root2/file1.m4a, root2/file2.m4a, ...
+        self._collection = iter(chain.from_iterable(collection))  # type: Iterator[Path]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            nextit = next(self._collection)
+        except StopIteration:
+            raise
+        return nextit
+
+
+class AudioFLACTags(object):
+
+    def __init__(self, path: Union[Path, str]):
+        """
+
+        :param path:
+        :return:
+        """
+        collection = []  # type: List[Tuple[Union[Path, list], ...]]
+        files = [(file, FLAC(file)) for file in Files(path, "flac")]  # (root1/file1.flac, dict_tags), (root2/file2.flac, dict_tags), ...
+        for file, dict_tags in files:
+
+            # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
+            tags = [[(key, value) for value in values] for key, values in dict_tags.items()]  # type: Any
+
+            # [(tag1, value1), (tag2, value), (tag3, value), ...]
+            tags = list(chain.from_iterable([compress(item, [1]) for item in tags]))
+
+            # (root1/file1.flac, [(tag1, value1), (tag2, value), (tag3, value), ...]), ...
+            collection.append(tuple([file, tags]))
+
+        self._collection = iter(collection)  # type: Iterator[Tuple[Union[Path, list], ...]]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            nextit = next(self._collection)
+        except StopIteration:
+            raise
+        return nextit
+
+
 class Formatter(object):
     GAP = 8  # type: int
     SEP = "*"  # type: str
@@ -36,7 +109,7 @@ class Formatter(object):
 
         :param iterables:
         """
-        self._iterables = tuple(iterables)  # type: Tuple[Tuple[str, ...]]
+        self._iterables = tuple(iterables)  # type: Tuple[Tuple[str, ...], ...]
 
         # 1. Get bootlegs maximum width.
         bootlegs = chain(*tuple(compress(item, [1, 0, 0, 0, 0]) for item in iterables))  # type: Iterator[str]
@@ -129,7 +202,7 @@ class Formatter(object):
                     year = False
 
     @staticmethod
-    def get_width(*items: Optional[str]) -> int:
+    def get_width(*items: Sized) -> int:
         """
 
         :param items:
@@ -163,34 +236,28 @@ class GetPath(argparse.Action):
         setattr(namespace, self.dest, list(map(Path, values)))
 
 
-# ================
-# Local functions.
-# ================
-def get_audiotags(path: Union[Path, str]) -> Iterator[Tuple[str, Mapping[str, str]]]:
-    """
+# =================
+# Arguments parser.
+# =================
+parser = argparse.ArgumentParser()
+parser.add_argument("path", nargs="+", action=GetPath)
+arguments = parser.parse_args()
 
-    :param path:
-    :return:
-    """
-    collection: Any = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]  # [file1.flac, file2.flac, file3.flac], [file4.flac, file5.flac, file6.flac], [file1.jpg], ...
-    collection = [fnmatch.filter(files, "*.flac") for files in collection]  # [file1.flac, file2.flac, file3.flac], [file4.flac, file5.flac, file6.flac], [], ...
-    collection = filter(None, collection)  # [file1.flac, file2.flac, file3.flac], [file4.flac, file5.flac, file6.flac], ...
-    collection = chain(*collection)  # file1.flac, file2.flac, file3.flac, file4.flac, file5.flac, file6.flac, ...
-    collection = [(file, FLAC(file)) for file in collection]  # (file1.flac, tags), (file2.flac, tags), ...
-    for file, tags in collection:
-        data = [[(tag, value) for value in values] for tag, values in tags.items()]  # [(tag1, value)], [(tag2, value)], ...
-        data = chain(*data)  # (tag1, value), (tag2, value), ...
-        yield file, dict(sorted(data, key=itemgetter(0)))
-
+# ========
+# Objects.
+# ========
+Bootlegs = namedtuple("Bootlegs", ["bootleg", "artist", "year", "in_collection", "provider"])
 
 # ==========
 # Constants.
 # ==========
 EXCLUDED = ["accurateripdiscid",
             "accurateripresult",
+            "album artist",
             "albumartistsort",
             "artist",
             "artistsort",
+            "bonus",
             "bootlegtrackcity",
             "bootlegtrackcountry",
             "bootlegtracktour",
@@ -202,13 +269,19 @@ EXCLUDED = ["accurateripdiscid",
             "disctotal",
             "encodedby",
             "encoder",
+            "encoding",
             "encodingyear",
             "encodingtime",
+            "ensemble",
             "freedb",
             "genre",
+            "isrc",
+            "itunesmediatype",
             "itunnorm",
             "itunsmpb",
             "label",
+            "language",
+            "mediatype",
             "organization",
             "origalbum",
             "origyear",
@@ -226,54 +299,27 @@ EXCLUDED = ["accurateripdiscid",
             "tracknumber",
             "tracktotal"]
 
-# =================
-# Arguments parser.
-# =================
-parser = argparse.ArgumentParser()
-parser.add_argument("path", nargs="+", action=GetPath)
-arguments = parser.parse_args()
+if __name__ == "__main__":
 
-# ============
-# Main script.
-# ============
-Bootlegs = namedtuple("Bootlegs", ["bootleg", "artist", "year", "in_collection", "provider"])
+    bootlegs = []  # type: List[Tuple[str, ...]]
 
-# Get bootlegs collection.
-master_collection = []  # type: Any
-for path in arguments.path:
+    # Get bootlegs collection.
+    for path in arguments.path:
+        all_tags: Any = [compress(file, [0, 1]) for file in AudioFLACTags(path)]  # ([(tag1, value1), (tag2, value), (tag3, value), ...],), ([(tag1, value1), (tag2, value), (tag3, value), ...],), ...
+        for tags in chain.from_iterable(all_tags):
+            for exclusion in EXCLUDED:
+                tags = list(filterfalse(itemgetter_(0)(partial(eq, exclusion)), tags))
+            dict_tags = dict(tags)
+            dict_tags.update(incollection=dict_tags.get("incollection", "N"))
+            dict_tags.update(mediaprovider=dict_tags.get("mediaprovider"))
+            bootlegs.append(tuple(dict_tags[key] for key in sorted(dict_tags)))  # (value1, value2, value3), ...
+            bootlegs = list(set(bootlegs))
 
-    # ----- Get audio tags collection.
-    collection = []  # type: Any
-    audio_tags = [tuple(compress(item, [0, 1])) for item in get_audiotags(path)]
-    audio_tags = chain(*audio_tags)  # {"album": ..., "albumartist": ..., ...}, {"album": ..., "albumartist": ..., ...}, ...
-    for tag in audio_tags:
-        tag.update(incollection=tag.get("incollection", "N"))
-        tag.update(mediaprovider=tag.get("mediaprovider"))
-        collection.append(tag)
-    audio_tags = [item.items() for item in collection]  # dict_items([("album", ...), ("albumartist", ...), ...]), dict_items([("album", ...), ("albumartist", ...), ...]), ...
-
-    # ---- Remove excluded audio tags.
-    collection = []
-    for item in audio_tags:
-        for tag in EXCLUDED:
-            item = tuple(filterfalse(itemgetter_(0)(partial(eq, tag)), item))
-        item = tuple(sorted(item, key=itemgetter(0)))
-        collection.append(item)
-
-    # ----- Remove duplicates audio tags.
-    collection = [[tuple(compress(sub_item, [0, 1])) for sub_item in item] for item in collection]  # [(album,), (albumartist,), ...], [(album,), (albumartist,), ...], ...
-    collection = [tuple(chain(*item)) for item in collection]  # (album, albumartist, ...), (album, albumartist, ...), ...
-    collection = set(collection)
-
-    # ----- Set audio tags master collection.
-    master_collection.append(collection)
-
-# Format bootlegs collection.
-master_collection = chain(*master_collection)
-master_collection = sorted(master_collection, key=itemgetter(2))
-master_collection = sorted(master_collection, key=itemgetter(3))
-master_collection = sorted(master_collection, key=itemgetter(1))
-master_collection = [tuple(compress(item, [1, 1, 0, 1, 1, 1])) for item in master_collection]
-master_collection = [Bootlegs(*item) for item in master_collection]
-for bootleg in Formatter(*master_collection)():
-    print(bootleg)
+    # Format bootlegs collection.
+    bootlegs = sorted(bootlegs, key=itemgetter(2))
+    bootlegs = sorted(bootlegs, key=itemgetter(3))
+    bootlegs = sorted(bootlegs, key=itemgetter(1))
+    bootlegs = [tuple(compress(item, [1, 1, 0, 1, 1, 1])) for item in bootlegs]
+    bootlegs = [Bootlegs(*item) for item in bootlegs]
+    for bootleg in Formatter(*bootlegs)():
+        print(bootleg)

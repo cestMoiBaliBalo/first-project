@@ -61,7 +61,7 @@ arguments = parser.parse_args()
 # Get output file.
 output = arguments.output
 if not arguments.output:
-    output = open(Path(os.path.expandvars("%TEMP%")) / "tmp6k11k3_f" / "tmp3qgkq_z9", mode=APPEND, encoding=UTF8)
+    output = open(Path(os.path.expandvars("%TEMP%")) / "tmp77ftugt2" / "tmpk_i1o7h9", mode=APPEND, encoding=UTF8)
 
 # Process digital audio file.
 for path in arguments.path:
