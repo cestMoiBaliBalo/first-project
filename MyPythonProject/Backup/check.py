@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterator, List, Mapping, Tuple, Union
 
 from dateutil.parser import parse
+from more_itertools import chunked  # type: ignore
 
 from Applications.callables import match_
 from Applications.decorators import itemgetter_, map_
@@ -56,7 +57,7 @@ def format_index_(index: int) -> str:
     return "{0:>5d}".format(index)
 
 
-def format_(*iterables: Tuple[str, ...]) -> Iterator[Tuple[str, int]]:
+def format_(*iterables: List[str]) -> Iterator[Tuple[str, int]]:
     """
 
     :param iterables:
@@ -64,23 +65,23 @@ def format_(*iterables: Tuple[str, ...]) -> Iterator[Tuple[str, int]]:
     """
 
     # 1. Compress collection. Keep only file and last change UTC date.
-    collection = [compress(file, [0, 0, 1, 1, 0]) for file in iterables]  # type: Any
+    files = [compress(file, [0, 0, 1, 1, 0]) for file in iterables]  # type: Any
 
     # 2. Filter collection. Keep only FLAC files.
-    collection = filter(itemgetter_(0)(match_(arguments.pattern.search)), chain.from_iterable(collection))
+    files = filter(itemgetter_(0)(match_(arguments.pattern.search)), chunked(chain.from_iterable(files), 2))
 
     # 3. Convert last change UTC date into timestamp.
-    collection = zip(*map_(1)(get_timestamp)(*zip(*collection)))
+    files = zip(*map_(1)(get_timestamp)(*zip(*files)))
 
     # 4. Remove duplicate files. Keep only the most recent last change UTC date for every file.
-    collection = {key: list(group) for key, group in groupby(collection, key=itemgetter(0))}
-    for key, values in collection.items():
-        collection[key] = values
+    files = {key: list(group) for key, group in groupby(files, key=itemgetter(0))}
+    for key, values in files.items():
+        files[key] = values
         if len(values) > 1:
-            collection[key] = [(key, max(itemgetter(1)(value))) for value in values]
+            files[key] = [(key, max(itemgetter(1)(value))) for value in values]
 
     # 5. Yield collection content.
-    for _, container in collection.items():
+    for _, container in files.items():
         for file, ts in container:
             yield file, ts
 
@@ -116,7 +117,7 @@ for target, group in groupby(csv.reader(arguments.files, CustomDialect()), key=i
     if {"BACKUP", "PRODUCTION"}.issubset(set(sub_collection.keys())):
         production = dict(("/".join(get_parts(file)[1:]), (ts, get_parts(file)[0])) for file, ts in format_(*sub_collection["PRODUCTION"]))  # type: Mapping[str, Tuple[int, str]]
         backup = dict(("/".join(get_parts(file)[3:]), ts) for file, ts in format_(*sub_collection["BACKUP"]))  # type: Mapping[str, int]
-        collection.extend(["=" * (len(target) + 8), f"Target: {target}.", "=" * (len(target) + 8)])
+        collection.extend(["=" * (len(target) + 8), f"Target: {target}."])
 
         # Get new files.
         new_files = [Path(production[item][1]) / item for item in sorted(set(production).difference(backup))]
