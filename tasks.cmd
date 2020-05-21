@@ -8,6 +8,7 @@ REM __status__ = "Production"
 
 
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+PUSHD %_PYTHONPROJECT%
 
 
 REM ==================
@@ -27,20 +28,26 @@ SET _cp=1252
 REM ============
 REM Main script.
 REM ============
-FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO IF %%J NEQ %_cp% CHCP %_cp% > NUL
 
 
-REM ===========================
-REM Set ECHO ON for debug mode.
-REM ===========================
-IF /I "%~1" EQU "DEBUG" @ECHO on
+REM ----------------------
+REM Set console code page.
+REM ----------------------
+PUSHD ..\Resources
+SET _step=1
+CALL shared.cmd
+IF DEFINED _chcp (
+    IF NOT DEFINED _mycp SET _mycp=%_chcp%
+    IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
+)
+POPD
 
 
 REM -------------
 REM Display menu.
 REM -------------
 :MENU
-python %_PYTHONPROJECT%\Tasks\Manager\main.py
+python Tasks\Manager\main.py
 
 
 REM ----------
@@ -54,7 +61,7 @@ REM Sync PDF documents to local CloudStation.
 REM -----------------------------------------
 IF ERRORLEVEL 36 (
     CLS
-    PUSHD %_myparent%
+    PUSHD ..
     CALL start.cmd 9
     POPD
     GOTO MENU
@@ -65,7 +72,7 @@ REM -----------------------
 REM Audio tables interface.
 REM -----------------------
 IF ERRORLEVEL 35 (
-    PUSHD "%_PYTHONPROJECT%\Interfaces\Sources\03"
+    PUSHD Interfaces\Sources\03
     python main.py
     POPD
     GOTO MENU
@@ -78,7 +85,7 @@ REM --------------------------
 IF ERRORLEVEL 34 (
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
-    PUSHD %_PYTHONPROJECT%\Backup
+    PUSHD Backup
     python targets.py %_BACKUP%\workspace.music
     POPD
     ENDLOCAL
@@ -87,15 +94,27 @@ IF ERRORLEVEL 34 (
 
 
 IF ERRORLEVEL 33 (
-:STEP_33
+:LOOP33
     CLS
     TYPE %_RESOURCES%\digital_bootlegs_audiotags_bs.txt
     ECHO:
     ECHO:
     ECHO:
-    SET /P _answer=Enter requested action number: 
+    SET /P _answer=Enter requested action: 
     IF [!_answer!] EQU [99] GOTO MENU
     IF [!_answer!] EQU [2] (
+        PUSHD %TEMP%
+        IF EXIST %_xxcopy% (
+            CLS
+            CALL %_xxcopy%
+            ECHO:
+            ECHO:
+            PAUSE
+        )
+        POPD
+        GOTO LOOP33
+    )
+    IF [!_answer!] EQU [1] (
         IF EXIST %TEMP%\%_xxcopy% (
             CLS
             TYPE %TEMP%\%_xxcopy%
@@ -103,26 +122,17 @@ IF ERRORLEVEL 33 (
             ECHO:
             PAUSE
         )
-        GOTO STEP_33
-    )
-    IF [!_answer!] EQU [1] (
-        IF EXIST %TEMP%\%_xxcopy% (
-            CLS
-            CALL %TEMP%\%_xxcopy%
-            ECHO:
-            ECHO:
-            PAUSE
-        )
-        GOTO STEP_33
+        GOTO LOOP33
     )
 )
 
 
 IF ERRORLEVEL 32 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
     SET _commandsfile=rippedtracks.cmd
     SET _tracksfile=rippedtracks.txt
     IF EXIST "\\diskstation\music" (
-        PUSHD %_RESOURCES%
+        PUSHD ..\Resources
         IF EXIST !_commandsfile! (
             CLS
             CALL !_commandsfile! 0 && DEL !_commandsfile! && DEL !_tracksfile! 2> NUL
@@ -132,8 +142,7 @@ IF ERRORLEVEL 32 (
         )
         POPD
     )
-    SET _commandsfile=
-    SET _tracksfile=
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -153,7 +162,7 @@ REM -------------------------------
 REM Update audio discs played date.
 REM -------------------------------
 IF ERRORLEVEL 30 (
-    PUSHD %_PYTHONPROJECT%\Interfaces\Sources\06
+    PUSHD Interfaces\Sources\06
     python main.py
     POPD
     GOTO MENU
@@ -178,25 +187,26 @@ REM ------------------------
 REM Additional backup tasks.
 REM ------------------------
 IF ERRORLEVEL 28 (
+    PUSHD ..\Resources
+
+:LOOP28
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
-    PUSHD %_PYTHONPROJECT%\Tasks\Manager
+    PUSHD ..\MyPythonProject\Tasks\Manager
     python music.py
     IF ERRORLEVEL 100 (
         POPD
         ENDLOCAL
-        CALL :BACKUP !ERRORLEVEL!
+        CALL backup.cmd "music" !ERRORLEVEL!
         ECHO:
         ECHO:
         PAUSE
-        GOTO MENU
+        GOTO LOOP28
     )
     IF ERRORLEVEL 99 (
         POPD
         ENDLOCAL
-        ECHO:
-        ECHO:
-        PAUSE
+        POPD
         GOTO MENU
     )
 
@@ -224,8 +234,8 @@ REM ----------------------------------------------
 REM Both M4A and MP3 without lossless version (iTunes, amazon, etc).
 IF ERRORLEVEL 26 (
     CLS
-    PUSHD %_myparent%
-    CALL lossy.cmd P
+    PUSHD ..
+    CALL lossy.cmd T
     POPD
     GOTO MENU
 )
@@ -240,7 +250,7 @@ IF ERRORLEVEL 25 (
     CLS
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _collection=G:\Videos\AVCHD Videos
-    PUSHD %_COMPUTING%
+    PUSHD ..\Resources
     SET _drive=
     SET _step=6
     SET _type=3
@@ -268,7 +278,6 @@ IF ERRORLEVEL 25 (
 
     REM 2. Clone collection to backup drive. Don't delete extra files and directories!
     CLS
-    SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy videos to local drive !_drive:~0,-1!."
     IF NOT DEFINED _answer GOTO END25
     IF [!_answer!] EQU [N] GOTO END25
@@ -294,12 +303,13 @@ IF ERRORLEVEL 24 (
 
     CLS
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _collection=G:\Videos\Samsung S5
+    SET _local_collection=G:\Videos\Samsung S5
+    SET _cloud_collection=\\DISKSTATION\backup\Images\Samsung S5
 
     REM 1. Check if new images have been inserted since the previous sync.
     CLS
     ECHO Check if new images have been inserted/removed since the previous sync...
-    XXCOPY "!_collection!\" "\\DISKSTATION\backup\Images\Samsung S5\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY "!_local_collection!\" "!_cloud_collection!\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO Syncing is not required. Task is going to be aborted^^!
         ECHO:
@@ -310,12 +320,11 @@ IF ERRORLEVEL 24 (
 
     REM 2. Clone collection to distant drive. Delete extra files!
     CLS
-    SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to distant drive with extra files removal."
     IF NOT DEFINED _answer GOTO END24
     IF [!_answer!] EQU [N] GOTO END24
     CLS
-    XXCOPY /EC "!_collection!\" "\\DISKSTATION\backup\Images\Samsung S5\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "!_local_collection!\" "!_cloud_collection!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -337,8 +346,8 @@ IF ERRORLEVEL 23 (
 
     CLS
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _collection=\\DISKSTATION\backup\Images\Collection
-    PUSHD %_COMPUTING%
+    SET _cloud_collection=\\DISKSTATION\backup\Images\Collection
+    PUSHD ..\Resources
     SET _drive=
     SET _step=6
     SET _type=3
@@ -357,7 +366,7 @@ IF ERRORLEVEL 23 (
     ECHO Check if new images have been inserted into the local drive since the previous sync...
     ECHO:
     ECHO:
-    XXCOPY "!_drive!\*\?*\*.jpg" "!_collection!\" /S /L /BB /ZS /Q3 /Fo%TEMP%\FileList /oA:%_XXCOPYLOG%
+    XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /L /BB /ZS /Q3 /Fo%TEMP%\FileList /oA:%_XXCOPYLOG%
     IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
         CLS
         ECHO New images have been inserted into the local drive since the previous sync. Please check %TEMP%\FileList.
@@ -365,13 +374,12 @@ IF ERRORLEVEL 23 (
         ECHO:
         PAUSE
         CLS
-        SET _answer=
         CALL :QUESTION "YN" "20" "N" "Would you like to copy new local images to the distant collection?"
         IF DEFINED _answer IF [!_answer!] EQU [Y] (
             CLS
             ECHO:
             ECHO:
-            XXCOPY "!_drive!\*\?*\*.jpg" "!_collection!\" /S /BB /ZS /Q3 /oF0 /oA:%_XXCOPYLOG%
+            XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /BB /ZS /Q3 /oF0 /oA:%_XXCOPYLOG%
             IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 DEL %TEMP%\FileList 2> NUL
         )
     )
@@ -379,7 +387,7 @@ IF ERRORLEVEL 23 (
     REM 2. Check if new images have been inserted since the previous sync.
     CLS
     ECHO Check if new images have been inserted since the previous sync...
-    XXCOPY "!_collection!\*\?*\*.jpg" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO Syncing is not required. Task is going to be aborted^^!
         ECHO:
@@ -390,12 +398,11 @@ IF ERRORLEVEL 23 (
 
     REM 3. Clone collection to local drive. Don't delete extra files and directories!
     CLS
-    SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive !_drive:~0,-1! with extra files removal."
     IF NOT DEFINED _answer GOTO END23
     IF [!_answer!] EQU [N] GOTO END23
     CLS
-    XXCOPY /EC "!_collection!\*\?*\*.jpg" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -408,7 +415,7 @@ IF ERRORLEVEL 23 (
     REM       - "IPHONE".
     REM       - "RECOVER".
     CLS
-    XXCOPY /CE "!_drive!\" "\!_collection!\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+    XXCOPY /CE "!_drive!\" "\!_cloud_collection!\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -427,9 +434,7 @@ REM --------------------------
 IF ERRORLEVEL 22 (
     CLS
     ECHO:
-    PUSHD %_PYTHONPROJECT%
     python textrunner.py
-    POPD
     ECHO:
     ECHO:
     PAUSE
@@ -455,15 +460,18 @@ REM ------------------------------------------
 REM Run python regular expressions unit tests.
 REM ------------------------------------------
 IF ERRORLEVEL 20 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    PUSHD ..\Resources
     SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests2.txt") DO SET _command=!_command! %%A
+    FOR /F "usebackq" %%A IN ("unittests2.txt") DO SET _command=!_command! %%A
     CLS
     ECHO:
     !_command!
     ECHO:
     ECHO:
     PAUSE
-    SET _command=
+    POPD
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -472,15 +480,18 @@ REM ------------------------------------------------
 REM Run python data validation functions unit tests.
 REM ------------------------------------------------
 IF ERRORLEVEL 19 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    PUSHD ..\Resources
     SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("%_RESOURCES%\unittests1.txt") DO SET _command=!_command! %%A
+    FOR /F "usebackq" %%A IN ("unittests1.txt") DO SET _command=!_command! %%A
     CLS
     ECHO:
     !_command!
     ECHO:
     ECHO:
     PAUSE
-    SET _command=
+    POPD
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -491,9 +502,8 @@ REM -----------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 18 (
 
-    CLS
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
+    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidï¿½os
     SET _local_avchd=G:\Videos\AVCHD Videos
 
     REM 1. Check if new videos have been inserted since the previous sync.
@@ -510,7 +520,6 @@ IF ERRORLEVEL 18 (
 
     REM 2. Clone collection to distant drive. Delete extra files and directories!
     CLS
-    SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy videos to distant drive."
     IF NOT DEFINED _answer GOTO END18
     IF [!_answer!] EQU [N] GOTO END18
@@ -532,9 +541,9 @@ REM Sync MyCloud audio files.
 REM -------------------------
 IF ERRORLEVEL 17 (
     CLS
-    PUSHD %TEMP%
-    DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py" --repository MyCloud
+    DEL %TEMP%\%_xxcopy% 2> NUL
+    PUSHD Interfaces\Sources\01
+    python main.py --repository MyCloud
     IF NOT ERRORLEVEL 1 CALL :CONFIRM
     POPD
     GOTO MENU
@@ -546,19 +555,21 @@ REM Sync mobile devices from local audio repositories.
 REM --------------------------------------------------
 IF ERRORLEVEL 16 (
     CLS
-    PUSHD %TEMP%
-    DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\Interfaces\Sources\02\main.py"
+    DEL %TEMP%\%_xxcopy% 2> NUL
+    PUSHD Interfaces\Sources\02
+    python main.py
     IF ERRORLEVEL 1 (
         ECHO:
         ECHO:
         POPD
         GOTO MENU
     )
-    IF EXIST "%_xxcopy%" CALL "%_xxcopy%"
+    PUSHD %TEMP%
+    IF EXIST %_xxcopy% CALL %_xxcopy%
     ECHO:
     ECHO:
     PAUSE
+    POPD
     POPD
     GOTO MENU
 )
@@ -570,14 +581,13 @@ REM -----------------------------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 15 (
 
-    CLS
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _collection=G:\Videos\Samsung S5
+    PUSHD G:\Videos\Samsung S5
 
     REM 1. Check if new images have been inserted since the previous sync.
     CLS
     ECHO Check if new images have been inserted/removed since the previous sync...
-    XXCOPY "\\DISKSTATION\backup\Images\Samsung S5\" "!_collection!\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY "\\DISKSTATION\backup\Images\Samsung S5\" /L /ZS /Q3 /CLONE /PZ0 /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 1 (
         ECHO Syncing is not required. Task is going to be aborted^^!
         ECHO:
@@ -588,20 +598,38 @@ IF ERRORLEVEL 15 (
 
     REM 2. Clone collection to local drive. Delete extra files!
     CLS
-    SET _answer=
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to local drive with extra files removal."
     IF NOT DEFINED _answer GOTO END15
     IF [!_answer!] EQU [N] GOTO END15
     CLS
-    XXCOPY /EC "\\DISKSTATION\backup\Images\Samsung S5\" "!_collection!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "\\DISKSTATION\backup\Images\Samsung S5\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
 
 :END15
+    POPD
     ENDLOCAL
     GOTO MENU
 
+)
+
+
+REM -------------------------------
+REM Display digital audio bootlegs.
+REM -------------------------------
+IF ERRORLEVEL 14 (
+    CLS
+    ECHO List is in progess. Please wait...
+    PUSHD Tasks
+    python bootlegs.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
+    POPD
+    ECHO:
+    ECHO:
+    ECHO:
+    ECHO:
+    PAUSE
+    GOTO MENU
 )
 
 
@@ -610,9 +638,9 @@ REM Sync local audio repositories.
 REM ------------------------------
 IF ERRORLEVEL 13 (
     CLS
-    PUSHD %TEMP%
-    DEL %_xxcopy% 2> NUL
-    python "%_PYTHONPROJECT%\Interfaces\Sources\01\main.py"
+    DEL %TEMP%\%_xxcopy% 2> NUL
+    PUSHD Interfaces\Sources\01
+    python main.py
     IF NOT ERRORLEVEL 1 CALL :CONFIRM
     POPD
     GOTO MENU
@@ -636,6 +664,8 @@ REM -------------------------------
 REM List python installed packages.
 REM -------------------------------
 IF ERRORLEVEL 11 (
+
+:LOOP11
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
@@ -651,7 +681,8 @@ IF ERRORLEVEL 11 (
     ECHO:
     PAUSE
     ENDLOCAL
-    GOTO MENU
+    GOTO LOOP11
+
 )
 
 
@@ -659,6 +690,8 @@ REM ------------------------------
 REM List Python outdated packages.
 REM ------------------------------
 IF ERRORLEVEL 10 (
+
+:LOOP10
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
@@ -674,7 +707,8 @@ IF ERRORLEVEL 10 (
     ECHO:
     PAUSE
     ENDLOCAL
-    GOTO MENU
+    GOTO LOOP10
+
 )
 
 
@@ -682,6 +716,8 @@ REM ------------
 REM Upgrade pip.
 REM ------------
 IF ERRORLEVEL 9 (
+
+:LOOP9
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET _name=
     SET _venv=
@@ -697,7 +733,8 @@ IF ERRORLEVEL 9 (
     ECHO:
     PAUSE
     ENDLOCAL
-    GOTO MENU
+    GOTO LOOP9
+
 )
 
 
@@ -729,8 +766,9 @@ REM ---------------------
 REM Backup artists [U-Z].
 REM ---------------------
 IF ERRORLEVEL 6 (
-    CLS
-    CALL :BACKUP 204959095
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 204959095
+    POPD
     GOTO MENU
 )
 
@@ -739,8 +777,9 @@ REM ---------------------
 REM Backup artists [P-T].
 REM ---------------------
 IF ERRORLEVEL 5 (
-    CLS
-    CALL :BACKUP 1535780732
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 1535780732
+    POPD
     GOTO MENU
 )
 
@@ -749,8 +788,9 @@ REM ---------------------
 REM Backup artists [K-O].
 REM ---------------------
 IF ERRORLEVEL 4 (
-    CLS
-    CALL :BACKUP 1196865155
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 1196865155
+    POPD
     GOTO MENU
 )
 
@@ -759,8 +799,9 @@ REM ---------------------
 REM Backup artists [F-J].
 REM ---------------------
 IF ERRORLEVEL 3 (
-    CLS
-    CALL :BACKUP 1674209532
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 1674209532
+    POPD
     GOTO MENU
 )
 
@@ -769,8 +810,9 @@ REM ---------------------
 REM Backup artists [A-E].
 REM ---------------------
 IF ERRORLEVEL 2 (
-    CLS
-    CALL :BACKUP 854796030
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 854796030
+    POPD
     GOTO MENU
 )
 
@@ -779,8 +821,9 @@ REM ---------------------------
 REM Default audio files backup.
 REM ---------------------------
 IF ERRORLEVEL 1 (
-    CLS
-    CALL :BACKUP 854796030 1674209532 1196865155 1535780732 204959095
+    PUSHD ..\Resources
+    CALL backup.cmd "music" 854796030 1674209532 1196865155 1535780732 204959095
+    POPD
     GOTO MENU
 )
 
@@ -789,6 +832,8 @@ REM ==========
 REM Exit menu.
 REM ==========
 :EXIT
+POPD
+ENDLOCAL
 CLS
 EXIT /B 0
 
@@ -814,9 +859,8 @@ EXIT /B 0
 
 :CONFIRM
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-PUSHD "%TEMP%"
-SET _answer=
-IF EXIST "%_xxcopy%" (
+PUSHD %TEMP%
+IF EXIST %_xxcopy% (
     CLS
     ECHO The following XXCOPY commands will be run:
     ECHO:
@@ -827,7 +871,7 @@ IF EXIST "%_xxcopy%" (
     CALL :QUESTION "YN" "90" "N" "Would you like to continue? "
     IF DEFINED _answer IF [!_answer!] EQU [Y] (
         CLS
-        CALL "%_xxcopy%"
+        CALL %_xxcopy%
         ECHO:
         ECHO:
         PAUSE
@@ -838,178 +882,18 @@ ENDLOCAL
 EXIT /B 0
 
 
-REM ===================
-REM BACKUP AUDIO FILES.
-REM ===================
-REM Check at first if backup is required then backup if confirmed by user interface.
-:BACKUP
-CLS
-SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-SET _arguments=
-SET _output=%TEMP%\backup.txt
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-
-REM -----
-DEL %_output% 2> NUL
-
-REM -----
-PUSHD %_COMPUTING%\MyJavaProject
-
-REM    ----------
-REM A. Java step.
-REM    ----------
-REM    Enumerate files.
-:STEP1
-IF [%~1] EQU [] GOTO STEP2
-SET _arguments=%_arguments% %~1
-
-REM -----
-IF NOT EXIST "targets.txt" (
-    ECHO Targets repository ("%_COMPUTING%\MyJavaProject\targets.txt"^) can't be found. Please check^^!
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO STEP4
-)
-FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
-    IF [%%~A] EQU [%~1] (
-        SET _target=%%~A
-        SET _environment=%%~B
-        SET _path=%%~C
-        SET _regex=%%~D
-        SET _command="!_path!" "!_target!" "!_environment!" --output "%_output%"
-        IF DEFINED _regex SET _command=!_command! --regex "!_regex!"
-        PUSHD out\production\MyJavaProject
-        java com.xavier.computing.Finder !_command! > NUL
-        POPD
-    )
-)
-SHIFT /1
-GOTO STEP1
-
-REM    ------------
-REM B. Python step.
-REM    ------------
-REM    Check if backup is required.
-:STEP2
-IF NOT EXIST %_output% GOTO STEP4
-
-REM ----- B.1. Define 3.8 as python interpreter.
-ECHO: PATH is composed of the following directories.
-ECHO:
-CALL :GET_PATHS
-ECHO:
-ECHO:
-PAUSE
-CLS
-
-REM ----- B.2. Run checker.
-PUSHD ..\MyPythonProject\Backup
-python check.py "%_output%" "\.(?:ape|dsf|flac)$" --pprint
-
-REM ----- B.3. Backup isn't required.
-IF ERRORLEVEL 100 (
-    POPD
-    ECHO Backup isn't required^^!
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO STEP3
-)
-
-REM ----- B.4. Backup is required.
-ECHO:
-CHOICE /C YN /N /CS /T 30 /D N /M "An additional backup is required. Would you like to run it? Press [Y] for Yes or [N] for No. "
-CLS
-
-REM ----- B.5. Backup is aborted.
-IF ERRORLEVEL 2 (
-    POPD
-    GOTO STEP3
-)
-
-REM ----- B.6. Confirm backup.
-ECHO The following backup command will be run: python main.py -c music%_arguments%
-ECHO:
-CHOICE /C YN /N /CS /T 30 /D N /M "Would you like to continue? Press [Y] for Yes or [N] for No. "
-IF ERRORLEVEL 2 (
-    POPD
-    GOTO STEP3
-)
-python main.py -c music%_arguments%
-POPD
-ECHO:
-ECHO:
-PAUSE
-ECHO:
-ECHO:
-
-REM    ----------------
-REM C. End of function.
-REM    ----------------
-
-REM -----
-:STEP3
-CLS
-POPD
-(
-    ENDLOCAL
-    ECHO: PATH is now composed of the following folders.
-    ECHO:
-    CALL :GET_PATHS
-    ECHO:
-    ECHO:
-    PAUSE
-    CLS
-    EXIT /B 0
-)
-
-REM -----
-:STEP4
-CLS
-POPD
-(
-    ENDLOCAL
-    ECHO:
-    ECHO:
-    PAUSE
-    CLS
-    EXIT /B 0
-)
-
-
-REM =====================================
-REM GET THE LIST OF PATHS COMPOSING PATH.
-REM =====================================
-:GET_PATHS
-SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-SET _index=0
-SET _path=%PATH%
-:R04_LOOP
-FOR /F "usebackq tokens=1* delims=;" %%A IN ('!_path!') DO (
-    SET /A "_index+=1"
-    IF !_index! LEQ 9 ECHO    !_index!. %%A
-    IF !_index! GTR 9 IF !_index! LEQ 99 ECHO   !_index!. %%A
-    IF !_index! GTR 99 IF !_index! LEQ 999 ECHO  !_index!. %%A
-    SET _path=%%B
-    GOTO R04_LOOP
-)
-ENDLOCAL
-EXIT /B 0
-
-
 REM ===============================================
 REM GET THE LIST OF AVAILABLE VIRTUAL ENVIRONMENTS.
 REM ===============================================
 :GET_VIRTUALENV
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+PUSHD VirtualEnv
 SET _index=0
 SET _exit=0
 SET _name=
 SET _venv=
-PUSHD %_PYTHONPROJECT%\VirtualEnv
 
-:R05_STEP1
+:R01_STEP1
 CLS
 
 REM -----
@@ -1045,33 +929,33 @@ FOR /F "usebackq tokens=*" %%A IN (`DIR /B /AD /ON`) DO (
         SET _ok=1
     )
 )
-IF %_index% EQU 0 SET _exit=100&& GOTO R05_STEP5
+IF %_index% EQU 0 SET _exit=100&& GOTO R01_STEP5
 ECHO:
 ECHO:  99. Exit
 
 REM Get user input.
-:R05_STEP2
+:R01_STEP2
 ECHO:
 ECHO:
 SET /P _answer="Please choose environment: "
 
 REM Check user input.
-:R05_STEP3
+:R01_STEP3
 SET _ko=
 FOR /F "usebackq delims=0123456789" %%A IN ('%_answer%') DO SET _ko=%%A
-IF DEFINED _ko GOTO R05_STEP1
-IF NOT DEFINED _ko IF %_answer% EQU 99 SET _exit=100&& GOTO R05_STEP5
-IF NOT DEFINED _ko IF %_answer% GTR %_index% GOTO R05_STEP1
+IF DEFINED _ko GOTO R01_STEP1
+IF NOT DEFINED _ko IF %_answer% EQU 99 SET _exit=100&& GOTO R01_STEP5
+IF NOT DEFINED _ko IF %_answer% GTR %_index% GOTO R01_STEP1
 
 REM Get virtual environment respective directory.
-:R05_STEP4
+:R01_STEP4
 SET _name=!_dir%_answer%!
 IF %_answer% LEQ 9 SET _name=!_dir0%_answer%!
 SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 
-:R05_STEP5
-POPD
+:R01_STEP5
 (
+    POPD
     ENDLOCAL
     SET _name=%_name%
     SET _venv=%_venv%

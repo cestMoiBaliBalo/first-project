@@ -16,6 +16,7 @@ REM :param 6: Audio tags decorators.
 
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+PUSHD %_PYTHONPROJECT%\AudioCD\Grabber
 
 
 REM    ==================
@@ -42,20 +43,14 @@ IF [%~6] NEQ [] (
     SHIFT /6
     GOTO LOOP
 )
-PUSHD "%_PYTHONPROJECT%\AudioCD\Grabber"
 python Grab.py "%~1" %~2 %~3 %_decorators%--tags_processing %~5
-POPD
 
 
 REM ============
 REM Exit script.
 REM ============
 (
-    SET _me=
-    SET _idtags=
-    SET _grabber=
-    SET _myparent=
-    SET _decorators=
+    POPD
     ENDLOCAL
     CLS
     EXIT /B 0

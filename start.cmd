@@ -39,7 +39,7 @@ SET _xxcopy=xxcopy.cmd
 @REM     -----------------------------------------------------
 @REM  1. Allow interface to decode Latin-1 encoded characters.
 @REM     -----------------------------------------------------
-PUSHD %_COMPUTING%
+PUSHD %_RESOURCES%
 
 @REM     Set code page.
 SET _chcp=
@@ -103,7 +103,7 @@ GOTO MAIN
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp6k11k3_f\ /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp77ftugt2\ /oA:%_XXCOPYLOG%
 
 
 @REM      ----------------------------------------
@@ -202,7 +202,7 @@ IF EXIST y: (
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_COMPUTING%
+        PUSHD %_RESOURCES%
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP6C
@@ -323,7 +323,7 @@ IF EXIST y:\Documents (
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_COMPUTING%
+        PUSHD %_RESOURCES%
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP23C

@@ -9,7 +9,8 @@ REM __status__ = "Production"
 
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;!PATH!
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+PUSHD %_PYTHONPROJECT%\AudioCD
 
 
 REM    ==================
@@ -22,25 +23,24 @@ SET _myparent=%~dp0
 REM    ==================
 REM B. Initializations 1.
 REM    ==================
+SET _mycp=
 SET _cp=1252
 SET _errorlevel=0
-SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 SET _jsontags=%TEMP%\tags.json
 SET _jsonxreferences=%TEMP%\xreferences.json
-SET _txtfiles=%_RESOURCES%\rippedtracks.txt
 
 
 REM    ============
 REM C. Main script.
 REM    ============
-SET _chcp=
-SET _mycp=
+PUSHD %_RESOURCES%
 SET _step=1
 CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
+POPD
 
 
 :MAIN
@@ -59,10 +59,7 @@ REM  1 --> Append ripped tracks to digital audio database.
 REM        -----------------------------------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    FOR /F %%I IN ("%_grabber%") DO SET _parent=%%~dpI
-    PUSHD !_parent:~0,-1!
     python Insert_Albums.py "%_jsontags%"
-    POPD
     DEL "%_jsontags%" 2>NUL
 )
 SHIFT
@@ -81,7 +78,7 @@ REM        ------------------------------
 REM  3 --> Update ripped discs dashboard.
 REM        ------------------------------
 :STEP3
-PUSHD %_grabber%
+PUSHD Grabber
 python RippedDiscs.py
 POPD
 SHIFT
@@ -112,18 +109,8 @@ REM  6 --> Exit script.
 REM        ------------
 :THE_END
 (
-    SET _cp=
-    SET _me=
-    SET _chcp=
-    SET _mycp=
-    SET _path=
-    SET _grabber=
-    SET _jsontags=
-    SET _myparent=
-    SET _txtfiles=
-    SET _errorlevel=
-    SET _jsonxreferences=
     IF DEFINED _mycp CHCP %_mycp% > NUL
+    POPD
     ENDLOCAL
     CLS
     EXIT /B %_errorlevel%

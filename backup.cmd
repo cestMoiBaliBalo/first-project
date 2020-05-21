@@ -9,6 +9,7 @@ REM __status__ = "Production"
 
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+PUSHD %_RESOURCES%
 
 
 REM ==================
@@ -21,7 +22,6 @@ SET _myparent=%~dp0
 REM ==================
 REM Initializations 2.
 REM ==================
-SET _chcp=
 SET _mycp=
 SET _cp=1252
 SET _errorlevel=0
@@ -31,7 +31,8 @@ SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
 REM ============
 REM Main script.
 REM ============
-FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
@@ -54,11 +55,12 @@ SHIFT
 GOTO MENU
 
 :THE_END
-ECHO:
-ECHO:
-PAUSE
-IF DEFINED _mycp CHCP %_mycp% > NUL
 (
+    ECHO:
+    ECHO:
+    PAUSE
+    IF DEFINED _mycp CHCP %_mycp% > NUL
+    POPD
     ENDLOCAL
     CLS
     EXIT /B %_errorlevel%

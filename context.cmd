@@ -9,7 +9,8 @@ REM __status__ = "Production"
 
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-PUSHD %_COMPUTING%
+SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_RESOURCES%
 
 
 REM ==================
@@ -30,7 +31,6 @@ REM Main algorithm.
 REM ===============
 
 REM Set code page.
-SET _chcp=
 SET _step=1
 CALL shared.cmd
 IF DEFINED _chcp (
@@ -39,7 +39,6 @@ IF DEFINED _chcp (
 )
 
 REM Get code page.
-SET _chcp=
 SET _step=1
 CALL shared.cmd
 IF DEFINED _chcp ECHO Code page is %_chcp%.
@@ -68,12 +67,9 @@ GOTO MAIN
 
 
 :STEP3
-SETLOCAL
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_PYTHONPROJECT%
+PUSHD ..\MyPythonProject
 python walk.py "%~2"
 POPD
-ENDLOCAL
 ECHO:
 ECHO:
 PAUSE
@@ -86,8 +82,7 @@ GOTO MAIN
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _first=1
 SET _targetid=
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_PYTHONPROJECT%\Backup
+PUSHD ..\MyPythonProject\Backup
 
 REM -----
 FOR /F "usebackq" %%A IN (`python target.py "%~2"`) DO (
@@ -102,6 +97,7 @@ IF DEFINED _targetid (
     POPD
 )
 
+REM -----
 ECHO:
 ECHO:
 PAUSE
@@ -113,8 +109,10 @@ GOTO MAIN
 
 
 :THE_END
-IF DEFINED _mycp CHCP %_mycp% > NUL
-POPD
-ENDLOCAL
-CLS
-EXIT /B 0
+(
+    IF DEFINED _mycp CHCP %_mycp% > NUL
+    POPD
+    ENDLOCAL
+    CLS
+    EXIT /B 0
+)

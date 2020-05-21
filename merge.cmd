@@ -10,7 +10,7 @@ REM __status__ = "Production"
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_COMPUTING%
+PUSHD %_RESOURCES%
 
 
 REM ==================
@@ -24,7 +24,6 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _ok=0
-SET _chcp=
 SET _mycp=
 SET _date=
 SET _cp=1252
@@ -52,7 +51,7 @@ SET _step=4
 SET _errorlevel=
 CALL shared.cmd
 IF DEFINED _errorlevel IF %_errorlevel% EQU 1 (
-    PUSHD MyPythonProject\Tasks\Manager
+    PUSHD ..\MyPythonProject\Tasks\Manager
     FOR /F "usebackq" %%A IN (`python merge.py "1" "add"`) DO (
         SET /A "_index+=1"
         IF !_index! EQU 2 SET _date=%%A
@@ -76,11 +75,11 @@ REM Exit script.
 REM ============
 
 :END2
-IF DEFINED _mycp CHCP %_mycp% > NUL
 IF [%~1] EQU [I] PAUSE
 
 :END1
 (
+    IF DEFINED _mycp CHCP %_mycp% > NUL
     POPD
     ENDLOCAL
     CLS

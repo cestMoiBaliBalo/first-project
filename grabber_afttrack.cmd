@@ -10,6 +10,7 @@ REM __status__ = "Production"
 CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
+PUSHD %_RESOURCES%
 
 
 REM    ==================
@@ -22,9 +23,9 @@ SET _myparent=%~dp0
 REM    ==================
 REM B. Initializations 2.
 REM    ==================
+SET _mycp=
 SET _cp=1252
 SET _errorlevel=0
-SET _grabber=%_PYTHONPROJECT%\AudioCD\Grabber
 
 
 REM    ============
@@ -32,8 +33,6 @@ REM C. Main script.
 REM    ============
 
 :CODEPAGE
-SET _chcp=
-SET _mycp=
 SET _step=1
 CALL shared.cmd
 IF DEFINED _chcp (
@@ -63,7 +62,7 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-PUSHD %_grabber%
+PUSHD ..\MyPythonProject\AudioCD\Grabber
 python RippedTracks.py "%~1"
 POPD
 SHIFT /2
@@ -83,14 +82,8 @@ REM  4 --> Exit script.
 REM        ------------
 :THE_END
 (
-    SET _cp=
-    SET _me=
-    SET _chcp=
-    SET _mycp=
-    SET _grabber=
-    SET _myparent=
-    SET _errorlevel=
     IF DEFINED _mycp CHCP %_mycp% > NUL
+    POPD
     ENDLOCAL
     CLS
     EXIT /B %_errorlevel%
