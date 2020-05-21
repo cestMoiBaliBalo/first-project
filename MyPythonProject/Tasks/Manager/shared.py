@@ -3,11 +3,12 @@
 import os
 import re
 from contextlib import ExitStack
-from itertools import chain, compress, count, starmap, zip_longest
+from itertools import chain, compress, count, starmap, zip_longest, permutations, islice
 from pathlib import Path
 from typing import Any, Iterator, Optional, Tuple
 
 from lxml import etree  # type: ignore
+from more_itertools import chunked
 
 from Applications.shared import UTF8
 
@@ -37,9 +38,10 @@ def format_collection(*iterables, start: int = 1) -> Iterator[Tuple[str, int, st
     :return:
     """
     collection: Any = zip(iterables, count(start))  # ((target1, 1234), 1), ((target2, 5678), 2), ...
-    collection = [tuple(chain(*[target], (number,))) for target, number in collection]  # (target1, 1234, 1), (target2, 5678, 2), ...
-    collection = [tuple(compress(item, [1, 0, 0])) + tuple(map(int, compress(item, [0, 0, 1]))) + tuple(compress(item, [0, 1, 0])) for item in collection]
-    for item in collection:
+    collection = [chain(target, (number,)) for target, number in collection]  # (target1, 1234, 1), (target2, 5678, 2), ...
+    collection = [permutations(item) for item in collection]
+    collection = [islice(item, 1, 2) for item in collection]  # (target1, 1, 1234), (target2, 2, 5678), ...
+    for item in chain.from_iterable(collection):
         yield item
 
 
@@ -50,10 +52,10 @@ def format_menu(*iterables, group=3) -> Iterator[str]:
     :param group:
     :return:
     """
-    collection: Any = [tuple(compress(item, [1, 1, 0])) for item in iterables]  # ("menu1", 1), ("menu2", 2), (None, None), ...
-    collection = starmap(_format1, collection)  # " 1. menu1", " 2. menu2", "", ...
+    collection: Any = [compress(item, [1, 1, 0]) for item in iterables]  # ("menu1", 1), ("menu2", 2), (None, None), ...
+    collection = starmap(_format1, chunked(chain.from_iterable(collection), 2))  # " 1. menu1", " 2. menu2", "", ...
     collection = zip_longest(*[collection] * group)  # (" 1. menu1", " 2. menu2", ""), ...
-    collection = [tuple(map(_format2, item)) for item in collection]  # (" 1. menu1     ", " 2. menu2     ", "          "), ...
+    collection = [map(_format2, item) for item in collection]  # (" 1. menu1     ", " 2. menu2     ", "          "), ...
     collection = ["".join(item) for item in collection]  # " 1. menu1      2. menu2               ", ...
     for item in collection:
         yield item

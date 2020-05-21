@@ -25,18 +25,16 @@ arguments = bootlegs.parser.parse_args()
 
 # Get albums collection.
 for path in arguments.path:
-    all_tags: Any = [compress(file, [0, 1]) for file in bootlegs.AudioFLACTags(path)]  # ([(tag1, value1), (tag2, value), (tag3, value), ...],), ([(tag1, value1), (tag2, value), (tag3, value), ...],), ...
-    for tags in chain.from_iterable(all_tags):
-        if "status" not in list(chain.from_iterable([tuple(compress(item, [1, 0])) for item in tags])):
+    for tags in [tags for _, tags in bootlegs.AudioFLACMetaData(path)]:
+        if "status" not in chain.from_iterable([compress(item, [1, 0]) for item in tags]):
             continue
-        temp_list = []  # type: Any
+        comments = []  # type: Any
         for inclusion in ["album", "albumartist", "albumsort", "date", "incollection", "mediaprovider"]:
-            temp_list.append(tuple(filter(itemgetter_(0)(partial(eq, inclusion)), tags)))
-        temp_list = list(chain.from_iterable(temp_list))
-        dict_tags = dict(temp_list)
-        dict_tags.update(incollection=dict_tags.get("incollection", "N"))
-        dict_tags.update(mediaprovider=dict_tags.get("mediaprovider"))
-        albums.append(tuple(dict_tags[key] for key in sorted(dict_tags)))  # (value1, value2, value3), ...
+            comments.append(filter(itemgetter_(0)(partial(eq, inclusion)), tags))
+        dict_data = dict(chain.from_iterable(comments))
+        dict_data.update(incollection=dict_data.get("incollection", "N"))
+        dict_data.update(mediaprovider=dict_data.get("mediaprovider"))
+        albums.append(tuple(dict_data[key] for key in sorted(dict_data)))  # (value1, value2, value3), ...
         albums = list(set(albums))
 
 # Format albums collection.

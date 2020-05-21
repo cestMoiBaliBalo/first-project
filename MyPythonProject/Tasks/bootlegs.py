@@ -46,7 +46,7 @@ class Files(object):
 
         if len(extensions) == 1:
             (extension,) = extensions
-            collection = list(filter(None, fnmatch.filter(group, f"*.{extension}")) for group in collection)  # [root1/file1.flac, root1/file2.flac], ...
+            collection = [filter(None, fnmatch.filter(group, f"*.{extension}")) for group in collection]  # [root1/file1.flac, root1/file2.flac], ...
 
         elif len(extensions) > 1:
 
@@ -54,7 +54,7 @@ class Files(object):
             collection = [[fnmatch.filter(group, f"*.{extension}") for group in groups] for groups, extension in zip(repeat(collection, len(extensions)), extensions)]
 
             # [root1/file1.flac, root1/file2.flac], [root2/file1.m4a, root2/file2.m4a], ...
-            collection = list(chain.from_iterable(collection))
+            collection = chain.from_iterable(collection)
 
         # root1/file1.flac, root1/file2.flac, root2/file1.m4a, root2/file2.m4a, ...
         self._collection = iter(chain.from_iterable(collection))  # type: Iterator[Path]
@@ -70,7 +70,7 @@ class Files(object):
         return nextit
 
 
-class AudioFLACTags(object):
+class AudioFLACMetaData(object):
 
     def __init__(self, path: Union[Path, str]) -> None:
         """
@@ -79,17 +79,17 @@ class AudioFLACTags(object):
         :return:
         """
         collection = []  # type: List[Tuple[Union[Path, list], ...]]
-        files = [(file, FLAC(file)) for file in Files(path, "flac")]  # (root1/file1.flac, dict_tags), (root2/file2.flac, dict_tags), ...
-        for file, dict_tags in files:
+        files = [(file, FLAC(file)) for file in Files(path, "flac")]  # (root1/file1.flac, dict_data), (root2/file2.flac, dict_data), ...
+        for file, metadata in files:
 
             # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
-            tags = [[(key, value) for value in values] for key, values in dict_tags.items()]  # type: Any
+            comments = [[(key, value) for value in values] for key, values in metadata.items()]  # type: Any
 
             # [(tag1, value1), (tag2, value), (tag3, value), ...]
-            tags = list(chain.from_iterable([compress(item, [1]) for item in tags]))
+            comments = list(chain.from_iterable([compress(item, [1]) for item in comments]))
 
             # (root1/file1.flac, [(tag1, value1), (tag2, value), (tag3, value), ...]), ...
-            collection.append(tuple([file, tags]))
+            collection.append(tuple([file, comments]))
 
         self._collection = iter(collection)  # type: Iterator[Tuple[Union[Path, list], ...]]
 
@@ -101,7 +101,8 @@ class AudioFLACTags(object):
             nextit = next(self._collection)
         except StopIteration:
             raise
-        return nextit
+        file, comments = nextit
+        return file, comments
 
 
 class Formatter(object):
@@ -299,19 +300,18 @@ EXCLUDED = ["accurateripdiscid",
 
 if __name__ == "__main__":
 
-    bootlegs = []  # type: Any
     arguments = parser.parse_args()
+    bootlegs = []  # type: Any
 
     # Get bootlegs collection.
     for path in arguments.path:
-        all_tags: Any = [compress(file, [0, 1]) for file in AudioFLACTags(path)]  # ([(tag1, value1), (tag2, value), (tag3, value), ...],), ([(tag1, value1), (tag2, value), (tag3, value), ...],), ...
-        for tags in chain.from_iterable(all_tags):
+        for metadata in [metadata for _, metadata in AudioFLACMetaData(path)]:
             for exclusion in EXCLUDED:
-                tags = list(filterfalse(itemgetter_(0)(partial(eq, exclusion)), tags))
-            dict_tags = dict(tags)
-            dict_tags.update(incollection=dict_tags.get("incollection", "N"))
-            dict_tags.update(mediaprovider=dict_tags.get("mediaprovider"))
-            bootlegs.append(tuple(dict_tags[key] for key in sorted(dict_tags)))  # (value1, value2, value3), ...
+                metadata = filterfalse(itemgetter_(0)(partial(eq, exclusion)), metadata)
+            dict_data = dict(metadata)
+            dict_data.update(incollection=dict_data.get("incollection", "N"))
+            dict_data.update(mediaprovider=dict_data.get("mediaprovider"))
+            bootlegs.append(tuple(dict_data[key] for key in sorted(dict_data)))  # (value1, value2, value3), ...
             bootlegs = list(set(bootlegs))
 
     # Format bootlegs collection.
