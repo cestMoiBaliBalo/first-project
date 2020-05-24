@@ -926,55 +926,78 @@ def get_drives() -> Iterator[str]:
         yield drive
 
 
-def format_collection(*args: str, gap: int = 0, char: str = "", length: Optional[int] = None) -> Tuple[int, Iterator[str]]:
+def pprint_sequence(*items, align="<", gap=0, char="", width=None):
     """
+    Pretty print sequence by aligning items.
+    Alignment is made respectively to the highest common width of all items.
+    Or respectively to the value given by the keyword argument `width` if it is the highest value.
 
-    :param args:
-    :param gap:
-    :param char:
-    :param length:
-    :return:
+    :param items: sequence. Must be composed of strings or integers.
+    :param align: alignment. Left is the default value.
+    :param gap: number of whitespaces appended at the end of each aligned item.
+    :param char: character used to fill the empty space created by the alignment. Whitespace is the default value.
+    :param width: width used by the alignment. Can override the highest common width of all items.
+    :return: iterator yielding aligned items.
     """
-    _length = max(len(arg) for arg in args)
-    if length:
-        if length > _length:
-            _length = int(length)
-    return _length, iter("{0:<{1}}{2}".format(arg, _length + gap, char) for arg in args)
-
-
-def pprint_sequence(*items):
-    """
-
-    :param items:
-    :return:
-    """
-    for item in _pprint_sequence(*items):
+    _width = 0  # type: int
+    with suppress(TypeError):
+        _width = int(width)
+    for item in _pprint_sequence(align, gap, char, _width, *map(stringify, items)):
         yield item
 
 
-def pprint_mapping(*iterables):
+def pprint_mapping(*iterables, gap=0, char="", width=None):
     """
+    Pretty print key-value pairs by left-aligning keys.
+    Keys alignment is made respectively to the highest common width of all keys.
 
-    :param iterables:
-    :return:
+    :param iterables: key-value pairs.
+    :param gap: number of whitespaces appended at the end of each aligned key.
+    :param char: character used to fill the empty space created by the key alignment. Whitespace is the default value.
+    :param width: width used by the key alignment. Can override the highest common width of all keys.
+    :return: iterator yielding aligned key-value pairs.
     """
-    sequence = iter(iterables)  # type: Iterable[Tuple[Union[int, str], Union[int, str]]]
-    keys, values = zip(*sequence)
-    length = max(len(stringify(key)) for key in keys)
-    for key, value in zip(("{0:<{1}}".format(key, length) for key in keys), values):
+    keys, values = zip(*iterables)
+    keys = list(map(stringify, keys))  # type: List[str]
+
+    # -----
+    _width = 0  # type: int
+    with suppress(TypeError):
+        _width = int(width)
+    _width = max([max(map(len, keys)), _width])
+
+    # -----
+    for key, value in zip(_pprint_sequence("<", gap, char, _width, *keys), values):
         yield key, value
 
 
-def pprint_count(*iterables, length=5):
+def pprint_count(*iterables, key_gap=0, key_width=None, char=("", "")):
     """
+    Pretty print key-value pairs by left-aligning keys and right-aligned values.
+    Keys alignment is made respectively to the highest common width of all keys.
+    Values alignment is made respectively to the highest common width of all values.
 
-    :param iterables:
-    :param length:
-    :return:
+    :param iterables: key-value pairs.
+    :param key_gap: number of whitespaces appended at the end of each aligned key.
+    :param key_width: width used by the key alignment. Can verride the highest common width of all keys.
+    :param char: character used to fill the empty space created both by the key alignment and the value alignment. Whitespace is the default value.
+    :return: iterator yielding aligned key-value pairs.
     """
-    sequence = iter(iterables)  # type: Iterator[Tuple[str, int]]
-    keys, values = zip(*sequence)
-    for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0:>{1}d}".format(value, length) for value in values)):
+    keys, values = zip(*iterables)
+    keys = list(map(stringify, keys))  # type: List[str]
+
+    # -----
+    key_char, val_char = char
+
+    # -----
+    width = 0  # type: int
+    with suppress(TypeError):
+        width = int(key_width)
+    _key_width = max([max(map(len, keys)), width])  # type: int
+    _val_width = max(map(len, map(stringify, values)))  # type: int
+
+    # -----
+    for key, value in zip(_pprint_sequence("<", key_gap, key_char, _key_width, *keys), ["{:{fill}>{width}d}".format(value, fill=val_char, width=_val_width) for value in values]):
         yield key, value
 
 
@@ -1244,14 +1267,24 @@ def _format_date(dt: Union[date, datetime], template: str) -> str:
                                          Z=dt.strftime("%Z"))
 
 
-def _pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
+def _pprint_sequence(align: str, gap: int, char: str, width: int, *items: str) -> Iterable[str]:
     """
-    :param items:
-    :return:
+    Yield aligned sequence items.
+    Alignment is made respectively to the highest common width of all items.
+    Or respectively to the value given by the keyword argument `width`.
+
+    :param align: alignment.
+    :param gap: number of whitespaces appended at the end of each aligned item.
+    :param char: character used to fill the empty space created by the alignment.
+    :param width: width used by the alignment.
+    :param items: sequence. Must be composed of strings or integers.
+    :return: iterator yielding aligned items.
     """
-    it1, it2 = tee(iter(items))  # type: Iterable[Union[int, str]], Iterable[Union[int, str]],
-    length = max(len(item) for item in it1)
-    for item in ("{0:<{1}}".format(item, length) for item in it2):
+    _width = max([max(map(len, items)), width])  # type: int
+    _items = list(items)  # type: List[str]
+    _items = ["{:{fill}{align}{width}}".format(item, fill=char, align=align, width=_width) for item in _items]
+    _items = ["{:<{width}}".format(item, width=_width + gap) for item in _items]
+    for item in _items:
         yield item
 
 

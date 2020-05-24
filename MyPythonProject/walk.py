@@ -129,6 +129,7 @@ environment = TemplatingEnvironment(_MYPARENT, keep_trailing_newline=False, filt
 # Main script.
 # ============
 with ChangeLocalCurrentDirectory(arguments.path):
+
     # 1. Walk through argument path.
     for root, directories, files in os.walk("."):
 
@@ -165,7 +166,7 @@ if extensions:
     content.append(("   ===========", f"{LETTERS.get(index, 'Z')}. Extensions.", iter(extensions)))
 
 # Directories.
-directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*children.items())], key=itemgetter(0))))  # type: Any
+directories = list(filter(None, sorted([f"{str(key)}: {value}" for key, value in pprint_count(*children.items())], key=itemgetter(0))))
 if directories:
     index += 1
     content.append(("   ============", f"{LETTERS.get(index, 'Z')}. Directories.", iter(directories)))

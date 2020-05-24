@@ -7,6 +7,7 @@ from functools import partial
 from itertools import chain, compress, filterfalse, groupby, repeat
 from operator import eq, itemgetter
 from pathlib import Path
+from subprocess import run
 from typing import Any, Iterator, List, NamedTuple, Sized, Tuple, Union
 
 from mutagen.flac import FLAC  # type: ignore
@@ -171,40 +172,52 @@ class Formatter(object):
 
         :return:
         """
-        for key_artist, group in groupby(self._iterables, key=itemgetter(1)):
-            rup_artist = True
-            for key_year, sub_group in groupby(group, key=itemgetter(2)):
-                rup_year = True
+        first = True
+        for key_artist, main_group in groupby(self._iterables, key=itemgetter(1)):
+            brk_artist = True
+            for key_year, sub_group in groupby(main_group, key=itemgetter(2)):
+                brk_year = True
                 for item in sub_group:
+
+                    # -----
                     bootleg = self.justify(item.bootleg, self._width_bootlegs + self.GAP)
+
+                    # -----
                     provider = None
                     if item.provider:
                         provider = self.justify(item.provider, self._width_providers + self.GAP, justify=">")
+
+                    # -----
                     detail = self.justify(item.in_collection, self._width_providers + self.GAP + 1)
                     if provider:
                         detail = f"{item.in_collection}{provider}"
 
-                    if all([rup_artist, rup_year]):
+                    # -----
+                    if all([brk_artist, brk_year]):
                         artist = self.justify(key_artist, self._width_artists + self.GAP)
                         year = self.justify(key_year, self._width_years + self.GAP)
-                        yield ""
-                        yield ""
+                        if not first:
+                            yield ""
+                            yield ""
+                        first = False
                         yield self.delimiters
                         yield self.headers
                         yield self.delimiters
                         yield f"{artist}{year}{bootleg}{detail}"
 
-                    elif any([rup_artist, rup_year]) and not rup_artist:
+                    # -----
+                    elif any([brk_artist, brk_year]) and not brk_artist:
                         year = self.justify(key_year, self._width_years + self.GAP)
                         year = self.justify(year, self._width_artists + self._width_years + 2 * self.GAP, justify=">")
                         yield f"{year}{bootleg}{detail}"
 
-                    elif not any([rup_artist, rup_year]):
+                    # -----
+                    elif not any([brk_artist, brk_year]):
                         detail = f"{bootleg}{detail}"
                         yield self.justify(detail, self._width_artists + self._width_years + self._width_bootlegs + self._width_providers + 4 * self.GAP + 1, justify=">")
 
-                    rup_artist = False
-                    rup_year = False
+                    brk_artist = False
+                    brk_year = False
 
     @staticmethod
     def get_width(*items: Sized) -> int:
@@ -301,9 +314,11 @@ EXCLUDED = ["accurateripdiscid",
 if __name__ == "__main__":
 
     arguments = parser.parse_args()
-    bootlegs = []  # type: Any
+    CHUNK = 50  # type: int
+    bootlegs = []  # type: List[Any]
 
     # Get bootlegs collection.
+    print("Bootlegs list is in progress. Please wait as it could take a while.")
     for path in arguments.path:
         for metadata in [metadata for _, metadata in AudioFLACMetaData(path)]:
             for exclusion in EXCLUDED:
@@ -320,5 +335,18 @@ if __name__ == "__main__":
     bootlegs = sorted(bootlegs, key=itemgetter(1))
     bootlegs = [compress(item, [1, 1, 0, 1, 1, 1]) for item in bootlegs]
     bootlegs = [Bootlegs(*item) for item in bootlegs]
-    for bootleg in Formatter(*bootlegs)():
-        print(bootleg)
+    bootlegs = list(Formatter(*bootlegs)())
+    top = int(CHUNK)  # type: int
+    while True:
+        run("CLS", shell=True)
+        index = 0  # type: int
+        for bootleg in bootlegs:
+            if index >= top:
+                print("\n\n")
+                run("PAUSE", shell=True)
+                top += CHUNK
+                break
+            index += 1
+            print(bootleg)
+        else:
+            break

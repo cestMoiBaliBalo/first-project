@@ -13,11 +13,10 @@ from itertools import filterfalse, groupby
 from operator import contains, itemgetter
 from pathlib import Path
 from string import Template
-from typing import Any, Callable, Dict, IO, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Optional
 
 import yaml
 from dateutil import parser
-from jinja2 import Environment, FileSystemLoader
 from sortedcontainers import SortedDict  # type: ignore
 
 from .. import callables
@@ -30,11 +29,20 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
+
 
 # ========
 # Classes.
 # ========
 class AudioCDTags(MutableMapping):
+    """
+    Master class dealing with the audio tags produced by the ripping application.
+    Must not be instantiated directly!
+    Used to define the interfaces required to interact with audio tags.
+    """
     logger = logging.getLogger("{0}.AudioCDTags".format(__name__))
     track_pattern = re.compile(r"^(\d{1,2})/(\d{1,2})")
 
@@ -307,6 +315,11 @@ class AudioCDTags(MutableMapping):
 
 
 class CommonAudioCDTags(AudioCDTags):
+    """
+    Main class dealing with the audio tags produced by the ripping application.
+    Must not be instantiated directly!
+    Used to introduced the tags shared by every ripped audio CD.
+    """
     logger = logging.getLogger("{0}.CommonAudioCDTags".format(__name__))
     __tags = {"albumartist": False,
               "albumartistsort": False,
@@ -445,6 +458,10 @@ class CommonAudioCDTags(AudioCDTags):
 
 
 class DefaultAudioCDTags(CommonAudioCDTags):
+    """
+    Main class dealing with the audio tags set from a default audio CD.
+    Is assumed as a default audio CD any official release (studio or live) enumerated into an artist's discography.
+    """
     logger = logging.getLogger("{0}.DefaultAudioCDTags".format(__name__))
     __tags = {"album": True,
               "albumsortcount": True,
@@ -507,6 +524,13 @@ class DefaultAudioCDTags(CommonAudioCDTags):
 
 
 class LiveAudioCDTags(DefaultAudioCDTags):
+    """
+    Main class dealing with the audio tags set from a default live audio CD.
+    Is assumed as a default live audio CD any official live release enumerated into an artist's discography.
+    Allow to set up specific tags about live performance: tour, date, and city.
+    Pearl Jam 2000 bootleg series audio CDs are targeted by this class as releases were legally available
+    through both records shops and e-shops.
+    """
     logger = logging.getLogger("{0}.LiveAudioCDTags".format(__name__))
     REX1 = re.compile(r"\W+")
     REX2 = re.compile(r", ([A-Z][a-z]+)$")
@@ -596,6 +620,12 @@ class LiveAudioCDTags(DefaultAudioCDTags):
 
 
 class BootlegAudioCDTags(CommonAudioCDTags):
+    """
+    Main class dealing with the audio tags set from a bootleg audio CD.
+    Is assumed as a bootleg audio CD any unofficial live release not being part of an artist's discography.
+    A release can be provided by a legal provider (such as nugs.net) or by an illegal provider (such as The Godfatherecords).
+    Allow to set up specific tags about live performance: tour, date, and city.
+    """
     logger = logging.getLogger("{0}.BootlegAudioCDTags".format(__name__))
     REX1 = re.compile(r"\W+")
     REX2 = re.compile(r", ([A-Z][a-z]+)$")
@@ -776,19 +806,25 @@ class ChangeTrack(TagsModifier):
 
 
 class RippedTrack(ContextDecorator):
-    _environment = Environment(loader=FileSystemLoader(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "AudioCD", "Templates")), trim_blocks=True, lstrip_blocks=True)
+    """
+    Main entry context decorator dealing with the audio tags produced by the ripping application.
+    It aims at manipulating (create, change, and delete) tags by using the required class, then
+    delivering updated tags to the ripping application.
+    Called from `upsert_audiotags`.
+    """
+    _environment = shared.TemplatingEnvironment(_MYPARENT.parents[1] / "AudioCD" / "Templates")
     _outputtags = _environment.get_template("Tags")
     _tabs = 4
-    _in_logger = logging.getLogger(f"{__name__}.RippedDisc")
+    _in_logger = logging.getLogger(f"{__name__}.RippedTrack")
 
     def __init__(self, rippingprofile, file, sequence, *decoratingprofiles, **kwargs):
         """
 
-        :param rippingprofile:
-        :param file:
-        :param sequence:
-        :param decoratingprofiles:
-        :param kwargs:
+        :param rippingprofile: ripping profile. Set the class required to manipulate audio tags.
+        :param file: audio tags text file. Made by the ripping application.
+        :param sequence: dummy characters string.
+        :param decoratingprofiles: decorating profiles. Set the functions used to alter specific audio tags.
+        :param kwargs: extra keyword arguments.
         """
         self._audiotracktags = None
         self._decorators = None
@@ -816,35 +852,35 @@ class RippedTrack(ContextDecorator):
         return self._profile
 
     @profile.setter
-    def profile(self, arg):
-        arg = arg.lower()
-        if arg not in PROFILES:
-            raise ValueError('"{0}" isn\'t allowed.'.format(arg))
-        self._profile = arg
+    def profile(self, value):
+        value = value.lower()
+        if value not in PROFILES:
+            raise ValueError('"{0}" isn\'t allowed.'.format(value))
+        self._profile = value
 
     @property
     def decorators(self):
         return self._decorators
 
     @decorators.setter
-    def decorators(self, arg):
-        self._decorators = arg
+    def decorators(self, value):
+        self._decorators = tuple(value)
 
     @property
     def tags(self):
         return self._tags
 
     @tags.setter
-    def tags(self, arg):
-        self._tags = arg
+    def tags(self, value):
+        self._tags = value
 
     @property
     def sequence(self):
         return self._sequence
 
     @sequence.setter
-    def sequence(self, arg):
-        self._sequence = arg
+    def sequence(self, value):
+        self._sequence = value
 
     @property
     def intags(self):
@@ -873,43 +909,39 @@ class RippedTrack(ContextDecorator):
         return intags, offset, totaltracks
 
     @staticmethod
-    def alter_tags(audiotrack, *decorators, **kwargs):
+    def alter_tags(audiotrack, *profiles, **kwargs):
         """
 
-        :param audiotrack:
-        :param decorators: 
-        :param kwargs: 
+        :param audiotrack: AudioCDTags subclass object.
+        :param profiles: audio tags altering profile.
+        :param kwargs: extra keyword arguments.
         :return: 
         """
         in_logger = logging.getLogger(f"{__name__}.RippedDisc.alter_tags")
         offset, totaltracks = kwargs.get("offset", 0), kwargs.get("totaltracks", "0")
-        for decorator in decorators:
-            in_logger.debug('Tags altered according to decorating profile "%s".', decorator)
-
-            # Change `albumartist`.
-            # if decorator.lower() == "springsteen":
-            #     audiotrack = changealbumartist(audiotrack, "Bruce Springsteen And The E Street Band")
+        for profile in profiles:
+            in_logger.debug('Tags altered according to decorating profile "%s".', profile)
 
             # Change `album`.
-            if decorator.lower() == "default_album":
+            if profile.lower() == "default_album":
                 audiotrack = changealbum(audiotrack, "$albumsortyear.$albumsortcount - $album")
-            elif decorator.lower() == "dft_bootleg_album":
+            elif profile.lower() == "dft_bootleg_album":
                 audiotrack = changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")
-            elif decorator.lower() == "alt_bootleg_album":
+            elif profile.lower() == "alt_bootleg_album":
                 audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
-            # elif decorator.lower() == "altupdalbum":
+            # elif profile.lower() == "altupdalbum":
             #     audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
 
             # Change `tracknumber`.
-            elif decorator.lower() == "offset_track" and offset:
+            elif profile.lower() == "offset_track" and offset:
                 audiotrack = changetrack(audiotrack, offset)
 
             # Change `totaltracks`.
-            elif decorator.lower() == "change_totaltracks" and int(totaltracks):
+            elif profile.lower() == "change_totaltracks" and int(totaltracks):
                 audiotrack = changetotaltracks(audiotrack, totaltracks)
 
             # Changes requested by `nugs` decorating profile.
-            elif decorator.lower() == "nugs":
+            elif profile.lower() == "nugs":
                 if audiotrack.artist.lower() == "pearl jam":
                     audiotrack = changemediaprovider(changeencodedby(audiotrack))
                 elif audiotrack.artist.lower() == "bruce springsteen":
@@ -922,42 +954,43 @@ class RippedTrack(ContextDecorator):
         # --> 1. Start logging.
         self._in_logger.info('START "%s".', os.path.basename(__file__))
         self._in_logger.info('"%s" used as ripping profile.', self._profile)
+
+        # --> 2. Log decorators.
         for decorator in self._decorators:
             self._in_logger.info('"%s" used as decorating profile.', decorator)
 
-        # --> 2. Log input file.
+        # --> 3. Log input file.
         self._in_logger.debug("Input file.")
         self._in_logger.debug('\t"%s"'.expandtabs(self._tabs), self._tags.name)
 
-        # --> 3. Log input tags.
+        # --> 4. Log input tags.
         self._tags.seek(0)
         self._intags, offset, totaltracks = self.get_tags(self._tags)
-        keys, values = zip(*self._intags)
         self._in_logger.debug("Input tags.")
-        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
+        for key, value in shared.pprint_mapping(*sorted(self._intags, key=itemgetter(0))):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
         offset = int(offset)
 
-        # --> 4. Create AudioCDTags instance.
+        # --> 5. Create AudioCDTags subclass object.
+        #        l'attribut "_audiotracktags" est une instance d'une sous-classe de AudioCDTags.
         self._tags.seek(0)
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags,
                                                                        self._sequence,
                                                                        self._genres,
                                                                        self._languages,
-                                                                       self._encoders)  # l'attribut "_audiotracktags" est une instance de type "AudioCDTags".
+                                                                       self._encoders)
 
-        # --> 5. Log instance attributes.
-        keys, values = zip(*sorted(self._audiotracktags, key=itemgetter(0)))
+        # --> 6. Log instance attributes.
         self._in_logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
-        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
+        for key, value in shared.pprint_mapping(*sorted(self._audiotracktags, key=itemgetter(0))):
             self._in_logger.debug("\t%s: %s".expandtabs(5), key, value)
 
-        # --> 6. Alter instance attributes.
+        # --> 7. Alter instance attributes.
         self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators, offset=offset, totaltracks=totaltracks)
         if self._audiotracktags.origtrack == self._audiotracktags.tracknumber:
             del self._audiotracktags.origtrack
 
-        # --> 7. Return RippedDisc instance.
+        # --> 8. Return RippedDisc instance.
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -977,8 +1010,7 @@ class RippedTrack(ContextDecorator):
         # --> 2. Log output tags.
         self._in_logger.debug(f'Processed track is: \"{self._audiotracktags}\"')
         self._in_logger.debug("Output tags.")
-        keys, values = zip(*outtags.items())
-        for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
+        for key, value in shared.pprint_mapping(*sorted(outtags.items(), key=itemgetter(0))):
             self._in_logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
 
         # --> 3. Log output file.
@@ -998,42 +1030,46 @@ class RippedTrack(ContextDecorator):
 # ================================
 # Audio tags processing functions.
 # ================================
-def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, genres: Any = None, languages: Any = None, encoders: Any = None, **kwargs: Any) -> Tuple[int, AudioCDTags]:
+def upsert_audiotags(rippingprofile, file, sequence, *decoratingprofiles, genres=None, languages=None, encoders=None, **kwargs):
     """
+    Main entry function called by the ripping application to manipulate audio tags.
+    Called from `grabber.py`.
+    Called from `grabber_beg.cmd`.
 
-    :param profile:
-    :param source:
-    :param sequence:
-    :param decorators:
-    :param genres:
-    :param languages:
-    :param encoders:
-    :param kwargs:
-    :return:
+    :param rippingprofile: ripping profile. Set the class required to manipulate audio tags.
+    :param file: audio tags text file. Made by the ripping application.
+    :param sequence: dummy characters string. Deprecated!
+    :param decoratingprofiles: decorating profiles. Set the functions used to alter specific audio tags.
+    :param genres: specific genres.
+    :param languages: specific languages.
+    :param encoders: encoders attributes.
+    :param kwargs: extra keyword arguments.
+    :return: tuple composed of:
+                    1) a return code. 0 for success. 100 for failure.
+                    2) an AudioCDTags subclass object in case of success.
     """
     in_logger = logging.getLogger("{0}.upsert_audiotags".format(__name__))
     in_mapping = {"albums": albums, "bootlegs": bootlegs}
     stack = ExitStack()
-    value = 0  # type: int
-    in_logger.debug("Profile is  : %s", profile)
-    in_logger.debug("File name is: %s", source.name)
+    level, track = 0, None  # type: int, Optional[RippedTrack]
+    in_logger.debug("Profile is  : %s", rippingprofile)
+    in_logger.debug("File name is: %s", file.name)
     try:
-        track = stack.enter_context(RippedTrack(profile, source, sequence, *decorators, genres=genres, languages=languages, encoders=encoders))
+        track = stack.enter_context(RippedTrack(rippingprofile, file, sequence, *decoratingprofiles, genres=genres, languages=languages, encoders=encoders))
     except ValueError as err:
         in_logger.debug(err)
-        track, value = None, 100
+        level = 100
     else:
         with stack:
 
-            keys, values = zip(*kwargs.items())
-            for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
+            for key, value in shared.pprint_mapping(*sorted(kwargs.items(), key=itemgetter(0))):  # type: ignore
                 in_logger.debug("%s: %s", key, value)
             if track.audiotrack.database:
-                for k, v in in_mapping.items():
-                    if kwargs.get(k, False):
+                for key, value in in_mapping.items():
+                    if kwargs.get(key, False):
                         database = Path(kwargs.get("database", shared.DATABASE))
                         if database.exists():
-                            dump_audiotags_tojson(track.audiotrack, v, database=str(database), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
+                            dump_audiotags_tojson(track.audiotrack, value, database=str(database), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
 
             if kwargs.get("save", False):
                 root = Path(kwargs.get("root"))
@@ -1057,9 +1093,11 @@ def upsert_audiotags(profile: str, source: IO, sequence: str, *decorators: str, 
 
             if track.audiotrack.sample:
                 if kwargs.get("sample", False):
-                    save_audiotags_sample(profile, **dict(track.intags))
+                    save_audiotags_sample(rippingprofile, **dict(track.intags))
 
-    return value, track.audiotrack
+    if level:
+        return level, None
+    return level, track.audiotrack
 
 
 def get_tagsfile(obj):
@@ -1152,13 +1190,26 @@ def album(track):
     return track.album
 
 
-def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterator[Tuple[str, Sequence[Union[int, str]]]]:
+def albums(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
+    """
+    Set the audio tags collection for further storage into the local audio database.
+    Tags are appended to the collection retrieved from a JSON file.
+    Duplicates are removed.
+
+    :param track: DefaultAudioCDTags object.
+    :param fil: JSON file full path.
+    :param encoding: JSON file characters encoding.
+    :param db: local database full path.
+    :return: yield a tuple composed of:
+                1. JSON file full path.
+                2. tag value.
+    """
     logger = logging.getLogger("{0}.albums".format(__name__))
     iterable = []  # type: List[Sequence[Any]]
     countries = dict(get_countries(db))  # type: Mapping[str, int]
     genres = dict(get_genres(db))  # type: Mapping[str, int]
     languages = dict(get_languages(db))  # type: Mapping[str, int]
-    _fil = Path(shared.TEMP) / "tags.json"  # type: Path
+    _fil = Path(shared.TEMP) / "tags.json"  # type: os.PathLike
     if fil:
         _fil = Path(fil)
 
@@ -1204,49 +1255,61 @@ def albums(track: DefaultAudioCDTags, *, fil: Optional[str] = None, encoding: st
         yield str(_fil), item
 
 
-def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: str = shared.UTF8, db: str = shared.DATABASE) -> Iterator[Tuple[str, Sequence[Union[int, str]]]]:
+def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
+    """
+    Set the audio tags collection for further storage into the local audio database.
+    Tags are appended to the collection retrieved from a JSON file.
+    Duplicates are removed.
+
+    :param track: BootlegAudioCDTags object.
+    :param fil: JSON file full path.
+    :param encoding: JSON file characters encoding.
+    :param db: local database full path.
+    :return: yield a tuple composed of:
+                1. JSON file full path.
+                2. tag value.
+    """
     logger = logging.getLogger("{0}.bootlegs".format(__name__))
     iterable = []  # type: List[Sequence[Any]]
     countries = dict(get_countries(db))  # type: Mapping[str, int]
     genres = dict(get_genres(db))  # type: Mapping[str, int]
     languages = dict(get_languages(db))  # type: Mapping[str, int]
     providers = dict(get_providers(db))  # type: Mapping[str, int]
-    _fil = Path(shared.TEMP) / "tags.json"  # type: Path
+    _fil = Path(shared.TEMP) / "tags.json"  # type: os.PathLike
     if fil:
         _fil = Path(fil)
 
     # Log `track` privates attributes.
     logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
-    keys, values = zip(*sorted(track, key=itemgetter(0)))
-    for key, value in zip(shared.pprint_sequence(*sorted(keys)), values):
+    for key, value in shared.pprint_mapping(*sorted(track, key=itemgetter(0))):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
     # Log `track` public attributes.
     logger.debug("Here are the public attributes stored into the `BootlegAudioCDTags` instance.")
-    keys = shared.pprint_sequence("albumid",
-                                  "artistsort",
-                                  "artist",
-                                  "genre",
-                                  "bootleg",
-                                  "discnumber",
-                                  "livedisc",
-                                  "tracknumber",
-                                  "livetrack",
-                                  "bonustrack",
-                                  "totaldiscs",
-                                  "totaltracks",
-                                  "title",
-                                  "bootlegalbum_day",
-                                  "bootlegalbum_city",
-                                  "bootlegalbum_country",
-                                  "bootlegalbum_tour",
-                                  "bootlegtrack_day",
-                                  "bootlegtrack_city",
-                                  "bootlegtrack_country",
-                                  "bootlegtrack_tour",
-                                  "bootlegalbum_provider",
-                                  "bootlegdisc_reference",
-                                  "bootlegalbum_title")
+    keys = ["albumid",
+            "artistsort",
+            "artist",
+            "genre",
+            "bootleg",
+            "discnumber",
+            "livedisc",
+            "tracknumber",
+            "livetrack",
+            "bonustrack",
+            "totaldiscs",
+            "totaltracks",
+            "title",
+            "bootlegalbum_day",
+            "bootlegalbum_city",
+            "bootlegalbum_country",
+            "bootlegalbum_tour",
+            "bootlegtrack_day",
+            "bootlegtrack_city",
+            "bootlegtrack_country",
+            "bootlegtrack_tour",
+            "bootlegalbum_provider",
+            "bootlegdisc_reference",
+            "bootlegalbum_title"]
     values = [track.albumid,
               track.artistsort,
               track.artist,
@@ -1271,7 +1334,7 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
               providers[track.bootlegalbum_provider],
               track.bootlegdisc_reference,
               track.bootlegalbum_title]
-    for key, value in zip(keys, values):
+    for key, value in shared.pprint_mapping(*zip(keys, values)):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
     # Load existing sequences.
@@ -1317,26 +1380,22 @@ def bootlegs(track: BootlegAudioCDTags, *, fil: Optional[str] = None, encoding: 
         yield str(_fil), item
 
 
-def dump_audiotags_tojson(obj: DefaultAudioCDTags,
-                          func: Callable[[DefaultAudioCDTags, Optional[str], str], Iterable[Tuple[str, Tuple[Any, ...]]]],
-                          *,
-                          database: str = shared.DATABASE,
-                          jsonfile: Optional[str] = None,
-                          encoding: str = shared.UTF8):
+def dump_audiotags_tojson(track, kallable, *, database=shared.DATABASE, jsonfile=None, encoding=shared.UTF8):
     """
+    Dump audio tags into a JSON file for further storage into the local audio database.
 
-    :param obj:
-    :param func:
-    :param database:
-    :param jsonfile:
-    :param encoding:
-    :return:
+    :param track: AudioCDTags subclass object.
+    :param kallable: callable object providing the tags collection.
+    :param database: local database full path.
+    :param jsonfile: JSON file full path.
+    :param encoding: JSON file characters encoding.
+    :return: None.
     """
-    for fil, sequences in groupby(func(obj, **dict(fil=jsonfile, db=database, encoding=encoding)), key=itemgetter(0)):
+    for fil, sequences in groupby(kallable(track, **dict(fil=jsonfile, db=database, encoding=encoding)), key=itemgetter(0)):
         dump_sequence_tojson(fil, *list(sequence for _, sequence in sequences), encoding=encoding)
 
 
-def save_audiotags_sample(profile: str, *, samples: str = None, **kwargs: Any) -> None:
+def save_audiotags_sample(profile, *, samples=None, **kwargs) -> None:
     """
 
     :param profile:
@@ -1399,7 +1458,7 @@ def load_sequence_fromjson(jsonfile: str, encoding: str = shared.UTF8) -> Iterab
         yield item
 
 
-def dump_mapping_tojson(jsonfile: str, encoding: str = shared.UTF8, **collection: Any) -> None:
+def dump_mapping_tojson(jsonfile, encoding=shared.UTF8, **collection) -> None:
     """
 
     :param jsonfile:
@@ -1410,7 +1469,7 @@ def dump_mapping_tojson(jsonfile: str, encoding: str = shared.UTF8, **collection
     _dump_tojson(jsonfile, collection, encoding)
 
 
-def dump_sequence_tojson(jsonfile: str, *collection: Any, encoding: str = shared.UTF8) -> None:
+def dump_sequence_tojson(jsonfile, *collection, encoding=shared.UTF8) -> None:
     """
 
     :param jsonfile:
@@ -1421,7 +1480,7 @@ def dump_sequence_tojson(jsonfile: str, *collection: Any, encoding: str = shared
     _dump_tojson(jsonfile, collection, encoding)
 
 
-def dump_sequence_toyaml(yamlfile: str, *collection: Any, encoding: str = shared.UTF8) -> None:
+def dump_sequence_toyaml(yamlfile, *collection, encoding=shared.UTF8) -> None:
     """
 
     :param yamlfile:
