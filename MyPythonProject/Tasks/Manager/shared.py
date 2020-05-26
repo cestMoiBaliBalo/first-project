@@ -3,12 +3,11 @@
 import os
 import re
 from contextlib import ExitStack
-from itertools import chain, compress, count, starmap, zip_longest, permutations, islice
+from itertools import chain, compress, islice, permutations, starmap, zip_longest
 from pathlib import Path
 from typing import Any, Iterator, Optional, Tuple
 
 from lxml import etree  # type: ignore
-from more_itertools import ichunked  # type: ignore
 
 from Applications.shared import UTF8
 
@@ -52,8 +51,8 @@ def format_menu(*iterables, group=3) -> Iterator[str]:
     :param group:
     :return:
     """
-    collection: Any = [compress(item, [1, 1, 0]) for item in iterables]  # ("menu1", 1), ("menu2", 2), (None, None), ...
-    collection = starmap(_format1, ichunked(chain.from_iterable(collection), 2))  # " 1. menu1", " 2. menu2", "", ...
+    collection: Any = [tuple(compress(item, [1, 1, 0])) for item in iterables]  # ("menu1", 1), ("menu2", 2), (None, None), ...
+    collection = starmap(_format1, collection)  # " 1. menu1", " 2. menu2", "", ...
     collection = zip_longest(*[collection] * group)  # (" 1. menu1", " 2. menu2", ""), ...
     collection = [map(_format2, item) for item in collection]  # (" 1. menu1     ", " 2. menu2     ", "          "), ...
     collection = ["".join(item) for item in collection]  # " 1. menu1      2. menu2               ", ...

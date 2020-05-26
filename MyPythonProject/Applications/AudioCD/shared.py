@@ -1327,10 +1327,10 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
               track.bootlegalbum_city,
               countries[track.bootlegalbum_country],
               track.bootlegalbum_tour,
-              track.bootlegalbum_tour,
               track.bootlegtrack_date,
               track.bootlegtrack_city,
               countries[track.bootlegtrack_country],
+              track.bootlegalbum_tour,
               providers[track.bootlegalbum_provider],
               track.bootlegdisc_reference,
               track.bootlegalbum_title]

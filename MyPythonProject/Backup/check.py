@@ -5,13 +5,12 @@ import csv
 import os
 import re
 import sys
-from itertools import chain, compress, groupby
+from itertools import compress, groupby
 from operator import itemgetter
 from pathlib import Path
 from typing import Any, Iterator, List, Mapping, Tuple, Union
 
 from dateutil.parser import parse
-from more_itertools import chunked  # type: ignore
 
 from Applications.callables import match_
 from Applications.decorators import itemgetter_, map_
@@ -65,13 +64,13 @@ def format_(*iterables: List[str]) -> Iterator[Tuple[str, int]]:
     """
 
     # 1. Compress collection. Keep only file and last change UTC date.
-    files = [compress(file, [0, 0, 1, 1, 0]) for file in iterables]  # type: Any
+    files = [tuple(compress(file, [0, 0, 1, 1, 0])) for file in iterables]  # type: Any
 
     # 2. Filter collection. Keep only FLAC files.
-    files = filter(itemgetter_(0)(match_(arguments.pattern.search)), chunked(chain.from_iterable(files), 2))
+    files = filter(itemgetter_(0)(match_(arguments.pattern.search)), files)
 
     # 3. Convert last change UTC date into timestamp.
-    files = zip(*map_(1)(get_timestamp)(*zip(*files)))
+    files = zip(*map_(1)(get_timestamp)(*files))
 
     # 4. Remove duplicate files. Keep only the most recent last change UTC date for every file.
     files = {key: list(group) for key, group in groupby(files, key=itemgetter(0))}

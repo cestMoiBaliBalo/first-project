@@ -110,18 +110,17 @@ def map_(index: int):
     def outer_wrapper(func):
         @wraps(func)
         def inner_wrapper(*iterables: Tuple[Any, ...]):
-            it1, it2 = tee(iterables)  # type: Any, Any
+            it1, it2 = tee(zip(*iterables))  # type: Any, Any
             if index > 0:
-                collection = deque(iterables)
+                collection = deque(zip(*iterables))  # type: Any
                 collection.rotate(-index)
                 it1, it2 = tee(collection)
-            obj1 = iter([tuple(map(func, chain(*islice(it1, 1))))])
-            obj2 = islice(it2, 1, None)
-            collection = chain(obj1, obj2)
+            collection = zip(map(func, chain(*islice(it1, 1))), *islice(it2, 1, None))
             if index > 0:
-                collection = deque(collection)
-                collection.rotate(index)
-                collection = iter(collection)
+                collection = [deque(item) for item in collection]
+                for item in collection:
+                    item.rotate(index)
+                collection = [tuple(item) for item in collection]
             for item in collection:
                 yield item
 
