@@ -4,8 +4,8 @@ import argparse
 import fnmatch
 import os
 from functools import partial
-from itertools import chain, compress, filterfalse, groupby, repeat
-from operator import eq, itemgetter
+from itertools import chain, compress, groupby, repeat
+from operator import contains, itemgetter
 from pathlib import Path
 from subprocess import run
 from typing import Any, Iterator, List, NamedTuple, Sized, Tuple, Union
@@ -260,70 +260,20 @@ class GetPath(argparse.Action):
 parser = argparse.ArgumentParser()
 parser.add_argument("path", nargs="+", action=GetPath)
 
-# ==========
-# Constants.
-# ==========
-EXCLUDED = ["accurateripdiscid",
-            "accurateripresult",
-            "album artist",
-            "albumartistsort",
-            "artist",
-            "artistsort",
-            "bonus",
-            "bootlegtrackcity",
-            "bootlegtrackcountry",
-            "bootlegtracktour",
-            "bootlegtrackyear",
-            "boxset",
-            "copyright",
-            "description",
-            "discnumber",
-            "disctotal",
-            "encodedby",
-            "encoder",
-            "encoding",
-            "encodingyear",
-            "encodingtime",
-            "ensemble",
-            "freedb",
-            "genre",
-            "isrc",
-            "itunesmediatype",
-            "itunnorm",
-            "itunsmpb",
-            "label",
-            "language",
-            "mediatype",
-            "organization",
-            "origalbum",
-            "origyear",
-            "profile",
-            "publisherreference",
-            "purchasedate",
-            "replaygain_album_gain",
-            "replaygain_album_peak",
-            "source",
-            "status",
-            "taggingtime",
-            "title",
-            "titlelanguage",
-            "titlesort",
-            "tracknumber",
-            "tracktotal"]
-
 if __name__ == "__main__":
 
     arguments = parser.parse_args()
     CHUNK = 50  # type: int
+    TAGS = ["album", "albumartist", "albumsort", "date", "incollection", "mediaprovider"]  # type: List[str]
     bootlegs = []  # type: List[Any]
 
     # Get bootlegs collection.
     print("Bootlegs list is in progress. Please wait as it could take a while.")
     for path in arguments.path:
-        for metadata in [metadata for _, metadata in AudioFLACMetaData(path)]:
-            for exclusion in EXCLUDED:
-                metadata = filterfalse(itemgetter_(0)(partial(eq, exclusion)), metadata)
-            dict_data = dict(metadata)
+        collection: Any = [comments for _, comments in AudioFLACMetaData(path)]
+        collection = [filter(itemgetter_(0)(partial(contains, TAGS)), item) for item in collection]
+        for item in collection:
+            dict_data = dict(item)
             dict_data.update(incollection=dict_data.get("incollection", "N"))
             dict_data.update(mediaprovider=dict_data.get("mediaprovider"))
             bootlegs.append(tuple(dict_data[key] for key in sorted(dict_data)))  # (value1, value2, value3), ...
