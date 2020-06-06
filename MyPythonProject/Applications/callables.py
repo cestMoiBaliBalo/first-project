@@ -59,7 +59,7 @@ def match_(func):
     ''''''''''''''
     1. filter(match_(regex.search), [arg1, arg2, arg3, ...]): removes items non compliant with the regular expression.
 
-    :param func:
+    :param func: wrapped function.
     :return: callable object.
     """
 
@@ -98,29 +98,6 @@ def group_(index: int = 1):
             if match:
                 return match.group(index)
             return arg
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def chain_(*functions):
-    """
-    Creates a callable object aiming at running nested functions: the result of a function is used as argument for the next one.
-    The result of the last function is then returned to the caller object.
-
-    :param func: initial function.
-    :param functions: additional functions.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            returned = func(arg)
-            for function in functions:
-                returned = function(returned)
-            return returned
 
         return inner_wrapper
 

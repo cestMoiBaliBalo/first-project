@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import sqlite3
 from contextlib import ExitStack, suppress
 
@@ -41,6 +41,8 @@ def drop_tables(db: str) -> str:
             conn.execute("DROP TABLE IF EXISTS defaultalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS bootlegalbums")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS digitalalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS livealbums")
         with suppress(sqlite3.OperationalError):
@@ -221,6 +223,15 @@ def create_tables(db: str) -> str:
                 "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
                 "utc_modified TIMESTAMP DEFAULT NULL, "
                 "FOREIGN KEY (albumid) REFERENCES albums (albumid))")
+
+        # --> Digitalalbums.
+        conn.execute(
+                "CREATE TABLE IF NOT EXISTS digitalalbums ("
+                "albumid TEXT REFERENCES albums (albumid), "
+                "providerid INTEGER REFERENCES providers (providerid), "
+                "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
+                "utc_modified TIMESTAMP DEFAULT NULL)")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS digitalalbums_idx ON digitalalbums (albumid ASC, providerid ASC)")
 
         # --> Bootlegdiscs.
         conn.execute(

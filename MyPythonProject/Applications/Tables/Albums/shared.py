@@ -11,14 +11,14 @@ from contextlib import ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import chain, compress, groupby, product, starmap
-from operator import contains, eq, gt, is_, itemgetter
+from operator import contains, eq, is_not, itemgetter, lt
 from string import Template
-from typing import Any, Dict, Iterator, List, Mapping, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Mapping, MutableMapping, NamedTuple, Optional, Tuple, Union
 
 import yaml
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
-from ...decorators import attrgetter_, itemgetter_, partial_
+from ...decorators import attrgetter_, itemgetter_
 from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string_, format_date, get_dirname, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
@@ -62,55 +62,6 @@ def check_defaultalbum(iterable: Tuple[Any, ...]) -> bool:
     """
     # Check `iterable` content.
     return True
-
-
-def is_ripped(arg: Optional[str]) -> bool:
-    return arg is not None
-
-
-# ====================
-# Decorated functions.
-# ====================
-@itemgetter_(5)
-@partial_(1)
-def is_firsttrack(a, b):
-    return eq(b, a)
-
-
-@itemgetter_(0)
-@partial_("discs")
-def discs_record(a, b, sensitive=False):
-    return eq_string_(b, a, sensitive=sensitive)
-
-
-@itemgetter_(1)
-@partial_("defaultalbums")
-def defaultalbums_record(a, b, sensitive=False):
-    return eq_string_(b, a, sensitive=sensitive)
-
-
-@itemgetter_(1)
-@partial_("bootlegalbums")
-def bootlegalbums_record(a, b, sensitive=False):
-    return eq_string_(b, a, sensitive=sensitive)
-
-
-@itemgetter_(25)
-@partial_(None)
-def livealbums_record(a, b):
-    return not is_(b, a)
-
-
-@itemgetter_(27)
-@partial_(None)
-def bootlegdiscs_record(a, b):
-    return not is_(b, a)
-
-
-@attrgetter_("played")
-@partial_(0)
-def hasbeen_played(a, b):
-    return gt(b, a)
 
 
 # ==========
@@ -360,7 +311,7 @@ def get_playeddiscs(db: str = DATABASE):
                                ("utc_played", datetime),
                                ("played", int)])
     discs = set((row.artistsort, row.albumsort, row.discid, row.genre, row.is_bootleg, row.is_live_disc, row.in_collection, row.language, row.utc_created, row.utc_played, row.played) for row in
-                filter(hasbeen_played, _get_albums(db)))
+                filter(attrgetter_("played")(partial(lt, 0)), _get_albums(db)))
     for disc in (Disc._make(row) for row in discs):
         yield disc
 
@@ -842,9 +793,9 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
     # -----
     with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader)
-    _statements = config["statements"]
-    _selectors = config["selectors"]
-    _tables = config["tables"]
+    statements = config["statements"]  # type: Mapping[str, Mapping[str, str]]
+    selectors = config["selectors"]  # type: Mapping[str, Mapping[str, List[int]]]
+    tables = config["tables"]  # type: Mapping[str, List[str]]
 
     # -----
     total_changes: int = 0
@@ -854,69 +805,91 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
             with ExitStack() as stack:
                 conn = stack.enter_context(DatabaseConnection(database))
                 stack.enter_context(conn)
-                tracks = [tuple(chain((table,), track)) for table, track in product(_tables[profile], secondary_group)]
-                statements = dict(_statements["default"])
-                statements.update(_statements.get(profile, {}))
+
+                # -----
+                _tables = list(tables["default"])  # type: List[str]
+                _tables.extend(tables.get(profile, []))
+
+                # -----
+                _statements = dict(statements["default"])  # type: MutableMapping[str, str]
+                _statements.update(statements.get(profile, {}))
+
+                # -----
+                tracks = [tuple(chain((table,), track)) for table, track in product(_tables, secondary_group)]  # type: List[Tuple[Union[Optional[int], Optional[str]], ...]]
+
+                # -----
                 logger.debug("Profile   : %s", profile)
                 logger.debug("Statements:")
-                keys, values = zip(*sorted(statements.items(), key=itemgetter(0)))
+                keys, values = zip(*sorted(_statements.items(), key=itemgetter(0)))
                 for key, value in zip(pprint_sequence(*keys), values):
                     logger.debug("\t%s: %s".expandtabs(3), key, value)
 
                 # Shared tables.
                 for track in tracks:
                     track = tuple(track)
-                    table = track[0]
+                    table = track[0]  # type: str
                     logger.debug("Table is     : %s", table)
-                    logger.debug("Statements is: %s", statements[table])
-                    # logger.debug(track)
+                    logger.debug("Statements is: %s", _statements[table])
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "livealbums" table.
                 table = "livealbums"
-                for track in filter(livealbums_record, filter(defaultalbums_record, tracks)):
+                for track in filter(itemgetter_(25)(partial(is_not, None)), filter(itemgetter_(1)(partial(eq, "defaultalbums")), tracks)):
                     logger.debug("Table is: %s", table)
-                    # logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                        logger.debug(conn.total_changes)
+
+                # "digitalalbums" table.
+                table = "digitalalbums"
+                for track in filter(itemgetter_(29)(partial(is_not, None)), filter(itemgetter_(1)(partial(eq, "defaultalbums")), tracks)):
+                    logger.debug("Table is: %s", table)
+                    with suppress(sqlite3.IntegrityError):
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "rippeddiscs" table.
                 table = "rippeddiscs"
-                for track in filter(discs_record, filter(is_firsttrack, tracks)):
+                for track in filter(itemgetter_(0)(partial(eq, "discs")), filter(itemgetter_(5)(partial(eq, 1)), tracks)):
 
                     # -----
-                    if track[1] == "defaultalbums" and is_ripped(track[24]):
+                    if track[1] == "defaultalbums" and track[24] is not None:
                         logger.debug("Table is: %s", table)
                         with suppress(sqlite3.IntegrityError):
-                            conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                             logger.debug(conn.total_changes)
 
                     # -----
-                    if track[1] == "bootlegalbums" and is_ripped(track[29]):
+                    if track[1] == "bootlegalbums" and track[29] is not None:
                         logger.debug("Table is: %s", table)
                         with suppress(sqlite3.IntegrityError):
-                            conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                             logger.debug(conn.total_changes)
+
+                # "duplicates" table.
+                table = "duplicates"
+                for track in filter(itemgetter_(30)(partial(contains, [1, 2])), filter(itemgetter_(0)(partial(eq, "discs")), tracks)):
+                    logger.debug("Table is: %s", table)
+                    with suppress(sqlite3.IntegrityError):
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 # "bonuses" table.
                 table = "bonuses"
-                for track in filter(itemgetter(8), filter(bootlegalbums_record, tracks)):
+                for track in filter(itemgetter(8), filter(itemgetter_(1)(partial(eq, "bootlegalbums")), tracks)):
                     logger.debug("Table is: %s", table)
-                    # logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 # "bootlegdiscs" table.
                 table = "bootlegdiscs"
-                for track in filter(bootlegdiscs_record, filter(bootlegalbums_record, tracks)):
+                for track in filter(itemgetter_(27)(partial(is_not, None)), filter(itemgetter_(1)(partial(eq, "bootlegalbums")), tracks)):
                     logger.debug(table)
-                    # logger.debug(track)
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(statements[table], tuple(compress(track, _selectors[profile][table])))
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
                         logger.debug(conn.total_changes)
 
                 total_changes += conn.total_changes

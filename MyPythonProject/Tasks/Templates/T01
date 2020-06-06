@@ -1,0 +1,8 @@
+{% for table, data in collection %}
+
+
+{{ table }}.
+    {% for _, item in data %}
+{{ loop.index|stringify|rjustify(3) }}. {{ item }}
+    {% endfor %}
+{% endfor %}

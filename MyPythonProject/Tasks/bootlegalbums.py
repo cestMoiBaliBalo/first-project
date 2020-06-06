@@ -8,7 +8,7 @@ from itertools import chain, compress, groupby, repeat
 from operator import contains, itemgetter
 from pathlib import Path
 from subprocess import run
-from typing import Any, Iterator, List, NamedTuple, Sized, Tuple, Union
+from typing import Any, Iterable, Iterator, List, NamedTuple, Tuple, Union
 
 from mutagen.flac import FLAC  # type: ignore
 
@@ -26,7 +26,11 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ========
 # Objects.
 # ========
-Bootlegs = NamedTuple("Bootlegs", [("bootleg", str), ("artist", str), ("year", str), ("in_collection", str), ("provider", str)])
+Bootlegs = NamedTuple("Bootlegs", [("bootleg", str),
+                                   ("artist", str),
+                                   ("year", str),
+                                   ("in_collection", str),
+                                   ("provider", str)])
 
 
 # ===============
@@ -42,7 +46,7 @@ class Files(object):
         :param included:
         :return:
         """
-        collection: Any = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]  # [root1/file1.flac, root1/file2.flac], [root2/file1.m4a, root2/file2.m4a], ...
+        collection: Iterable[Any] = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]  # [root1/file1.flac, root1/file2.flac], [root2/file1.m4a, root2/file2.m4a], ...
         extensions = tuple(included)  # type: Tuple[str, ...]
 
         if len(extensions) == 1:
@@ -79,12 +83,12 @@ class AudioFLACMetaData(object):
         :param path:
         :return:
         """
-        collection = []  # type: List[Tuple[Union[Path, list], ...]]
+        collection = []  # type: List[Any]
         files = [(file, FLAC(file)) for file in Files(path, "flac")]  # (root1/file1.flac, dict_data), (root2/file2.flac, dict_data), ...
         for file, metadata in files:
 
             # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
-            comments = [[(key, value) for value in values] for key, values in metadata.items()]  # type: Any
+            comments = [[(key, value) for value in values] for key, values in metadata.items()]  # type: Iterable[Any]
 
             # [(tag1, value1), (tag2, value), (tag3, value), ...]
             comments = list(chain.from_iterable([compress(item, [1]) for item in comments]))
@@ -92,7 +96,7 @@ class AudioFLACMetaData(object):
             # (root1/file1.flac, [(tag1, value1), (tag2, value), (tag3, value), ...]), ...
             collection.append(tuple([file, comments]))
 
-        self._collection = iter(collection)  # type: Iterator[Tuple[Union[Path, list], ...]]
+        self._collection = iter(collection)  # type: Iterator[Tuple[Path, List[Tuple[str, str]]]]
 
     def __iter__(self):
         return self
@@ -130,7 +134,7 @@ class Formatter(object):
         self._width_years = self.get_width(*chain.from_iterable(years))  # type: int
 
         # 4. Get providers maximum width.
-        providers = [compress(item, [0, 0, 0, 0, 1]) for item in iterables]  # type: Any
+        providers = [compress(item, [0, 0, 0, 0, 1]) for item in iterables]  # type: Iterable[Any]
         providers = filter(None, chain.from_iterable(providers))
         self._width_providers = self.get_width(*providers)  # type: int
 
@@ -220,7 +224,7 @@ class Formatter(object):
                     brk_year = False
 
     @staticmethod
-    def get_width(*items: Sized) -> int:
+    def get_width(*items: str) -> int:
         """
 
         :param items:
@@ -265,7 +269,7 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
     CHUNK = 50  # type: int
     TAGS = ["album", "albumartist", "albumsort", "date", "incollection", "mediaprovider"]  # type: List[str]
-    bootlegs = []  # type: List[Any]
+    bootlegs, top = [], int(CHUNK)  # type: List[Any], int
 
     # Get bootlegs collection.
     print("Bootlegs list is in progress. Please wait as it could take a while.")
@@ -286,7 +290,8 @@ if __name__ == "__main__":
     bootlegs = [compress(item, [1, 1, 0, 1, 1, 1]) for item in bootlegs]
     bootlegs = [Bootlegs(*item) for item in bootlegs]
     bootlegs = list(Formatter(*bootlegs)())
-    top = int(CHUNK)  # type: int
+
+    # Display bootlegs collection.
     while True:
         run("CLS", shell=True)
         index = 0  # type: int

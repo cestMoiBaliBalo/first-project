@@ -195,7 +195,7 @@ class Changes(object):
 
 
 class SetUp(object):
-    _encoding = UTF8
+    _encoding = UTF8  # type: Optional[str]
 
     def _decorate_callable(self, func):
         @wraps(func)

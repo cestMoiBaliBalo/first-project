@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import operator
-import os
 from collections import deque
-from functools import partial, wraps
-from itertools import chain, compress, islice, tee
-from pathlib import PurePath
+from functools import wraps
+from itertools import chain, islice, tee
+from operator import eq
 from typing import Any, Tuple
 
 __author__ = 'Xavier ROSSET'
@@ -13,22 +12,30 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PurePath(os.path.abspath(__file__))
+
+def eq_(value_first):
+    """
+    That decorator allows to set the second argument of the function operator.eq
+    with the value returned by any decorated function.
+
+    :param value_first: value used to freeze the first positional argument of operator.eq.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return eq(value_first, func(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
 
 
 def int_(base: int = 10):
     """
-    That decorator allows running any function requiring as argument a base 10 integer number when the only available argument is a characters string representing a number.
-    The decorator converts the characters string to a base 10 integer number and provides the result to the decorated function.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @int_()
-    def some_callable(arg):
-        pass
-    1. map(some_callable, [arg1, arg2, arg3, ...]) --> some_callable(int(arg1)), some_callable(int(arg2)), some_callable(int(arg3))
-    2. sorted([arg1, arg2, arg3, ...], key=some_callable)
+    That decorator allows to convert a characters string to a 10-base integer number
+    for being used as argument by any decorated function.
 
     :param base. decimal base used to perform the conversion.
     :return: callable object.
@@ -46,17 +53,8 @@ def int_(base: int = 10):
 
 def attrgetter_(attr: str):
     """
-    That decorator allows running any function when the only available argument is an object with attributes.
-    The decorator grabs the attribute "attr" and provides it to the decorated function.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @attrgetter_("some_attribute")
-    def some_callable(arg):
-        pass
-    1. filter(some_callable, [object1, object2, object3, ...]) --> some_callable(object1.some_attribute), some_callable(object2.some_attribute), some_callable(object3.some_attribute)
-    2. sorted([object1, object2, object3, ...], key=some_callable)
+    That decorator allows to get an object attribute for being used as argument
+    by any decorated function.
 
     :param attr: object attribute name.
     :return: callable object.
@@ -74,17 +72,8 @@ def attrgetter_(attr: str):
 
 def itemgetter_(index: int = 0):
     """
-    That decorator allows running any function when the only available argument is a sequence.
-    The decorator grabs the item located at position "index" and provides it to the decorated function.
-
-    ''''''''''''''
-    How to use it:
-    ''''''''''''''
-    @itemgetter_(2)
-    def some_callable(arg):
-        pass
-    1. filter(some_callable, [sequence1, sequence2, sequence3, ...]) --> some_callable(sequence1[2]), some_callable(sequence2[2]), some_callable(sequence3[2])
-    2. sorted([sequence1, sequence2, sequence3, ...], key=some_callable)
+    That decorator allows to get a sequence item for being used as argument
+    by any decorated function.
 
     :param index: item index.
     :return: callable object.
@@ -102,9 +91,11 @@ def itemgetter_(index: int = 0):
 
 def map_(index: int):
     """
+    That decorator allows to map any decorated function with all sequences items
+    located at index `index`.
 
-    :param index:
-    :return:
+    :param index: item index.
+    :return: callable object.
     """
 
     def outer_wrapper(func):
@@ -129,38 +120,19 @@ def map_(index: int):
     return outer_wrapper
 
 
-def compress_(*indexes: int):
+def split_(char: str):
     """
+    That decorator allows to split a characters string for being used as argument
+    by any decorated function.
 
-    :param indexes:
-    :return:
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg: Tuple[Any, ...]):
-            selectors = [0] * len(arg)
-            for index in indexes:
-                selectors[index] = 1
-            return func(*compress(arg, selectors))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def partial_(*args: Any, **kwargs: Any):
-    """
-
-    :param args:
-    :param kwargs:
+    :param char: character used for processing the splitting.
     :return: callable object.
     """
 
     def outer_wrapper(func):
         @wraps(func)
-        def inner_wrapper(arg: Any):
-            return partial(func, *args, **kwargs)(arg)
+        def inner_wrapper(arg: str):
+            return func(arg.split(char))
 
         return inner_wrapper
 

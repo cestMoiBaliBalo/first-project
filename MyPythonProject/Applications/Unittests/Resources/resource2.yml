@@ -3,7 +3,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -28,7 +28,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -53,7 +53,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -78,7 +78,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -103,7 +103,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -128,7 +128,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -153,7 +153,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -178,7 +178,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -203,7 +203,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -228,7 +228,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -253,7 +253,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -278,7 +278,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -303,7 +303,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -328,7 +328,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -353,7 +353,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -378,7 +378,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -403,7 +403,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -428,7 +428,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -453,7 +453,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -478,7 +478,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -503,7 +503,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -528,7 +528,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -553,7 +553,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -578,7 +578,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -603,7 +603,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -628,7 +628,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -653,7 +653,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -678,7 +678,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -703,7 +703,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -728,7 +728,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -753,7 +753,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -778,7 +778,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -803,7 +803,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -828,7 +828,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -853,7 +853,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -878,7 +878,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -903,7 +903,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -928,7 +928,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -953,7 +953,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -978,7 +978,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1003,7 +1003,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1028,7 +1028,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1053,7 +1053,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1078,7 +1078,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1103,7 +1103,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1128,7 +1128,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1153,7 +1153,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1178,7 +1178,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1203,7 +1203,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1228,7 +1228,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1253,7 +1253,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1278,7 +1278,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1303,7 +1303,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1328,7 +1328,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1353,7 +1353,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1378,7 +1378,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1403,7 +1403,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1428,7 +1428,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1453,7 +1453,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1478,7 +1478,7 @@
   artist: The Artist
   artistsort: Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1503,7 +1503,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1528,7 +1528,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1553,7 +1553,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1578,7 +1578,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1603,7 +1603,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1628,7 +1628,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1653,7 +1653,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1678,7 +1678,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1703,7 +1703,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1728,7 +1728,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1753,7 +1753,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1778,7 +1778,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1803,7 +1803,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1828,7 +1828,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1853,7 +1853,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1878,7 +1878,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1903,7 +1903,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1928,7 +1928,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1953,7 +1953,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -1978,7 +1978,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2003,7 +2003,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2028,7 +2028,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2053,7 +2053,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2078,7 +2078,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2103,7 +2103,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2128,7 +2128,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2153,7 +2153,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2178,7 +2178,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2203,7 +2203,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2228,7 +2228,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2253,7 +2253,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2278,7 +2278,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2303,7 +2303,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2328,7 +2328,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2353,7 +2353,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2378,7 +2378,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2403,7 +2403,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2428,7 +2428,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2453,7 +2453,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2478,7 +2478,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2503,7 +2503,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2528,7 +2528,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2553,7 +2553,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2578,7 +2578,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2603,7 +2603,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2628,7 +2628,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2653,7 +2653,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2678,7 +2678,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2703,7 +2703,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2728,7 +2728,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2753,7 +2753,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2778,7 +2778,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2803,7 +2803,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2828,7 +2828,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2853,7 +2853,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2878,7 +2878,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2903,7 +2903,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2928,7 +2928,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2953,7 +2953,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -2978,7 +2978,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3003,7 +3003,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3028,7 +3028,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3053,7 +3053,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3078,7 +3078,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3103,7 +3103,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3128,7 +3128,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3153,7 +3153,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3178,7 +3178,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3203,7 +3203,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3228,7 +3228,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3253,7 +3253,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3278,7 +3278,7 @@
   artist: The Other Artist
   artistsort: Other Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3303,7 +3303,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3328,7 +3328,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3353,7 +3353,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3378,7 +3378,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3403,7 +3403,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3428,7 +3428,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3453,7 +3453,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3478,7 +3478,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3503,7 +3503,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3528,7 +3528,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3553,7 +3553,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3578,7 +3578,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3603,7 +3603,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3628,7 +3628,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3653,7 +3653,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3678,7 +3678,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3703,7 +3703,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3728,7 +3728,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3753,7 +3753,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3778,7 +3778,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3803,7 +3803,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3828,7 +3828,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3853,7 +3853,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3878,7 +3878,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3903,7 +3903,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3928,7 +3928,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3953,7 +3953,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -3978,7 +3978,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4003,7 +4003,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4028,7 +4028,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4053,7 +4053,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4078,7 +4078,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4103,7 +4103,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4128,7 +4128,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4153,7 +4153,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4178,7 +4178,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4203,7 +4203,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4228,7 +4228,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
@@ -4253,7 +4253,7 @@
   artist: The Awesome Artist
   artistsort: Awesome Artist, The
   bonustrack: N
-  bootleg: N
+  bootlegdisc: N
   bootlegalbum_city: !!python/none
   bootlegalbum_country: !!python/none
   bootlegalbum_date: !!python/none
