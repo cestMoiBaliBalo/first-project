@@ -51,7 +51,7 @@ REM    ----------
 REM A. Java step.
 REM    ----------
 REM    Enumerate files.
-PUSHD %_COMPUTING%\MyJavaProject
+PUSHD %_COMPUTING%\MyJavaProject\Finder
 IF NOT EXIST "targets.txt" (
     ECHO Targets repository ("%_COMPUTING%\MyJavaProject\targets.txt"^) can't be found. Please check^^!
     POPD
@@ -72,8 +72,8 @@ FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
         SET _regex=%%~D
         SET _command="!_path!" "!_target!" "!_environment!" --output "%_output%"
         IF DEFINED _regex SET _command=!_command! --regex "!_regex!"
-        PUSHD out\production\MyJavaProject
-        java com.xavier.computing.Finder !_command! > NUL
+        PUSHD out\production\Finder
+        java com.computing.xavier.Main !_command! > NUL
         POPD
     )
 )

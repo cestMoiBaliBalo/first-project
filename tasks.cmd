@@ -620,7 +620,6 @@ REM Display digital audio bootlegs.
 REM -------------------------------
 IF ERRORLEVEL 14 (
     CLS
-    ECHO List is in progess. Please wait...
     PUSHD Tasks
     python bootlegs.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
     POPD

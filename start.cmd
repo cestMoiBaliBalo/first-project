@@ -103,7 +103,7 @@ GOTO MAIN
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp77ftugt2\ /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp1n53chv0\ /oA:%_XXCOPYLOG%
 
 
 @REM      ----------------------------------------

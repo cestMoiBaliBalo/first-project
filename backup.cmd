@@ -58,7 +58,7 @@ GOTO MENU
 (
     ECHO:
     ECHO:
-    PAUSE
+    REM PAUSE
     IF DEFINED _mycp CHCP %_mycp% > NUL
     POPD
     ENDLOCAL
