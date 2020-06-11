@@ -44,33 +44,46 @@ class CustomAudioGenres(AudioGenres):
 class Changes(object):
     logger = logging.getLogger(f"{__name__}")
 
-    def __init__(self, db=DATABASE):
+    def __init__(self, db: str = DATABASE) -> None:
         """
 
-        :param db:
+        :param db: audio database full path.
         """
-        self._artists, self._albums, self._defautlalbums, self._bootlegalbums, self._livealbums, self._discs, self._rippeddiscs, self._bootlegdiscs, self._tracks, self._bonuses = defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int), \
-                                                                                                                                                                                   defaultdict(int)
+        self._artists, \
+        self._albums, \
+        self._defautlalbums, \
+        self._bootlegalbums, \
+        self._livealbums, \
+        self._discs, \
+        self._duplicates, \
+        self._rippeddiscs, \
+        self._bootlegdiscs, \
+        self._tracks, \
+        self._bonuses = defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int), \
+                        defaultdict(int)
+
         self._database = db  # type: str
         self._changes = 0  # type: int
-        self._db_album = None  # type: Optional[bool]
-        self._db_bootleg = None  # type: Optional[bool]
-        self._bonus = None  # type: Optional[str]
+        self._is_album = None  # type: Optional[bool]
+        self._is_bootleg = None  # type: Optional[bool]
+        self._bonustrack = None  # type: Optional[str]
         self._bootlegdate = None  # type: Optional[str]
-        self._bootlegdisc = None  # type: Optional[str]
+        self._bootlegdiscreference = None  # type: Optional[str]
         self._artistid = None  # type: Optional[str]
         self._albumsort = None  # type: Optional[str]
         self._albumid = None  # type: Optional[str]
         self._discid = None  # type: Optional[int]
         self._trackid = None  # type: Optional[int]
+        self._repository = None  # type: Optional[int]
 
     def estimate(self, **kwargs) -> None:
         """
@@ -78,60 +91,71 @@ class Changes(object):
         :param kwargs:
         :return:
         """
-        self._db_album = kwargs.get("db_album", False)
-        self._db_bootleg = kwargs.get("db_bootleg", False)
-        self._bonus = kwargs.get("bonus", "N")
-        self._bootlegdate = kwargs.get("bootlegalbumyear")
-        self._bootlegdisc = kwargs.get("bootlegdisc")
+        self._is_album = kwargs.get("is_album", False)
+        self._is_bootleg = kwargs.get("is_bootleg", False)
+        self._bonustrack = kwargs.get("bonustrack", "N")
+        self._bootlegdate = kwargs.get("bootlegalbum_year")
+        self._bootlegdisc_reference = kwargs.get("bootlegdisc_reference")
         self._artistid = kwargs["artistsort"]
         self._albumsort = kwargs["albumsort"][:-3]
         self._albumid = f"{self._artistid[0]}.{self._artistid}.{self._albumsort}"
         self._discid = int(kwargs["discnumber"])
         self._trackid = int(kwargs["tracknumber"])
-        artist, album, livealbum, disc, track, bonus, bootlegdisc = self._exists(self._artistid, self._albumid, self._discid, self._trackid, db=self._database)
+        self._repository = int(kwargs.get("lossless", "0"))
+        artist, album, livealbum, disc, duplicates, track, bonus, bootlegdisc = self._exists(self._artistid, self._albumid, self._discid, self._trackid, db=self._database)
 
-        # Artist.
+        # artists.
         if not artist:
             self._artists[self._artistid] += 1
 
-        # Album.
+        # albums.
+        # defaultalbums.
+        # bootlegalbums.
         if not album:
             self._albums[self._albumid] += 1
-            if self._db_album:
+            if self._is_album:
                 self._defautlalbums[self._albumid] += 1
-            if self._db_bootleg:
+            if self._is_bootleg:
                 self._bootlegalbums[self._albumid] += 1
 
-        # Live album
+        # livealbums.
         if not livealbum:
             if self._bootlegdate:
                 self._livealbums[self._albumid] += 1
 
-        # Disc.
+        # discs.
         if not disc:
             self._discs[f"{self._albumid}.{self._discid}"] += 1
-            if not bootlegdisc and self._bootlegdisc:
+            if not bootlegdisc and self._bootlegdisc_reference:
                 self._bootlegdiscs[f"{self._albumid}.{self._discid}"] += 1
+
+        # duplicates.
+        if not duplicates:
+            if self._repository:
+                self._duplicates[f"{self._albumid}.{self._discid}"] += 1
+
+        # rippeddiscs.
         if self._trackid == 1:
             self._rippeddiscs[f"{self._albumid}.{self._discid}"] += 1
 
-        # Track.
+        # tracks.
         if not track:
             self._tracks[f"{self._albumid}.{self._discid}.{self._trackid}"] += 1
-            if not bonus and self._bonus == "Y":
+            if not bonus and self._bonustrack.upper() == "Y":
                 self._bonuses[f"{self._albumid}.{self._discid}.{self._trackid}"] += 1
 
         # Total changes.
-        self._changes = len(self._artists.keys()) + \
-                        len(self._albums.keys()) + \
-                        len(self._defautlalbums.keys()) + \
-                        len(self._bootlegalbums.keys()) + \
-                        len(self._livealbums.keys()) + \
-                        len(self._discs.keys()) + \
-                        len(self._bootlegdiscs.keys()) + \
-                        len(self._rippeddiscs.keys()) + \
-                        len(self._tracks.keys()) + \
-                        len(self._bonuses.keys())
+        self._changes = len(self._artists) + \
+                        len(self._albums) + \
+                        len(self._defautlalbums) + \
+                        len(self._bootlegalbums) + \
+                        len(self._livealbums) + \
+                        len(self._discs) + \
+                        len(self._bootlegdiscs) + \
+                        len(self._rippeddiscs) + \
+                        len(self._duplicates) + \
+                        len(self._tracks) + \
+                        len(self._bonuses)
 
         # Log changes.
         self.logger.debug("artists      : %s", self._artists)
@@ -142,6 +166,7 @@ class Changes(object):
         self.logger.debug("discs        : %s", self._discs)
         self.logger.debug("bootlegdiscs : %s", self._bootlegdiscs)
         self.logger.debug("rippeddiscs  : %s", self._rippeddiscs)
+        self.logger.debug("duplicates   : %s", self._duplicates)
         self.logger.debug("tracks       : %s", self._tracks)
         self.logger.debug("bonuses      : %s", self._bonuses)
 
@@ -179,6 +204,10 @@ class Changes(object):
             curs.execute("SELECT count(*) FROM bootlegdiscs WHERE albumid=? AND discid=?", (albumid, discid))
             (bootlegdisc,) = curs.fetchone()
 
+            # duplicates.
+            curs.execute("SELECT count(*) FROM duplicates WHERE albumid=? AND discid=?", (albumid, discid))
+            (duplicates,) = curs.fetchone()
+
             # tracks.
             curs.execute("SELECT count(*) FROM tracks WHERE albumid=? AND discid=? AND trackid=?", (albumid, discid, trackid))
             (track,) = curs.fetchone()
@@ -187,7 +216,7 @@ class Changes(object):
             curs.execute("SELECT count(*) FROM bonuses WHERE albumid=? AND discid=? AND trackid=?", (albumid, discid, trackid))
             (bonus,) = curs.fetchone()
 
-        return bool(artist), bool(album), bool(livealbum), bool(disc), bool(track), bool(bonus), bool(bootlegdisc)
+        return bool(artist), bool(album), bool(livealbum), bool(disc), bool(duplicates), bool(track), bool(bonus), bool(bootlegdisc)
 
     @property
     def total_changes(self) -> int:
@@ -271,7 +300,7 @@ class TestRippedTrack(unittest.TestCase):
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
             for value in self.test_cases:
-                source, profile, decorators, actions, expected = value
+                source, profile1, decorators, profile12, expected = value
 
                 # -----
                 with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -279,10 +308,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(profile12, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        value, _ = upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
+                        value, _ = upsert_audiotags(profile1, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
 
                 # -----
                 self.assertEqual(value, 0)
@@ -296,7 +325,7 @@ class TestRippedTrack(unittest.TestCase):
         with TemporaryDirectory() as tempdir:
             txttags = join(tempdir, "tags.txt")
             for value in self.test_cases:
-                source, profile, decorators, actions, expected = value
+                source, profile1, decorators, profile2, expected = value
 
                 # -----
                 with open(txttags, mode="w", encoding=UTF16) as stream:
@@ -304,10 +333,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(profile2, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        _, track = upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
+                        _, track = upsert_audiotags(profile1, stream, "C1", *decorators, genres=CustomAudioGenres(), **config)
 
                 # -----
                 for k, v in expected.items():
@@ -329,11 +358,11 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             for value in self.test_cases:
                 items += 1
-                source, profile, decorators, actions, _ = value
+                source, profile1, decorators, profile2, _ = value
 
                 # -----
-                _actions = any([self.test_config.get(actions, {}).get("albums", False), self.test_config.get(actions, {}).get("bootlegs", False)])
-                if _actions:
+                _profile2 = any([self.test_config.get(profile2, {}).get("albums", False), self.test_config.get(profile2, {}).get("bootlegs", False)])
+                if _profile2:
                     if int(source["Track"].split("/")[0]) == 1:
                         rippeddiscs += 1
 
@@ -343,10 +372,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(profile2, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile1, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             with open(jsontags, encoding=UTF8) as stream:
                 inserted = insert_albums_fromjson(stream)
@@ -366,21 +395,14 @@ class TestRippedTrack(unittest.TestCase):
             jsontags = join(tempdir, "tags.json")
             changes = Changes(db=database)
             for value in self.test_cases:
-                source, profile, decorators, actions, expected = value
+                source, profile1, decorators, profile2, expected = value
 
                 # -----
-                _db_album = self.test_config.get(actions, {}).get("albums", False)
-                _db_bootleg = self.test_config.get(actions, {}).get("bootlegs", False)
-                _actions = any([_db_album, _db_bootleg])
-                if _actions:
-                    kwargs = {k.lower(): v for k, v in source.items()}
-                    kwargs.update(albumsort=expected["albumsort"],
-                                  bonus=kwargs.get("bonustrack", "N"),
-                                  bootlegdisc=kwargs.get("bootlegdiscreference"),
-                                  db_album=_db_album,
-                                  db_bootleg=_db_bootleg,
-                                  discnumber=expected["discnumber"],
-                                  tracknumber=expected["tracknumber"])
+                is_album = self.test_config.get(profile2, {}).get("albums", False)
+                is_bootleg = self.test_config.get(profile2, {}).get("bootlegs", False)
+                if any([is_album, is_bootleg]):
+                    kwargs = dict(expected.items())
+                    kwargs.update(is_album=is_album, is_bootleg=is_bootleg, lossless=source.get("Lossless"))
                     changes.estimate(**kwargs)
 
                 # -----
@@ -389,10 +411,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(profile2, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile1, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:
@@ -414,21 +436,14 @@ class TestRippedTrack(unittest.TestCase):
             create_tables(drop_tables(database))
             changes = Changes(db=database)
             for value in self.test_cases:
-                source, profile, decorators, actions, expected = value
+                source, profile1, decorators, profile2, expected = value
 
                 # -----
-                _db_album = self.test_config.get(actions, {}).get("albums", False)
-                _db_bootleg = self.test_config.get(actions, {}).get("bootlegs", False)
-                _actions = any([_db_album, _db_bootleg])
-                if _actions:
-                    kwargs = {k.lower(): v for k, v in source.items()}
-                    kwargs.update(albumsort=expected["albumsort"],
-                                  bonus=kwargs.get("bonustrack", "N"),
-                                  bootlegdisc=kwargs.get("bootlegdiscreference"),
-                                  db_album=_db_album,
-                                  db_bootleg=_db_bootleg,
-                                  discnumber=expected["discnumber"],
-                                  tracknumber=expected["tracknumber"])
+                is_album = self.test_config.get(profile2, {}).get("albums", False)
+                is_bootleg = self.test_config.get(profile2, {}).get("bootlegs", False)
+                if any([is_album, is_bootleg]):
+                    kwargs = dict(expected.items())
+                    kwargs.update(is_album=is_album, is_bootleg=is_bootleg, lossless=source.get("Lossless"))
                     changes.estimate(**kwargs)
 
                 # -----
@@ -437,10 +452,10 @@ class TestRippedTrack(unittest.TestCase):
                         stream.write("{0}={1}\n".format(k.lower(), v))
 
                 # -----
-                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(actions, {}).items()))
+                config = dict(filterfalse(itemgetter_()(partial(contains, ["debug", "database", "console"])), self.test_config.get(profile2, {}).items()))
                 with open(txttags, mode="r+", encoding=UTF16) as stream:
                     with patch("Applications.shared.TEMP", tempdir):
-                        upsert_audiotags(profile, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
+                        upsert_audiotags(profile1, stream, "C1", *decorators, genres=CustomAudioGenres(), database=database, jsonfile=jsontags, **config)
 
             inserted = 0
             with open(jsontags, encoding=UTF8) as stream:

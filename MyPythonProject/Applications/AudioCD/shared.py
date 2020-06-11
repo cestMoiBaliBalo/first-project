@@ -254,6 +254,13 @@ class AudioCDTags(MutableMapping):
         return self._otags.get("origyear")
 
     @property
+    def repository(self):
+        try:
+            return int(self._otags.get("lossless"))
+        except TypeError:
+            return None
+
+    @property
     def sample(self):
         return shared.ToBoolean(self._otags.get("sample", "Y")).boolean_value
 
@@ -1229,7 +1236,7 @@ def albums(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
                      countries.get(track.bootlegalbum_country),
                      track.bootlegalbum_tour,
                      None,
-                     None))
+                     track.repository))
     iterable = list(set(iterable))
     for item in sorted(sorted(iterable, key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item
@@ -1289,7 +1296,8 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
             "bootlegtrack_tour",
             "bootlegalbum_provider",
             "bootlegdisc_reference",
-            "bootlegalbum_title"]
+            "bootlegalbum_title",
+            "repository"]
     values = [track.albumid,
               track.artistsort,
               track.artist,
@@ -1313,7 +1321,8 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
               track.bootlegalbum_tour,
               providers[track.bootlegalbum_provider],
               track.bootlegdisc_reference,
-              track.bootlegalbum_title]
+              track.bootlegalbum_title,
+              track.repository]
     for key, value in shared.pprint_mapping(*zip(keys, values)):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
@@ -1355,7 +1364,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
                      track.bootlegdisc_reference,
                      track.bootlegalbum_title,
                      shared.get_rippingapplication()[1],
-                     None))
+                     track.repository))
     iterable = list(set(iterable))
     for item in sorted(sorted(sorted(iterable, key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)):
         yield str(_fil), item

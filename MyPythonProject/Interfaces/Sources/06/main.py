@@ -11,7 +11,7 @@ from contextlib import ExitStack
 from functools import partial
 from itertools import compress, groupby, repeat
 from operator import itemgetter
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, List, Optional, Tuple
 
 import wx  # type: ignore
 
@@ -28,20 +28,23 @@ __status__ = "Production"
 class DigitalAlbums(MutableMapping):
 
     def __init__(self, db: str = DATABASE) -> None:
-        self._mapping = OrderedDict()  # type: Dict[str, Tuple[str, int]]
-        collection = set()  # type: Any
+        self._mapping = OrderedDict()  # type: MutableMapping[str, Tuple[str, int]]
         with ExitStack() as stack:
             conn = stack.enter_context(DatabaseConnection(db=db))
-            collection = set(conn.execute("SELECT artistsort, albumid, discid, album FROM albums_vw ORDER BY artistsort, albumid, discid"))
-        for key, group in groupby(sorted(sorted(sorted(sorted(collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=partial(_compress, [1, 1, 0, 1])):
+            collection = set(conn.execute("SELECT artistsort, albumid, discid, album FROM albums_vw ORDER BY artistsort, albumid, discid"))  # type: Any
+            collection = sorted(collection, key=itemgetter(3))
+            collection = sorted(collection, key=itemgetter(2))
+            collection = sorted(collection, key=itemgetter(1))
+            collection = sorted(collection, key=itemgetter(0))
+        for key, group in groupby(collection, key=partial(compress_, [1, 1, 0, 1])):
             _artistsort, _albumid, _album = key  # type: str, str, str
             _group = list(group)
             _totaldiscs = len(_group)  # type: int
             _albums = [f"{_artistsort} - {_album}"]  # type: List[str]
             _discs = [1]  # type: List[int]
             if _totaldiscs > 1:
-                _albums = [f"{_artistsort} - {_album} - CD{discid}" for (discid,) in map(partial(_compress, [0, 0, 1, 0]), _group)]
-                _discs = [discid for (discid,) in map(partial(_compress, [0, 0, 1, 0]), _group)]
+                _albums = [f"{_artistsort} - {_album} - CD{discid}" for (discid,) in map(partial(compress_, [0, 0, 1, 0]), _group)]
+                _discs = [discid for (discid,) in map(partial(compress_, [0, 0, 1, 0]), _group)]
             self._mapping.update(dict(zip(_albums, zip(repeat(_albumid), _discs))))
 
     def __delitem__(self, key):
@@ -60,8 +63,8 @@ class DigitalAlbums(MutableMapping):
         self._mapping[key] = arg
 
 
-def _compress(selectors, data):
-    return tuple(compress(data, selectors))
+def compress_(selectors, iterable):
+    return tuple(compress(iterable, selectors))
 
 
 # ======

@@ -68,7 +68,7 @@ class Track(object):
 class BootlegTrack(Track):
     REGEX1 = re.compile(r"^([^-]+)-([^-]+)- \[(([^,]+),([^\]]+))\]$")
     REGEX2 = re.compile(r"^(([^,]+), ([A-Z][A-Z]))$")
-    LENGTH = 32
+    LENGTH = 31
     TAGS = ["album",
             "albumartist",
             "albumsort",
@@ -133,7 +133,7 @@ class BootlegTrack(Track):
         self._collection = []  # type: List[Any]
         super(BootlegTrack, self).__init__(database, *paths, **kwargs)
         self._countries = kwargs.get("countries", {})  # type: Mapping[str, int]
-        tracks = starmap(self._update, self._collection)  # type: Any
+        tracks = list(starmap(self._update, self._collection))  # type: Any
 
         # -----
         _true, self._false = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
@@ -229,7 +229,7 @@ class BootlegTrack(Track):
 
 
 class DefaultTrack(Track):
-    LENGTH = 26
+    LENGTH = 25
     TAGS = ["album",
             "albumartist",
             "albumsort",

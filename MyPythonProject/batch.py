@@ -18,6 +18,7 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 

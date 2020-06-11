@@ -2,6 +2,7 @@
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import itertools
 import json
+import locale
 import os
 import shutil
 import sys
@@ -30,6 +31,14 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
+
+# ===================
+# Global environment.
+# ===================
+if sys.platform.startswith("win"):
+    locale.setlocale(locale.LC_ALL, "")
+elif sys.platform.startswith("lin"):
+    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 
 # ===============
@@ -177,15 +186,12 @@ class Test03(unittest.TestCase):
         self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
 
     def test_t01(self):
-        self.assertEqual(max(map(int, map(itemgetter(1), map(partial(split_, "_"), self.iterable)))), 456)
-
-    def test_t02(self):
         self.assertEqual(max(map(split_("_")(itemgetter_(1)(int)), self.iterable)), 456)
 
-    def test_t03(self):
+    def test_t02(self):
         self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
-    def test_t04(self):
+    def test_t03(self):
         self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), key=split_("_")(itemgetter_(0)(int))),
                              ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
@@ -349,10 +355,10 @@ class TestDecorator05(unittest.TestCase):
         self.iterable = ("1.20160000.10",)
 
     def test_t01(self):
-        self.assertEqual(int(itemgetter(2)(itemgetter_()(partial(split_, "."))(self.iterable))), 10)
+        self.assertEqual(itemgetter_(0)(split_(".")(itemgetter_(2)(int)))(self.iterable), 10)
 
     def test_t02(self):
-        self.assertEqual(int(itemgetter(1)(itemgetter_()(partial(split_, "."))(self.iterable))), 20160000)
+        self.assertEqual(itemgetter_(0)(split_(".")(itemgetter_(1)(int)))(self.iterable), 20160000)
 
 
 class TestDecorator06(unittest.TestCase):
@@ -431,7 +437,7 @@ class TestDecorator07(unittest.TestCase):
                                                                                                             ("M", "2.20170101.13")])
 
     def test_t03(self):
-        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=split1_), key=split2_), key=split3_), [("N", "1.20160422.02"),
+        self.assertListEqual(sorted(sorted(sorted(self.iterable, key=split1_), key=split3_), key=split2_), [("N", "1.20160422.02"),
                                                                                                             ("E", "1.20160422.13"),
                                                                                                             ("D", "1.20160625.13"),
                                                                                                             ("H", "2.19841102.13"),

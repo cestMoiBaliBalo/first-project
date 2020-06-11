@@ -406,20 +406,20 @@ class TemplatingEnvironment(object):
 # ======================
 # Jinja2 custom filters.
 # ======================
-def ljustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}<{1}}".format(str(strg), width, char)
+def ljustify(arg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}<{1}}".format(arg, width, char)
 
 
-def rjustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}>{1}}".format(str(strg), width, char)
+def rjustify(arg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}>{1}}".format(arg, width, char)
 
 
-def normalize(strg: str) -> str:
-    return strg.replace(", ", "_").replace(" ", "_")
+def normalize(arg: str) -> str:
+    return arg.replace(", ", "_").replace(" ", "_")
 
 
-def normalize2(strg: str) -> str:
-    return strg.replace(" ", "%20").replace("&", "%26")
+def normalize2(arg: str) -> str:
+    return arg.replace(" ", "%20").replace("&", "%26")
 
 
 # ==========================
@@ -892,7 +892,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> Tuple[str, Opt
     return application[next(it)]
 
 
-def find_files(directory: Union[str, Path], *, excluded=None) -> Iterator[str]:
+def find_files(directory, *, excluded=None):
     """
     Return a generator object yielding files stored into `directory` argument.
     :param directory: Directory to walk through. Must be a string representing an existing path.
@@ -902,9 +902,9 @@ def find_files(directory: Union[str, Path], *, excluded=None) -> Iterator[str]:
                         - list of files present into the root folder.
     :return: generator object.
     """
-    collection = []  # type: List[str]
+    collection = []  # type: List[Any]
     if not excluded:
-        collection.extend(list(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files))
+        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files)
     elif excluded:
         for root, _, files in os.walk(str(directory)):
             if files:

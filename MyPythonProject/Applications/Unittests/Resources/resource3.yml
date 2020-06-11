@@ -1,4 +1,4 @@
-- - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen And The E Street Band
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -7,7 +7,7 @@
     Bootleg: Y
     BootlegAlbumCity: East Rutherford, NJ
     BootlegAlbumProvider: nugs.net
-    BootlegAlbumTour: The Other Tour
+    BootlegAlbumTour: 1993 World Tour
     BootlegAlbumYear: 1993 06 24
     Deluxe: N
     Disc: 2/4
@@ -16,6 +16,7 @@
     InCollection: Y
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 13
     Profile: Nugs
     Source: CD (Lossless)
@@ -25,7 +26,6 @@
     TrackLanguage: English
   - bootleg
   - - nugs
-    - springsteen
     - alt_bootleg_album
     - offset_track
     - change_totaltracks
@@ -33,16 +33,18 @@
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
-    album: The Other Tour - 1993.06.24 - [East Rutherford, NJ]
+    artistsort: Springsteen, Bruce
+    album: 1993 World Tour - 1993.06.24 - [East Rutherford, NJ]
     bootlegalbum_city: East Rutherford, NJ
     bootlegalbum_country: United States
     bootlegalbum_date: !!python/str 1993-06-24
     bootlegalbum_day: !!python/str 24
     bootlegalbum_month: !!python/str 06
     bootlegalbum_provider: nugs.net
-    bootlegalbum_tour: The Other Tour
+    bootlegalbum_tour: 1993 World Tour
     bootlegalbum_year: !!python/str 1993
     deluxe: N
+    discnumber: !!python/str 2
     foldersortcount: N
     genre: Rock
     mediaprovider: nugs.net
@@ -50,7 +52,7 @@
     tracknumber: !!python/str 14
     tracklanguage: English
     upc: !!python/none
-- - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen And The E Street Band
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -73,6 +75,7 @@
     InCollection: Y
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 13
     Profile: springsteen
     Source: CD (Lossless)
@@ -82,13 +85,13 @@
     TrackLanguage: English
   - bootleg
   - - alt_bootleg_album
-    - springsteen
     - offset_track
     - change_totaltracks
   - default
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.20021014.1.02
     artist: Bruce Springsteen
+    artistsort: Springsteen, Bruce
     album: The Rising Tour - 2002.10.14 - [Paris, France]
     bonustrack: Y
     bootlegalbum_city: Paris, France
@@ -121,7 +124,7 @@
     tracknumber: !!python/str 18
     tracklanguage: English
     upc: !!python/none
-- - AlbumArtist: Bruce Springsteen
+- - AlbumArtist: Bruce Springsteen And The E Street Band
     AlbumArtistSort: Springsteen, Bruce
     AlbumSortCount: !!python/str 1
     Artist: Bruce Springsteen
@@ -130,7 +133,7 @@
     Bootleg: Y
     BootlegAlbumCity: East Rutherford, NJ
     BootlegAlbumProvider: nugs.net
-    BootlegAlbumTour: The Other Tour
+    BootlegAlbumTour: 1993 World Tour
     BootlegAlbumYear: 1993 06 24
     Deluxe: N
     Disc: 2/4
@@ -139,6 +142,7 @@
     InCollection: Y
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 13
     Profile: Nugs
     Source: CD (Lossless)
@@ -148,20 +152,20 @@
     TrackLanguage: English
   - bootleg
   - - nugs
-    - springsteen
     - alt_bootleg_album
   - unittest_bootlegalbum
   - albumartist: Bruce Springsteen And The E Street Band
     albumsort: 2.19930624.1.02
     artist: Bruce Springsteen
-    album: The Other Tour - 1993.06.24 - [East Rutherford, NJ]
+    artistsort: Springsteen, Bruce
+    album: 1993 World Tour - 1993.06.24 - [East Rutherford, NJ]
     bootlegalbum_city: East Rutherford, NJ
     bootlegalbum_country: United States
     bootlegalbum_date: !!python/str 1993-06-24
     bootlegalbum_day: !!python/str 24
     bootlegalbum_month: !!python/str 06
     bootlegalbum_provider: nugs.net
-    bootlegalbum_tour: The Other Tour
+    bootlegalbum_tour: 1993 World Tour
     bootlegalbum_year: !!python/str 1993
     deluxe: N
     discnumber: !!python/str 2
@@ -190,7 +194,7 @@
     Label: Polygram Records
     LiveDisc: Y
     LiveTrack: Y
-    LossLess: !!python/str 2
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     OrigYear: !!python/str 1996
     Profile: Default
@@ -208,6 +212,7 @@
   - albumartist: Kiss
     albumsort: 1.19960000.1.13
     artist: Kiss
+    artistsort: Kiss
     album: MTV Unplugged
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none
@@ -242,6 +247,7 @@
     Label: Casablanca Records
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     OrigYear: !!python/str 1975
     Profile: Database
@@ -259,6 +265,7 @@
   - albumartist: Kiss
     albumsort: 1.19750000.2.13
     artist: Kiss
+    artistsort: Kiss
     album: Alive!
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none
@@ -293,6 +300,7 @@
     Label: Polygram Records
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     OrigYear: !!python/str 1993
     Profile: Default
@@ -310,6 +318,7 @@
   - albumartist: Kiss
     albumsort: 1.19930000.1.13
     artist: Kiss
+    artistsort: Kiss
     album: Alive III
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none
@@ -344,7 +353,7 @@
     Label: Casablanca Records
     LiveDisc: N
     LiveTrack: N
-    LossLess: !!python/str 1
+    Lossless: !!python/str 1
     Offset: !!python/str 0
     OrigYear: !!python/str 1976
     Profile: Default
@@ -362,6 +371,7 @@
   - albumartist: Kiss
     albumsort: 1.19760000.2.13
     artist: Kiss
+    artistsort: Kiss
     album: Rock and Roll Over
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none
@@ -396,7 +406,7 @@
     Label: Some Label
     LiveDisc: N
     LiveTrack: N
-    LossLess: !!python/str 2
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     OrigYear: !!python/str 2018
     Profile: Default
@@ -414,6 +424,7 @@
   - albumartist: The Artist
     albumsort: 1.20180000.1.13
     artist: The Artist
+    artistsort: Artist, The
     album: Some New Album
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none
@@ -453,6 +464,7 @@
     Label: Epic Records
     LiveDisc: Y
     LiveTrack: Y
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     Profile: Live
     Source: CD (Lossless)
@@ -470,6 +482,7 @@
   - albumartist: Pearl Jam
     albumsort: 2.20001106.1.02
     artist: Pearl Jam
+    artistsort: Pearl Jam
     album: "Live: 2000-11-06 - Seattle, WA"
     bootlegalbum_city: Seattle, WA
     bootlegalbum_country: United States
@@ -503,7 +516,7 @@
     Label: Some Label
     LiveDisc: N
     LiveTrack: N
-    LossLess: !!python/str 2
+    Lossless: !!python/str 2
     Offset: !!python/str 0
     OrigYear: !!python/str 1988
     Profile: Default
@@ -521,6 +534,7 @@
   - albumartist: Queensrÿche
     albumsort: 1.19880000.1.13
     artist: Queensrÿche
+    artistsort: Queensrÿche
     album: "Operation: Mindcrime"
     bootlegalbum_city: !!python/none
     bootlegalbum_country: !!python/none

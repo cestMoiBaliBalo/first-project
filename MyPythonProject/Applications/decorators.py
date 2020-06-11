@@ -34,10 +34,10 @@ def eq_(value_first):
 
 def int_(base: int = 10):
     """
-    That decorator allows to convert a characters string to a 10-base integer number
+    That decorator allows to convert a characters string to an integer number
     for being used as argument by any decorated function.
 
-    :param base. decimal base used to perform the conversion.
+    :param base. decimal base used to perform the conversion. Base 10 is the default value.
     :return: callable object.
     """
 
