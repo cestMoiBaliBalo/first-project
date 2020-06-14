@@ -2,6 +2,7 @@
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import os
 import re
+from contextlib import suppress
 from functools import partial
 from itertools import chain, islice, starmap
 from operator import contains, itemgetter
@@ -83,7 +84,7 @@ class BootlegTrack(Track):
             "disctotal",
             "genre",
             "incollection",
-            "mediaprovider",
+            "label",
             "origalbum",
             "publisherreference",
             "title",
@@ -114,8 +115,8 @@ class BootlegTrack(Track):
                                     ("incollection", str),
                                     ("livedisc", str),
                                     ("livetrack", str),
-                                    ("bootlegalbum_provider", int),
                                     ("bootlegalbum_title", str),
+                                    ("bootlegalbum_provider", int),
                                     ("bootlegalbum_reference", str),
                                     ("title", str),
                                     ("titlelanguage", int),
@@ -157,9 +158,13 @@ class BootlegTrack(Track):
         comments.update(bootlegdisc="Y")
         comments.update(livedisc="Y")
         comments.update(livetrack="Y")
-        comments.update(mediaprovider=comments.get("mediaprovider"))
         comments.update(origalbum=comments.get("origalbum"))
+        comments.update(publisher=comments.get("label"))
         comments.update(publisherreference=comments.get("publisherreference"))
+
+        # ----- Remove useless keys.
+        with suppress(KeyError):
+            del comments["label"]
 
         # ----- Create `bootlegalbumXXXXX` tags from `album` tag.
         album = comments.get("album")
@@ -178,8 +183,8 @@ class BootlegTrack(Track):
         # ----- Map character values to integer values.
         comments.update(bootlegalbumcountry=self._countries.get(comments.get("bootlegalbumcountry", "United States")))
         comments.update(bootlegtrackcountry=self._countries.get(comments.get("bootlegtrackcountry", "United States")))
-        if comments.get("mediaprovider") is not None:
-            comments.update(mediaprovider=self._providers.get(comments.get("mediaprovider")))
+        if comments.get("publisher") is not None:
+            comments.update(publisher=self._providers.get(comments.get("publisher")))
 
         # ----- Gather values together into a tuple then remove duplicates.
         return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))  # (value1, value2, value3)

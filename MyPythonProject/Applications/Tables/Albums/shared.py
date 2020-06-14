@@ -830,9 +830,16 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
                     table = track[0]  # type: str
                     logger.debug("Table is     : %s", table)
                     logger.debug("Statements is: %s", _statements[table])
-                    with suppress(sqlite3.IntegrityError):
-                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
-                        logger.debug(conn.total_changes)
+                    if table.lower() != "tracks":
+                        with suppress(sqlite3.IntegrityError):
+                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                            logger.debug(conn.total_changes)
+                    if table.lower() == "tracks":
+                        try:
+                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                        except sqlite3.IntegrityError:
+                            albumid, discid, trackid, title = tuple(compress(compress(track, selectors[profile][table]), [1, 1, 1, 0, 0, 1]))
+                            conn.execute("UPDATE tracks set title=?, utc_modified=? WHERE albumid=? AND discid=? AND trackid=?", (title, datetime.utcnow(), albumid, discid, trackid))
 
                 # "livealbums" table.
                 table = "livealbums"
