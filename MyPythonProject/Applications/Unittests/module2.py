@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
-import argparse
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import datetime
 import operator
 import os
 import sys
 import unittest
 from functools import partial
-from pathlib import Path, PurePath
-from typing import Mapping
-from unittest.mock import Mock, patch
+from pathlib import Path
+from unittest.mock import patch
 
 import iso8601  # type: ignore
 
 from ..callables import filter_audiofiles, filter_extension, filter_extensions, filter_losslessaudiofiles, filter_portabledocuments, filterfalse_
-from ..parsers import GetPath, database_parser, tags_grabber, tasks_parser
+from ..parsers import database_parser, tags_grabber, tasks_parser
 from ..shared import LOCAL, UTC, find_files, get_dirname
 
 __author__ = 'Xavier ROSSET'
@@ -22,139 +20,14 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_ME = PurePath(os.path.abspath(__file__))  # type: PurePath
-_MYPARENT = PurePath(os.path.abspath(__file__)).parent  # type: PurePath
-USERPROFILE = PurePath("C:/") / "Users" / "Xavier"  # type: PurePath
-BACKUP = str(PurePath("Y:/") / "Backup")  # type: str
-MYDOCUMENTS = str(USERPROFILE / "Documents")  # type: str
-ONEDRIVE = str(USERPROFILE / "OneDrive")  # type: str
-TEMP = str(USERPROFILE / "AppData" / "Local" / "Temp")  # type: str
-DESTINATIONS = {"backup": BACKUP, "documents": MYDOCUMENTS, "onedrive": ONEDRIVE, "temp": TEMP}  # type: Mapping[str, str]
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 
-@patch.object(GetPath, "destinations", {"temp": TEMP})
-class Test01a(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self):
-        local_validpath = Mock(return_value=MYDOCUMENTS)
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("directory", help="browsed directory", type=local_validpath)
-        self.parser.add_argument("archive", help="archive name")
-        self.parser.add_argument("destination", help="archive destination", action=GetPath, choices=list(DESTINATIONS))
-        self.parser.add_argument("-e", "--ext", dest="extensions", help="archived extension(s)", nargs="*")
-
-    def test_t01(self):
-        arguments = self.parser.parse_args([MYDOCUMENTS, "documents", "temp", "-e", "txt", "doc"])
-        self.assertEqual(arguments.directory, MYDOCUMENTS)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, TEMP)
-        self.assertListEqual(arguments.extensions, ["txt", "doc"])
-
-    def test_t02(self):
-        arguments = self.parser.parse_args([MYDOCUMENTS, "documents", "temp"])
-        self.assertEqual(arguments.directory, MYDOCUMENTS)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, TEMP)
-        self.assertIsNone(arguments.extensions)
-
-
-@patch.object(GetPath, "destinations", {"onedrive": ONEDRIVE})
-class Test01b(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self):
-        local_validpath = Mock(return_value=MYDOCUMENTS)
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("directory", help="browsed directory", type=local_validpath)
-        self.parser.add_argument("archive", help="archive name")
-        self.parser.add_argument("destination", help="archive destination", action=GetPath, choices=list(DESTINATIONS))
-        self.parser.add_argument("-e", "--ext", dest="extensions", help="archived extension(s)", nargs="*")
-
-    def test_t01(self):
-        arguments = self.parser.parse_args([MYDOCUMENTS, "documents", "onedrive", "-e", "txt", "doc"])
-        self.assertEqual(arguments.directory, MYDOCUMENTS)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, ONEDRIVE)
-        self.assertListEqual(arguments.extensions, ["txt", "doc"])
-
-    def test_t02(self):
-        arguments = self.parser.parse_args([MYDOCUMENTS, "documents", "onedrive"])
-        self.assertEqual(arguments.directory, MYDOCUMENTS)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, ONEDRIVE)
-        self.assertIsNone(arguments.extensions)
-
-
-@patch.object(GetPath, "destinations", {"some_destination": str(PurePath("c:/some_destination"))})
-class Test01c(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self):
-        self.some_source = str(PurePath("c:/some_source"))
-        self.some_destination = str(PurePath("c:/some_destination"))
-        local_validpath = Mock(return_value=self.some_source)
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("directory", help="browsed directory", type=local_validpath)
-        self.parser.add_argument("archive", help="archive name")
-        self.parser.add_argument("destination", help="archive destination", action=GetPath)
-        self.parser.add_argument("-e", "--ext", dest="extensions", help="archived extension(s)", nargs="*")
-
-    def test_t01(self):
-        arguments = self.parser.parse_args([self.some_source, "documents", "some_destination", "-e", "txt", "doc"])
-        self.assertEqual(arguments.directory, self.some_source)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, self.some_destination)
-        self.assertListEqual(arguments.extensions, ["txt", "doc"])
-
-    def test_t02(self):
-        arguments = self.parser.parse_args([self.some_source, "documents", "some_destination"])
-        self.assertEqual(arguments.directory, self.some_source)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, self.some_destination)
-        self.assertIsNone(arguments.extensions)
-
-
-@patch.object(GetPath, "destinations", {"temp": str(PurePath("c:/some_destination"))})
-class Test01d(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self):
-        self.some_source = str(PurePath("c:/some_source"))
-        self.some_destination = str(PurePath("c:/some_destination"))
-        self.local_validpath = Mock(return_value=self.some_source)
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("directory", help="browsed directory", type=self.local_validpath)
-        self.parser.add_argument("archive", help="archive name")
-        self.parser.add_argument("destination", help="archive destination", action=GetPath)
-        self.parser.add_argument("-e", "--ext", dest="extensions", help="archived extension(s)", nargs="*")
-
-    def test_t01(self):
-        arguments = self.parser.parse_args([self.some_source, "documents", "temp", "-e", "txt", "doc"])
-        self.assertEqual(arguments.directory, self.some_source)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, self.some_destination)
-        self.assertListEqual(arguments.extensions, ["txt", "doc"])
-        self.local_validpath.assert_called_once_with(self.some_source)
-
-    def test_t02(self):
-        arguments = self.parser.parse_args([self.some_source, "documents", "temp"])
-        self.assertEqual(arguments.directory, self.some_source)
-        self.assertEqual(arguments.archive, "documents")
-        self.assertEqual(arguments.destination, self.some_destination)
-        self.assertIsNone(arguments.extensions)
-        self.local_validpath.assert_called_once_with(self.some_source)
-        self.local_validpath.assert_called()
-
-
+# ==============
+# Tests classes.
+# ==============
 @unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
 class Test02(unittest.TestCase):
     """
@@ -189,7 +62,7 @@ class Test03(unittest.TestCase):
 
     def setUp(self):
         self.arguments = None
-        self.resource = str(PurePath(_MYPARENT, "Resources", "resource1.txt"))
+        self.resource = str(_MYPARENT / "Resources" / "resource1.txt")
 
     def test_t01(self):
         self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])

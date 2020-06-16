@@ -12,7 +12,6 @@ from typing import List, Optional, Tuple
 import wx  # type: ignore
 import yaml
 
-from Applications.Tables.XReferences.shared import get_albums, get_artists
 from Applications.callables import filter_extensions, filterfalse_
 from Applications.shared import TemplatingEnvironment, find_files, get_dirname
 

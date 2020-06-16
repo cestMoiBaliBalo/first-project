@@ -1,10 +1,10 @@
        {{ root }} content.
-{% for separator1, title, separator2, iter_obj in content %}
+{% for separator, title, iter_obj in content %}
 
 
-     {{ separator1 }}
+     {{ separator }}
      {{ title }}
-     {{ separator2 }}
+     {{ separator }}
     {% for item in iter_obj %}
 {{ loop.index|rjustify() }}. {{ item }}
     {% endfor %}

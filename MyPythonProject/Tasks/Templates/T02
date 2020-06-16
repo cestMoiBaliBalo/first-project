@@ -1,14 +1,12 @@
-{% set collection, total, only_differences = collection %}
-{% if only_differences %}
-The following differences have been found since the previous count:
-{% endif %}
+{% for track in collection %}
+    {% if loop.index == 1 %}
+An exception has been raised by the following track(s). Please fix the wrong one(s) and run the script again.
+    {% endif %}
+    {% for item in track %}
+        {% if loop.index == 1 %}
 
----------      -----     ------   ----------
-Extension      After     Before   Difference
----------      -----     ------   ----------
-{% for extension, current, previous, difference, _ in collection %}
-{{ extension }}   {{ current }}   {{ previous }}   {{ difference }}
+
+        {% endif %}
+{{ loop.index|stringify|rjustify(5) }}. {{ item }}
+    {% endfor %}
 {% endfor %}
-                                  ----------
-{{ total }}
-

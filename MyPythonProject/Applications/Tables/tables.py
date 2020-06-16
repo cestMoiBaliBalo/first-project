@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import sqlite3
 from contextlib import ExitStack, suppress
+from pathlib import Path, PosixPath, WindowsPath
+from typing import Union
 
 from .shared import DatabaseConnection
 from ..shared import GENRES
@@ -9,7 +11,20 @@ from ..shared import GENRES
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
+
+
+def adapt_path(path: Union[PosixPath, WindowsPath]) -> str:
+    return str(path)
+
+
+def convert_path(byt: bytes) -> Path:
+    return Path(byt.decode())
+
+
+sqlite3.register_adapter(WindowsPath, adapt_path)
+sqlite3.register_adapter(PosixPath, adapt_path)
+sqlite3.register_converter("path", convert_path)
 
 
 def drop_tables(db: str) -> str:
@@ -26,8 +41,6 @@ def drop_tables(db: str) -> str:
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS albums")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS bootlegs")
-        with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS discs")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS tracks")
@@ -38,15 +51,15 @@ def drop_tables(db: str) -> str:
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS playeddiscs")
         with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS bootlegdiscs")
+        with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS defaultalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS bootlegalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS livealbums")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS bootlegdiscs")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS rippinglog")
+            conn.execute("DROP TABLE IF EXISTS digitalalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS genres")
         with suppress(sqlite3.OperationalError):
@@ -59,6 +72,10 @@ def drop_tables(db: str) -> str:
             conn.execute("DROP TABLE IF EXISTS countries")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS applications")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS repositories")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS duplicates")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP VIEW IF EXISTS defaultalbums_vw")
         with suppress(sqlite3.OperationalError):
@@ -101,7 +118,7 @@ def create_tables(db: str) -> str:
         conn.execute(
                 "CREATE TABLE IF NOT EXISTS countries (countryid INTEGER PRIMARY KEY ASC AUTOINCREMENT, country TEXT NOT NULL)")
         conn.executemany(
-                "INSERT INTO countries (country) VALUES (?)", [("England",), ("France",), ("Germany",), ("Italy",), ("Sweden",), ("United States",)])
+                "INSERT INTO countries (country) VALUES (?)", [("Australia",), ("England",), ("France",), ("Germany",), ("Italy",), ("Norway",), ("Sweden",), ("United States",)])
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS countries_idx ON countries (country ASC)")
 
         # --> Providers.
@@ -117,6 +134,22 @@ def create_tables(db: str) -> str:
         conn.executemany(
                 "INSERT INTO applications (application) VALUES (?)", [("dBpoweramp 15.1",), ("dBpoweramp Release 16.6",)])
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS applications_idx ON applications (application ASC)")
+
+        # --> Repositories.
+        conn.execute("CREATE TABLE IF NOT EXISTS repositories (repositoryid INTEGER PRIMARY KEY ASC AUTOINCREMENT, repository PATH NOT NULL)")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS repositories_idx ON repositories (repository ASC)")
+        conn.executemany("INSERT INTO repositories (repository) VALUES (?)", [(Path("G:/") / "Music" / "Lossless1",), (Path("G:/") / "Music" / "Lossless2",)])
+
+        # --> Duplicates.
+        conn.execute(
+                "CREATE TABLE IF NOT EXISTS duplicates ("
+                "albumid TEXT NOT NULL, "
+                "discid INTEGER NOT NULL, "
+                "repositoryid INTEGER REFERENCES repositories (repositoryid), "
+                "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
+                "utc_modified TIMESTAMP DEFAULT NULL, "
+                "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS duplicates_idx ON duplicates (albumid ASC, discid ASC, repositoryid ASC)")
 
         # --> Artists.
         conn.execute(
@@ -187,6 +220,17 @@ def create_tables(db: str) -> str:
                 "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS playeddiscs_idx ON playeddiscs (albumid ASC, discid ASC)")
 
+        # --> Bootlegdiscs.
+        conn.execute(
+                "CREATE TABLE IF NOT EXISTS bootlegdiscs ("
+                "albumid TEXT NOT NULL, "
+                "discid INTEGER NOT NULL, "
+                "referenceid TEXT DEFAULT NULL, "
+                "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
+                "utc_modified TIMESTAMP DEFAULT NULL, "
+                "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON bootlegdiscs (albumid ASC, discid ASC)")
+
         # --> Defaultalbums.
         conn.execute(
                 "CREATE TABLE IF NOT EXISTS defaultalbums ("
@@ -222,18 +266,16 @@ def create_tables(db: str) -> str:
                 "utc_modified TIMESTAMP DEFAULT NULL, "
                 "FOREIGN KEY (albumid) REFERENCES albums (albumid))")
 
-        # --> Bootlegdiscs.
+        # --> Digitalalbums.
         conn.execute(
-                "CREATE TABLE IF NOT EXISTS bootlegdiscs ("
-                "albumid TEXT NOT NULL, "
-                "discid INTEGER NOT NULL, "
-                "referenceid TEXT DEFAULT NULL, "
+                "CREATE TABLE IF NOT EXISTS digitalalbums ("
+                "albumid TEXT REFERENCES albums (albumid), "
+                "providerid INTEGER REFERENCES providers (providerid), "
                 "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
-                "utc_modified TIMESTAMP DEFAULT NULL, "
-                "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")
-        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS bootlegdiscs_idx ON bootlegdiscs (albumid ASC, discid ASC)")
+                "utc_modified TIMESTAMP DEFAULT NULL)")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS digitalalbums_idx ON digitalalbums (albumid ASC, providerid ASC)")
 
-        # --> Bonus.
+        # --> Bonuses.
         conn.execute(
                 "CREATE TABLE IF NOT EXISTS bonuses ("
                 "albumid TEXT NOT NULL, "

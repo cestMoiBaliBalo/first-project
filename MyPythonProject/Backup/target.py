@@ -2,13 +2,10 @@
 # pylint: disable=invalid-name
 import argparse
 import os
-from contextlib import ExitStack
 from pathlib import Path
 from typing import Mapping, Tuple
 
 import yaml
-
-from Applications.shared import WRITE
 
 __author__ = "Xavier ROSSET"
 __maintainer__ = "Xavier ROSSET"
@@ -50,12 +47,9 @@ drive = f"{arguments.path.drive}/"
 
 # -----
 mapping = {}  # type: Mapping[str, Tuple[str, str]]
-stack = ExitStack()
-rea_stream = stack.enter_context(open(_MYPARENT / "targets.yml", encoding="UTF_8"))
-wrt_stream = stack.enter_context(open(os.path.expandvars("%_TMPTXT%"), mode=WRITE, encoding="ISO-8859-1"))
-with stack:
-    mappings = yaml.load(rea_stream, Loader=yaml.FullLoader)
+with open(_MYPARENT / "targets.yml", encoding="UTF_8") as stream:
+    mappings = yaml.load(stream, Loader=yaml.FullLoader)
     if mappings:
-        target = mappings.get(arguments.path.relative_to(drive).parts[0].upper())
-        if target:
-            wrt_stream.write("{0}\n".format("|".join(target)))
+        target = mappings.get(arguments.path.relative_to(drive).parts[0].upper(), ())
+        for item in target:
+            print(item)

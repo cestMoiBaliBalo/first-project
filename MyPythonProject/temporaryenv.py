@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import argparse
+import os
+from itertools import repeat
 from subprocess import run
 from tempfile import mkdtemp, mkstemp
 
@@ -11,37 +13,35 @@ __status__ = "Production"
 
 # -----
 parser = argparse.ArgumentParser()
-parser.add_argument("--output", type=argparse.FileType(mode="w", encoding="ISO-8859-1"))
-parser.add_argument("--files", action="store_true")
-parser.add_argument("--glob", action="store_true")
+subparsers = parser.add_subparsers(dest="action")
+
+# -----
+parser_dir = subparsers.add_parser("dir")
+parser_dir.add_argument("--prefix", "-p", default=os.path.expandvars("%TEMP%"), nargs="?")
+parser_dir.add_argument("--glob", "-g", action="store_true")
+parser_dir.add_argument("--files", "-f", action="count")
+
+# -----
+parser_fil = subparsers.add_parser("fil")
+parser_fil.add_argument("--prefix", "-p", default=os.path.expandvars("%TEMP%"), nargs="?")
+parser_fil.add_argument("--files", "-f", action="count")
+
+# -----
 arguments = parser.parse_args()
 
 # -----
-tmpdir = mkdtemp()
-
-# -----
-if arguments.output:
-    arguments.output.write(f"{tmpdir}\n")
-
-# -----
-if arguments.files:
-
-    # -----
-    _, ymltmp = mkstemp(dir=tmpdir)
-    print(ymltmp)
-
-    # -----
-    _, txttmp = mkstemp(dir=tmpdir)
-    print(txttmp)
-
-    # -----
-    _, jsontmp = mkstemp(dir=tmpdir)
-    print(jsontmp)
-
-# -----
-if arguments.glob:
-    run(f"SETX _TMPDIR {tmpdir}")
+if arguments.action == "dir":
+    tmpdir = mkdtemp(dir=arguments.prefix)
+    print(tmpdir)
+    if arguments.glob:
+        run(f"SETX _TMPDIR {tmpdir}")
     if arguments.files:
-        run(f"SETX _TMPYML {ymltmp}")
-        run(f"SETX _TMPTXT {txttmp}")
-        run(f"SETX _TMPJSON {jsontmp}")
+        for _, fil in map(mkstemp, repeat(None), repeat(None), [tmpdir] * arguments.files, repeat(False)):
+            print(fil)
+
+files = 1
+if arguments.action == "fil":
+    if arguments.files:
+        files = arguments.files
+    for _, fil in map(mkstemp, repeat(None), repeat(None), [arguments.prefix] * files, repeat(False)):
+        print(fil)

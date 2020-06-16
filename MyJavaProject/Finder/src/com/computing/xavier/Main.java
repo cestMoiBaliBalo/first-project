@@ -1,4 +1,4 @@
-package com.xavier.computing;
+package com.computing.xavier;
 
 import picocli.CommandLine;
 
@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
 @CommandLine.Command()
-public class Finder implements Callable<Integer> {
+public class Main implements Callable<Integer> {
     private enum Environment {PRODUCTION, BACKUP}
 
     @CommandLine.Parameters(index = "0", description = "Scanned directory. Mandatory.")
@@ -32,7 +32,7 @@ public class Finder implements Callable<Integer> {
     private Path output;
 
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Finder()).execute(args);
+        int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
 

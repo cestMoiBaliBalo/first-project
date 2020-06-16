@@ -1,17 +1,17 @@
 {% for content in contents %}
-    {% set separator, target, separator, app_items, app_iter, chg_items, chg_iter = content %}
+    {% set separator, target, new_items, new_iter, exi_items, exi_iter = content %}
 
 
 {{ separator }}
 {{ target }}
 {{ separator }}
 
-    {% if app_items %}
-{{ app_items }}
+    {% if new_items %}
+{{ new_items }}
     {% endif %}
 
-    {%- if app_iter %}
-        {% for file in app_iter %}
+    {%- if new_iter %}
+        {% for file in new_iter %}
             {% if loop.first %}
 {{ loop.length|format_() }} new file(s) appended since the previous backup.
             {% endif %}
@@ -19,12 +19,12 @@
         {% endfor %}
     {% endif %}
 
-    {% if chg_items %}
-{{ chg_items }}
+    {% if exi_items %}
+{{ exi_items }}
     {% endif %}
 
-    {%- if chg_iter %}
-        {% for file in chg_iter %}
+    {%- if exi_iter %}
+        {% for file in exi_iter %}
             {% if loop.first %}
 {{ loop.length|format_() }} existing file(s) modified since the previous backup.
             {% endif %}

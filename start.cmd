@@ -20,11 +20,10 @@ SET _myparent=%~dp0
 @REM ==================
 @REM Initializations 2.
 @REM ==================
-SET _chcp=
 SET _mycp=
+SET _flag=0
 SET _cp=1252
-SET _switch=0
-SET _areca=C:/Program Files/Areca/areca_cl.exe
+SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
 SET _dailybkp=%_COMPUTING%\Resources\daily_backup.txt
 SET _exclusions2=%_COMPUTING%\Resources\exclusions2.txt
 SET _exclusions3=%_COMPUTING%\Resources\exclusions3.txt
@@ -32,28 +31,36 @@ SET _videos=%USERPROFILE%\videos
 SET _xxcopy=xxcopy.cmd
 
 
-@REM ===============
-@REM Main algorithm.
-@REM ===============
+@REM ============
+@REM Main script.
+@REM ============
 
 
 @REM     -----------------------------------------------------
 @REM  1. Allow interface to decode Latin-1 encoded characters.
 @REM     -----------------------------------------------------
+PUSHD %_RESOURCES%
 
 @REM     Set code page.
 SET _chcp=
-CALL :GET_CODEPAGE _chcp
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 
 @REM     Get code page.
-CALL :GET_CODEPAGE _chcp
+SET _chcp=
+SET _step=1
+CALL shared.cmd
 IF DEFINED _chcp ECHO Code page is %_chcp%.
+
+@REM     Check characters encoding.
 ECHO Les caractères accentués sont restitués proprement ^^!
 FOR /F "usebackq tokens=*" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
+
+POPD
 
 
 @REM     -------------------
@@ -67,7 +74,6 @@ IF "%~1" EQU "3" GOTO STEP3
 IF "%~1" EQU "4" GOTO STEP4
 IF "%~1" EQU "5" GOTO STEP5
 IF "%~1" EQU "6" GOTO STEP6
-IF "%~1" EQU "7" GOTO STEP7
 IF "%~1" EQU "9" GOTO STEP9
 IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
@@ -75,7 +81,6 @@ IF "%~1" EQU "13" GOTO STEP13
 IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "23" GOTO STEP23
-IF "%~1" EQU "24" GOTO STEP24
 IF "%~1" EQU "25" GOTO STEP25
 IF "%~1" EQU "26" GOTO STEP26
 SHIFT
@@ -98,19 +103,18 @@ GOTO MAIN
 :STEP1
 ECHO:
 ECHO:
-XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /oA:%_XXCOPYLOG%
+XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp1n53chv0\ /oA:%_XXCOPYLOG%
 
 
 @REM      ----------------------------------------
 @REM  3b. Then set up a new temporary environment.
 @REM      ----------------------------------------
-PUSHD %_PYTHONPROJECT%
-SET _path=%PATH%
+SETLOCAL
 SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-python temporaryenv.py --files --glob > NUL
-SET PATH=%_path%
-SET _path=
+PUSHD %_PYTHONPROJECT%
+python temporaryenv.py dir --glob > NUL
 POPD
+ENDLOCAL
 SHIFT
 GOTO MAIN
 
@@ -155,6 +159,7 @@ GOTO MAIN
 @REM     /Y:  suppresses prompt when overwriting existing files.
 @REM     /BI: backs up incrementally. Different, by time/size, files only.
 :STEP5
+SETLOCAL ENABLEEXTENSIONS
 SET _first=1
 FOR /F "usebackq tokens=* eol=#" %%F IN ("%_dailybkp%") DO (
     SET _switch=/CE
@@ -165,8 +170,7 @@ FOR /F "usebackq tokens=* eol=#" %%F IN ("%_dailybkp%") DO (
     ECHO:
     XXCOPY !_switch! "!_file!" %_MYDOCUMENTS%\ /KS /Y /BI /FF /oA:%_XXCOPYLOG%
     )
-SET _first=
-SET _switch=
+ENDLOCAL
 SHIFT
 GOTO MAIN
 
@@ -177,7 +181,7 @@ GOTO MAIN
 @REM     /DB#21: removes files older than or equal to 21 days.
 @REM     /IA   : copies files only if destination directory doesn't exist.
 :STEP6
-IF EXIST y:\Computing (
+IF EXIST y: (
 
 :STEP6A
     ECHO:
@@ -187,32 +191,23 @@ IF EXIST y:\Computing (
 :STEP6B
     ECHO:
     ECHO:
-    SET _prefix=
-    SET _count=-1
+    SET _step=2
+    SET _index=0
+    SET _suffix=
 
 :STEP6C
-    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$!_prefix!\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$!_suffix!\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 47 (
         SHIFT
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        CALL :GET_PREFIX _count _prefix
-        IF DEFINED _prefix GOTO STEP6C
+        PUSHD %_RESOURCES%
+        CALL shared.cmd
+        POPD
+        IF DEFINED _suffix GOTO STEP6C
     )
 )
-SHIFT
-GOTO MAIN
-
-
-@REM     -------------------------------------------------------------------------
-@REM  9. Clone "\\Diskstation\backup\Images\Samsung S5" to "G:\Videos\Samsung S5".
-@REM     -------------------------------------------------------------------------
-@REM     Extra files are deleted.
-:STEP7
-@REM SET switch=
-@REM CALL :GET_SWITCH switch
-@REM XXCOPY /EC "\\Diskstation\backup\Images\Samsung S5\" "G:\Videos\Samsung S5\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
 SHIFT
 GOTO MAIN
 
@@ -268,17 +263,17 @@ GOTO MAIN
 :STEP13
 SETLOCAL
 SET _taskid=123456798
-CALL :CHECK_TASK %_taskid% "8"
+SET _delta=8
+CALL :CHECK_TASK
 IF ERRORLEVEL 1 (
     @ECHO:
     @ECHO:
     @ECHO ===============================
     @ECHO Delete GNUCash sandbox content.
     @ECHO ===============================
-    "C:\Program Files\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && @ECHO GNUCash sandbox content successfully removed.
-    CALL :UPDATE_TASK %_taskid%
+    "%PROGRAMFILES%\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && @ECHO GNUCash sandbox content successfully removed.
+    CALL :UPDATE_TASK
 )
-SET _taskid=
 ENDLOCAL
 SHIFT
 GOTO MAIN
@@ -317,35 +312,29 @@ IF EXIST y:\Documents (
 :STEP23B
     ECHO:
     ECHO:
-    SET _prefix=
-    SET _count=-1
+    SET _step=2
+    SET _index=0
+    SET _suffix=
 
 :STEP23C
-    XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$!_prefix!\ /IA /KS /oA:%_XXCOPYLOG%
+    XXCOPY /EC %_MYDOCUMENTS%\ y:\Documents\/$ymmdd$!_suffix!\ /IA /KS /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 47 (
         SHIFT
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        CALL :GET_PREFIX _count _prefix
-        IF DEFINED _prefix GOTO STEP23C
+        PUSHD %_RESOURCES%
+        CALL shared.cmd
+        POPD
+        IF DEFINED _suffix GOTO STEP23C
     )
 )
 SHIFT
 GOTO MAIN
 
 
-@REM     -------------------------------
-@REM 17. Backup AVCHD videos to X drive.
-@REM     -------------------------------
-:STEP24
-XXCOPY "G:\Videos\AVCHD Videos\" "X:\Repository\" /IP /CLONE /PZ0 /oA:%_XXCOPYLOG%
-SHIFT
-GOTO MAIN
-
-
 @REM     ----------
-@REM 18. Available.
+@REM 17. Available.
 @REM     ----------
 :STEP25
 SHIFT
@@ -353,23 +342,26 @@ GOTO MAIN
 
 
 @REM     ----------
-@REM 19. Available.
+@REM 18. Available.
 @REM     ----------
 :STEP26
 SHIFT
 GOTO MAIN
 
 
+@REM ==============
+@REM End of script.
+@REM ==============
 :THE_END
 ECHO:
 ECHO:
 IF DEFINED _mycp (
     CHCP %_mycp% > NUL
     ECHO Code page is now %_mycp%.
-    SET _mycp=
 )
 ENDLOCAL
 PAUSE
+CLS
 EXIT /B %ERRORLEVEL%
 
 
@@ -377,61 +369,18 @@ EXIT /B %ERRORLEVEL%
 @REM Shared functions.
 @REM =================
 :CHECK_TASK
-python -m Applications.Tables.Tasks.shared "%~1" check --delta "%~2"
-EXIT /B %ERRORLEVEL%
+SETLOCAL
+python -m Applications.Tables.Tasks.shared %_taskid% check --delta %_delta%
+(
+    ENDLOCAL
+    EXIT /B %ERRORLEVEL%
+)
 
 
 :UPDATE_TASK
-python -m Applications.Tables.Tasks.shared "%~1" update
-EXIT /B %ERRORLEVEL%
-
-
-:DELAY_TASK
-python -m Applications.Tables.Tasks.shared "%~1" update %~2 "%~3"
-SET %~4=%ERRORLEVEL%
-EXIT /B 0
-
-
-:GET_CODEPAGE
 SETLOCAL
-SET _chcp=
-FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
-(
-    SET _chcp=
-    ENDLOCAL
-    SET %1=%_chcp%
-)
-EXIT /B 0
-
-
-:GET_SWITCH
-SETLOCAL ENABLEEXTENSIONS
-SET switch=/EC
-IF %_switch% EQU 1 SET switch=/CE
+python -m Applications.Tables.Tasks.shared %_taskid% update
 (
     ENDLOCAL
-    IF %_switch% EQU 0 SET _switch=1
-    SET %1=/EC
+    EXIT /B %ERRORLEVEL%
 )
-EXIT /B 0
-
-
-:GET_PREFIX
-SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
-SET _count=!%~1!
-SET _prefixes=ABCDEFGHIJKLMNOPQRSTUVWXYZ
-:LOOP
-(
-    SET _prefix=
-    SET /A "_count+=1"
-    IF !_count! LEQ 25 CALL SET _prefix=%%_prefixes:~!_count!,1%%
-)
-(
-    SET _count=
-    SET _prefix=
-    SET _prefixes=
-    ENDLOCAL
-    SET %1=%_count%
-    SET %2=%_prefix%
-)
-EXIT /B 0

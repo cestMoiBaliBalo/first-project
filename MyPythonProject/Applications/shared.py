@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import calendar
 import csv
@@ -8,12 +9,11 @@ import os
 import re
 import sys
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import singledispatch
-from itertools import chain, dropwhile, filterfalse, groupby as groupby_, repeat, tee, zip_longest
-from pathlib import Path, PurePath, PureWindowsPath, WindowsPath
+from itertools import dropwhile, filterfalse, groupby, repeat, tee, zip_longest
+from pathlib import Path
 from string import Template
 from subprocess import PIPE, run
 from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
@@ -52,30 +52,16 @@ UTF16BOM = "\uFEFF"
 WRITE = "w"
 
 # Resources.
-ARECA = str(PurePath("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
+ARECA = str(Path("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 DATABASE = str(_MYPARENT.parent / "Resources" / "database.db")
 TESTDATABASE = str(_MYPARENT / "Unittests" / "Resources" / "database.db")
 
 # Regular expressions.
-BOOTLEGALBUM = r"((0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?:\.(\d))?(?: - ([^\\]+)))"
-DEFAULTALBUM = r"(((?:20[0-2]|19[6-9])\d)(?:\.(\d))?(?: - ([^\\]+)))"
-COMPRESSION = r"(?:([01])\.[^\\]+)"
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
 DFTMONTHREGEX = r"0[1-9]|1[0-2]"
 DFTYEARREGEX = r"(?:20[0-2]|19[6-9])\d"
-DISC = r"(?:CD\d\\)?"
-DRIVE = r"(?:[^\\]+)"
-FOLDER = r"(?:\d\\)?"
-LETTER = r"([A-Z])"
 LOOKALBUMSORT = r"(?=[\d.]{12}$)(?=[12]\.\d{8}\.\d$)"
-LOOKBOOTLEGALBUM = r"(?=(?:[^\\]+\\){7,8}[A-Za-z0-9.]+$)(?=(?:.+\.\w{3,4})$)"
-LOOKDEFAULTALBUM = r"(?=(?:[^\\]+\\){5,7}[A-Za-z0-9.]+$)(?=(?:.+\.\w{3,4})$)"
 UPCREGEX = r"\d{12,13}"
-
-# Regular expressions templates.
-ARTIST = "(?:(@{letter}[^\\\\]+))"
-FILE = "(?:((([12])\\.\\b@{year}\\B(?:@{month}@{day})\\b\\.\\d)\\.\\b@{encoder}\\B\\d\\.D\\d\\.T\\d{2})\\.(\\w{3,4}))"
-LOOKEXTENSIONS = r"(?=.+\.(?:@{extensions})$)"
 
 # Templates for converting datetime objects to strings.
 TEMPLATE1 = "$day $d/$m/$Y $H:$M:$S $Z (UTC$z)"
@@ -87,19 +73,9 @@ TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 TEMPLATE7 = "$Y$m${d}_$H$M$S"
 
 # Local drives.
-IMAGES = PurePath("H:/")
-MUSIC = PurePath("F:/")
-TEMP = PurePath("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
-
-# Distant directories.
-IMAGES_COLLECTION = r"\\Diskstation\backup\Images\Collection"
+TEMP = Path("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
 
 # Miscellaneous containers.
-EXTENSIONS = {"computing": ["cmd", "css", "json", "py", "pyi", "yaml", "xsl"],
-              "documents": ["doc", "pdf", "txt", "xav"],
-              "music": ["ape", "dsf", "flac", "mp3", "m4a", "ogg", "tak", "wv"],
-              "lossless": ["ape", "dsf", "flac", "tak", "wv"],
-              "lossy": ["mp3", "m4a", "ogg"]}
 GENRES = ["Alternative Rock",
           "Black Metal",
           "Doom Metal",
@@ -110,18 +86,6 @@ GENRES = ["Alternative Rock",
           "Progressive Rock",
           "Rock",
           "Trash Metal"]
-LOCALMONTHS = ["Janvier",
-               "Février",
-               "Mars",
-               "Avril",
-               "Mai",
-               "Juin",
-               "Juillet",
-               "Août",
-               "Septembre",
-               "Octobre",
-               "Novembre",
-               "Decembre"]
 
 
 # ===============
@@ -406,16 +370,20 @@ class TemplatingEnvironment(object):
 # ======================
 # Jinja2 custom filters.
 # ======================
-def rjustify(strg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}>{1}}".format(str(strg), width, char)
+def ljustify(arg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}<{1}}".format(arg, width, char)
 
 
-def normalize(strg: str) -> str:
-    return strg.replace(", ", "_").replace(" ", "_")
+def rjustify(arg: str, width: int, *, char: str = "") -> str:
+    return "{0:{2}>{1}}".format(arg, width, char)
 
 
-def normalize2(strg: str) -> str:
-    return strg.replace(" ", "%20").replace("&", "%26")
+def normalize(arg: str) -> str:
+    return arg.replace(", ", "_").replace(" ", "_")
+
+
+def normalize2(arg: str) -> str:
+    return arg.replace(" ", "%20").replace("&", "%26")
 
 
 # ==========================
@@ -683,7 +651,7 @@ def copy(src: str, dst: str, *, size: int = 16 * 1024) -> str:
     return join(dst, basename(src))
 
 
-def groupby(iterable, index):
+def groupby_(iterable, index):
     """
 
     :param iterable:
@@ -691,14 +659,14 @@ def groupby(iterable, index):
     :return:
     """
     try:
-        for _key, _group in iterable:
-            yield _key, list(groupby(_group, index))
+        for key, group in iterable:
+            yield key, list(groupby_(group, index))
     except ValueError:
-        for _key, _group in groupby_(iterable, key=operator.itemgetter(index)):
-            yield _key, list(_group)
+        for key, group in groupby(iterable, key=operator.itemgetter(index)):
+            yield key, list(group)
 
 
-def nested_groupby(iterable, *args):
+def nested_groupby_(iterable, *args):
     """
 
     :param iterable:
@@ -710,7 +678,7 @@ def nested_groupby(iterable, *args):
     except TypeError:
         items = iter((arg,) for arg in args)
     for item in items:
-        iterable = list(groupby(iterable, *item))
+        iterable = list(groupby_(iterable, *item))
     for key, group in iterable:
         yield key, group
 
@@ -888,7 +856,7 @@ def get_rippingapplication(*, timestamp: Optional[int] = None) -> Tuple[str, Opt
     return application[next(it)]
 
 
-def find_files(directory: Union[str, Path], *, excluded=None) -> Iterator[str]:
+def find_files(directory, *, excluded=None):
     """
     Return a generator object yielding files stored into `directory` argument.
     :param directory: Directory to walk through. Must be a string representing an existing path.
@@ -898,9 +866,9 @@ def find_files(directory: Union[str, Path], *, excluded=None) -> Iterator[str]:
                         - list of files present into the root folder.
     :return: generator object.
     """
-    collection = []  # type: List[str]
+    collection = []  # type: List[Any]
     if not excluded:
-        collection.extend(list(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files))
+        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files)
     elif excluded:
         for root, _, files in os.walk(str(directory)):
             if files:
@@ -922,55 +890,78 @@ def get_drives() -> Iterator[str]:
         yield drive
 
 
-def format_collection(*args: str, gap: int = 0, char: str = "", length: Optional[int] = None) -> Tuple[int, Iterator[str]]:
+def pprint_sequence(*items, align="<", gap=0, char="", width=None):
     """
+    Pretty print sequence by aligning items.
+    Alignment is made respectively to the highest common width of all items.
+    Or respectively to the value given by the keyword argument `width` if it is the highest value.
 
-    :param args:
-    :param gap:
-    :param char:
-    :param length:
-    :return:
+    :param items: sequence. Must be composed of strings or integers.
+    :param align: alignment. Left is the default value.
+    :param gap: number of whitespaces appended at the end of each aligned item.
+    :param char: character used to fill the empty space created by the alignment. Whitespace is the default value.
+    :param width: width used by the alignment. Can override the highest common width of all items.
+    :return: iterator yielding aligned items.
     """
-    _length = max(len(arg) for arg in args)
-    if length:
-        if length > _length:
-            _length = int(length)
-    return _length, iter("{0:<{1}}{2}".format(arg, _length + gap, char) for arg in args)
-
-
-def pprint_sequence(*items):
-    """
-
-    :param items:
-    :return:
-    """
-    for item in _pprint_sequence(*items):
+    _width = 0  # type: int
+    with suppress(TypeError):
+        _width = int(width)
+    for item in _pprint_sequence(align, gap, char, _width, *map(stringify, items)):
         yield item
 
 
-def pprint_mapping(*iterables):
+def pprint_mapping(*iterables, gap=0, char="", width=None):
     """
+    Pretty print key-value pairs by left-aligning keys.
+    Keys alignment is made respectively to the highest common width of all keys.
 
-    :param iterables:
-    :return:
+    :param iterables: key-value pairs.
+    :param gap: number of whitespaces appended at the end of each aligned key.
+    :param char: character used to fill the empty space created by the key alignment. Whitespace is the default value.
+    :param width: width used by the key alignment. Can override the highest common width of all keys.
+    :return: iterator yielding aligned key-value pairs.
     """
-    sequence = iter(iterables)  # type: Iterable[Tuple[Union[int, str], Union[int, str]]]
-    keys, values = zip(*sequence)
-    length = max(len(stringify(key)) for key in keys)
-    for key, value in zip(("{0:<{1}}".format(key, length) for key in keys), values):
+    keys, values = zip(*iterables)
+    keys = list(map(stringify, keys))  # type: List[str]
+
+    # -----
+    _width = 0  # type: int
+    with suppress(TypeError):
+        _width = int(width)
+    _width = max([max(map(len, keys)), _width])
+
+    # -----
+    for key, value in zip(_pprint_sequence("<", gap, char, _width, *keys), values):
         yield key, value
 
 
-def pprint_count(*iterables, length=5):
+def pprint_count(*iterables, key_gap=0, key_width=None, char=("", "")):
     """
+    Pretty print key-value pairs by left-aligning keys and right-aligned values.
+    Keys alignment is made respectively to the highest common width of all keys.
+    Values alignment is made respectively to the highest common width of all values.
 
-    :param iterables:
-    :param length:
-    :return:
+    :param iterables: key-value pairs.
+    :param key_gap: number of whitespaces appended at the end of each aligned key.
+    :param key_width: width used by the key alignment. Can verride the highest common width of all keys.
+    :param char: character used to fill the empty space created both by the key alignment and the value alignment. Whitespace is the default value.
+    :return: iterator yielding aligned key-value pairs.
     """
-    sequence = iter(iterables)  # type: Iterator[Tuple[str, int]]
-    keys, values = zip(*sequence)
-    for key, value in zip(_pprint_sequence(*map(str, keys)), ("{0:>{1}d}".format(value, length) for value in values)):
+    keys, values = zip(*iterables)
+    keys = list(map(stringify, keys))  # type: List[str]
+
+    # -----
+    key_char, val_char = char
+
+    # -----
+    width = 0  # type: int
+    with suppress(TypeError):
+        width = int(key_width)
+    _key_width = max([max(map(len, keys)), width])  # type: int
+    _val_width = max(map(len, map(stringify, values)))  # type: int
+
+    # -----
+    for key, value in zip(_pprint_sequence("<", key_gap, key_char, _key_width, *keys), ["{:{fill}>{width}d}".format(value, fill=val_char, width=_val_width) for value in values]):
         yield key, value
 
 
@@ -987,89 +978,6 @@ def sort_by_insertion(*items: Any, reverse=False):
     elif reverse:
         for item in _sortreverse_by_insertion(*items):
             yield item
-
-
-# ============================
-# Audio directories functions.
-# ============================
-def get_artists(directory: Union[str, PurePath] = MUSIC) -> Iterator[Tuple[str, str]]:
-    """
-    Get artists composing the local music drive.
-    Yield 2-items tuples composed of both artist's name and artist's folder path.
-
-    :param directory: local music drive.
-    :return: 2-items tuples composed of both artist's name and artist's folder path.
-    """
-    for _artist, _artist_path in chain.from_iterable(list(get_folders(letter_path)) for letter, letter_path in get_folders(str(directory))):
-        yield _artist, _artist_path
-
-
-def get_albums(directory: Union[PureWindowsPath, WindowsPath, str]) -> Iterator[Tuple[str, str, str, bool]]:
-    """
-    Get albums composing an artist folder.
-    Yield 4-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
-
-    :param directory: artist folder path.
-    :return: 4-items tuples composed of album folder name, album folder path, album unique ID and is_bootleg boolean tag.
-    """
-    regex1 = re.compile(DEFAULTALBUM)
-    regex2 = re.compile(r"\b\\([12])\\{0}".format(DEFAULTALBUM))
-    regex3 = re.compile(r"^(?:{0})$".format(DFTYEARREGEX))
-    regex4 = re.compile(BOOTLEGALBUM)
-    regex5 = re.compile(r"\b\\([12])\\({0})\\{1}".format(DFTYEARREGEX, BOOTLEGALBUM))
-    isbootleg = {"1": False, "2": True}
-    for _name, _path in get_folders(os.fspath(directory)):
-        if not os.path.isdir(_path):
-            continue
-        if _name in ["1", "2"]:
-            for _album, _album_path, _albumsort, _isbootleg in get_albums(_path):
-                yield _album, _album_path, _albumsort, _isbootleg
-        else:
-            match = regex1.match(_name)
-            if match:
-                category = "1"
-                year, sort, album = match.group(2, 3, 4)
-                match = regex2.search(_path)
-                if match:
-                    category = match.group(1)
-                if not sort:
-                    sort = "1"
-                yield album, _path, f"{category}.{year}0000.{sort}", isbootleg.get(category, False)
-            elif not match:
-                match = regex3.match(_name)
-                if match:
-                    for _album, _album_path, _albumsort, _isbootleg in get_albums(_path):
-                        yield _album, _album_path, _albumsort, _isbootleg
-                elif not match:
-                    match = regex4.match(_name)
-                    if match:
-                        match = regex5.search(_path)
-                        if match:
-                            category, year, month, day, sort = match.group(1, 2, 4, 5, 6)
-                            if not sort:
-                                sort = "1"
-                            yield _name, _path, f"{category}.{year}{month}{day}.{sort}", isbootleg.get(category, False)
-
-
-def get_folders(directory: str) -> Iterator[Tuple[str, str]]:
-    """
-    Get folders composing a directory.
-    Yield a 2-item tuples composed of both folder name and folder path.
-
-    :param directory: directory path.
-    :return: 2-item tuples composed of both folder name and folder path.
-    """
-    _collection = []  # type: List[Tuple[str, str]]
-    stack = ExitStack()
-    try:
-        stack.enter_context(ChangeLocalCurrentDirectory(directory))
-    except PermissionError:
-        pass
-    else:
-        with stack:
-            _collection = [(name, os.path.join(os.getcwd(), name)) for name in os.listdir(".")]
-    for name, path in _collection:
-        yield name, path
 
 
 # ==========================
@@ -1240,69 +1148,25 @@ def _format_date(dt: Union[date, datetime], template: str) -> str:
                                          Z=dt.strftime("%Z"))
 
 
-def _pprint_sequence(*items: Union[int, str]) -> Iterable[str]:
+def _pprint_sequence(align: str, gap: int, char: str, width: int, *items: str) -> Iterable[str]:
     """
-    :param items:
-    :return:
+    Yield aligned sequence items.
+    Alignment is made respectively to the highest common width of all items.
+    Or respectively to the value given by the keyword argument `width`.
+
+    :param align: alignment.
+    :param gap: number of whitespaces appended at the end of each aligned item.
+    :param char: character used to fill the empty space created by the alignment.
+    :param width: width used by the alignment.
+    :param items: sequence. Must be composed of strings or integers.
+    :return: iterator yielding aligned items.
     """
-    it1, it2 = tee(iter(items))  # type: Iterable[Union[int, str]], Iterable[Union[int, str]],
-    length = max(len(item) for item in it1)
-    for item in ("{0:<{1}}".format(item, length) for item in it2):
+    _width = max([max(map(len, items)), width])  # type: int
+    _items = list(items)  # type: List[str]
+    _items = ["{:{fill}{align}{width}}".format(item, fill=char, align=align, width=_width) for item in _items]
+    _items = ["{:<{width}}".format(item, width=_width + gap) for item in _items]
+    for item in _items:
         yield item
-
-
-def _set_collection(collection: Iterable[Tuple[Any, ...]], headers: Optional[Iterable[str]], *, char: str = "=", tabsize: int = 3, gap: int = 3) -> Tuple[List[str], List[str], Iterator[Tuple[str, ...]]]:
-    """
-
-    :param collection:
-    :param headers:
-    :param char:
-    :param tabsize:
-    :param gap:
-    :return:
-    """
-
-    # 1. Initializations.
-    max_length, max_width = {}, {}
-    out_collection = OrderedDict()  # type: Any
-
-    # 2. Gather data per header.
-    in_collection = zip(*collection)  # type: Any
-    in_collection = list(in_collection)
-    _headers = iter(f"header_{str(item).zfill(2)}" for item in range(1, len(in_collection) + 1))
-    if headers is not None:
-        _headers = iter(headers)
-    in_collection = OrderedDict(zip(_headers, in_collection))
-
-    # 3. Get data maximum length and maximum allowed width.
-    for key, value in in_collection.items():
-        _key = stringify(key)
-        _len = len(_key)  # type: int
-        if any(bool(item) for item in value):
-            _len = max(len(stringify(item)) for item in value if item)
-        if len(_key) > _len:
-            _len = len(_key)
-        max_length[key] = _len
-        max_width[key] = get_nearestmultiple(_len, multiple=tabsize) + gap
-
-    # 4. Justify data.
-    for key, value in in_collection.items():
-        sequence = []
-        for item in value:
-            _tabs = get_tabs(max_width[key], tabsize=tabsize).expandtabs(tabsize)
-            if item:
-                _tabs = "{0}{1}".format(item, get_tabs(max_width[key] - len(stringify(item)), tabsize=tabsize)).expandtabs(tabsize)
-            sequence.append(_tabs)
-        out_collection[key] = sequence
-
-    # 5. Set separators.
-    out_separators = ["{0}{1}".format(char * max_length[header], get_tabs(max_width[header] - max_length[header], tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
-
-    # 6. Set output headers.
-    out_headers = ["{0}{1}".format(stringify(header).upper(), get_tabs(max_width[header] - len(stringify(header)), tabsize=tabsize)).expandtabs(tabsize) for header in in_collection]
-
-    # 7. Return output data.
-    return out_separators, out_headers, iter(zip(*out_collection.values()))
 
 
 def _sort_by_insertion(*items: Any) -> Iterable[Any]:

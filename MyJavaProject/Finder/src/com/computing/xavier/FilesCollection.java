@@ -1,4 +1,4 @@
-package com.xavier.computing;
+package com.computing.xavier;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;

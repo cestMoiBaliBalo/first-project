@@ -15,7 +15,7 @@ from ...shared import get_dirname
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 _THATFILE = os.path.abspath(__file__)
 

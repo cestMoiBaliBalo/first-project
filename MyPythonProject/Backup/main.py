@@ -75,8 +75,8 @@ class GetTargets(argparse.Action):
         targets = filter(itemgetter_(1)(partial(eq, namespace.workspace)), namespace.config.items())  # type: Any
         if values:
             targets = filter(itemgetter_(0)(partial(contains, values)), targets)
-        targets = iter(compress(target, [1, 0]) for target in targets)
-        setattr(namespace, self.dest, list(chain(*targets)))
+        targets = [compress(target, [1, 0]) for target in targets]
+        setattr(namespace, self.dest, list(chain.from_iterable(targets)))
 
 
 # ================
