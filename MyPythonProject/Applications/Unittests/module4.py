@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import logging.config
 import os
 import shutil
@@ -11,7 +11,7 @@ from datetime import datetime
 from functools import partial, wraps
 from itertools import filterfalse
 from operator import contains, itemgetter
-from pathlib import PurePath
+from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Optional, Tuple
 from unittest.mock import Mock, PropertyMock, patch
@@ -30,7 +30,9 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 basename, exists, join = os.path.basename, os.path.exists, os.path.join
 
 
@@ -139,8 +141,8 @@ class Changes(object):
             self._rippeddiscs[f"{self._albumid}.{self._discid}"] += 1
 
         # tracks.
+        self._tracks[f"{self._albumid}.{self._discid}.{self._trackid}"] += 1
         if not track:
-            self._tracks[f"{self._albumid}.{self._discid}.{self._trackid}"] += 1
             if not bonus and self._bonustrack.upper() == "Y":
                 self._bonuses[f"{self._albumid}.{self._discid}.{self._trackid}"] += 1
 
@@ -233,7 +235,7 @@ class SetUp(object):
                 database = join(tempdir, "database.db")
                 jsontags = join(tempdir, "tags.json")
                 create_tables(drop_tables(database))
-                with open(_THATFILE.parent / "Resources" / "resource2.yml", encoding=self._encoding) as stream:
+                with open(_MYPARENT / "Resources" / "resource2.yml", encoding=self._encoding) as stream:
                     collection = yaml.load(stream, Loader=yaml.FullLoader)
                 for item in collection:
                     track = Mock()
@@ -282,12 +284,13 @@ class SetUp(object):
 # ==============
 # Tests classes.
 # ==============
+@unittest.skip
 class TestRippedTrack(unittest.TestCase):
 
     def setUp(self):
-        with open(_THATFILE.parent / "Resources" / "resource3.yml", encoding=UTF8) as stream:
+        with open(_MYPARENT / "Resources" / "resource3.yml", encoding=UTF8) as stream:
             self.test_cases = yaml.load(stream, Loader=yaml.FullLoader)
-        with open(_THATFILE.parents[2] / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
+        with open(_MYPARENT.parent.parent / "AudioCD" / "Resources" / "profiles.yml", encoding=UTF8) as stream:
             self.test_config = yaml.load(stream, Loader=yaml.FullLoader)
         self._logger = logging.getLogger("Applications.Unittests.module4.TestRippedTrack")
 
@@ -463,7 +466,7 @@ class TestRippedTrack(unittest.TestCase):
             self.assertEqual(inserted, changes.total_changes)
 
 
-class TestGetTagsFile01(unittest.TestCase):
+class TestGetTagsFile(unittest.TestCase):
 
     def setUp(self):
         self.track = Mock()
@@ -504,62 +507,6 @@ class TestGetTagsFile01(unittest.TestCase):
         self.track.foldersortcount = "Y"
         self.track.totaldiscs = "3"
         self.assertEqual(get_tagsfile(self.track), r"A\Artist, The\2019.2 - The Album\CD3")
-
-
-@patch("Applications.Unittests.module4.get_tagsfile", return_value="dummy string")
-class TestGetTagsFile02(unittest.TestCase):
-
-    def setUp(self):
-        self.track = Mock()
-        self.track.album = "The Album"
-        self.track.albumsortcount = "1"
-        self.track.artistsort = "Artist, The"
-        self.track.artistsort_letter = "A"
-        self.track.bootleg = "N"
-        self.track.discnumber = "1"
-        self.track.foldersortcount = "N"
-        self.track.origyear = "2019"
-        self.track.totaldiscs = "1"
-
-    def test01(self, mock_get_tagsfile):
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
-
-    def test02(self, mock_get_tagsfile):
-        self.track.totaldiscs = "2"
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
-
-    def test03(self, mock_get_tagsfile):
-        self.track.discnumber = "2"
-        self.track.totaldiscs = "2"
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
-
-    def test04(self, mock_get_tagsfile):
-        self.track.foldersortcount = "Y"
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
-
-    def test05(self, mock_get_tagsfile):
-        self.track.albumsortcount = "2"
-        self.track.foldersortcount = "Y"
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
-
-    def test06(self, mock_get_tagsfile):
-        self.track.albumsortcount = "2"
-        self.track.discnumber = "3"
-        self.track.foldersortcount = "Y"
-        self.track.totaldiscs = "3"
-        self.assertEqual(get_tagsfile(self.track), "dummy string")
-        mock_get_tagsfile.assert_called()
-        mock_get_tagsfile.assert_called_once()
 
 
 @SetUp("A.Artist, The.1.20190000.1", 1)

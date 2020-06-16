@@ -8,20 +8,18 @@ import shutil
 import sys
 import tempfile
 import unittest
-from collections.abc import MutableSequence
 from datetime import datetime
 from functools import partial, wraps
 from itertools import filterfalse
-from operator import contains, eq, gt, itemgetter, lt
+from operator import contains, itemgetter
 from pathlib import Path, PurePath
 from typing import Union
 from unittest.mock import patch
 
 import yaml
 
-from Applications.Tables.Albums import shared
 from Applications.decorators import itemgetter_, split_
-from Applications.shared import DATABASE, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby, nested_groupby, now
+from Applications.shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby_, nested_groupby_, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -94,122 +92,6 @@ split3_ = itemgetter_(1)(split_(".")(itemgetter_(1)(int)))
 # ==============
 # Tests classes.
 # ==============
-class Test01(unittest.TestCase):
-    def setUp(self) -> None:
-        self.ref = [1, 2, 3, 4, 5, 6, 7, 8]
-
-    def test_t01(self):
-        self.assertTrue(all([lt(x, 50) for x in self.ref]))
-
-    def test_t02(self):
-        self.assertFalse(all([gt(x, 50) for x in self.ref]))
-
-    def test_t03(self):
-        self.assertTrue(any([gt(x, 5) for x in self.ref]))
-
-    def test_t04(self):
-        self.assertTrue(any([eq(x, 5) for x in self.ref]))
-
-    def test_t05(self):
-        self.assertFalse(all([eq(x, 5) for x in self.ref]))
-
-
-class Test02(unittest.TestCase):
-    def setUp(self) -> None:
-
-        class ThatClass(MutableSequence):
-
-            def __init__(self, seq):
-                self._index = -1
-                self._seq = sorted(sorted(sorted(seq, key=split_(".")(itemgetter_(2)(int))), key=split_(".")(itemgetter_(0)(int))), key=split_(".")(itemgetter_(1)(int)))
-
-            def __getitem__(self, item):
-                return self._seq[item]
-
-            def __setitem__(self, key, value):
-                self._seq[key] = value
-
-            def __delitem__(self, key):
-                del self._seq[key]
-
-            def __len__(self):
-                return len(self._seq)
-
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                self._index += 1
-                if self._index >= len(self._seq):
-                    raise StopIteration
-                return self._seq[self._index][2:6]
-
-            def __call__(self, arg):
-                self._index += 1
-                try:
-                    return self._seq[self._index][2:6]
-                except IndexError:
-                    return arg
-
-            def insert(self, index, value):
-                self._seq.insert(index, value)
-
-            @property
-            def sequence(self):
-                return self._seq
-
-        self.obj = ThatClass(["2.20160125.13", "2.20160201.13", "2.20160120.13", "1.20160625.13", "2.20160422.13", "1.20160422.13", "2.20160422.15", "2.19841102.13", "2.19990822.13", "2.20021014.13",
-                              "2.20000823.13", "2.20170101.13", "1.20160422.02"])
-
-    def test_t01(self):
-        self.assertListEqual(self.obj.sequence, ["2.19841102.13", "2.19990822.13", "2.20000823.13", "2.20021014.13", "2.20160120.13", "2.20160125.13", "2.20160201.13", "1.20160422.02", "1.20160422.13",
-                                                 "2.20160422.13", "2.20160422.15", "1.20160625.13", "2.20170101.13"])
-
-    def test_t02(self):
-        self.assertListEqual(list(self.obj), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
-
-    def test_t03(self):
-        sentinel = "2016"
-        self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002"])
-
-    def test_t04(self):
-        sentinel = "2018"
-        self.assertListEqual(list(iter(partial(self.obj, sentinel), sentinel)), ["1984", "1999", "2000", "2002", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2017"])
-
-    def test_t05(self):
-        sentinel = "2017"
-        self.assertListEqual(sorted(set(iter(partial(self.obj, sentinel), sentinel))), ["1984", "1999", "2000", "2002", "2016"])
-
-
-class Test03(unittest.TestCase):
-    def setUp(self) -> None:
-        self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
-
-    def test_t01(self):
-        self.assertEqual(max(map(split_("_")(itemgetter_(1)(int)), self.iterable)), 456)
-
-    def test_t02(self):
-        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
-
-    def test_t03(self):
-        self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), key=split_("_")(itemgetter_(0)(int))),
-                             ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
-
-
-class Test04(unittest.TestCase):
-    def test_t01(self):
-        self.assertTrue(ToBoolean("Y").boolean_value)
-
-    def test_t02(self):
-        self.assertFalse(ToBoolean("N").boolean_value)
-
-    def test_t03(self):
-        self.assertFalse(ToBoolean("O").boolean_value)
-
-    def test_t04(self):
-        self.assertFalse(ToBoolean("toto").boolean_value)
-
-
 class TestTitleCaseConverter(unittest.TestCase):
     def setUp(self) -> None:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "titles.json"), encoding=UTF8) as stream:
@@ -223,9 +105,6 @@ class TestTitleCaseConverter(unittest.TestCase):
 
 
 class TestGetRippingApplication(unittest.TestCase):
-    """
-
-    """
 
     def test_t01(self):
         self.assertEqual(get_rippingapplication()[0], "dBpoweramp Release 16.6")
@@ -281,77 +160,6 @@ class TestDecorator02(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.iterable = [(1, "first string"), (2, "second string"), (3, "third string")]
-
-    def test_t01(self):
-        decorated_function = itemgetter_()(partial(eq, 3))
-        self.assertListEqual(list(filter(decorated_function, self.iterable)), [(3, "third string")])
-
-    def test_t02(self):
-        decorated_function = itemgetter_()(partial(eq, 2))
-        self.assertListEqual(list(filter(decorated_function, self.iterable)), [(2, "second string")])
-
-
-class TestDecorator03(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self) -> None:
-        self.iterable = [("console", "AA"), ("database", "BB"), ("debug", "CC"), ("foo", "DD"), ("bar", "EE")]
-
-    def test_t01(self):
-        decorated_function = itemgetter_()(partial(contains, ["console", "database", "debug"]))
-        self.assertListEqual(list(itertools.filterfalse(decorated_function, self.iterable)), [("foo", "DD"), ("bar", "EE")])
-
-    def test_t02(self):
-        decorated_function = itemgetter_()(partial(contains, ["console", "database", "debug"]))
-        self.assertListEqual(list(filter(decorated_function, self.iterable)), [("console", "AA"), ("database", "BB"), ("debug", "CC")])
-
-
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class TestDecorator04(unittest.TestCase):
-    """
-
-    """
-
-    def test_t01(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", shared.get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string_, "hard rock")), shared.get_genres(DATABASE)))
-        self.assertEqual(genreid1, genreid2)
-
-    def test_t02(self):
-        _, genreid1 = list(filter(lambda i: i[0].lower() == "hard rock", shared.get_genres(DATABASE)))[0]
-        _, genreid2 = next(filter(itemgetter_()(partial(eq_string_, "rock")), shared.get_genres(DATABASE)))
-        self.assertNotEqual(genreid1, genreid2)
-
-    def test_t03(self):
-        genre = list(filter(itemgetter_()(partial(eq_string_, "Hard Rock", sensitive=True)), shared.get_genres(DATABASE)))
-        self.assertListEqual(genre, [("Hard Rock", 2)])
-
-    def test_t04(self):
-        genre = list(filter(itemgetter_()(partial(eq_string_, "hard rock", sensitive=True)), shared.get_genres(DATABASE)))
-        self.assertListEqual(genre, [])
-
-    def test_t05(self):
-        genre = list(filter(itemgetter_()(partial(eq_string_, "hard rock")), shared.get_genres(DATABASE)))
-        self.assertListEqual(genre, [("Hard Rock", 2)])
-
-    def test_t06(self):
-        genre = list(filter(itemgetter_()(partial(eq_string_, "Hard Rock")), shared.get_genres(DATABASE)))
-        self.assertListEqual(genre, [("Hard Rock", 2)])
-
-    def test_t07(self):
-        genre = list(filter(itemgetter_()(partial(eq_string_, "some genre")), shared.get_genres(DATABASE)))
-        self.assertListEqual(genre, [])
-
-
-class TestDecorator05(unittest.TestCase):
-    """
-
-    """
-
-    def setUp(self) -> None:
         self.iterable = ("1.20160000.10",)
 
     def test_t01(self):
@@ -361,7 +169,7 @@ class TestDecorator05(unittest.TestCase):
         self.assertEqual(itemgetter_(0)(split_(".")(itemgetter_(1)(int)))(self.iterable), 20160000)
 
 
-class TestDecorator06(unittest.TestCase):
+class TestDecorator03(unittest.TestCase):
     """
 
     """
@@ -399,7 +207,7 @@ class TestDecorator06(unittest.TestCase):
                                                                                                                                                                                        "2.20170101.13"])
 
 
-class TestDecorator07(unittest.TestCase):
+class TestDecorator04(unittest.TestCase):
     """
 
     """
@@ -451,13 +259,28 @@ class TestDecorator07(unittest.TestCase):
                                                                                                             ("M", "2.20170101.13")])
 
 
-class TestDecorator08(unittest.TestCase):
+class TestDecorator05(unittest.TestCase):
 
     def test_t01(self):
         self.assertListEqual(list(filterfalse(partial(contains, ["A", "C", "E", "G"]), ["A", "B", "C", "D", "E", "F", "G"])), ["B", "D", "F"])
 
     def test_t02(self):
         self.assertListEqual(list(filterfalse(partial(contains, ["A", "B", "C", "D", "E", "F", "G"]), ["A", "C", "E", "G", "H"])), ["H"])
+
+
+class TestDecorator06(unittest.TestCase):
+    def setUp(self) -> None:
+        self.iterable = ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"]
+
+    def test_t01(self):
+        self.assertEqual(max(map(split_("_")(itemgetter_(1)(int)), self.iterable)), 456)
+
+    def test_t02(self):
+        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+
+    def test_t03(self):
+        self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), key=split_("_")(itemgetter_(0)(int))),
+                             ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
 @patch("Applications.shared.datetime")
@@ -530,8 +353,22 @@ class TestMock03(unittest.TestCase):
         mock_ospath_expandvars.assert_called_once()
 
 
+class Test01(unittest.TestCase):
+    def test_t01(self):
+        self.assertTrue(ToBoolean("Y").boolean_value)
+
+    def test_t02(self):
+        self.assertFalse(ToBoolean("N").boolean_value)
+
+    def test_t03(self):
+        self.assertFalse(ToBoolean("O").boolean_value)
+
+    def test_t04(self):
+        self.assertFalse(ToBoolean("toto").boolean_value)
+
+
 @SetUp(_MYPARENT / "Resources" / "resource4.yml")
-class Test05(unittest.TestCase):
+class Test02(unittest.TestCase):
 
     def setUp(self) -> None:
         self.collection = [("artist1", "album1", 1, 1, "X"),
@@ -551,25 +388,25 @@ class Test05(unittest.TestCase):
     def test_t01(self, collection):
         in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
         out_collection = collection["test_t01"]
-        self.assertListEqual(list(nested_groupby(in_collection, 4, 0, 1, 2)), out_collection)
+        self.assertListEqual(list(nested_groupby_(in_collection, 4, 0, 1, 2)), out_collection)
 
     def test_t02(self, collection):
         in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
         out_collection = collection["test_t02"]
-        self.assertListEqual(list(groupby(in_collection, 4)), out_collection)
+        self.assertListEqual(list(groupby_(in_collection, 4)), out_collection)
 
     def test_t03(self, collection):
         in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
         out_collection = collection["test_t03"]
-        self.assertListEqual(list(nested_groupby(in_collection, 4)), out_collection)
+        self.assertListEqual(list(nested_groupby_(in_collection, 4)), out_collection)
 
     def test_t04(self, collection):
         in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
         out_collection = collection["test_t04"]
-        self.assertListEqual(list(nested_groupby(in_collection, 0, 1)), out_collection)
+        self.assertListEqual(list(nested_groupby_(in_collection, 0, 1)), out_collection)
 
 
-class Test06(unittest.TestCase):
+class Test03(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "Y", "N", "N", "Y"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -579,7 +416,7 @@ class Test06(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", True, False, False, True), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test07(unittest.TestCase):
+class Test04(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "O", "N", "N", "O"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -589,7 +426,7 @@ class Test07(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "O", False, False, "O"), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test08(unittest.TestCase):
+class Test05(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
@@ -599,7 +436,7 @@ class Test08(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
 
 
-class Test09(unittest.TestCase):
+class Test06(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]

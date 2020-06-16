@@ -2,7 +2,8 @@
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import sqlite3
 from contextlib import ExitStack, suppress
-from pathlib import Path, WindowsPath
+from pathlib import Path, PosixPath, WindowsPath
+from typing import Union
 
 from .shared import DatabaseConnection
 from ..shared import GENRES
@@ -13,7 +14,7 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-def adapt_path(path: WindowsPath) -> str:
+def adapt_path(path: Union[PosixPath, WindowsPath]) -> str:
     return str(path)
 
 
@@ -22,6 +23,7 @@ def convert_path(byt: bytes) -> Path:
 
 
 sqlite3.register_adapter(WindowsPath, adapt_path)
+sqlite3.register_adapter(PosixPath, adapt_path)
 sqlite3.register_converter("path", convert_path)
 
 

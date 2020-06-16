@@ -1120,7 +1120,7 @@ def get_tagsfile(obj):
             tags[key] = getattr(obj, key)
 
     # -----
-    with open(os.path.join(shared.get_dirname(os.path.abspath(__file__), level=1), "Resources", "Templates.yml"), encoding=shared.UTF8) as stream:
+    with open(_MYPARENT / "Resources" / "Templates.yml", encoding=shared.UTF8) as stream:
         templates = yaml.load(stream, Loader=yaml.FullLoader)
 
     # Load templates respective to "bootleg" value.

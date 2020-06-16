@@ -152,7 +152,7 @@ REM Insert audio discs into database.
 REM ---------------------------------
 IF ERRORLEVEL 31 (
     PUSHD %TEMP%
-    python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
+    IF EXIST trackslist.txt python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
     POPD
     GOTO MENU
 )
@@ -442,18 +442,10 @@ IF ERRORLEVEL 22 (
 )
 
 
-REM -----------------------------------------
-REM Run python ripped audio discs unit tests.
-REM -----------------------------------------
-IF ERRORLEVEL 21 (
-    CLS
-    ECHO:
-    python -m unittest -v Applications.Unittests.module5
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 21 GOTO MENU
 
 
 REM ------------------------------------------
@@ -621,7 +613,7 @@ REM -------------------------------
 IF ERRORLEVEL 14 (
     CLS
     PUSHD Tasks
-    python bootlegs.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
+    python bootlegalbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
     POPD
     ECHO:
     ECHO:

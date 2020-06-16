@@ -659,7 +659,7 @@ class DigitalAudioCollection(object):
     #     rippedcd = sorted(sorted(self.rippedcd, key=itemgetter(2), reverse=True), key=itemgetter(0), reverse=True)
     #     return self.TEMPLATE.rippedartistsview.render(menu=self.TEMPLATE.menu.render(months=self.months),
     #                                                   current=format_date(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), template="$Y$m"),
-    #                                                   content=[(key, self.getclass(len(list(group)))) for key, group in groupby(sorted(tup[3].artist for tup in rippedcd))])
+    #                                                   content=[(key, self.getclass(len(list(group)))) for key, group in groupby_(sorted(tup[3].artist for tup in rippedcd))])
 
     # ----------------------
     # Ripped CDs statistics.
@@ -679,7 +679,7 @@ class DigitalAudioCollection(object):
     #         detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
     #                                  k[0],
     #                                  k,
-    #                                  len(list(g)))) for k, g in groupby(sorted([(format_date(item[2], template="$Y"),
+    #                                  len(list(g)))) for k, g in groupby_(sorted([(format_date(item[2], template="$Y"),
     #                                                                              format_date(item[2], template="$Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
     #         content = secondnt._make((view, "table1", (view, "count"), detail))
     #
@@ -688,7 +688,7 @@ class DigitalAudioCollection(object):
     #         detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
     #                                  k[0],
     #                                  k,
-    #                                  len(list(g)))) for k, g in groupby(sorted([(format_date(item[2], template="$Y$m"),
+    #                                  len(list(g)))) for k, g in groupby_(sorted([(format_date(item[2], template="$Y$m"),
     #                                                                              format_date(item[2], template="$month $Y")) for item in self.rippedcd], key=itemgetter(0), reverse=True))]
     #         content = secondnt._make((view, "table2", (view, "count"), detail))
     #
@@ -697,7 +697,7 @@ class DigitalAudioCollection(object):
     #         detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), self.artistsort_mapping.get(k[0], k[0])),
     #                                  k[0],
     #                                  k,
-    #                                  len(list(g)))) for k, g in groupby(sorted([(item[3].artistsort,
+    #                                  len(list(g)))) for k, g in groupby_(sorted([(item[3].artistsort,
     #                                                                              item[3].artistsort) for item in self.rippedcd if item[3].artistsort], key=itemgetter(0)))]
     #         content = secondnt._make((view, "table3", (view, "count"), detail))
     #
@@ -706,7 +706,7 @@ class DigitalAudioCollection(object):
     #         detail = [firstnt._make(("rippedcdviewby{0}?{0}={1}".format(view.lower(), k[0]),
     #                                  k[0],
     #                                  k,
-    #                                  len(list(g)))) for k, g in groupby(sorted([(item[3].genre, item[3].genre) for item in self.rippedcd], key=itemgetter(0)))]
+    #                                  len(list(g)))) for k, g in groupby_(sorted([(item[3].genre, item[3].genre) for item in self.rippedcd], key=itemgetter(0)))]
     #         content = secondnt._make((view, "table3", (view, "count"), detail))
     #
     #     # 5. Return HTML page.
@@ -956,7 +956,7 @@ class DigitalAudioCollection(object):
     #                                                      current=dateformat(UTC.localize(datetime.datetime.utcnow()).astimezone(LOCAL), "$Y$m"),
     #                                                      maintitle="Played Audio CDs",
     #                                                      id="refresh-2",
-    #                                                      content=[(key, list(group)) for key, group in groupby(lastplayedalbums, key=lambda i: (i[0], self.PERIODS[i[0]]))])
+    #                                                      content=[(key, list(group)) for key, group in groupby_(lastplayedalbums, key=lambda i: (i[0], self.PERIODS[i[0]]))])
 
     # @cherrypy.expose
     # @cherrypy.tools.json_out()
@@ -1110,9 +1110,9 @@ class DigitalAudioCollection(object):
     #     olist = collection
     #
     #     #  2. Set available letters list, available artists list and available extensions list.
-    #     letters = sorted([(letter.lower(), letter.upper()) for letter in set([letter for letter, group in groupby(olist, key=grab_artistfirstletter)])], key=itemgetter(1))
-    #     artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby(olist, key=grab_artist)])], key=itemgetter(1))
-    #     extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+    #     letters = sorted([(letter.lower(), letter.upper()) for letter in set([letter for letter, group in groupby_(olist, key=grab_artistfirstletter)])], key=itemgetter(1))
+    #     artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby_(olist, key=grab_artist)])], key=itemgetter(1))
+    #     extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby_(olist, key=itemgetter(2))])], key=itemgetter(1))
     #
     #     #  3. Get input filters.
     #
@@ -1130,14 +1130,14 @@ class DigitalAudioCollection(object):
     #
     #     #  4. Apply input filters.
     #     if let:
-    #         olist = list(chain.from_iterable([list(group) for letter, group in groupby(olist, key=grab_artistfirstletter) if letter.lower() == let.lower()]))
-    #         artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby(olist, key=grab_artist)])], key=itemgetter(1))
-    #         extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+    #         olist = list(chain.from_iterable([list(group) for letter, group in groupby_(olist, key=grab_artistfirstletter) if letter.lower() == let.lower()]))
+    #         artists = sorted([(artist.replace(" ", "_"), artist) for artist in set([artist for artist, group in groupby_(olist, key=grab_artist)])], key=itemgetter(1))
+    #         extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby_(olist, key=itemgetter(2))])], key=itemgetter(1))
     #     if art:
-    #         olist = list(chain.from_iterable([list(group) for artist, group in groupby(olist, key=grab_artist) if artist.replace(" ", "_").lower() == art.lower()]))
-    #         extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby(olist, key=itemgetter(2))])], key=itemgetter(1))
+    #         olist = list(chain.from_iterable([list(group) for artist, group in groupby_(olist, key=grab_artist) if artist.replace(" ", "_").lower() == art.lower()]))
+    #         extensions = sorted([(extension.lower(), extension.upper()) for extension in set([extension for extension, group in groupby_(olist, key=itemgetter(2))])], key=itemgetter(1))
     #     if ext:
-    #         olist = list(chain.from_iterable([list(group) for extension, group in groupby(olist, key=itemgetter(2)) if extension.lower() == ext.lower()]))
+    #         olist = list(chain.from_iterable([list(group) for extension, group in groupby_(olist, key=itemgetter(2)) if extension.lower() == ext.lower()]))
     #
     #     # 5. Return files list.
     #     if origin == "digitalaudiofiles":
@@ -1214,10 +1214,10 @@ class DigitalAudioCollection(object):
     #                 [(
     #                     trackid,
     #                     list(sssubgroup)
-    #                 ) for trackid, sssubgroup in groupby(list(ssubgroup), key=lambda i: i[2])]
-    #             ) for discid, ssubgroup in groupby(list(subgroup), key=lambda i: i[1])]
-    #         ) for albumid, subgroup in groupby(list(group), key=lambda i: i[0])]
-    #     ) for artistsort, group in groupby(reflist, key=lambda i: i[0][2:-13])]
+    #                 ) for trackid, sssubgroup in groupby_(list(ssubgroup), key=lambda i: i[2])]
+    #             ) for discid, ssubgroup in groupby_(list(subgroup), key=lambda i: i[1])]
+    #         ) for albumid, subgroup in groupby_(list(group), key=lambda i: i[0])]
+    #     ) for artistsort, group in groupby_(reflist, key=lambda i: i[0][2:-13])]
     #
     # @staticmethod
     # def getclass(count):

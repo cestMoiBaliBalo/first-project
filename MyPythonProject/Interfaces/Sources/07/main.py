@@ -240,7 +240,7 @@ class MainFrame(wx.Frame):
                 break
             collection = sorted(collection, key=itemgetter(list_index), reverse=reverse)
 
-        # ----- Group collection (at most two groupby fields).
+        # ----- Group collection (at most two groupby_ fields).
         key, _ = next(groupby)  # type: int, int
         subkey = None  # type: Optional[int]
         with suppress(StopIteration):
@@ -249,7 +249,7 @@ class MainFrame(wx.Frame):
 
         # -----
         print(collection)
-        # ET.ElementTree(rippeddiscs(collection=groupby(collection, key=itemgetter(2)))).write(os.path.join(os.path.expandvars("%TEMP%"), "rippeddiscs.xml"), encoding=UTF8, xml_declaration=True)
+        # ET.ElementTree(rippeddiscs(collection=groupby_(collection, key=itemgetter(2)))).write(os.path.join(os.path.expandvars("%TEMP%"), "rippeddiscs.xml"), encoding=UTF8, xml_declaration=True)
         wx.MessageBox("XML output created", "some title", style=wx.OK | wx.ICON_INFORMATION)
         self._reset_interface()
 
@@ -372,7 +372,7 @@ class RightDropTarget(DropTarget):
 
         # -----
         if self._pane.GetItemCount() == 2:
-            wx.MessageBox("Can't append any additional groupby field.", "An error occured", style=wx.OK | wx.ICON_EXCLAMATION)
+            wx.MessageBox("Can't append any additional groupby_ field.", "An error occured", style=wx.OK | wx.ICON_EXCLAMATION)
             return False
 
         # -----
@@ -382,7 +382,7 @@ class RightDropTarget(DropTarget):
         groupby = [self._pane.GetItemText(index, 0) for index in self._parent.indexes]
         groupby.append(data)
         if not set(groupby).issubset(set(orderby)):
-            wx.MessageBox(f"Can't append '{data}' as groupby field. Limit reached.", "An error occured", style=wx.OK | wx.ICON_EXCLAMATION)
+            wx.MessageBox(f"Can't append '{data}' as groupby_ field. Limit reached.", "An error occured", style=wx.OK | wx.ICON_EXCLAMATION)
             return False
 
         # -----

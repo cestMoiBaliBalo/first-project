@@ -14,6 +14,7 @@ from itertools import chain, compress, groupby, product, starmap
 from operator import contains, eq, is_not, itemgetter, lt
 from string import Template
 from typing import Any, Dict, Iterator, List, Mapping, MutableMapping, NamedTuple, Optional, Tuple, Union
+from dateutil.parser import parse
 
 import yaml
 
@@ -845,8 +846,10 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
                 table = "livealbums"
                 for track in filter(itemgetter_(25)(partial(is_not, None)), filter(itemgetter_(1)(partial(eq, "defaultalbums")), tracks)):
                     logger.debug("Table is: %s", table)
+                    albumid, album_date, album_tour, album_city, album_country = tuple(compress(track, selectors[profile][table]))  # type: str, Any, str, str, str
+                    album_date = parse(album_date).date()
                     with suppress(sqlite3.IntegrityError):
-                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                        conn.execute(_statements[table], (albumid, album_date, album_tour, album_city, album_country))
                         logger.debug(conn.total_changes)
 
                 # "digitalalbums" table.

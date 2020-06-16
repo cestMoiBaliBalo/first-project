@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import datetime
 import locale
 import os
-import re
+import sys
 import unittest
-from pathlib import PurePath
+from pathlib import Path
 
 from pytz import timezone
 
@@ -16,108 +16,23 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = PurePath(os.path.abspath(__file__))  # type: PurePath
-locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
+
+# ===================
+# Global environment.
+# ===================
+if sys.platform.startswith("win"):
+    locale.setlocale(locale.LC_ALL, "")
+elif sys.platform.startswith("lin"):
+    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 
-class TestRegexT02(unittest.TestCase):
-
-    def setUp(self):
-        lookextensions = shared.CustomTemplate(shared.LOOKEXTENSIONS).substitute(extensions="|".join(shared.EXTENSIONS["music"]))
-        artist = shared.CustomTemplate(shared.ARTIST).substitute(letter="\\3")
-        file = shared.CustomTemplate(shared.FILE).substitute(year="\\6", month="00", day="00", encoder="\\9")
-        self.regex = re.compile(
-                f"^{shared.LOOKDEFAULTALBUM}{lookextensions}(({shared.DRIVE}\\\\{shared.LETTER}\\\\{artist}\\\\){shared.FOLDER}{shared.DEFAULTALBUM}\\\\){shared.DISC}{shared.COMPRESSION}\\\\{file}$")
-
-    def test_t01(self):
-        self.assertRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t02(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19850000.1.13.D1.T01.flac", self.regex)
-
-    def test_t03(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19850000.1.02.D1.T01.flac", self.regex)
-
-    def test_t04(self):
-        self.assertNotRegex(r"F:\B\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19850000.1.13.D1.T01.flac", self.regex)
-
-    def test_t05(self):
-        self.assertNotRegex(r"F:\B\Adams, Bryan\Reckless\1.Free Lossless Audio Codec\1.19850000.1.13.D1.T01.flac", self.regex)
-
-    def test_t06(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13..T01.flac", self.regex)
-
-    def test_t07(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1..flac", self.regex)
-
-    def test_t08(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.T01.flac", self.regex)
-
-    def test_t09(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.flac", self.regex)
-
-    def test_t10(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1..D1.T01.flac", self.regex)
-
-    def test_t11(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.D1.T01.flac", self.regex)
-
-    def test_t12(self):
-        self.assertRegex(r"F:\A\Adams, Bryan\1\1984 - Reckless\CD1\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t13(self):
-        self.assertRegex(r"F:\A\Adams, Bryan\1\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t14(self):
-        self.assertRegex(r"F:\A\Adams, Bryan\1984 - Reckless\CD1\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t15(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1\1984 - Reckless\CD1\Some Folder\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t16(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.19840000.1.13.D1.T01.flac", self.regex)
-
-    def test_t17(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01", self.regex)
-
-    def test_t18(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.ex", self.regex)
-
-    def test_t19(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.m_3", self.regex)
-
-    def test_t20(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.19840000.1.13.D1.T01.FLAC", self.regex)
-
-    def test_t21(self):
-        self.assertNotRegex(r"F:\A\Adams, Bryan\1984 - Reckless\1.Free Lossless Audio Codec\1.04.Somebody.flac", self.regex)
-
-    def test_t22(self):
-        self.assertRegex(r"F:\K\Kiss\1\1977.2 - Alive II\CD2\0.MPEG-4 AAC\1.19770000.2.02.D2.T01.m4a", self.regex)
-
-    def test_t23(self):
-        self.assertRegex(r"F:\K\Kiss\1\1977.2 - Alive II\CD2\0.MPEG-4 AAC\1.19770000.2.02.D2.T02.m4a", self.regex)
-
-    def test_t24(self):
-        self.assertRegex(r"F:\K\Kiss\1\1977.2 - Alive II\CD2\1.Monkey's Audio\1.19770000.2.12.D2.T01.ape", self.regex)
-
-    def test_t25(self):
-        self.assertRegex(r"F:\K\Kiss\1\1977.2 - Alive II\CD2\1.Monkey's Audio\1.19770000.2.12.D2.T02.ape", self.regex)
-
-    def test_t26(self):
-        self.assertRegex(r"F:\S\Springsteen, Bruce\1\1973.2 - The Wild, The Innocent & The E Street Shuffle\0.MPEG-4 AAC\1.19730000.2.02.D1.T06.m4a", self.regex)
-
-    def test_t27(self):
-        self.assertRegex(r"F:\S\Springsteen, Bruce\1\1973.2 - The Wild, The Innocent & The E Street Shuffle\0.MPEG-4 AAC\1.19730000.2.02.D1.T07.m4a", self.regex)
-
-    def test_t28(self):
-        self.assertNotRegex(r"F:\J\Judas Priest\1977 - Sin After Sin\0.MPEG 1 Layer III\[Judas Priest] - 1977 - Sin After Sin - D1 T09.mp3", self.regex)
-
-    def test_t29(self):
-        self.assertNotRegex(r"F:\J\Judas Priest\1977 - Sin After Sin\0.MPEG 1 Layer III\[Judas Priest] - 1977 - Sin After Sin - D1 T09.mp3", self.regex)
-
-
-class TestRegexT03(unittest.TestCase):
+# ==============
+# Tests classes.
+# ==============
+class TestValidAlbumsort01(unittest.TestCase):
 
     def test_t01(self):
         self.assertEqual(shared.valid_albumsort("1.19840000.1"), "1.19840000.1")
@@ -189,6 +104,28 @@ class TestRegexT03(unittest.TestCase):
         self.assertRaises(ValueError, shared.valid_albumsort, "S.Springsteen, Bruce.2.20120704.1")
 
 
+class TestValidAlbumsort02(unittest.TestCase):
+    """
+    Test `valid_albumsort` function.
+    """
+
+    def test_t01(self):
+        for argument in ["1.20170000.1", "1.20170000.2", "2.20171019.1"]:
+            with self.subTest(albumsort=argument):
+                self.assertEqual(shared.valid_albumsort(argument), argument)
+
+    def test_t02(self):
+        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", 10.5]:
+            with self.subTest(year=argument):
+                self.assertRaises(ValueError, shared.valid_albumsort, argument)
+
+    def test_t03(self):
+        with self.assertRaises(ValueError) as cm:
+            shared.valid_albumsort("1.20180000.1.13")
+        exception, = cm.exception.args
+        self.assertEqual(exception, '"1.20180000.1.13" is not a valid albumsort.')
+
+
 class TestValidYear(unittest.TestCase):
     """
     Test `valid_year` function.
@@ -209,28 +146,6 @@ class TestValidYear(unittest.TestCase):
             shared.valid_year("20171")
         exception, = cm.exception.args
         self.assertEqual(exception, '"20171" is not a valid year.')
-
-
-class TestValidAlbumsort(unittest.TestCase):
-    """
-    Test `valid_albumsort` function.
-    """
-
-    def test_t01(self):
-        for argument in ["1.20170000.1", "1.20170000.2", "2.20171019.1"]:
-            with self.subTest(albumsort=argument):
-                self.assertEqual(shared.valid_albumsort(argument), argument)
-
-    def test_t02(self):
-        for argument in ["abcdefghijklmnopqrstuvwxyz", "20171", "2a2", [2015, 2016, 2017], 9999, "1.20170000.1.13.D1.T01.NNN", 10.5]:
-            with self.subTest(year=argument):
-                self.assertRaises(ValueError, shared.valid_albumsort, argument)
-
-    def test_t03(self):
-        with self.assertRaises(ValueError) as cm:
-            shared.valid_albumsort("1.20180000.1.13")
-        exception, = cm.exception.args
-        self.assertEqual(exception, '"1.20180000.1.13" is not a valid albumsort.')
 
 
 class TestValidGenre(unittest.TestCase):

@@ -49,22 +49,6 @@ class SetDatabase(argparse.Action):
             setattr(namespace, "db", shared.TESTDATABASE)
 
 
-class GetPath(argparse.Action):
-    """
-    Set "destination" attribute with the full path corresponding to the "values".
-    """
-    destinations = {"documents": expandvars("%_MYDOCUMENTS%"),
-                    "temp": expandvars("%TEMP%"),
-                    "backup": expandvars("%_BACKUP%"),
-                    "onedrive": join(expandvars("%USERPROFILE%"), "OneDrive")}
-
-    def __init__(self, option_strings, dest, **kwargs):
-        super(GetPath, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parsobj, namespace, values, option_string=None):
-        setattr(namespace, self.dest, self.destinations[values])
-
-
 class ExcludeExtensions(argparse.Action):
     """
     Set "exclude" attribute with a list of extensions to exclude.

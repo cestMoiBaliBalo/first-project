@@ -5,7 +5,7 @@ import locale
 import sys
 from unittest import TestLoader, TestSuite, TextTestRunner
 
-from Applications.Unittests import module1, module2, module3, module4, module5
+from Applications.Unittests import module1, module2, module3, module4
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -30,7 +30,9 @@ arguments = vars(parser.parse_args())
 # ==========================
 # Define French environment.
 # ==========================
-if sys.platform.startswith("win"):
+if sys.platform.startswith("lin"):
+    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
+elif sys.platform.startswith("win"):
 
     # -----
     import logging.config
@@ -66,10 +68,6 @@ if sys.platform.startswith("win"):
     logging.config.dictConfig(config)
     logger = logging.getLogger("MyPythonProject.{0}".format(os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]))
 
-
-elif sys.platform.startswith("lin"):
-    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
-
 # ================
 # Run main script.
 # ================
@@ -81,5 +79,4 @@ suite.addTests(loader.loadTestsFromModule(module1))
 suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
 suite.addTests(loader.loadTestsFromModule(module4))
-suite.addTests(loader.loadTestsFromModule(module5))
 runner.run(suite)
