@@ -13,6 +13,25 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
+def attrgetter_(attr: str):
+    """
+    That decorator allows to get an object attribute for being used as argument
+    by any decorated function.
+
+    :param attr: object attribute name.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return func(operator.attrgetter(attr)(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def eq_(value_first):
     """
     That decorator allows to set the second argument of the function operator.eq
@@ -51,25 +70,6 @@ def int_(base: int = 10):
     return outer_wrapper
 
 
-def attrgetter_(attr: str):
-    """
-    That decorator allows to get an object attribute for being used as argument
-    by any decorated function.
-
-    :param attr: object attribute name.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            return func(operator.attrgetter(attr)(arg))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 def itemgetter_(index: int = 0):
     """
     That decorator allows to get a sequence item for being used as argument
@@ -87,6 +87,20 @@ def itemgetter_(index: int = 0):
         return inner_wrapper
 
     return outer_wrapper
+
+
+def lower_(func):
+    """
+    That decorator allows to set to lowercase the result value of any decorated function.
+
+    :return: callable object.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).lower()
+
+    return wrapper
 
 
 def map_(index: int):
@@ -118,6 +132,20 @@ def map_(index: int):
         return inner_wrapper
 
     return outer_wrapper
+
+
+def rstrip_(func):
+    """
+    That decorator allows to strip the right whitespaces from the result value of any decorated function.
+
+    :return: callable object.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).rstrip()
+
+    return wrapper
 
 
 def split_(char: str):
