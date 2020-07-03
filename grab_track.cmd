@@ -1,16 +1,14 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+@REM __author__ = 'Xavier ROSSET'
+@REM __maintainer__ = 'Xavier ROSSET'
+@REM __email__ = 'xavier.python.computing@protonmail.com'
+@REM __status__ = "Production"
 
 
-CLS
+@CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38;%PATH%
-PUSHD %_RESOURCES%
 
 
 REM    ==================
@@ -31,14 +29,19 @@ SET _errorlevel=0
 REM    ============
 REM C. Main script.
 REM    ============
+SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_myparent:~0,-1%
+
 
 :CODEPAGE
+PUSHD Resources
 SET _step=1
 CALL shared.cmd
-IF DEFINED _chcp (
+@IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
+POPD
 
 
 :MAIN
@@ -62,7 +65,7 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-PUSHD ..\MyPythonProject\AudioCD\Grabber
+PUSHD MyPythonProject\AudioCD\Grabber
 python RippedTracks.py "%~1"
 POPD
 SHIFT /2
@@ -81,10 +84,9 @@ REM        ------------
 REM  4 --> Exit script.
 REM        ------------
 :THE_END
+@IF DEFINED _mycp CHCP %_mycp% > NUL
+POPD
 (
-    IF DEFINED _mycp CHCP %_mycp% > NUL
-    POPD
     ENDLOCAL
-    CLS
     EXIT /B %_errorlevel%
 )

@@ -1,11 +1,6 @@
 @ECHO off
-CLS
-(
-    SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    IF DEFINED _mycp SET _mycp=%_mycp%
-)
-SET PATH=G:\Computing\MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_RESOURCES%
+@CLS
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 
 
 REM    ==================
@@ -26,30 +21,37 @@ SET _errorlevel=0
 SET _xxcopy=xxcopy.cmd
 
 
+REM    ==================
+REM C. Initializations 3.
+REM    ==================
+SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_myparent%Resources
+
+
 REM     =====================================================
-REM  C. Allow interface to decode Latin-1 encoded characters.
+REM  D. Allow interface to decode Latin-1 encoded characters.
 REM     =====================================================
 
-@REM Set code page.
+REM Set code page.
 SET _step=1
 CALL shared.cmd
-IF DEFINED _chcp (
+@IF DEFINED _chcp (
     IF NOT DEFINED _mycp SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 
-@REM Get code page.
+REM Get code page.
 SET _step=1
 CALL shared.cmd
-IF DEFINED _chcp ECHO Le code page est %_chcp%.
+@IF DEFINED _chcp ECHO Le code page est %_chcp%.
 
-@REM Check characters encoding.
-ECHO Les caractères accentués sont restitués proprement ^^!
+REM Check characters encoding.
+@ECHO Les caractères accentués sont restitués proprement ^^!
 FOR /F "usebackq tokens=*" %%A IN ("accentuated.txt") DO ECHO %%A
 
 
 REM    ===============
-REM D. Check argument.
+REM E. Check argument.
 REM    ===============
 :ARGUMENT
 IF "%~1" EQU "P" SET _ok=1
@@ -76,7 +78,7 @@ PUSHD ..\MyPythonProject
 
 
 REM    =============================
-REM E. Create temporary environment.
+REM F. Create temporary environment.
 REM    =============================
 FOR /F "usebackq tokens=*" %%A IN (`python temporaryenv.py dir -f`) DO (
     IF !_index! EQU 0 (
@@ -97,7 +99,7 @@ FOR /F "usebackq tokens=*" %%A IN (`python temporaryenv.py dir -f`) DO (
 
 
 REM    ==========
-REM F. Java step.
+REM G. Java step.
 REM    ==========
 REM    Enumerate files.
 PUSHD ..\MyJavaProject\out\production\MyJavaProject
@@ -106,7 +108,7 @@ POPD
 
 
 REM    ============
-REM G. Python step.
+REM H. Python step.
 REM    ============
 REM    Process files.
 PUSHD Backup
@@ -130,7 +132,7 @@ POPD
 
 
 REM    ==================
-REM H. Run commands file.
+REM I. Run commands file.
 REM    ==================
 IF "%~1" EQU "P" (
     PUSHD %_tempdir%
@@ -140,7 +142,7 @@ IF "%~1" EQU "P" (
 
 
 REM    ============
-REM I. Exit script.
+REM J. Exit script.
 REM    ============
 :THE_END
 
@@ -153,7 +155,7 @@ IF "%~1" EQU "P" IF DEFINED _parent IF EXIST %_parent% (
 )
 
 REM -----
-IF DEFINED _mycp (
+@IF DEFINED _mycp (
     CHCP %_mycp% > NUL
     ECHO:
     ECHO:
@@ -164,11 +166,11 @@ IF DEFINED _mycp (
 )
 
 REM -----
+POPD
+POPD
+PAUSE
+CLS
 (
-    POPD
-    POPD
     ENDLOCAL
-    PAUSE
-    CLS
     EXIT /B %_errorlevel%
 )

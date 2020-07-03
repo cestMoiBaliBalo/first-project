@@ -23,7 +23,7 @@ REM Initializations 2.
 REM ==================
 SET _mycp=
 SET _count=0
-SET _cp=1252
+SET _cp=65001
 SET _errorlevel=0
 
 
