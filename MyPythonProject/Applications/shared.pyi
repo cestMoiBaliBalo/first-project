@@ -33,9 +33,8 @@ TEMPLATE7 = ...  # type: str
 TESTDATABASE = ...  # type: str
 UPCREGEX = ...  # type: str
 UTC = ...  # type: Any
-UTF8 = ...  # type: str
-UTF16 = ...  # type: str
-UTF16BOM = ...  # type: str
+UTF8 = ...  # type: Optional[str]
+UTF16 = ...  # type: Optional[str]
 WRITE = ...  # type: str
 
 

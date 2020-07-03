@@ -1,31 +1,123 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
-import locale
-import logging.config
+import csv
+import operator
 import os
+import unittest
 from pathlib import Path
+from typing import Any
 
-import yaml
-
-from Applications.shared import UTF8
+from ..shared import TEMP, UTF16
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
-# ==========================
-# Define French environment.
-# ==========================
-locale.setlocale(locale.LC_ALL, "")
 
-# ===========================
-# Load logging configuration.
-# ===========================
-with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as fr:
-    logging.config.dictConfig(yaml.load(fr, Loader=yaml.FullLoader))
+# ===============
+# Global classes.
+# ===============
+class CustomDialect(csv.Dialect):
+    delimiter = "="
+    escapechar = "`"
+    doublequote = False
+    quoting = csv.QUOTE_NONE
+    lineterminator = "\r\n"
 
+
+# ==============
+# Tests classes.
+# ==============
+class TestRippedTrack01(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_01_FLAC.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
+        self.assertEqual(self._tags["track"], "1")
+        self.assertEqual(self._tags["totaltracks"], "16")
+
+
+class TestRippedTrack02(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_01_FDK.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19710000.1.02")
+        self.assertEqual(self._tags["track"], "1")
+        self.assertEqual(self._tags["totaltracks"], "16")
+
+
+class TestRippedTrack03(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_02_FLAC.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
+        self.assertEqual(self._tags["track"], "2")
+        self.assertEqual(self._tags["totaltracks"], "16")
+
+
+class TestRippedTrack04(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_03_FLAC.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
+        self.assertEqual(self._tags["track"], "3")
+        self.assertEqual(self._tags["totaltracks"], "16")
+
+
+class TestRippedTrack05(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_04_FDK.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19770000.2.02")
+        self.assertEqual(self._tags["track"], "11")
+        self.assertEqual(self._tags["totaltracks"], "20")
+
+
+class TestRippedTrack06(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "idtags_04_FLAC.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.19770000.2.13")
+        self.assertEqual(self._tags["track"], "11")
+        self.assertEqual(self._tags["totaltracks"], "20")

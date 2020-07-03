@@ -4,6 +4,7 @@ import itertools
 import locale
 import os
 from functools import partial
+from pathlib import Path
 
 import pandas  # type: ignore
 
@@ -14,6 +15,11 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
+_MYROOT = _MYPARENT.parents[2]
 
 # ==========================
 # Define French environment.
@@ -38,4 +44,4 @@ series = {"Album ID": pandas.Series(albumid, index=index),
           "Application": pandas.Series(application, index=index)}
 dataframe = pandas.DataFrame(series)
 dataframe.index.name = "Record ID"
-dataframe.to_csv(os.path.join(os.path.expandvars("%_COMPUTING%"), "rippeddiscs.csv"), encoding=UTF8, sep="|")
+dataframe.to_csv(_MYROOT / "rippeddiscs.csv", encoding=UTF8, sep="|")

@@ -18,8 +18,8 @@ from unittest.mock import patch
 
 import yaml
 
-from Applications.decorators import itemgetter_, split_
-from Applications.shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby_, nested_groupby_, now
+from ..decorators import itemgetter_, split_
+from ..shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby_, nested_groupby_, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -33,9 +33,8 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ===================
 # Global environment.
 # ===================
-if sys.platform.startswith("win"):
-    locale.setlocale(locale.LC_ALL, "")
-elif sys.platform.startswith("lin"):
+locale.setlocale(locale.LC_ALL, "")
+if sys.platform.startswith("lin"):
     locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 

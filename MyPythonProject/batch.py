@@ -7,10 +7,10 @@ from contextlib import suppress
 from itertools import compress, groupby
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Iterator, List, Mapping, Tuple, Iterable
+from typing import Any, Iterable, Iterator, List, Mapping, Tuple
 
 from Applications.decorators import itemgetter_
-from Applications.shared import CustomDialect, TemplatingEnvironment, UTF8, WRITE
+from Applications.shared import CustomDialect, TEMP, TemplatingEnvironment, UTF8, WRITE
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -67,7 +67,7 @@ class GetPath(argparse.Action):
 # ================
 # Local constants.
 # ================
-RESOURCES = Path(os.path.expandvars("%_RESOURCES%"))  # type: Path
+RESOURCES = _MYPARENT / "Resources"  # type: Path
 TEMPLATES = {(_MYPARENT / "AudioCD" / "Templates", "T00a"): [0, 0, 1, 1],
              (_MYPARENT / "AudioCD" / "Templates", "T00b"): [0, 0, 1]}  # type: Mapping[Tuple[Path, str], List[int]]
 
@@ -75,7 +75,7 @@ TEMPLATES = {(_MYPARENT / "AudioCD" / "Templates", "T00a"): [0, 0, 1, 1],
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser()
-parser.add_argument("--collection", default=Path(os.path.expandvars("%TEMP%")) / "tmp1n53chv0" / "tmplpg2af5i", nargs="?", action=GetPath)
+parser.add_argument("--collection", default=TEMP / "tmp1n53chv0" / "tmplpg2af5i", nargs="?", action=GetPath)
 parser.add_argument("--encoding", default=UTF8, nargs="?")
 arguments = parser.parse_args()
 
@@ -91,7 +91,7 @@ with open(arguments.collection, encoding=arguments.encoding, newline="") as fr:
     for key, group in groupby(collection, key=itemgetter(0)):
         environment = TemplatingEnvironment(key)
         for sub_key, sub_group in groupby(group, key=itemgetter(1)):
-            with open(Path(os.path.expandvars("%TEMP%")) / "tmp1n53chv0" / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
+            with open(TEMP / "tmp1n53chv0" / f"batch{sub_key}.cmd", mode=WRITE, encoding="ISO-8859-1") as fw:
                 files = [tuple(compress(item, TEMPLATES.get((Path(key), sub_key)))) for item in sub_group]  # type: Iterable[Any]
                 files = [tuple(break_(file)) for file in files]
                 files = groupby(files, key=itemgetter(0))
