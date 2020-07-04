@@ -1096,10 +1096,6 @@ def upsert_audiotags(rippingprofile, file, sequence, *decoratingprofiles, **kwar
                     dump_sequence_tojson(json_file, *collection)
                     dump_sequence_toyaml(str(path / "output_tags.yml"), *collection)
 
-            if track.audiotrack.sample:
-                if kwargs.get("sample", False):
-                    save_audiotags_sample(rippingprofile, **dict(track.intags))
-
     if level:
         return level, None
     return level, track.audiotrack
@@ -1381,23 +1377,6 @@ def dump_audiotags_tojson(track, kallable, *, database=shared.DATABASE, jsonfile
     """
     for fil, sequences in groupby(kallable(track, **dict(fil=jsonfile, db=database, encoding=encoding)), key=itemgetter(0)):
         dump_sequence_tojson(fil, *list(sequence for _, sequence in sequences), encoding=encoding)
-
-
-def save_audiotags_sample(profile, *, samples=None, **kwargs) -> None:
-    """
-
-    :param profile:
-    :param samples:
-    :param kwargs:
-    :return:
-    """
-    mapping = {}  # type: Dict[str, Mapping[str, Any]]
-    if not samples:
-        samples = os.path.join(shared.get_dirname(os.path.abspath(__file__), level=3), "Applications", "Unittests", "Resources", "resource1.json")
-    mapping = dict(load_mapping_fromjson(samples))
-    if profile not in mapping:
-        mapping[profile] = dict(**kwargs)
-        dump_mapping_tojson(samples, **mapping)
 
 
 def split_(*indexes):

@@ -34,7 +34,7 @@ PUSHD %_myparent:~0,-1%
 
 
 :CODEPAGE
-PUSHD Resources
+PUSHD ..\..\..\Resources
 SET _step=1
 CALL shared.cmd
 @IF DEFINED _chcp (
@@ -65,9 +65,7 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-PUSHD MyPythonProject\AudioCD\Grabber
 python RippedTracks.py "%~1"
-POPD
 SHIFT /2
 GOTO MAIN
 

@@ -2,10 +2,8 @@
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import itertools
 import json
-import locale
 import os
 import shutil
-import sys
 import tempfile
 import unittest
 from datetime import datetime
@@ -29,13 +27,6 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
-
-# ===================
-# Global environment.
-# ===================
-locale.setlocale(locale.LC_ALL, "")
-if sys.platform.startswith("lin"):
-    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 
 # ===============
@@ -366,7 +357,7 @@ class Test01(unittest.TestCase):
         self.assertFalse(ToBoolean("toto").boolean_value)
 
 
-@SetUp(_MYPARENT / "Resources" / "resource4.yml")
+@SetUp(_MYPARENT / "Resources" / "resource1.yml")
 class Test02(unittest.TestCase):
 
     def setUp(self) -> None:

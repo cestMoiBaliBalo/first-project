@@ -33,7 +33,7 @@ PUSHD %_myparent:~0,-1%
 REM    ============
 REM C. Main script.
 REM    ============
-PUSHD Resources
+PUSHD ..\..\..\Resources
 SET _step=1
 CALL shared.cmd
 @IF DEFINED _chcp (
@@ -59,7 +59,7 @@ REM  1 --> Append ripped tracks to digital audio database.
 REM        -----------------------------------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    PUSHD MyPythonProject\AudioCD
+    PUSHD ..
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_myparent%\MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
     python InsertAlbums.py "%_jsontags%"
@@ -83,9 +83,7 @@ REM        ------------------------------
 REM  3 --> Update ripped discs dashboard.
 REM        ------------------------------
 :STEP3
-PUSHD MyPythonProject\AudioCD\Grabber
 python RippedDiscs.py
-POPD
 SHIFT
 GOTO MAIN
 

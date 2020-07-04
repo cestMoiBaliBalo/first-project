@@ -2,61 +2,66 @@
 # pylint: disable=invalid-name
 import argparse
 import locale
+import logging.config
+import operator
+import os
 import sys
+from contextlib import suppress
+from functools import partial
+from pathlib import Path
 from unittest import TestLoader, TestSuite, TextTestRunner
 
-from Applications.Unittests import module1, module2, module3, module4
+import yaml
+
+from Applications.Unittests import module1, module2, module3, module5
+from Applications.decorators import attrgetter_
+from Applications.shared import customfilter as cf
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
+
 # =================
 # Define constants.
 # =================
 LOGGERS = ["Applications.shared", "Applications.AudioCD", "Applications.Tables.Albums", "MyPythonProject"]
-MAPPING = {True: "debug", False: "info"}
+EXIT = {False: 1, True: 0}
 
 # ================
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
 parser.add_argument("-d", "--debug", action="store_true")
-parser.add_argument("-c", "--console", nargs="*")
+parser.add_argument("-c", "--console", action="store_true")
 parser.add_argument("-v", "--verbosity", action="count")
 arguments = vars(parser.parse_args())
 
 # ==========================
 # Define French environment.
 # ==========================
-if sys.platform.startswith("lin"):
-    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
-elif sys.platform.startswith("win"):
+locale.setlocale(locale.LC_ALL, "fr_FR")
+
+# ===========================
+# Load logging configuration.
+# ===========================
+if arguments.get("debug", False):
 
     # -----
-    import logging.config
-    import operator
-    import os
-    import yaml
-    from contextlib import suppress
-    from functools import partial
-    from Applications.decorators import attrgetter_
-    from Applications.shared import customfilter as cf
-
-    # -----
-    locale.setlocale(locale.LC_ALL, "")
-
-    # -----
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "logging.yml"), encoding="UTF_8") as fp:
+    with open(_MYPARENT / "Resources" / "logging.yml", encoding="UTF_8") as fp:
         config = yaml.load(fp, Loader=yaml.FullLoader)
 
     # -----
     for item in LOGGERS:
         with suppress(KeyError):
-            config["loggers"][item]["level"] = MAPPING[arguments.get("debug", False)].upper()
+            config["loggers"][item]["level"] = "DEBUG"
 
-    if all([arguments.get("debug", False), arguments.get("console", [])]):
+    # -----
+    if arguments.get("console", False):
         for item in LOGGERS:
             with suppress(KeyError):
                 config["loggers"][item]["handlers"] = ["file", "console"]
@@ -78,5 +83,6 @@ suite, loader, runner = TestSuite(), TestLoader(), TextTestRunner(verbosity=verb
 suite.addTests(loader.loadTestsFromModule(module1))
 suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
-suite.addTests(loader.loadTestsFromModule(module4))
-runner.run(suite)
+suite.addTests(loader.loadTestsFromModule(module5))
+result = runner.run(suite)
+sys.exit(EXIT[result.wasSuccessful()])

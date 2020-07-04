@@ -29,10 +29,8 @@ SET _myparent=%~dp0
 REM    ==================
 REM B. Initializations 2.
 REM    ==================
-@IF NOT DEFINED _caller (
-    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
-    PUSHD %_myparent:~0,-1%
-)
+@IF NOT DEFINED _caller SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+PUSHD %_myparent:~0,-1%
 
 
 REM    ==================
@@ -48,7 +46,6 @@ SET _track=
 REM    ===========
 REM D. Main logic.
 REM    ===========
-PUSHD MyPythonProject\AudioCD\Grabber
 
 REM    Backup input tags.
 FOR /F "usebackq" %%A IN (`python GetTrack.py "%~1"`) DO (
@@ -75,12 +72,14 @@ REM    Alter tags respective to the ripping profile.
 python GrabTrack.py "%~1" %~2 %~3 %_decorators%--tags_processing %~5
 SET _errorlevel=%ERRORLEVEL%
 
+REM    Backup output tags.
+IF %_errorlevel% EQU 0 COPY /Y "%~1" %TEMP%\%~n1_T%_track%_%_encoder%_out%~x1 > NUL 2>&1
+
 
 REM    ============
 REM E. Exit script.
 REM    ============
 POPD
-@IF NOT DEFINED _caller POPD
 (
     ENDLOCAL
     EXIT /B %_errorlevel%

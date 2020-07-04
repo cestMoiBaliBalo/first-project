@@ -33,7 +33,7 @@ PUSHD %_myparent:~0,-1%
 
 
 REM -----
-PUSHD Resources
+PUSHD ..\..\..\Resources
 SET _chcp=
 SET _mycp=
 SET _step=1
@@ -48,8 +48,8 @@ POPD
 REM -----
 :LOOP
 (
-    IF "%~2" NEQ "" SET _arguments=!_arguments! "%~2"
-    IF "%~2" EQU "" GOTO NEXT
+    IF [%2] NEQ [] SET _arguments=!_arguments! "%~2"
+    IF [%2] EQU [] GOTO NEXT
 )
 SHIFT /2
 GOTO LOOP
@@ -57,9 +57,10 @@ GOTO LOOP
 
 REM -----
 :NEXT
+ECHO: %_arguments%
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _caller=%_me%
+    SET _caller=%~nx0
 )
 (
 
@@ -73,12 +74,14 @@ REM -----
     REM Local Windows environment unit tests.
     IF %~1 EQU 2 (
         SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+        SET _verbose=1
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
     )
 
     REM Travis-CI Windows environment unit tests.
     IF %~1 EQU 3 (
+        SET _verbose=0
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
     )

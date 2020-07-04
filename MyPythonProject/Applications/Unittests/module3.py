@@ -3,7 +3,6 @@
 import datetime
 import locale
 import os
-import sys
 import unittest
 from pathlib import Path
 
@@ -19,13 +18,6 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
-
-# ===================
-# Global environment.
-# ===================
-locale.setlocale(locale.LC_ALL, "")
-if sys.platform.startswith("lin"):
-    locale.setlocale(locale.LC_ALL, "fr_FR.utf8")
 
 
 # ==============

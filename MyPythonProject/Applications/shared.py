@@ -2,6 +2,7 @@
 # pylint: disable=invalid-name
 import calendar
 import csv
+import locale
 import logging.handlers
 import operator
 import os
@@ -29,6 +30,7 @@ __status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
 _MYPARENT = Path(os.path.abspath(__file__)).parent
+locale.setlocale(locale.LC_ALL, "fr_FR")
 
 # ==================
 # Functions aliases.
@@ -377,7 +379,7 @@ def ljustify(arg: str, width: int, *, char: str = "") -> str:
     :param char:
     :return:
     """
-    return "{0:{width}<{char}}".format(arg, width=width, char=char)
+    return "{0:{char}<{width}}".format(arg, width=width, char=char)
 
 
 def rjustify(arg: str, width: int, *, char: str = "") -> str:
@@ -388,7 +390,18 @@ def rjustify(arg: str, width: int, *, char: str = "") -> str:
     :param char:
     :return:
     """
-    return "{0:{width}>{char}}".format(arg, width=width, char=char)
+    return "{0:{char}>{width}}".format(arg, width=width, char=char)
+
+
+def rjustify_index(arg: int, width: int, *, char: str = "") -> str:
+    """
+
+    :param arg:
+    :param width:
+    :param char:
+    :return:
+    """
+    return "{0:{char}>{width}d}".format(arg, width=width, char=char)
 
 
 def normalize(arg: str) -> str:
@@ -412,21 +425,6 @@ def normalize2(arg: str) -> str:
 # ==========================
 # Data validation functions.
 # ==========================
-def valid_path(path: str) -> str:
-    """
-
-    :param path:
-    :return:
-    """
-    if not exists(path):
-        raise ValueError(f'"{path}" doesn\'t exist.')
-    if not isdir(path):
-        raise ValueError(f'"{path}" is not a directory.')
-    if not os.access(path, os.R_OK):
-        raise ValueError(f'"{path}" is not a readable directory.')
-    return path
-
-
 def valid_database(database: str) -> str:
     """
 
@@ -457,6 +455,21 @@ def valid_discnumber(discnumber: Union[int, str]) -> int:
     if not _discnumber:
         raise ValueError('"{0}" {1}'.format(discnumber, msg))
     return _discnumber
+
+
+def valid_path(path: str) -> str:
+    """
+
+    :param path:
+    :return:
+    """
+    if not exists(path):
+        raise ValueError(f'"{path}" doesn\'t exist.')
+    if not isdir(path):
+        raise ValueError(f'"{path}" is not a directory.')
+    if not os.access(path, os.R_OK):
+        raise ValueError(f'"{path}" is not a readable directory.')
+    return path
 
 
 def valid_tracks(tracks: Union[int, str]) -> int:
