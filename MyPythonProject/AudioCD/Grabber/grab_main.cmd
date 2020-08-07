@@ -16,6 +16,11 @@ REM A. Initializations 1.
 REM    ==================
 SET _me=%~n0
 SET _myparent=%~dp0
+SET _ancestor=%_myparent:~0,-1%
+FOR /L %%A IN (1, 1, 2) DO (
+    FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
+    SET _ancestor=!_myancestor!
+)
 
 
 REM    ==================
@@ -66,14 +71,14 @@ ECHO: %_arguments%
 
     REM Local Windows environment production process.
     IF %~1 EQU 1 (
-        SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+        SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
         CALL grab_beg.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
     )
 
     REM Local Windows environment unit tests.
     IF %~1 EQU 2 (
-        SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+        SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
         SET _verbose=1
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!

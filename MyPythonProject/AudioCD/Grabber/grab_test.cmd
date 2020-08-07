@@ -17,13 +17,18 @@ REM A. Initializations 1.
 REM    ==================
 SET _me=%~n0
 SET _myparent=%~dp0
+SET _ancestor=%_myparent:~0,-1%
+FOR /L %%A IN (1, 1, 2) DO (
+    FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
+    SET _ancestor=!_myancestor!
+)
 
 
 REM    ==================
 REM B. Initializations 2.
 REM    ==================
 @IF NOT DEFINED _caller (
-    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
     SET _verbose=1
     PUSHD %_myparent:~0,-1%
 )
@@ -47,6 +52,25 @@ REM    ===========
     SET _path=%~dp0
     SET _ko=0
 )
+
+@REM -----
+@SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+@SET _index=0
+@SET _path=%PATH%
+:LOOP
+@FOR /F "usebackq tokens=1,* delims=;" %%A IN ('!_path!') DO (
+    SET /A "_index+=1"
+    IF !_index! LEQ 99 SET _line=!_index!. %%A
+    IF !_index! LEQ 9 SET _line= !_index!. %%A
+    ECHO !_line!
+    SET _path=%%B
+    GOTO LOOP
+)
+@ECHO:
+@ECHO:
+@ENDLOCAL
+@REM -----
+
 FOR /L %%A IN (1, 1, 2) DO FOR %%A IN ("!_path!.") DO SET _path=%%~dpA
 PUSHD %_path:~0,-1%
 FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\defaultalbum.txt") DO (
