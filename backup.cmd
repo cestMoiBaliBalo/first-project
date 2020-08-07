@@ -1,15 +1,14 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+@REM __author__ = 'Xavier ROSSET'
+@REM __maintainer__ = 'Xavier ROSSET'
+@REM __email__ = 'xavier.python.computing@protonmail.com'
+@REM __status__ = "Production"
 
 
-CLS
+@CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-PUSHD %_RESOURCES%
 
 
 REM ==================
@@ -23,17 +22,18 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _mycp=
-SET _cp=1252
+SET _cp=65001
 SET _errorlevel=0
-SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
+SET _areca=%PROGRAMFILES%\Areca\areca_cl.exe
 
 
 REM ============
 REM Main script.
 REM ============
+PUSHD %_myparent%Resources
 SET _step=1
 CALL shared.cmd
-IF DEFINED _chcp (
+@IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
@@ -55,13 +55,9 @@ SHIFT
 GOTO MENU
 
 :THE_END
+@IF DEFINED _mycp CHCP %_mycp% > NUL
+POPD
 (
-    ECHO:
-    ECHO:
-    REM PAUSE
-    IF DEFINED _mycp CHCP %_mycp% > NUL
-    POPD
     ENDLOCAL
-    CLS
     EXIT /B %_errorlevel%
 )

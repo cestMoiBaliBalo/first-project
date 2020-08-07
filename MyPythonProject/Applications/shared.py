@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 import calendar
 import csv
+import locale
 import logging.handlers
 import operator
 import os
@@ -16,7 +16,7 @@ from itertools import dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from pathlib import Path
 from string import Template
 from subprocess import PIPE, run
-from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
 import jinja2
 import yaml
@@ -30,6 +30,7 @@ __status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
 _MYPARENT = Path(os.path.abspath(__file__)).parent
+locale.setlocale(locale.LC_ALL, "fr_FR")
 
 # ==================
 # Functions aliases.
@@ -48,7 +49,6 @@ LOGPATTERN = "%(asctime)s - %(levelname)s - [%(name)s]: %(message)s"
 UTC = timezone("UTC")
 UTF8 = "UTF_8"
 UTF16 = "UTF_16"
-UTF16BOM = "\uFEFF"
 WRITE = "w"
 
 # Resources.
@@ -73,7 +73,8 @@ TEMPLATE6 = "$d/$m/$Y $H:$M:$S"
 TEMPLATE7 = "$Y$m${d}_$H$M$S"
 
 # Local drives.
-TEMP = Path("C:/") / "Users" / "Xavier" / "AppData" / "Local" / "Temp"
+MUSIC = Path("F:/")
+TEMP = Path(os.path.expandvars("%TEMP%"))
 
 # Miscellaneous containers.
 GENRES = ["Alternative Rock",
@@ -371,39 +372,59 @@ class TemplatingEnvironment(object):
 # Jinja2 custom filters.
 # ======================
 def ljustify(arg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}<{1}}".format(arg, width, char)
+    """
+
+    :param arg:
+    :param width:
+    :param char:
+    :return:
+    """
+    return "{0:{char}<{width}}".format(arg, width=width, char=char)
 
 
 def rjustify(arg: str, width: int, *, char: str = "") -> str:
-    return "{0:{2}>{1}}".format(arg, width, char)
+    """
+
+    :param arg:
+    :param width:
+    :param char:
+    :return:
+    """
+    return "{0:{char}>{width}}".format(arg, width=width, char=char)
+
+
+def rjustify_index(arg: int, width: int, *, char: str = "") -> str:
+    """
+
+    :param arg:
+    :param width:
+    :param char:
+    :return:
+    """
+    return "{0:{char}>{width}d}".format(arg, width=width, char=char)
 
 
 def normalize(arg: str) -> str:
+    """
+
+    :param arg:
+    :return:
+    """
     return arg.replace(", ", "_").replace(" ", "_")
 
 
 def normalize2(arg: str) -> str:
+    """
+
+    :param arg:
+    :return:
+    """
     return arg.replace(" ", "%20").replace("&", "%26")
 
 
 # ==========================
 # Data validation functions.
 # ==========================
-def valid_path(path: str) -> str:
-    """
-
-    :param path:
-    :return:
-    """
-    if not exists(path):
-        raise ValueError(f'"{path}" doesn\'t exist.')
-    if not isdir(path):
-        raise ValueError(f'"{path}" is not a directory.')
-    if not os.access(path, os.R_OK):
-        raise ValueError(f'"{path}" is not a readable directory.')
-    return path
-
-
 def valid_database(database: str) -> str:
     """
 
@@ -434,6 +455,21 @@ def valid_discnumber(discnumber: Union[int, str]) -> int:
     if not _discnumber:
         raise ValueError('"{0}" {1}'.format(discnumber, msg))
     return _discnumber
+
+
+def valid_path(path: str) -> str:
+    """
+
+    :param path:
+    :return:
+    """
+    if not exists(path):
+        raise ValueError(f'"{path}" doesn\'t exist.')
+    if not isdir(path):
+        raise ValueError(f'"{path}" is not a directory.')
+    if not os.access(path, os.R_OK):
+        raise ValueError(f'"{path}" is not a readable directory.')
+    return path
 
 
 def valid_tracks(tracks: Union[int, str]) -> int:
@@ -572,9 +608,9 @@ def valid_genre(genre: str) -> str:
     return genre
 
 
-# ====================
-# Filtering functions.
-# ====================
+# ========
+# Filters.
+# ========
 def eq_string_(a: str, b: str, *, sensitive: bool = False) -> bool:
     if not sensitive:
         return operator.eq(b.lower(), a.lower())
@@ -879,7 +915,7 @@ def find_files(directory, *, excluded=None):
         yield file
 
 
-def get_drives() -> Iterator[str]:
+def get_drives():
     """
 
     :return:

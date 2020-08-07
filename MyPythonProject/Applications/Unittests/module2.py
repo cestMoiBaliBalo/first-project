@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
+import argparse
 import datetime
 import operator
 import os
-import sys
 import unittest
 from functools import partial
 from pathlib import Path
@@ -11,9 +11,10 @@ from unittest.mock import patch
 
 import iso8601  # type: ignore
 
+import Applications.parsers
 from ..callables import filter_audiofiles, filter_extension, filter_extensions, filter_losslessaudiofiles, filter_portabledocuments, filterfalse_
 from ..parsers import database_parser, tags_grabber, tasks_parser
-from ..shared import LOCAL, UTC, find_files, get_dirname
+from ..shared import LOCAL, UTC, find_files
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -28,69 +29,103 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ==============
 # Tests classes.
 # ==============
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class Test02(unittest.TestCase):
+@patch.object(Applications.parsers.Database, "__call__")
+class Test02a(unittest.TestCase):
+    """
+    Undocumented.
     """
 
-    """
+    def setUp(self) -> None:
+        self.prod_db = _MYPARENT.parents[1] / "Resources" / "database.db"
 
-    def test_t01(self):
-        arguments = database_parser.parse_args(["--database", os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db")])
-        self.assertEqual(arguments.db.lower(), os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db").lower())
+    def test_t01(self, mock_function):
+        mock_function.return_value = str(self.prod_db)
+        arguments = database_parser.parse_args(["--database", str(self.prod_db)])
+        self.assertEqual(arguments.db, str(self.prod_db))
         self.assertFalse(arguments.test)
+        mock_function.assert_called_once()
+        mock_function.assert_called_once_with(str(self.prod_db))
 
-    def test_t02(self):
+    def test_t02(self, mock_function):
+        mock_function.return_value = str(self.prod_db)
+        arguments = database_parser.parse_args([])
+        self.assertEqual(arguments.db, str(self.prod_db))
+        self.assertFalse(arguments.test)
+        mock_function.assert_called_once()
+        mock_function.assert_called_once_with(str(self.prod_db))
+
+    def test_t03(self, mock_function):
+        mock_function.return_value = "some_database"
+        arguments = database_parser.parse_args(["--database", "some_database"])
+        self.assertEqual(arguments.db, "some_database")
+        self.assertFalse(arguments.test)
+        mock_function.assert_called_once()
+        mock_function.assert_called_once_with("some_database")
+
+
+@patch("Applications.shared")
+class Test02b(unittest.TestCase):
+    """
+    Undocumented.
+    """
+
+    def test_t01(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
         arguments = database_parser.parse_args(["--test"])
-        self.assertEqual(arguments.db.lower(), os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db").lower())
+        self.assertEqual(arguments.db, "some_test_database")
         self.assertTrue(arguments.test)
 
-    def test_t03(self):
-        arguments = database_parser.parse_args([])
-        self.assertEqual(arguments.db.lower(), os.path.join(get_dirname(os.path.abspath(__file__), level=3), "Resources", "database.db").lower())
-        self.assertFalse(arguments.test)
 
-    def test_t04(self):
-        arguments = database_parser.parse_args(["--database", os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db")])
-        self.assertEqual(arguments.db.lower(), os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "database.db").lower())
-        self.assertFalse(arguments.test)
-
-
-class Test03(unittest.TestCase):
+class Test02c(unittest.TestCase):
     """
-
+    Undocumented.
     """
-
-    def setUp(self):
-        self.arguments = None
-        self.resource = str(_MYPARENT / "Resources" / "resource1.txt")
 
     def test_t01(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default", "C1", "--tags_processing", "defaultalbum"])
+        arguments = database_parser.parse_args(["--test"])
+        self.assertEqual(arguments.db, str(_MYPARENT / "Resources" / "database.db"))
+        self.assertTrue(arguments.test)
+
+
+@patch.object(argparse.FileType, "__call__")
+class Test03(unittest.TestCase):
+    """
+    Undocumented.
+    """
+
+    def test_t01(self, mock_function):
+        mock_function.return_value = None
+        self.arguments = tags_grabber.parse_args(["some_tags_file", "default", "C1", "--tags_processing", "defaultalbum"])
         self.assertEqual(self.arguments.profile, "default")
         self.assertEqual(self.arguments.sequence, "C1")
         self.assertEqual(self.arguments.tags_processing, "defaultalbum")
         self.assertListEqual(self.arguments.decorators, [])
+        mock_function.assert_called_once()
+        mock_function.assert_called_with("some_tags_file")
 
-    def test_t02(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default", "C2"])
+    def test_t02(self, mock_function):
+        mock_function.return_value = None
+        self.arguments = tags_grabber.parse_args(["some_tags_file", "default", "C2"])
         self.assertEqual(self.arguments.profile, "default")
         self.assertEqual(self.arguments.sequence, "C2")
         self.assertEqual(self.arguments.tags_processing, "default")
         self.assertListEqual(self.arguments.decorators, [])
+        mock_function.assert_called_once()
+        mock_function.assert_called_with("some_tags_file")
 
-    def test_t03(self):
-        self.arguments = tags_grabber.parse_args([self.resource, "default", "C3", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
+    def test_t03(self, mock_function):
+        mock_function.return_value = None
+        self.arguments = tags_grabber.parse_args(["some_tags_file", "default", "C3", "decorator1", "decorator2", "decorator3", "--tags_processing", "test_defaultalbum"])
         self.assertEqual(self.arguments.profile, "default")
         self.assertEqual(self.arguments.sequence, "C3")
         self.assertEqual(self.arguments.tags_processing, "test_defaultalbum")
         self.assertListEqual(self.arguments.decorators, ["decorator1", "decorator2", "decorator3"])
+        mock_function.assert_called_once()
+        mock_function.assert_called_with("some_tags_file")
 
-    def tearDown(self):
-        self.arguments.source.close()
 
-
-@unittest.skipUnless(sys.platform.startswith("win"), "Tests requiring local Windows system")
-class Test04(unittest.TestCase):
+@patch("Applications.shared")
+class Test04a(unittest.TestCase):
     """
 
     """
@@ -98,76 +133,101 @@ class Test04(unittest.TestCase):
     def setUp(self):
         self.taskid = "123456800"
 
-    def test_t01(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--timestamp", "1549913936"]))
+    def test_t01(self, mock_attribute):
+        mock_attribute.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--timestamp", "1549913936"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertEqual(arguments.get("timestamp"), 1549913936)
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("delta"))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t02(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00"]))
+    def test_t02(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("delta"))
         self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56+01:00")
         self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t03(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56"]))
+    def test_t03(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--datstring", "2019-02-11T20:38:56"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("delta"))
         self.assertEqual(arguments.get("datstring"), "2019-02-11T20:38:56")
         self.assertEqual(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 20, 38, 56))
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t04(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update"]))
+    def test_t04(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("delta"))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t05(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "add", "5"]))
+    def test_t05(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "add", "5"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("delta"))
         self.assertEqual(arguments.get("func"), operator.add)
         self.assertEqual(arguments.get("days"), 5)
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t06(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "sub", "23"]))
+    def test_t06(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "sub", "23"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("delta"))
         self.assertEqual(arguments.get("func"), operator.sub)
         self.assertEqual(arguments.get("days"), 23)
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t07(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "check"]))
+    def test_t07(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "check"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertEqual(arguments.get("delta"), 10)
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("func"))
         self.assertIsNone(arguments.get("days"))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t08(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "check", "--delta", "28"]))
+    def test_t08(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "check", "--delta", "28"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertEqual(arguments.get("delta"), 28)
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("datstring"))
         self.assertIsNone(arguments.get("func"))
         self.assertIsNone(arguments.get("days"))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t09(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "5"]))
+    def test_t09(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "5"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("delta"))
@@ -176,9 +236,12 @@ class Test04(unittest.TestCase):
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
         self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
                          datetime.datetime(2019, 2, 16, 19, 38, 56))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t10(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "28"]))
+    def test_t10(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "add", "28"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("delta"))
@@ -187,9 +250,12 @@ class Test04(unittest.TestCase):
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
         self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
                          datetime.datetime(2019, 3, 11, 19, 38, 56))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
-    def test_t11(self):
-        arguments = vars(tasks_parser.parse_args([self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "sub", "10"]))
+    def test_t11(self, mock_database):
+        mock_database.TESTDATABASE = "some_test_database"
+        arguments = vars(tasks_parser.parse_args(["-t", self.taskid, "update", "--datstring", "2019-02-11T20:38:56+01:00", "sub", "10"]))
         self.assertEqual(arguments.get("taskid"), int(self.taskid))
         self.assertIsNone(arguments.get("timestamp"))
         self.assertIsNone(arguments.get("delta"))
@@ -198,9 +264,40 @@ class Test04(unittest.TestCase):
         self.assertEqual(LOCAL.localize(iso8601.parse_date(arguments.get("datstring")).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.datetime(2019, 2, 11, 19, 38, 56))
         self.assertEqual(arguments["func"](LOCAL.localize(iso8601.parse_date(arguments["datstring"]).replace(tzinfo=None)).astimezone(UTC).replace(tzinfo=None), datetime.timedelta(arguments["days"])),
                          datetime.datetime(2019, 2, 1, 19, 38, 56))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), "some_test_database")
 
 
-@patch("Applications.shared.os.walk")
+@patch.object(Applications.shared, "valid_database", return_value=str(_MYPARENT.parents[1] / "Resources" / "database.db"))
+class Test04b(unittest.TestCase):
+
+    def setUp(self):
+        self.prod_db = _MYPARENT.parents[1] / "Resources" / "database.db"
+        self.test_db = _MYPARENT / "Resources" / "database.db"
+
+    def test_t01(self, mock_function):
+        arguments = vars(database_parser.parse_args([]))
+        self.assertFalse(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), str(self.prod_db))
+        mock_function.assert_called_once()
+        mock_function.assert_called_with(str(self.prod_db))
+
+    def test_t02(self, mock_function):
+        arguments = vars(database_parser.parse_args(["--database", "some_database"]))
+        self.assertFalse(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), str(self.prod_db))
+        mock_function.assert_called_once()
+        mock_function.assert_called_with("some_database")
+
+    def test_t03(self, mock_function):
+        arguments = vars(database_parser.parse_args(["--test"]))
+        self.assertTrue(arguments.get("test"))
+        self.assertEqual(arguments.get("db"), str(self.test_db))
+        with self.assertRaises(AssertionError):
+            mock_function.assert_called_once()
+
+
+@patch("os.walk")
 class Test05(unittest.TestCase):
 
     def setUp(self):

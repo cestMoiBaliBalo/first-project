@@ -1,8 +1,6 @@
 @ECHO off
+@CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-CLS
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_COMPUTING%
 
 
 REM ==================
@@ -25,6 +23,8 @@ SET _album_200=
 REM ============
 REM Main script.
 REM ============
+SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_myparent:~0,-1%
 IF NOT EXIST "%~1" GOTO END
 
 REM ----- Java step.
@@ -36,7 +36,7 @@ IF NOT DEFINED _album_%_type% GOTO END
 
 REM ----- Python step.
 PUSHD MyPythonProject\Tasks
-python Insert_Albums.py !_album_%_type%! "%~1"
+python InsertAlbums.py !_album_%_type%! "%~1"
 SET _records=%ERRORLEVEL%
 POPD
 ECHO:
@@ -48,6 +48,6 @@ PAUSE
 
 :END
 POPD
-CLS
 ENDLOCAL
+CLS
 EXIT /B 0

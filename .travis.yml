@@ -1,17 +1,29 @@
 language: python
-python:
-  - "3.6"
-before_install:
-  - python MyPythonProject/setup.py install
+jobs:
+  include:
+    - name: "Python 3.7.0 on Windows"
+      language: shell
+      os: windows
+      env:
+        - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+        - PYTHONPATH=$PWD/MyPythonProject
+      before_install:
+        - choco install python --version 3.7.0
+        - python -m pip install --upgrade pip
+    - name: "Python 3.8.0 on Windows"
+      language: shell
+      os: windows
+      env:
+        - PATH=/c/Python38:/c/Python38/Scripts:$PATH
+        - PYTHONPATH=$PWD/MyPythonProject
+      before_install:
+        - choco install python --version 3.8.0
+        - python -m pip install --upgrade pip
 install:
-  - pip install python-dateutil
-  - pip install ftputil
   - pip install iso8601
   - pip install jinja2
-  - pip install mutagen
-  - pip install pandas
+  - pip install python-dateutil
   - pip install pytz
   - pip install pyyaml
-  - pip install sortedcontainers
 script:
-  - python MyPythonProject/runner.py
+  - ./MyPythonProject/AudioCD/Grabber/grab_main.cmd 3 

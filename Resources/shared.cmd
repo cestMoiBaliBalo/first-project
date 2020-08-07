@@ -1,31 +1,25 @@
-@ECHO off
+@REM __author__ = 'Xavier ROSSET'
+@REM __maintainer__ = 'Xavier ROSSET'
+@REM __email__ = 'xavier.python.computing@protonmail.com'
+@REM __status__ = "Production"
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
-
-
-REM ==============================================
-REM Load variables taken from the calling context.
-REM ==============================================
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _step=%_step%
 )
 
 
-REM ================
-REM Initializations.
-REM ================
+REM    ================
+REM A. Initializations.
+REM    ================
 SET _me=%~n0
 SET _myparent=%~dp0
 
 
-REM  ======================
-REM  Run requested routine.
-REM  ======================
+REM     ======================
+REM  B. Run requested routine.
+REM     ======================
 :MAIN
 
 REM -----

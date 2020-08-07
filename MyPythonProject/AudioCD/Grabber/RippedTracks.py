@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from Applications.shared import APPEND, UTF8
+from Applications.shared import APPEND, UTF8, TEMP
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -61,7 +61,7 @@ arguments = parser.parse_args()
 # Get output file.
 output = arguments.output
 if not arguments.output:
-    output = open(Path(os.path.expandvars("%TEMP%")) / "tmp1n53chv0" / "tmplpg2af5i", mode=APPEND, encoding=UTF8)
+    output = open(TEMP / "tmpw4zdn8w8" / "tmplpg2af5i", mode=APPEND, encoding=UTF8)
 
 # Process digital audio file.
 for path in arguments.path:
