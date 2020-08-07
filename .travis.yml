@@ -1,6 +1,15 @@
 language: python
 jobs:
   include:
+    - name: "Python 3.7.0 on Windows"
+      language: shell
+      os: windows
+      env:
+        - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+        - PYTHONPATH=$PWD/MyPythonProject
+      before_install:
+        - choco install python --version 3.7.0
+        - python -m pip install --upgrade pip
     - name: "Python 3.8.0 on Windows"
       language: shell
       os: windows
