@@ -16,7 +16,7 @@ REM A. Initializations 1.
 REM    ==================
 SET _me=%~n0
 SET _myparent=%~dp0
-SET _ancestor=%_myparent:~0,-1%
+SET _ancestor=%_myparent%
 FOR /L %%A IN (1, 1, 2) DO (
     FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
     SET _ancestor=!_myancestor!
