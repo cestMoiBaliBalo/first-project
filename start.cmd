@@ -23,10 +23,9 @@ SET _myparent=%~dp0
 SET _mycp=
 SET _flag=0
 SET _cp=1252
-SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
-SET _dailybkp=%_COMPUTING%\Resources\daily_backup.txt
-SET _exclusions2=%_COMPUTING%\Resources\exclusions2.txt
-SET _exclusions3=%_COMPUTING%\Resources\exclusions3.txt
+SET _areca=%PROGRAMFILES%\Areca\areca_cl.exe
+SET _dailybkp=%_myparent%Resources\daily_backup.txt
+SET _exclusions=%_myparent%Resources\exclusions.txt
 SET _videos=%USERPROFILE%\videos
 SET _xxcopy=xxcopy.cmd
 
@@ -39,7 +38,7 @@ SET _xxcopy=xxcopy.cmd
 @REM     -----------------------------------------------------
 @REM  1. Allow interface to decode Latin-1 encoded characters.
 @REM     -----------------------------------------------------
-PUSHD %_RESOURCES%
+PUSHD %_myparent%Resources
 
 @REM     Set code page.
 SET _chcp=
@@ -58,7 +57,7 @@ IF DEFINED _chcp ECHO Code page is %_chcp%.
 
 @REM     Check characters encoding.
 ECHO Les caractères accentués sont restitués proprement ^^!
-FOR /F "usebackq tokens=*" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
+FOR /F "usebackq tokens=*" %%A IN ("accentuated.txt") DO ECHO %%A
 
 POPD
 
@@ -110,8 +109,8 @@ XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp1
 @REM  3b. Then set up a new temporary environment.
 @REM      ----------------------------------------
 SETLOCAL
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_PYTHONPROJECT%
+SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_myparent%MyPythonProject
 python temporaryenv.py dir --glob > NUL
 POPD
 ENDLOCAL
@@ -196,13 +195,13 @@ IF EXIST y: (
     SET _suffix=
 
 :STEP6C
-    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$!_suffix!\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+    XXCOPY /EC %_myparent% y:\Computing\/$ymmdd$!_suffix!\ /S /EX:"%__exclusions%" /IA /KS /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 47 (
         SHIFT
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_RESOURCES%
+        PUSHD %_myparent%Resources
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP6C
@@ -291,7 +290,7 @@ GOTO MAIN
 @REM 15. Ripped discs Excel dashboard.
 @REM     -----------------------------
 :STEP22
-python "%_PYTHONPROJECT%\AudioCD\Grabber\RippedDiscs.py"
+python "%_myparent%MyPythonProject\AudioCD\Grabber\RippedDiscs.py"
 SHIFT
 GOTO MAIN
 
@@ -323,7 +322,7 @@ IF EXIST y:\Documents (
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_RESOURCES%
+        PUSHD %_myparent%Resources
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP23C

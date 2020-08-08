@@ -8,7 +8,6 @@ REM __status__ = "Production"
 
 
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-PUSHD %_PYTHONPROJECT%
 
 
 REM ==================
@@ -22,12 +21,13 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _xxcopy=xxcopy.cmd
-SET _cp=1252
+SET _cp=65001
 
 
 REM ============
 REM Main script.
 REM ============
+PUSHD %_myparent%MyPythonProject
 
 
 REM ----------------------
@@ -84,7 +84,7 @@ REM Sync targets repositories.
 REM --------------------------
 IF ERRORLEVEL 34 (
     SETLOCAL ENABLEDELAYEDEXPANSION
-    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD Backup
     python targets.py %_BACKUP%\workspace.music
     POPD
@@ -96,7 +96,7 @@ IF ERRORLEVEL 34 (
 IF ERRORLEVEL 33 (
 :LOOP33
     CLS
-    TYPE %_RESOURCES%\digital_bootlegs_audiotags_bs.txt
+    TYPE %_myparent%Resources\digital_bootlegs_audiotags_bs.txt
     ECHO:
     ECHO:
     ECHO:
@@ -191,7 +191,7 @@ IF ERRORLEVEL 28 (
 
 :LOOP28
     SETLOCAL ENABLEDELAYEDEXPANSION
-    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD ..\MyPythonProject\Tasks\Manager
     python music.py
     IF ERRORLEVEL 100 (
@@ -235,7 +235,7 @@ REM Both M4A and MP3 without lossless version (iTunes, amazon, etc).
 IF ERRORLEVEL 26 (
     CLS
     PUSHD ..
-    CALL lossy.cmd T
+    CALL backup_LossyFiles.cmd T
     POPD
     GOTO MENU
 )
@@ -295,9 +295,9 @@ IF ERRORLEVEL 25 (
 )
 
 
-REM ---------------------------------------------------------------
-REM Clone Samsung S5 images local collection to distant collection.
-REM ---------------------------------------------------------------
+REM ------------------------------------------------------
+REM Clone MyCloud Samsung S5 images from local collection.
+REM ------------------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 24 (
 
@@ -318,13 +318,13 @@ IF ERRORLEVEL 24 (
         GOTO END24
     )
 
-    REM 2. Clone collection to distant drive. Delete extra files!
+    REM 2. Clone MyCloud. Delete extra files!
     CLS
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to distant drive with extra files removal."
     IF NOT DEFINED _answer GOTO END24
     IF [!_answer!] EQU [N] GOTO END24
     CLS
-    XXCOPY /EC "!_local_collection!\" "!_cloud_collection!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "!_local_collection!\" "!_cloud_collection!\" /ZS /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -336,12 +336,11 @@ IF ERRORLEVEL 24 (
 )
 
 
-REM -----------------------------------------------
-REM Clone distant images collection to local drive.
-REM -----------------------------------------------
-REM Distant collection MUST be the master collection!
+REM -------------------------------------------
+REM Clone MyCloud images from local collection.
+REM -------------------------------------------
+REM Local collection MUST be the master collection!
 REM It is a two ways syncing! Extra files are deleted.
-REM xxcopy /EC H:\ \\DISKSTATION\backup\Images\Collection\ /L /CLONE /Z0 /X*recycle*\ /X*volume*\
 IF ERRORLEVEL 23 (
 
     CLS
@@ -360,62 +359,73 @@ IF ERRORLEVEL 23 (
         PAUSE
         GOTO END23
     )
+    DEL %TEMP%\NewFiles.txt 2> NUL
+    DEL %TEMP%\SyncedFiles.txt 2> NUL
 
-    REM 1. Check at first if new images have been inserted into the local drive since the previous sync.
-    CLS
-    ECHO Check if new images have been inserted into the local drive since the previous sync...
+    REM 1. Check at first if new images have been inserted into MyCloud since the previous task.
+    ECHO Check if brand new images have been inserted into MyCloud since the previous task...
     ECHO:
     ECHO:
-    XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /L /BB /ZS /Q3 /Fo%TEMP%\FileList /oA:%_XXCOPYLOG%
+    XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /L /BB /ZS /Q3 /Fo%TEMP%\NewFiles.txt /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        CLS
+        ECHO No brand new images found into MyCloud.
+        ECHO:
+        ECHO:
+        PAUSE
+    )
     IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
         CLS
-        ECHO New images have been inserted into the local drive since the previous sync. Please check %TEMP%\FileList.
+        ECHO Some brand new images have been found into MyCloud. Please check %TEMP%\NewFiles.txt.
         ECHO:
         ECHO:
         PAUSE
         CLS
-        CALL :QUESTION "YN" "20" "N" "Would you like to copy new local images to the distant collection?"
-        IF DEFINED _answer IF [!_answer!] EQU [Y] (
+        CHOICE /C YNA /N /CS /T 20 /D A /M "Would you like to copy new distant images to the local collection? Press [Y] for Yes, [N] for No or [A] for Aborting copy."
+        IF ERRORLEVEL 3 GOTO END23
+        IF NOT ERRORLEVEL 2 IF ERRORLEVEL 1 (
             CLS
+            XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /BB /ZS /oA:%_XXCOPYLOG%
             ECHO:
             ECHO:
-            XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /BB /ZS /Q3 /oF0 /oA:%_XXCOPYLOG%
-            IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 DEL %TEMP%\FileList 2> NUL
+            PAUSE
         )
     )
 
-    REM 2. Check if new images have been inserted since the previous sync.
+    REM 2. Check if syncing is required.
     CLS
-    ECHO Check if new images have been inserted since the previous sync...
-    XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO Check now if syncing is required...
+    ECHO:
+    ECHO:
+    XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /L /ZS /Q3 /CLONE /PZ0 /Fo%TEMP%\SyncedFiles.txt /oA:%_XXCOPYLOG% /X:$RECYCLE.BIN\
     IF ERRORLEVEL 1 (
+        CLS
         ECHO Syncing is not required. Task is going to be aborted^^!
         ECHO:
         ECHO:
         PAUSE
         GOTO END23
     )
+    IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
+        CLS
+        ECHO Syncing is required^^!
+        ECHO:
+        ECHO:
+        PAUSE
+    )
 
-    REM 3. Clone collection to local drive. Don't delete extra files and directories!
+    REM 3. Clone MyCloud from local collection.
     CLS
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive !_drive:~0,-1! with extra files removal."
-    IF NOT DEFINED _answer GOTO END23
-    IF [!_answer!] EQU [N] GOTO END23
-    CLS
-    XXCOPY /EC "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO Clone now MyCloud from local collection...
     ECHO:
     ECHO:
     PAUSE
-
-    REM 4. Reverse both source and destination. Then remove brand new files in order to preserve specific folders content.
-    REM    Exclude the following directories:
-    REM       - "RECYCLER".
-    REM       - "$RECYCLE.BIN".
-    REM       - "SYSTEM VOLUME INFORMATION".
-    REM       - "IPHONE".
-    REM       - "RECOVER".
     CLS
-    XXCOPY /CE "!_drive!\" "\!_cloud_collection!\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy images from local drive !_drive:~0,-1! to MyCloud with extra files removal."
+    IF NOT DEFINED _answer GOTO END23
+    IF [!_answer!] EQU [N] GOTO END23
+    CLS
+    XXCOPY /EC "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /ZS /CLONE /PZ0 /Fo%TEMP%\SyncedFiles.txt /oA:%_XXCOPYLOG% /X:$RECYCLE.BIN\
     ECHO:
     ECHO:
     PAUSE
@@ -495,7 +505,7 @@ REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 18 (
 
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vid�os
+    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
     SET _local_avchd=G:\Videos\AVCHD Videos
 
     REM 1. Check if new videos have been inserted since the previous sync.
@@ -567,9 +577,9 @@ IF ERRORLEVEL 16 (
 )
 
 
-REM -----------------------------------------------------------------
-REM Clone Samsung S5 images local collection from distant collection.
-REM -----------------------------------------------------------------
+REM -----------------------------------------------
+REM Clone local Samsung S5 collection from MyCloud.
+REM -----------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 15 (
 
@@ -740,9 +750,9 @@ IF ERRORLEVEL 8 (
     CALL :GET_VIRTUALENV 1
     IF ERRORLEVEL 100 GOTO STEP8B
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A !_name!
+    CALL "%_myparent%environment.cmd" A !_name!
     CMD /K PROMPT [!_name! environment]$G
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL "%_myparent%environment.cmd" D
     GOTO STEP8A
 
 :STEP8B
@@ -942,7 +952,7 @@ REM Get virtual environment respective directory.
 :R01_STEP4
 SET _name=!_dir%_answer%!
 IF %_answer% LEQ 9 SET _name=!_dir0%_answer%!
-SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
+SET _venv=%_myparent%MyPythonProject\VirtualEnv\%_name%\Scripts
 
 :R01_STEP5
 (
@@ -954,7 +964,7 @@ SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 )
 
 
-REM python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
+REM python %_myparent%MyPythonProject\AudioCD\DigitalAudioFiles`View.py
 REM IF NOT ERRORLEVEL 1 (
     REM IF EXIST "%_xmldigitalaudiobase%" (
         REM java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"

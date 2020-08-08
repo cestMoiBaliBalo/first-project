@@ -24,7 +24,7 @@ REM ==================
 SET _ok=0
 SET _mycp=
 SET _date=
-SET _cp=1252
+SET _cp=65001
 SET _errorlevel=0
 
 
