@@ -21,6 +21,7 @@ FOR /L %%A IN (1, 1, 2) DO (
     FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
     SET _ancestor=!_myancestor!
 )
+SET _ancestor=
 
 
 REM    ==================

@@ -370,7 +370,6 @@ if __name__ == "__main__":
     import sys
     from Applications.shared import TemplatingEnvironment, rjustify, stringify
 
-
     # ----- Classes.
     class GetClass(argparse.Action):
         """
@@ -384,7 +383,6 @@ if __name__ == "__main__":
         def __call__(self, parsobj, namespace, values, option_string=None):
             setattr(namespace, self.dest, values)
             setattr(namespace, "klass", self.MAPPING.get(values))
-
 
     # ----- Arguments parser.
     parser = argparse.ArgumentParser(parents=[database_parser])

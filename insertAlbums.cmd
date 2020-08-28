@@ -39,15 +39,14 @@ PUSHD MyPythonProject\Tasks
 python InsertAlbums.py !_album_%_type%! "%~1"
 SET _records=%ERRORLEVEL%
 POPD
-ECHO:
-ECHO:
-ECHO %_records% record(s) inserted into the local audio database.
-ECHO:
-ECHO:
-PAUSE
+@ECHO:
+@ECHO:
+@ECHO %_records% record(s) inserted into the local audio database.
+@ECHO:
+@ECHO:
+@PAUSE
 
 :END
 POPD
 ENDLOCAL
-CLS
 EXIT /B 0

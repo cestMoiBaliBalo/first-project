@@ -24,6 +24,12 @@ REM A. Initializations 1.
 REM    ==================
 SET _me=%~n0
 SET _myparent=%~dp0
+SET _ancestor=%_myparent%
+FOR /L %%A IN (1, 1, 2) DO (
+    FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
+    SET _ancestor=!_myancestor!
+)
+SET _ancestor=
 
 
 REM    ==================
@@ -46,6 +52,11 @@ SET _track=
 REM    ===========
 REM D. Main logic.
 REM    ===========
+
+REM    Backup audio database.
+PUSHD %_myancestor%Resources
+COPY /Y database.db %TEMP% > NUL
+POPD
 
 REM    Backup input tags.
 FOR /F "usebackq" %%A IN (`python GetTrack.py "%~1"`) DO (
