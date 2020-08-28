@@ -43,9 +43,10 @@ class TestRippedTrack01(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "Who's Next")
         self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
-        self.assertEqual(self._tags["track"], "1")
         self.assertEqual(self._tags["totaltracks"], "16")
+        self.assertEqual(self._tags["track"], "1")
 
 
 class TestRippedTrack02(unittest.TestCase):
@@ -58,9 +59,10 @@ class TestRippedTrack02(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "Who's Next")
         self.assertEqual(self._tags["albumsort"], "1.19710000.1.02")
-        self.assertEqual(self._tags["track"], "1")
         self.assertEqual(self._tags["totaltracks"], "16")
+        self.assertEqual(self._tags["track"], "1")
 
 
 class TestRippedTrack03(unittest.TestCase):
@@ -73,9 +75,10 @@ class TestRippedTrack03(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "Who's Next")
         self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
-        self.assertEqual(self._tags["track"], "2")
         self.assertEqual(self._tags["totaltracks"], "16")
+        self.assertEqual(self._tags["track"], "2")
 
 
 class TestRippedTrack04(unittest.TestCase):
@@ -88,9 +91,10 @@ class TestRippedTrack04(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "Who's Next")
         self.assertEqual(self._tags["albumsort"], "1.19710000.1.13")
-        self.assertEqual(self._tags["track"], "3")
         self.assertEqual(self._tags["totaltracks"], "16")
+        self.assertEqual(self._tags["track"], "3")
 
 
 class TestRippedTrack05(unittest.TestCase):
@@ -103,9 +107,10 @@ class TestRippedTrack05(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "1977.2 - Alive II")
         self.assertEqual(self._tags["albumsort"], "1.19770000.2.02")
-        self.assertEqual(self._tags["track"], "11")
         self.assertEqual(self._tags["totaltracks"], "20")
+        self.assertEqual(self._tags["track"], "11")
 
 
 class TestRippedTrack06(unittest.TestCase):
@@ -118,6 +123,7 @@ class TestRippedTrack06(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
+        self.assertEqual(self._tags["album"], "1977.2 - Alive II")
         self.assertEqual(self._tags["albumsort"], "1.19770000.2.13")
-        self.assertEqual(self._tags["track"], "11")
         self.assertEqual(self._tags["totaltracks"], "20")
+        self.assertEqual(self._tags["track"], "11")

@@ -28,7 +28,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ========
 # Classes.
-# =======
+# ========
 class Track(object):
     TAGS = []
 
