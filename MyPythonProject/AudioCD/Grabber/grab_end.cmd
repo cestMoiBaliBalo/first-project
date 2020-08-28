@@ -62,7 +62,7 @@ IF EXIST "%_jsontags%" (
     PUSHD ..
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_myparent%\MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
-    python InsertAlbums.py "%_jsontags%"
+    python insertAlbums.py "%_jsontags%"
     IF ERRORLEVEL 1 DEL "%_jsontags%" 2>NUL
     ENDLOCAL
     POPD
