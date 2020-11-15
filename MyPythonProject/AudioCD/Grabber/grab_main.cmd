@@ -85,6 +85,7 @@ REM -----
     )
 
     REM Travis-CI Windows environment unit tests.
+    REM Create at first "Log" directory to allow Travis-CI to run logging.
     IF %~1 EQU 3 (
         PUSHD ..\..\..
         MKDIR Log
