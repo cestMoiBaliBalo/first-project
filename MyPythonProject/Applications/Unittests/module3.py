@@ -23,7 +23,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ==============
 # Tests classes.
 # ==============
-class TestValidAlbumsort01(unittest.TestCase):
+class TestValidAlbumSort01(unittest.TestCase):
 
     def test_t01(self):
         self.assertEqual(valid_albumsort("1.19840000.1"), "1.19840000.1")
@@ -95,7 +95,7 @@ class TestValidAlbumsort01(unittest.TestCase):
         self.assertRaises(ValueError, valid_albumsort, "S.Springsteen, Bruce.2.20120704.1")
 
 
-class TestValidAlbumsort02(unittest.TestCase):
+class TestValidAlbumSort02(unittest.TestCase):
     """
     Test `valid_albumsort` function.
     """

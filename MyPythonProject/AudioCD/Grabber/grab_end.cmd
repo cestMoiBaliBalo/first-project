@@ -19,7 +19,7 @@ SET _myparent=%~dp0
 
 
 REM    ==================
-REM B. Initializations 1.
+REM B. Initializations 2.
 REM    ==================
 SET _mycp=
 SET _cp=1252

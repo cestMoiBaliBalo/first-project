@@ -57,6 +57,8 @@ REM    ===========
 @SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 @SET _index=0
 @SET _path=%PATH%
+@ECHO Runtime environment is composed of:
+@ECHO:
 :LOOP
 @FOR /F "usebackq tokens=1,* delims=;" %%A IN ('!_path!') DO (
     SET /A "_index+=1"
@@ -69,11 +71,12 @@ REM    ===========
 @ECHO:
 @ECHO:
 @ENDLOCAL
-@REM -----
 
+@REM -----
 FOR /L %%A IN (1, 1, 2) DO FOR %%A IN ("!_path!.") DO SET _path=%%~dpA
 PUSHD %_path:~0,-1%
-FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\defaultalbum.txt") DO (
+COPY /Y Applications\Unittests\Resources\sequences.json %TEMP% > NUL 2>&1
+FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\idtags.txt") DO (
     IF EXIST "%%~A" (
         SET /A "_index+=1"
         COPY /Y "%%~A" %TEMP% > NUL 2>&1

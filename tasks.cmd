@@ -1,10 +1,10 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+REM __author__ = Xavier ROSSET
+REM __maintainer__ = Xavier ROSSET
+REM __email__ = xavier.python.computing@protonmail.com
+REM __status__ = Production
 
 
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
@@ -62,8 +62,9 @@ REM -----------------------------------------
 IF ERRORLEVEL 36 (
     CLS
     PUSHD ..
-    CALL start.cmd 9
+    C:\Windows\System32\cmd.exe /C start.cmd 9
     POPD
+    PAUSE
     GOTO MENU
 )
 
@@ -169,18 +170,10 @@ IF ERRORLEVEL 30 (
 )
 
 
-REM ------------------------------------
-REM Python arguments parsers unit tests.
-REM ------------------------------------
-IF ERRORLEVEL 29 (
-    CLS
-    ECHO:
-    python -m unittest -v Applications.Unittests.module2
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 29 GOTO MENU
 
 
 REM ------------------------
@@ -438,13 +431,13 @@ IF ERRORLEVEL 23 (
 )
 
 
-REM --------------------------
-REM Run all python unit tests.
-REM --------------------------
+REM ---------------------------
+REM Run continuous integration.
+REM ---------------------------
 IF ERRORLEVEL 22 (
     CLS
     ECHO:
-    python textrunner.py
+    C:\Windows\System32\cmd.exe /C G:\Computing\MyPythonProject\AudioCD\Grabber\grab_main.cmd 2
     ECHO:
     ECHO:
     PAUSE
@@ -458,44 +451,16 @@ REM ----------
 IF ERRORLEVEL 21 GOTO MENU
 
 
-REM ------------------------------------------
-REM Run python regular expressions unit tests.
-REM ------------------------------------------
-IF ERRORLEVEL 20 (
-    SETLOCAL ENABLEDELAYEDEXPANSION
-    PUSHD ..\Resources
-    SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("unittests2.txt") DO SET _command=!_command! %%A
-    CLS
-    ECHO:
-    !_command!
-    ECHO:
-    ECHO:
-    PAUSE
-    POPD
-    ENDLOCAL
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 20 GOTO MENU
 
 
-REM ------------------------------------------------
-REM Run python data validation functions unit tests.
-REM ------------------------------------------------
-IF ERRORLEVEL 19 (
-    SETLOCAL ENABLEDELAYEDEXPANSION
-    PUSHD ..\Resources
-    SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("unittests1.txt") DO SET _command=!_command! %%A
-    CLS
-    ECHO:
-    !_command!
-    ECHO:
-    ECHO:
-    PAUSE
-    POPD
-    ENDLOCAL
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 19 GOTO MENU
 
 
 REM -----------------------------------------------
@@ -651,15 +616,8 @@ IF ERRORLEVEL 13 (
 REM ------------------------------------------------------
 REM Run python audio discs ripping application unit tests.
 REM ------------------------------------------------------
-IF ERRORLEVEL 12 (
-    CLS
-    ECHO:
-    python -m unittest -v Applications.Unittests.module4
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
-)
+IF ERRORLEVEL 12 GOTO MENU
+
 
 REM -------------------------------
 REM List python installed packages.

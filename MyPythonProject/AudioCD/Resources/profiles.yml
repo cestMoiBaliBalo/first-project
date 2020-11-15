@@ -59,7 +59,7 @@ unittest_defaultalbum:
 default:
   albums: False
   bootlegs: False
-  debug: False
+  debug: True
   console: False
   save: False
   root: !!python/none

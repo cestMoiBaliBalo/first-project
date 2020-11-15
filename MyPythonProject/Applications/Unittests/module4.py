@@ -24,7 +24,7 @@ from ..shared import DATABASE, LOCAL, UTC, UTF8, copy, get_readabledate
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Production"
+__status__ = "Deprecated"
 
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem

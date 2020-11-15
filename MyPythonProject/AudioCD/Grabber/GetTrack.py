@@ -35,7 +35,8 @@ if collection:
     match = REGEX.match(track)
     if match:
         tracknumber = match.group(1)
-    encoder = collection.get("Encoder", collection.get("encoder"))  # type: str
-    encoder = encoder.split()[0]
+    encoder = collection.get("Encoder", collection.get("encoder", ""))  # type: str
+    if encoder:
+        encoder = encoder.split()[0]
 print(tracknumber)
 print(encoder)

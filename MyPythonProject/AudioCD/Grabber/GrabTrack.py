@@ -15,7 +15,7 @@ import yaml
 from Applications.AudioCD.shared import AudioGenres, AudioLanguages, upsert_audiotags
 from Applications.decorators import itemgetter_
 from Applications.parsers import tags_grabber
-from Applications.shared import UTF8, get_dirname, mainscript
+from Applications.shared import UTF8, mainscript
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'

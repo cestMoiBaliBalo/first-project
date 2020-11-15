@@ -1,10 +1,10 @@
 @ECHO off
 
 
-@REM __author__ = 'Xavier ROSSET'
-@REM __maintainer__ = 'Xavier ROSSET'
-@REM __email__ = 'xavier.python.computing@protonmail.com'
-@REM __status__ = "Production"
+@REM __author__ = Xavier ROSSET
+@REM __maintainer__ = Xavier ROSSET
+@REM __email__ = xavier.python.computing@protonmail.com
+@REM __status__ = Production
 
 
 @CLS
