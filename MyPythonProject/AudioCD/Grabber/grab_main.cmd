@@ -86,6 +86,9 @@ REM -----
 
     REM Travis-CI Windows environment unit tests.
     IF %~1 EQU 3 (
+        PUSHD ..\..\..
+        MKDIR Log
+        POPD
         SET _verbose=0
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
