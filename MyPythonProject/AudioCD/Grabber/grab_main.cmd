@@ -85,13 +85,13 @@ REM -----
     )
 
     REM Travis-CI Windows environment unit tests.
-    REM Create at first "Log" directory to allow Travis-CI to run logging.
+    REM Create at first the logging directory to allow Travis-CI to run logging.
     REM Create then the local audio database into the appropriate directory.
     IF %~1 EQU 3 (
         PUSHD ..\..\..
         MKDIR Log
         POPD
-        PUSHD ../..
+        PUSHD ..\..
         python -m Applications.Tables.tables Resources\database.db 
         POPD
         SET _verbose=0
