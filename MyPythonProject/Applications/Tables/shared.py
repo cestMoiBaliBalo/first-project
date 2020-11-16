@@ -21,7 +21,6 @@ from ..shared import DATABASE, DFTDAYREGEX, DFTMONTHREGEX, DFTYEARREGEX
 # ========
 class DatabaseConnection(ContextDecorator):
     def __init__(self, db: str = DATABASE) -> None:
-        print(db)
         self.database = db
 
     def __enter__(self):
