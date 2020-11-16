@@ -443,4 +443,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("database")
     arguments = parser.parse_args()
+    print(os.path.abspath(arguments.database))
     create_tables(drop_tables(os.path.abspath(arguments.database)))
