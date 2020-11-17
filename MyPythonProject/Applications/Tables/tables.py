@@ -76,10 +76,7 @@ def drop_tables(db: str) -> str:
             conn.execute("DROP TABLE IF EXISTS repositories")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS duplicates")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP VIEW IF EXISTS defaultalbums_vw")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP VIEW IF EXISTS tracks_vw")
+
     return db
 
 
@@ -115,7 +112,7 @@ def create_tables(db: str) -> str:
 
         # --> Providers.
         conn.execute("CREATE TABLE IF NOT EXISTS providers (providerid INTEGER PRIMARY KEY ASC AUTOINCREMENT, provider TEXT NOT NULL)")
-        conn.executemany("INSERT INTO providers (provider) VALUES (?)", [("nugs.net",), ("Crystal Cat Records",), ("Doberman",), ("The Godfatherecords",)])
+        conn.executemany("INSERT INTO providers (provider) VALUES (?)", [("nugs.net",), ("Crystal Cat Records",), ("Doberman",), ("The Godfatherecords",), ("HDtracks.com",)])
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS providers_idx ON providers (provider ASC)")
 
         # --> Applications.
@@ -204,7 +201,7 @@ def create_tables(db: str) -> str:
         conn.execute("CREATE TABLE IF NOT EXISTS bootlegdiscs ("
                      "albumid TEXT NOT NULL, "
                      "discid INTEGER NOT NULL, "
-                     "referenceid TEXT DEFAULT NULL, "
+                     "bootlegid TEXT DEFAULT NULL, "
                      "utc_created TIMESTAMP NOT NULL DEFAULT (DATETIME('now')), "
                      "utc_modified TIMESTAMP DEFAULT NULL, "
                      "FOREIGN KEY (albumid, discid) REFERENCES discs (albumid, discid))")

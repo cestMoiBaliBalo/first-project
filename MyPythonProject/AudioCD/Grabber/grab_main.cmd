@@ -79,6 +79,9 @@ REM -----
     REM Local Windows environment unit tests.
     IF %~1 EQU 2 (
         SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
+        PUSHD ..\..
+        python -m Applications.Tables.tables %TEMP%\database.db 
+        POPD
         SET _verbose=1
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
@@ -92,7 +95,7 @@ REM -----
         MKDIR Log
         POPD
         PUSHD ..\..
-        python -m Applications.Tables.tables Resources\database.db 
+        python -m Applications.Tables.tables %TEMP%\database.db 
         POPD
         SET _verbose=0
         CALL grab_test.cmd%_arguments%

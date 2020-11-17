@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import calendar
 import csv
 import locale
@@ -54,7 +54,7 @@ WRITE = "w"
 # Resources.
 ARECA = str(Path("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 DATABASE = str(_MYPARENT.parent / "Resources" / "database.db")
-TESTDATABASE = str(_MYPARENT / "Unittests" / "Resources" / "database.db")
+TESTDATABASE = str(Path(os.path.expandvars("%TEMP%")) / "database.db")
 
 # Regular expressions.
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"

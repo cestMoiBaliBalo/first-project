@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'

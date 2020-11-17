@@ -42,7 +42,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = str(self.prod_db)
         arguments = database_parser.parse_args(["--database", str(self.prod_db)])
         self.assertEqual(arguments.db, str(self.prod_db))
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with(str(self.prod_db))
 
@@ -50,7 +50,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = str(self.prod_db)
         arguments = database_parser.parse_args([])
         self.assertEqual(arguments.db, str(self.prod_db))
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with(str(self.prod_db))
 
@@ -58,7 +58,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = "some_database"
         arguments = database_parser.parse_args(["--database", "some_database"])
         self.assertEqual(arguments.db, "some_database")
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with("some_database")
 
@@ -73,6 +73,7 @@ class Test02b(unittest.TestCase):
         mock_database.TESTDATABASE = "some_test_database"
         arguments = database_parser.parse_args(["--test"])
         self.assertEqual(arguments.db, "some_test_database")
+        self.assertIsNotNone(arguments.test)
         self.assertTrue(arguments.test)
 
 
@@ -83,7 +84,8 @@ class Test02c(unittest.TestCase):
 
     def test_t01(self):
         arguments = database_parser.parse_args(["--test"])
-        self.assertEqual(arguments.db, str(_MYPARENT / "Resources" / "database.db"))
+        self.assertEqual(arguments.db, str(Path(os.path.expandvars("%TEMP%")) / "database.db"))
+        self.assertIsNotNone(arguments.test)
         self.assertTrue(arguments.test)
 
 
@@ -273,7 +275,7 @@ class Test04b(unittest.TestCase):
 
     def setUp(self):
         self.prod_db = _MYPARENT.parents[1] / "Resources" / "database.db"
-        self.test_db = _MYPARENT / "Resources" / "database.db"
+        self.test_db = str(Path(os.path.expandvars("%TEMP%")) / "database.db")
 
     def test_t01(self, mock_function):
         arguments = vars(database_parser.parse_args([]))

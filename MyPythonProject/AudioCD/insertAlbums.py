@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import argparse
 import logging.config
 import os
 import sys
 from contextlib import suppress
+from pathlib import Path
 
 import yaml
 
 from Applications.Tables.Albums.shared import insert_albums_fromjson
-from Applications.shared import get_dirname
+from Applications.shared import UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # =================
 # Arguments parser.
@@ -36,8 +42,8 @@ arguments = parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(os.path.join(get_dirname(os.path.abspath(__file__), level=2), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    config = yaml.load(fp, Loader=yaml.FullLoader)
+with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:
+    config = yaml.load(stream, Loader=yaml.FullLoader)
 for logger in LOGGERS:
     with suppress(KeyError):
         config["loggers"][logger]["level"] = MAPPING[arguments.debug].upper()

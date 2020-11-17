@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import locale
 import logging.config
 import os

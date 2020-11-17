@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import csv
 import json
 import logging
@@ -1052,11 +1052,11 @@ def upsert_audiotags(rippingprofile, file, sequence, *decoratingprofiles, **kwar
                 in_logger.debug("%s: %s", key, value)
 
             # Insert tags into the local audio database.
-            if track.audiotrack.database:
-                for key, value in in_mapping.items():
-                    if kwargs.get(key, False):
-                        database = Path(kwargs.get("database", shared.DATABASE))
-                        if database.exists():
+            if track.audiotrack.database and kwargs.get("database"):
+                database = Path(kwargs["database"])
+                if database.exists():
+                    for key, value in in_mapping.items():
+                        if kwargs.get(key, False):
                             dump_audiotags_tojson(track.audiotrack, value, database=str(database), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
 
             # Serialize tags into plain files.

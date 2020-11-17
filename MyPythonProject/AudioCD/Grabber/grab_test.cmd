@@ -51,6 +51,7 @@ REM    ===========
     SET _caller=%~nx0
     SET _path=%~dp0
     SET _ko=0
+    SET _jsontags=%TEMP%\tags.json
 )
 
 @REM -----
@@ -86,6 +87,10 @@ FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\idta
         IF %_verbose% EQU 1 IF !_errorlevel! NEQ 0 ECHO Test !_index! ... ko
         IF !_errorlevel! NEQ 0 SET _ko=1
     )
+)
+IF EXIST %_jsontags% (
+    python AudioCD\insertAlbums.py %_jsontags%
+    IF ERRORLEVEL 1 DEL %_jsontags% 2>NUL
 )
 POPD
 (

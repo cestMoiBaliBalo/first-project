@@ -1,5 +1,5 @@
 # -*- coding: ISO-8859-1 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import csv
 import json
 import logging
@@ -12,20 +12,25 @@ from datetime import datetime
 from functools import partial
 from itertools import chain, compress, groupby, product, starmap
 from operator import contains, eq, is_not, itemgetter, lt
+from pathlib import Path
 from string import Template
 from typing import Any, Dict, Iterator, List, Mapping, MutableMapping, NamedTuple, Optional, Tuple, Union
-from dateutil.parser import parse
 
 import yaml
+from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
 from ...decorators import attrgetter_, itemgetter_
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string_, format_date, get_dirname, pprint_sequence, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, UTF8, booleanify, eq_string_, format_date, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ================
 # SQLite3 adapter.
@@ -792,7 +797,7 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
     logger = logging.getLogger("{0}.insert_album".format(__name__))
 
     # -----
-    with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
+    with open(_MYPARENT / "Resources" / "setup.yml", encoding=UTF8) as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader)
     statements = config["statements"]  # type: Mapping[str, Mapping[str, str]]
     selectors = config["selectors"]  # type: Mapping[str, Mapping[str, List[int]]]
