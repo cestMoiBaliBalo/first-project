@@ -1,11 +1,11 @@
 Applications\Unittests\Resources\default_idtags_01_FDK.txt     default C1 dummy default
-Applications\Unittests\Resources\default_idtags_01_FLAC.txt    default C1 dummy default
+Applications\Unittests\Resources\default_idtags_01_FLAC.txt    default C1 dummy unittest_defaultalbum
 Applications\Unittests\Resources\default_idtags_01_LAME.txt    default C1 dummy default
 Applications\Unittests\Resources\default_idtags_01_Monkeys.txt default C1 dummy default
-Applications\Unittests\Resources\default_idtags_02_FLAC.txt    default C1 dummy default
+Applications\Unittests\Resources\default_idtags_02_FLAC.txt    default C1 dummy unittest_defaultalbum
 Applications\Unittests\Resources\default_idtags_03_FLAC.txt    default C1 dummy default
 Applications\Unittests\Resources\default_idtags_04_FDK.txt     default C1 dummy default default_album offset_track change_totaltracks
-Applications\Unittests\Resources\default_idtags_04_FLAC.txt    default C1 dummy default default_album offset_track change_totaltracks
+Applications\Unittests\Resources\default_idtags_04_FLAC.txt    default C1 dummy unittest_defaultalbum default_album offset_track change_totaltracks
 Applications\Unittests\Resources\sbootleg1_idtags_01_FDK.txt   bootleg C1 dummy default alt_bootleg_album mediaprovider mediatitle mediareference
 Applications\Unittests\Resources\sbootleg1_idtags_01_FLAC.txt  bootleg C1 dummy default alt_bootleg_album mediaprovider mediatitle mediareference
 Applications\Unittests\Resources\sbootleg1_idtags_02_FDK.txt   bootleg C1 dummy default alt_bootleg_album mediaprovider mediatitle mediareference

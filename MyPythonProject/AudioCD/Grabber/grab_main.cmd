@@ -85,6 +85,11 @@ REM -----
         SET _verbose=1
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
+        PUSHD %TEMP%
+        DEL database.db > NUL 2>&1
+        DEL default_*.txt > NUL 2>&1
+        DEL sbootleg1_*.txt > NUL 2>&1
+        POPD
     )
 
     REM Travis-CI Windows environment unit tests.
@@ -100,6 +105,11 @@ REM -----
         SET _verbose=0
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
+        PUSHD %TEMP%
+        DEL database.db > NUL 2>&1
+        DEL default_*.txt > NUL 2>&1
+        DEL sbootleg1_*.txt > NUL 2>&1
+        POPD
     )
 )
 (

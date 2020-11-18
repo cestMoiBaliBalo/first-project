@@ -37,29 +37,31 @@ def drop_tables(db: str) -> str:
         conn = stack.enter_context(DatabaseConnection(db))
         stack.enter_context(conn)
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS artists")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS albums")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS discs")
+            conn.execute("DROP TABLE IF EXISTS bonuses")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS tracks")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS bonuses")
+            conn.execute("DROP TABLE IF EXISTS bootlegdiscs")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS rippeddiscs")
+            conn.execute("DROP TABLE IF EXISTS duplicates")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS playeddiscs")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS bootlegdiscs")
+            conn.execute("DROP TABLE IF EXISTS rippeddiscs")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS defaultalbums")
+            conn.execute("DROP TABLE IF EXISTS discs")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS bootlegalbums")
         with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS livealbums")
+            conn.execute("DROP TABLE IF EXISTS defaultalbums")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS digitalalbums")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS livealbums")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS albums")
+        with suppress(sqlite3.OperationalError):
+            conn.execute("DROP TABLE IF EXISTS artists")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS genres")
         with suppress(sqlite3.OperationalError):
@@ -74,8 +76,6 @@ def drop_tables(db: str) -> str:
             conn.execute("DROP TABLE IF EXISTS applications")
         with suppress(sqlite3.OperationalError):
             conn.execute("DROP TABLE IF EXISTS repositories")
-        with suppress(sqlite3.OperationalError):
-            conn.execute("DROP TABLE IF EXISTS duplicates")
 
     return db
 

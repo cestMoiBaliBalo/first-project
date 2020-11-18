@@ -54,7 +54,7 @@ selectors:
       - 0
       - 0
       - 1
-      - 1
+      - 0
       - 1
       - 0
       - 1
@@ -636,7 +636,7 @@ selectors:
 statements:
   default:
       artists: INSERT INTO artists (artistsort, artist) VALUES (?, ?)
-      albums: INSERT INTO albums (albumid, discs, genreid, is_bootleg, is_deluxe, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      albums: INSERT INTO albums (albumid, discs, genreid, is_bootleg, languageid, artistsort, in_collection) VALUES (?, ?, ?, ?, ?, ?, ?)
       defaultalbums: INSERT INTO defaultalbums (albumid, origyear, year, album, label, upc) VALUES (?, ?, ?, ?, ?, ?)
       bootlegalbums: INSERT INTO bootlegalbums (albumid, providerid, title) VALUES (?, ?, ?)
       livealbums: INSERT INTO livealbums (albumid, date, city, countryid, tour) VALUES (?, ?, ?, ?, ?)

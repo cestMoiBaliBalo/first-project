@@ -356,7 +356,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 class TestDatabase01(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.conn = sqlite3.connect(TESTDATABASE, detect_types=sqlite3.PARSE_DECLTYPES)
+        self.conn = sqlite3.connect(TESTDATABASE)
 
     def tearDown(self) -> None:
         self.conn.close()
@@ -364,12 +364,12 @@ class TestDatabase01(unittest.TestCase):
     def test01(self):
         cursor = self.conn.execute("SELECT count(*) FROM artists")
         (artists,) = cursor.fetchone()
-        self.assertEqual(artists, 1)
+        self.assertEqual(artists, 3)
 
     def test02(self):
         cursor = self.conn.execute("SELECT count(*) FROM albums")
         (albums,) = cursor.fetchone()
-        self.assertEqual(albums, 1)
+        self.assertEqual(albums, 3)
 
     def test03(self):
         cursor = self.conn.execute("SELECT count(*) FROM bootlegalbums")
@@ -379,14 +379,14 @@ class TestDatabase01(unittest.TestCase):
     def test04(self):
         cursor = self.conn.execute("SELECT count(*) FROM defaultalbums")
         (albums,) = cursor.fetchone()
-        self.assertEqual(albums, 0)
+        self.assertEqual(albums, 2)
 
     def test05(self):
         cursor = self.conn.execute("SELECT count(*) FROM discs")
         (discs,) = cursor.fetchone()
-        self.assertEqual(discs, 1)
+        self.assertEqual(discs, 3)
 
     def test06(self):
         cursor = self.conn.execute("SELECT count(*) FROM tracks")
         (tracks,) = cursor.fetchone()
-        self.assertEqual(tracks, 1)
+        self.assertEqual(tracks, 4)
