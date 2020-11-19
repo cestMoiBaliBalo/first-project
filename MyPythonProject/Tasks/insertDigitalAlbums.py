@@ -12,7 +12,7 @@ from typing import Any, Iterator, List, Mapping, MutableMapping, NamedTuple, Tup
 import bootlegalbums as shared
 
 from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_albums
-from Applications.decorators import eq_, itemgetter_
+from Applications.decorators import eq_, itemgetter_, none_
 from Applications.parsers import database_parser
 from Applications.shared import partitioner
 
@@ -263,7 +263,7 @@ class DefaultTrack(Track):
                                     ("bonustrack", str),
                                     ("bootlegdisc", str),
                                     ("year", int),
-                                    ("deluxedisc", str),
+                                    ("deluxe", str),
                                     ("discnumber", str),
                                     ("totaldiscs", str),
                                     ("genre", int),
@@ -293,6 +293,7 @@ class DefaultTrack(Track):
 
         # -----
         _true, self._false = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
+        _, _true = partitioner(_true, predicate=none_()(itemgetter_(11)))  # type: Any, Any
 
         # -----
         tracks = sorted(set(_true), key=itemgetter(20))
@@ -310,7 +311,7 @@ class DefaultTrack(Track):
         comments = dict(items)  # type: MutableMapping[str, Union[int, str]]
         comments.update(bootlegdisc="N")
         comments.update(date=int(comments.get("date", 0)))
-        comments.update(deluxedisc="N")
+        comments.update(deluxe="N")
         comments.update(livedisc="N")
         comments.update(livetrack=comments.get("titlesort", "        N")[8])
         comments.update(mediaprovider=self._providers.get(comments.get("mediaprovider")))
@@ -343,7 +344,7 @@ class DefaultTrack(Track):
                 track.livedisc,
                 track.livetrack,
                 track.bootlegdisc,
-                track.deluxedisc,
+                track.deluxe,
                 track.titlelanguage,
                 track.title,
                 track.artistsort,
@@ -368,7 +369,9 @@ class DefaultTrack(Track):
 if __name__ == "__main__":
     import argparse
     import sys
-    from Applications.shared import TemplatingEnvironment, rjustify, stringify
+    from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8
+    import logging.config
+    import yaml
 
     # ----- Classes.
     class GetClass(argparse.Action):
@@ -384,10 +387,16 @@ if __name__ == "__main__":
             setattr(namespace, self.dest, values)
             setattr(namespace, "klass", self.MAPPING.get(values))
 
+
     # ----- Arguments parser.
     parser = argparse.ArgumentParser(parents=[database_parser])
     parser.add_argument("album", choices=["bootleg", "default"], action=GetClass)
     parser.add_argument("path", nargs="+", action=shared.GetPath)
+
+    # ----- Load logging configuration.
+    with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:
+        log_config = yaml.load(stream, Loader=yaml.FullLoader)
+    logging.config.dictConfig(log_config)
 
     # ----- Miscellaneous objects.
     arguments = parser.parse_args()

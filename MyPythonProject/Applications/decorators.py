@@ -4,7 +4,7 @@ import operator
 from collections import deque
 from functools import wraps
 from itertools import chain, islice, tee
-from operator import eq
+from operator import eq, is_
 from typing import Any, Tuple
 
 __author__ = 'Xavier ROSSET'
@@ -128,6 +128,25 @@ def map_(index: int):
                 collection = [tuple(item) for item in collection]
             for item in collection:
                 yield item
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def none_():
+    """
+    That decorator allows to set the second argument of the function operator.eq
+    with the value returned by any decorated function.
+
+    :param value_first: value used to freeze the first positional argument of operator.eq.
+    :return: callable object.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return is_(None, func(arg))
 
         return inner_wrapper
 

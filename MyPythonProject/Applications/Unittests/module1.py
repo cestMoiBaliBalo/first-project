@@ -7,17 +7,14 @@ import shutil
 import tempfile
 import unittest
 from datetime import datetime
-from functools import partial, wraps
+from functools import partial
 from itertools import filterfalse
 from operator import contains, itemgetter
-from pathlib import Path, PurePath
-from typing import Union
+from pathlib import Path
 from unittest.mock import patch
 
-import yaml
-
-from ..decorators import itemgetter_, split_
-from ..shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby_, nested_groupby_, now
+from ..decorators import itemgetter_, none_, split_
+from ..shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -27,41 +24,6 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
-
-
-# ===============
-# Global classes.
-# ===============
-class SetUp(object):
-
-    def _decorate_callable(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            with open(self._path, encoding=self._encoding) as stream:
-                collection = yaml.load(stream, Loader=yaml.FullLoader)
-            args += (collection,)
-            func(*args, **kwargs)
-
-        return wrapper
-
-    def _decorate_class(self, klass):
-        for attr in dir(klass):
-            if not attr.startswith("test"):
-                continue
-            attr_value = getattr(klass, attr)
-            if not hasattr(attr_value, "__call__"):
-                continue
-            setattr(klass, attr, self(attr_value))
-        return klass
-
-    def __init__(self, path: Union[PurePath, str], *, encoding: str = "UTF_8") -> None:
-        self._path = path
-        self._encoding = encoding
-
-    def __call__(self, arg):
-        if isinstance(arg, type):
-            return self._decorate_class(arg)
-        return self._decorate_callable(arg)
 
 
 # ==========
@@ -266,7 +228,8 @@ class TestDecorator06(unittest.TestCase):
         self.assertEqual(max(map(split_("_")(itemgetter_(1)(int)), self.iterable)), 456)
 
     def test_t02(self):
-        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))),
+                             ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_t03(self):
         self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), key=split_("_")(itemgetter_(0)(int))),
@@ -283,7 +246,7 @@ class TestMock01(unittest.TestCase):
         self.datetime = datetime(2019, 9, 13, 3, 1)
         self.now = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
 
-    def test01(self, mock_datetime):
+    def test_t01(self, mock_datetime):
         mock_datetime.utcnow.return_value = self.datetime
         self.assertEqual(now(), self.now)
         mock_datetime.utcnow.assert_called()
@@ -302,7 +265,7 @@ class TestMock02(unittest.TestCase):
         self.now1 = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
         self.now2 = "Vendredi 13 Septembre 2019 05:02:00 CEST (UTC+0200)"
 
-    def test01(self, mock_datetime):
+    def test_t01(self, mock_datetime):
         mock_datetime.utcnow.side_effect = self.datetime
         self.assertEqual(now(), self.now1)
         self.assertEqual(now(), self.now2)
@@ -322,22 +285,22 @@ class TestMock03(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.tempdir)
 
-    def test01(self, mock_ospath_expandvars):
+    def test_t01(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.expandvars("%TEMP%"), self.tempdir)
         mock_ospath_expandvars.assert_called_once()
 
-    def test02(self, mock_ospath_expandvars):
+    def test_t02(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.join(os.path.expandvars("%TEMP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
         mock_ospath_expandvars.assert_called_once()
 
-    def test03(self, mock_ospath_expandvars):
+    def test_t03(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.join(os.path.expandvars("%BACKUP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
         mock_ospath_expandvars.assert_called_once()
 
-    def test04(self, mock_ospath_expandvars):
+    def test_t04(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = "some_folder"
         self.assertEqual(os.path.expandvars("%SOME_FOLDER%"), "some_folder")
         mock_ospath_expandvars.assert_called_once()
@@ -357,46 +320,7 @@ class Test01(unittest.TestCase):
         self.assertFalse(ToBoolean("toto").boolean_value)
 
 
-@SetUp(_MYPARENT / "Resources" / "resource1.yml")
 class Test02(unittest.TestCase):
-
-    def setUp(self) -> None:
-        self.collection = [("artist1", "album1", 1, 1, "X"),
-                           ("artist1", "album1", 1, 2, "X"),
-                           ("artist1", "album1", 2, 1, "X"),
-                           ("artist1", "album1", 1, 3, "X"),
-                           ("artist2", "album1", 1, 1, "X"),
-                           ("artist1", "album2", 1, 1, "X"),
-                           ("artist1", "album2", 1, 2, "X"),
-                           ("artist1", "album1", 2, 2, "X"),
-                           ("artist1", "album1", 2, 3, "X"),
-                           ("artist2", "album1", 2, 3, "X"),
-                           ("artist2", "album2", 2, 2, "X"),
-                           ("artist2", "album2", 2, 1, "X"),
-                           ("artist2", "album2", 2, 3, "X")]
-
-    def test_t01(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t01"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 4, 0, 1, 2)), out_collection)
-
-    def test_t02(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t02"]
-        self.assertListEqual(list(groupby_(in_collection, 4)), out_collection)
-
-    def test_t03(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t03"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 4)), out_collection)
-
-    def test_t04(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t04"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 0, 1)), out_collection)
-
-
-class Test03(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "Y", "N", "N", "Y"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -406,7 +330,7 @@ class Test03(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", True, False, False, True), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test04(unittest.TestCase):
+class Test03(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "O", "N", "N", "O"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -416,7 +340,7 @@ class Test04(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "O", False, False, "O"), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test05(unittest.TestCase):
+class Test04(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
@@ -426,7 +350,7 @@ class Test05(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
 
 
-class Test06(unittest.TestCase):
+class Test05(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
@@ -434,3 +358,15 @@ class Test06(unittest.TestCase):
     def test_t01(self):
         self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
                              [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+
+class Test06(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+
+    def test_t01(self):
+        self.assertListEqual(list(filterfalse(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+    def test_t02(self):
+        self.assertListEqual(list(filter(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])

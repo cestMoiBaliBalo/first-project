@@ -152,8 +152,9 @@ REM ---------------------------------
 REM Insert audio discs into database.
 REM ---------------------------------
 IF ERRORLEVEL 31 (
-    PUSHD %TEMP%
-    IF EXIST trackslist.txt python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
+    PUSHD %_COMPUTING%
+    REM IF EXIST trackslist.txt python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
+    C:\Windows\System32\cmd.exe /C insertDigitalAlbums_main.cmd
     POPD
     GOTO MENU
 )

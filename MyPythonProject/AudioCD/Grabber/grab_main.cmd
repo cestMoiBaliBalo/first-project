@@ -66,6 +66,7 @@ REM -----
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _caller=%~nx0
+    SET _action=%~1
 )
 (
 
@@ -79,8 +80,8 @@ REM -----
     REM Local Windows environment unit tests.
     IF %~1 EQU 2 (
         SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
-        PUSHD ..\..
-        python -m Applications.Tables.tables %TEMP%\database.db 
+        PUSHD %TEMP%
+        python -m Applications.Tables.tables database.db 
         POPD
         SET _verbose=1
         CALL grab_test.cmd%_arguments%
@@ -89,6 +90,7 @@ REM -----
         DEL database.db > NUL 2>&1
         DEL default_*.txt > NUL 2>&1
         DEL sbootleg1_*.txt > NUL 2>&1
+        DEL sequences.json > NUL 2>&1
         POPD
     )
 
@@ -99,8 +101,8 @@ REM -----
         PUSHD ..\..\..
         MKDIR Log
         POPD
-        PUSHD ..\..
-        python -m Applications.Tables.tables %TEMP%\database.db 
+        PUSHD %TEMP%
+        python -m Applications.Tables.tables database.db 
         POPD
         SET _verbose=0
         CALL grab_test.cmd%_arguments%
@@ -109,6 +111,7 @@ REM -----
         DEL database.db > NUL 2>&1
         DEL default_*.txt > NUL 2>&1
         DEL sbootleg1_*.txt > NUL 2>&1
+        DEL sequences.json > NUL 2>&1
         POPD
     )
 )
