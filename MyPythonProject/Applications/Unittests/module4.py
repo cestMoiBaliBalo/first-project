@@ -17,7 +17,7 @@ _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 
-@unittest.skipIf(not Path("F:/").exists(), "Unit tests run on local platform only!")
+@unittest.skipIf(not Path("F:/").exists(), "Unit test run on local platform only!")
 class TestDatabase01A(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -77,7 +77,7 @@ class TestDatabase01A(unittest.TestCase):
         self.assertEqual(tracks, 0)
 
 
-@unittest.skipIf(not Path("F:/").exists(), "Unit tests run on local system only!")
+@unittest.skipIf(not Path("F:/").exists(), "Unit test run on local system only!")
 class TestDatabase02A(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -123,7 +123,7 @@ class TestDatabase02A(unittest.TestCase):
         self.assertSetEqual(titles, {"A Night for the Vietnam Veterans"})
 
 
-@unittest.skipIf(Path("F:/").exists(), "Unit tests run on Travis-CI system only!")
+@unittest.skipIf(Path("F:/").exists(), "Unit test run on Travis-CI system only!")
 class TestDatabase01B(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -183,7 +183,7 @@ class TestDatabase01B(unittest.TestCase):
         self.assertEqual(tracks, 0)
 
 
-@unittest.skipIf(Path("F:/").exists(), "Unit tests run on Travis-CI platform only!")
+@unittest.skipIf(Path("F:/").exists(), "Unit test run on Travis-CI platform only!")
 class TestDatabase02B(unittest.TestCase):
 
     def setUp(self) -> None:

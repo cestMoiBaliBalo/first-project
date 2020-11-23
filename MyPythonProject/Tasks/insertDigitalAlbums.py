@@ -9,12 +9,10 @@ from operator import contains, itemgetter
 from pathlib import Path
 from typing import Any, Iterator, List, Mapping, MutableMapping, NamedTuple, Tuple, Union
 
-import bootlegalbums as shared
-
 from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_albums
 from Applications.decorators import eq_, itemgetter_, none_
 from Applications.parsers import database_parser
-from Applications.shared import partitioner
+from Applications.shared import GetPath, VorbisComment, partitioner
 
 __author__ = "Xavier ROSSET"
 __maintainer__ = "Xavier ROSSET"
@@ -30,7 +28,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # Classes.
 # ========
 class Track(object):
-    TAGS = []
+    TAGS = []  # type: List[str]
 
     def __init__(self, database: str, *paths: Path, **kwargs: Mapping[str, int]) -> None:
         """
@@ -43,8 +41,9 @@ class Track(object):
         self._genres = kwargs.get("genres", {"Rock": 9})  # type: Mapping[str, int]
         self._languages = kwargs.get("languages", {"English", 1})  # type: Mapping[str, int]
         self._providers = kwargs.get("providers", {})  # type: Mapping[str, int]
-        _collection: List[Any] = [[comments for _, comments in shared.AudioFLACMetaData(path)] for path in paths]  # [[(tag1, value), (tag2, value), (tag3, value), ...], ...]
-        _collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in chain.from_iterable(_collection)]  # [(tag1, value), (tag2, value), (tag3, value), ...]
+        _collection = [list(VorbisComment.fromdirectory(path)) for path in paths]  # [[(tag1, value), (tag2, value), (tag3, value), ...], ...]
+        _collection = chain.from_iterable(_collection)  # [(tag1, value), (tag2, value), (tag3, value), ...]
+        _collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in _collection]  # [(tag1, value), (tag2, value), (tag3, value), ...]
         self._collection = list(starmap(self.__update, _collection))  # type: List[Any]
 
     def __update(self, *items: Tuple[str, str]) -> List[Tuple[Union[int, str], ...]]:
@@ -67,7 +66,7 @@ class Track(object):
 
 
 class BootlegTrack(Track):
-    REGEX1 = re.compile(r"^([^-]+)-([^-]+)- \[(([^,]+),([^\]]+))\]$")
+    REGEX1 = re.compile(r"^([^-]+)-([^-]+)- \[(([^,]+),([^]]+))]$")
     REGEX2 = re.compile(r"^(([^,]+), ([A-Z][A-Z]))$")
     LENGTH = 31
     TAGS = ["album",
@@ -92,37 +91,37 @@ class BootlegTrack(Track):
             "titlesort",
             "tracknumber",
             "tracktotal"]  # type: List[str]
-    FIELDS = NamedTuple("Bootleg", [("album", str),
-                                    ("albumartist", str),
-                                    ("albumid", str),
-                                    ("albumsort", str),
-                                    ("artist", str),
-                                    ("artistsort", str),
-                                    ("bonustrack", str),
-                                    ("bootlegalbum_city", str),
-                                    ("bootlegalbum_country", int),
-                                    ("bootlegalbum_tour", str),
-                                    ("bootlegalbum_day", str),
-                                    ("bootlegdisc", str),
-                                    ("bootlegtrack_city", str),
-                                    ("bootlegtrack_country", int),
-                                    ("bootlegtrack_tour", str),
-                                    ("bootlegtrack_day", str),
-                                    ("year", str),
-                                    ("discnumber", int),
-                                    ("totaldiscs", int),
-                                    ("genre", int),
-                                    ("incollection", str),
-                                    ("livedisc", str),
-                                    ("livetrack", str),
-                                    ("bootlegalbum_title", str),
-                                    ("bootlegalbum_provider", int),
-                                    ("bootlegalbum_reference", str),
-                                    ("title", str),
-                                    ("titlelanguage", int),
-                                    ("titlesort", str),
-                                    ("tracknumber", int),
-                                    ("totaltracks", int)])
+    TRACKS = NamedTuple("BootlegTrack", [("album", str),
+                                         ("albumartist", str),
+                                         ("albumid", str),
+                                         ("albumsort", str),
+                                         ("artist", str),
+                                         ("artistsort", str),
+                                         ("bonustrack", str),
+                                         ("bootlegalbum_city", str),
+                                         ("bootlegalbum_country", int),
+                                         ("bootlegalbum_tour", str),
+                                         ("bootlegalbum_day", str),
+                                         ("bootlegdisc", str),
+                                         ("bootlegtrack_city", str),
+                                         ("bootlegtrack_country", int),
+                                         ("bootlegtrack_tour", str),
+                                         ("bootlegtrack_day", str),
+                                         ("year", str),
+                                         ("discnumber", int),
+                                         ("totaldiscs", int),
+                                         ("genre", int),
+                                         ("incollection", str),
+                                         ("livedisc", str),
+                                         ("livetrack", str),
+                                         ("bootlegalbum_title", str),
+                                         ("bootlegalbum_provider", int),
+                                         ("bootlegalbum_reference", str),
+                                         ("title", str),
+                                         ("titlelanguage", int),
+                                         ("titlesort", str),
+                                         ("tracknumber", int),
+                                         ("totaltracks", int)])
 
     def __init__(self, database: str, *paths: Path, **kwargs: Mapping[str, int]) -> None:
         """
@@ -143,7 +142,7 @@ class BootlegTrack(Track):
         tracks = sorted(set(_true), key=itemgetter(29))
         tracks = sorted(tracks, key=itemgetter(17))
         tracks = sorted(tracks, key=itemgetter(2))
-        tracks = [self.FIELDS(*track) for track in tracks]
+        tracks = [self.TRACKS(*track) for track in tracks]
         self._tracks = iter(tracks)  # type: Iterator[Any]
 
     def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
@@ -254,31 +253,31 @@ class DefaultTrack(Track):
             "tracknumber",
             "tracktotal",
             "upc"]  # type: List[str]
-    FIELDS = NamedTuple("Default", [("album", str),
-                                    ("albumartist", str),
-                                    ("albumid", str),
-                                    ("albumsort", str),
-                                    ("artist", str),
-                                    ("artistsort", str),
-                                    ("bonustrack", str),
-                                    ("bootlegdisc", str),
-                                    ("year", int),
-                                    ("deluxe", str),
-                                    ("discnumber", str),
-                                    ("totaldiscs", str),
-                                    ("genre", int),
-                                    ("incollection", str),
-                                    ("label", str),
-                                    ("livedisc", str),
-                                    ("livetrack", str),
-                                    ("mediaprovider", str),
-                                    ("origyear", int),
-                                    ("title", str),
-                                    ("titlelanguage", int),
-                                    ("titlesort", str),
-                                    ("tracknumber", str),
-                                    ("totaltracks", str),
-                                    ("upc", str)])
+    TRACKS = NamedTuple("DefaultTrack", [("album", str),
+                                         ("albumartist", str),
+                                         ("albumid", str),
+                                         ("albumsort", str),
+                                         ("artist", str),
+                                         ("artistsort", str),
+                                         ("bonustrack", str),
+                                         ("bootlegdisc", str),
+                                         ("year", int),
+                                         ("deluxe", str),
+                                         ("discnumber", str),
+                                         ("totaldiscs", str),
+                                         ("genre", int),
+                                         ("incollection", str),
+                                         ("label", str),
+                                         ("livedisc", str),
+                                         ("livetrack", str),
+                                         ("mediaprovider", str),
+                                         ("origyear", int),
+                                         ("title", str),
+                                         ("titlelanguage", int),
+                                         ("titlesort", str),
+                                         ("tracknumber", str),
+                                         ("totaltracks", str),
+                                         ("upc", str)])
 
     def __init__(self, database: str, *paths: Path, **kwargs: Mapping[str, int]) -> None:
         """
@@ -293,13 +292,13 @@ class DefaultTrack(Track):
 
         # -----
         _true, self._false = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
-        _, _true = partitioner(_true, predicate=none_()(itemgetter_(11)))  # type: Any, Any
+        _, _true = partitioner(_true, predicate=none_()(itemgetter_(11)))
 
         # -----
         tracks = sorted(set(_true), key=itemgetter(20))
         tracks = sorted(tracks, key=itemgetter(9))
         tracks = sorted(tracks, key=itemgetter(2))
-        tracks = [self.FIELDS(*track) for track in tracks]
+        tracks = [self.TRACKS(*track) for track in tracks]
         self._tracks = iter(tracks)  # type: Iterator[Any]
 
     def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
@@ -367,17 +366,17 @@ class DefaultTrack(Track):
 # Main script.
 # ============
 if __name__ == "__main__":
+
     import argparse
-    import sys
-    from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8
     import logging.config
+    import sys
+
     import yaml
+
+    from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8
 
     # ----- Classes.
     class GetClass(argparse.Action):
-        """
-
-        """
         MAPPING = {"bootleg": BootlegTrack, "default": DefaultTrack}
 
         def __init__(self, option_strings, dest, **kwargs):
@@ -387,11 +386,10 @@ if __name__ == "__main__":
             setattr(namespace, self.dest, values)
             setattr(namespace, "klass", self.MAPPING.get(values))
 
-
     # ----- Arguments parser.
     parser = argparse.ArgumentParser(parents=[database_parser])
     parser.add_argument("album", choices=["bootleg", "default"], action=GetClass)
-    parser.add_argument("path", nargs="+", action=shared.GetPath)
+    parser.add_argument("path", nargs="+", action=GetPath)
 
     # ----- Load logging configuration.
     with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:

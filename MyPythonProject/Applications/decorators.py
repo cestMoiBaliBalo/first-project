@@ -70,6 +70,21 @@ def int_(base: int = 10):
     return outer_wrapper
 
 
+def cvtint_(base: int = 10):
+    """
+    Undocumented.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return int(func(arg), base=base)
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
 def itemgetter_(index: int = 0):
     """
     That decorator allows to get a sequence item for being used as argument
@@ -136,11 +151,7 @@ def map_(index: int):
 
 def none_():
     """
-    That decorator allows to set the second argument of the function operator.eq
-    with the value returned by any decorated function.
-
-    :param value_first: value used to freeze the first positional argument of operator.eq.
-    :return: callable object.
+    Undocumented.
     """
 
     def outer_wrapper(func):
@@ -151,6 +162,20 @@ def none_():
         return inner_wrapper
 
     return outer_wrapper
+
+
+def lstrip_(func):
+    """
+    That decorator allows to strip the left whitespaces from the result value of any decorated function.
+
+    :return: callable object.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).lstrip()
+
+    return wrapper
 
 
 def rstrip_(func):
@@ -180,6 +205,21 @@ def split_(char: str):
         @wraps(func)
         def inner_wrapper(arg: str):
             return func(arg.split(char))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def substr_(stop: int, *, start: int = 0):
+    """
+    Undocumented.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return func(arg)[start:stop]
 
         return inner_wrapper
 

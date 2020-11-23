@@ -20,7 +20,7 @@ _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
 
 parser = argparse.ArgumentParser()
-parser.add_argument("table", choices=["applications", "countries", "genres", "languages", "providers", "supports"], nargs="+")
+parser.add_argument("table", choices=["applications", "countries", "genres", "languages", "providers", "repositories", "supports"], nargs="+")
 arguments = parser.parse_args()
 
 ENVIRONMENT = TemplatingEnvironment(_MYPARENT / "Templates")

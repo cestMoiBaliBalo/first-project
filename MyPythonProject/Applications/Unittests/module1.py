@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ..decorators import itemgetter_, none_, split_
-from ..shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, now
+from ..shared import Files, TitleCaseConverter, ToBoolean, UTF8, VorbisComment, booleanify, eq_string_, get_rippingapplication, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -236,6 +236,18 @@ class TestDecorator06(unittest.TestCase):
                              ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
 
 
+class TestDecorator07(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+
+    def test_t01(self):
+        self.assertListEqual(list(filterfalse(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+    def test_t02(self):
+        self.assertListEqual(list(filter(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])
+
+
 @patch("Applications.shared.datetime")
 class TestMock01(unittest.TestCase):
     """
@@ -360,13 +372,117 @@ class Test05(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
 
 
-class Test06(unittest.TestCase):
+class TestFiles(unittest.TestCase):
+
+    @staticmethod
+    def get_name(file: Path) -> str:
+        return file.name
 
     def setUp(self) -> None:
-        self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+        self._cwd = os.getcwd()
+        os.chdir(_MYPARENT)
+
+    def tearDown(self) -> None:
+        os.chdir(self._cwd)
 
     def test_t01(self):
-        self.assertListEqual(list(filterfalse(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+        files = Files(os.path.abspath("Resources"))
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt",
+                                                             "sequences.json",
+                                                             "titles.json"})
 
     def test_t02(self):
-        self.assertListEqual(list(filter(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])
+        files = Files(os.path.abspath("Resources"), "txt")
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt"})
+
+    def test_t03(self):
+        files = Files(os.path.abspath("Resources"), "json")
+        self.assertSetEqual(set(map(self.get_name, files)), {"sequences.json", "titles.json"})
+
+    def test_t04(self):
+        files = Files(os.path.abspath("Resources"), "json", "txt")
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt",
+                                                             "sequences.json",
+                                                             "titles.json"})
+
+    def test_t05(self):
+        files = Files(os.path.abspath("Resources"), "yml")
+        self.assertSetEqual(set(map(self.get_name, files)), set())
+
+
+@unittest.skipIf(not Path("F:/").exists(), "Unit test run on local platform only!")
+class TestVorbisComment(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._cwd = os.getcwd()
+        os.chdir(Path("F:/") / "U" / "U2" / "1")
+
+    def tearDown(self) -> None:
+        os.chdir(self._cwd)
+
+    def test_t01(self):
+        comments = VorbisComment(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                 / "CD1"
+                                                 / "1.Free Lossless Audio Codec"
+                                                 / "1.20000000.1.13.D1.T01.flac"))
+        comments = sorted(filter(itemgetter_(0)(partial(contains, ["album", "artist", "artistsort", "label", "upc"])), comments), key=itemgetter(0))
+        self.assertListEqual(comments, [("album", "All That You Can’t Leave Behind (20th Anniversary Edition)"),
+                                        ("artist", "U2"),
+                                        ("artistsort", "U2"),
+                                        ("label", "Island Records"),
+                                        ("upc", "00602507404635")])
+
+    def test_t02(self):
+        comments = VorbisComment(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                 / "CD1"
+                                                 / "1.Free Lossless Audio Codec"
+                                                 / "1.20000000.1.13.D1.T01.flac"))
+        comments = sorted(filter(itemgetter_(0)(partial(contains, ["mediaprovider", "source", "title"])), comments), key=itemgetter(0))
+        self.assertListEqual(comments, [("mediaprovider", "HDtracks.com"),
+                                        ("source", "Online provider"),
+                                        ("title", "Beautiful Day")])

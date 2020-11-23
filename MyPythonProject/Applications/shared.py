@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
+import argparse
 import calendar
 import csv
+import fnmatch
 import locale
 import logging.handlers
 import operator
@@ -9,18 +11,22 @@ import os
 import re
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import singledispatch
-from itertools import dropwhile, filterfalse, groupby, repeat, tee, zip_longest
+from itertools import chain, compress, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
+from operator import itemgetter
 from pathlib import Path
 from string import Template
 from subprocess import PIPE, run
-from typing import Any, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import jinja2
 import yaml
 from dateutil.parser import parserinfo
+from mutagen import MutagenError  # type: ignore
+from mutagen.flac import FLAC, FLACNoHeaderError  # type: ignore
 from pytz import timezone
 
 __author__ = 'Xavier ROSSET'
@@ -185,9 +191,123 @@ class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):
         self._ftpobj.chdir(self._cwd)
 
 
+class Files(Sequence):
+    """
+    Undocumented.
+    """
+
+    def __init__(self, path: Union[Path, str], *included: str):
+
+        if not Path(path).exists():
+            raise FileNotFoundError(f"No such file or directory: '{path}'")
+        if not Path(path).is_dir():
+            raise NotADirectoryError(f"No such directory: '{path}'")
+
+        # [root1/file1.ext1, root1/file2.ext1], [root2/file1.ext2, root2/file2.ext2], ...
+        collection: Iterable[Any] = [[Path(root) / file for file in files] for root, _, files in os.walk(Path(path)) if files]
+
+        # ext1, ext2, ...
+        extensions: Tuple[str, ...] = tuple(included)
+
+        # [root1/file1.ext1, root1/file2.ext1], ...
+        if len(extensions) == 1:
+            (extension,) = extensions
+            collection = [filter(None, fnmatch.filter(group, f"*.{extension}")) for group in collection]
+
+        elif len(extensions) > 1:
+
+            # [[root1/file1.ext1, root1/file2.ext1], []], [[], [root2/file1.ext2, root2/file2.ext2]], ...
+            collection = [[fnmatch.filter(group, f"*.{extension}") for group in groups] for groups, extension in zip(repeat(collection, len(extensions)), extensions)]
+
+            # [root1/file1.ext1, root1/file2.ext1], [root2/file1.ext2, root2/file2.ext2], ...
+            collection = chain.from_iterable(collection)
+
+        # root1/file1.ext1, root1/file2.ext1, root2/file1.ext2, root2/file2.ext2, ...
+        self._collection: List[Path] = list(chain.from_iterable(collection))
+
+    def __contains__(self, item):
+        return item in self._collection
+
+    def __getitem__(self, item):
+        return self._collection[item]
+
+    def __iter__(self):
+        for item in self._collection:
+            yield item
+
+    def __len__(self):
+        return len(self._collection)
+
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, list(self))
+
+
+class GetPath(argparse.Action):
+    """
+    Undocumented.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, list(map(Path, values)))
+
+
+class VorbisComment(Mapping):
+    """
+    Undocumented.
+    """
+
+    def __init__(self, path: Union[Path, str]):
+
+        # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
+        try:
+            comments = [[(key, value) for value in values] for key, values in FLAC(Path(path)).items()]  # type: Iterable[Any]
+        except (FLACNoHeaderError, MutagenError) as err:
+            raise ValueError(err)
+
+        # [(tag1, value1), (tag2, value), (tag3, value), ...]
+        self._collection = dict(chain.from_iterable([compress(item, [1]) for item in comments]))  # type: Dict[str, str]
+
+    def get(self, key):
+        return self._collection.get(key)
+
+    def items(self):
+        return self._collection.items()
+
+    def keys(self):
+        return self._collection.keys()
+
+    def values(self):
+        return self._collection.values()
+
+    def __getitem__(self, item):
+        return self._collection[item]
+
+    def __iter__(self):
+        for key, value in sorted(self._collection.items(), key=itemgetter(0)):
+            yield key, value
+
+    def __len__(self):
+        return len(self._collection)
+
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, list(self))
+
+    @classmethod
+    def fromdirectory(cls, path: Union[Path, str]):
+        for file in Files(Path(path), "flac"):
+            yield list(cls(file))
+
+
 class TitleCaseBaseConverter(ABC):
     """
-    
+    Undocumented.
     """
 
     # Define class-level configuration.
@@ -211,6 +331,9 @@ class TitleCaseBaseConverter(ABC):
     roman_numbers_regex3 = re.compile(r"(?i)\bC{,3}X[CL](?:V?I{,3}|I[VX])\b")
 
     def __init__(self):
+        """
+        Undocumented.
+        """
 
         # Initializations.
         self.alw_lowercase, self.alw_uppercase, self.alw_capital, self.capitalize_firstword, self.capitalize_lastword = None, None, None, None, None
@@ -235,27 +358,27 @@ class TitleCaseBaseConverter(ABC):
     @abstractmethod
     def convert(self, title):
         """
+        Undocumented.
 
-        :param title:
-        :return:
         """
         pass
 
 
 class TitleCaseConverter(TitleCaseBaseConverter):
     """
-
+    Undocumented.
     """
     _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
     def __init__(self):
+        """
+        Undocumented.
+        """
         super(TitleCaseConverter, self).__init__()
 
     def convert(self, title):
         """
-        
-        :param title: 
-        :return: 
+        Undocumented.
         """
         self._logger.debug(title)
 

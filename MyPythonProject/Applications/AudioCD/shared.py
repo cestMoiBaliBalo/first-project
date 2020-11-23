@@ -66,11 +66,23 @@ class TrackTags(MutableMapping):
         self._bootlegalbum_date = None
         self._bootlegalbum_isodate = None
         self._encoder = None
-        self._otags = dict()
+        self._otags = {}
         self._sequence = None
         self._step = 0
         self._totaltracks_key = None
         self._totaldiscs_key = None
+
+    def get(self, key):
+        return self._otags.get(key)
+
+    def items(self):
+        return self._otags.items()
+
+    def keys(self):
+        return self._otags.keys()
+
+    def values(self):
+        return self._otags.values()
 
     def __getitem__(self, item):
         return self._otags[item]
@@ -85,7 +97,8 @@ class TrackTags(MutableMapping):
         return len(self._otags)
 
     def __iter__(self):
-        return iter(self._otags.items())
+        for key, value in self._otags.items():
+            yield key, value
 
     def __str__(self):
         return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - track {self._otags["track"]}'
