@@ -36,7 +36,6 @@ class Formatter(object):
     SEP = "*"  # type: str
 
     def __init__(self, *iterables: Tuple[str, ...]) -> None:
-        self._collection = []  # type: List[Tuple[str, ...]]
         bootlegs, artists, years, flags, providers = list(zip(*iterables))  # type: Tuple[str, ...], Tuple[str, ...], Tuple[str, ...], Tuple[str, ...], Tuple[str, ...]
 
         # 1. Get bootlegs maximum width.
@@ -55,16 +54,23 @@ class Formatter(object):
         self._width_providers = max([self._get_width(*map(self._rstrip, filter(None, providers))), len("PROVIDER")])  # type: int
 
         # 6. Process collection.
-        #       i. Replace null values by empty strings.
-        #      ii. Justify items.
-        #     iii. Group items by artist, then by year.
-        collection = self._group(*self._align(*starmap(self._replace, iterables)))  # type: Any
-        for group in grouper(CHUNK, *collection):
-            group = list(filter(None, group))
-            group.extend(self._set_headers())
-            group = deque(group)
-            group.rotate(3)
-            self._collection.extend(group)
+        #       i. Sort items by artist, year then bootleg.
+        #      ii. Replace null values by empty strings.
+        #     iii. Justify items.
+        #      iv. Group items by artist then year.
+        #       v. Insert headers.
+        self._collection = []  # type: List[Tuple[str, ...]]
+        collektion = sorted(iterables, key=itemgetter(0))  # type: Any
+        collektion = sorted(collektion, key=cvtint_()(substr_(4)(lstrip_(itemgetter(2)))))
+        collektion = sorted(collektion, key=itemgetter(1))
+        collektion = self._align(*starmap(self._replace, collektion))
+        for grp in grouper(CHUNK, *collektion):
+            grp = list(filter(None, grp))
+            grp.extend(self._insert_headers())
+            grp = deque(grp)
+            grp.rotate(3)
+            self._collection.extend(grp)
+        self._collection = list(self._group(*self._collection))
 
     def __iter__(self) -> Iterator[Tuple[str, ...]]:
         for item in self._collection:
@@ -90,23 +96,31 @@ class Formatter(object):
         """
         Undocumented.
         """
-        _output = []  # type: List[Tuple[str, ...]]
-        _iterables = sorted(iterables, key=itemgetter(0))  # type: List[Tuple[str, ...]]
-        _iterables = sorted(_iterables, key=cvtint_()(substr_(4)(lstrip_(itemgetter(2)))))
-        _iterables = sorted(_iterables, key=itemgetter(1))
-        for _, group1 in groupby(_iterables, key=itemgetter(1)):
-            for _, group2 in groupby(group1, key=itemgetter(2)):
-                first = True
-                for bootleg, artist, year, flag, provider in group2:
-                    if not first:
-                        artist = (re.sub(self.REX, " ", artist))
-                        year = (re.sub(self.REX, " ", year))
-                    first = False
-                    _output.append((bootleg, artist, year, flag, provider))
-        for item in _output:
+        collektion = []  # type: List[Tuple[str, ...]]
+        for grp in grouper(CHUNK + 3, *iterables):
+            tmp_collection = []  # type: List[Tuple[str, ...]]
+            grp = list(filter(None, grp))
+            headers = grp[:3]
+            bootlegs = grp[3:]
+            for _, group1 in groupby(bootlegs, key=itemgetter(1)):
+                brk_artist = True
+                for _, group2 in groupby(group1, key=cvtint_()(substr_(4)(lstrip_(itemgetter(2))))):
+                    brk_year = True
+                    for bootleg, artist, year, flag, provider in group2:
+                        if not any([brk_artist, brk_year]):
+                            artist = re.sub(self.REX, " ", artist)
+                            year = re.sub(self.REX, " ", year)
+                        elif not brk_artist and brk_year:
+                            artist = re.sub(self.REX, " ", artist)
+                        brk_artist = False
+                        brk_year = False
+                        tmp_collection.append((bootleg, artist, year, flag, provider))
+            headers.extend(tmp_collection)
+            collektion.extend(headers)
+        for item in collektion:
             yield item
 
-    def _set_headers(self):
+    def _insert_headers(self):
         artists = self.SEP * self._width_artists  # type: str
         years = self._justify(self.SEP * self._width_years, self._width_years + self.GAP, justify=">")  # type: str
         bootlegs = self._justify(self.SEP * self._width_bootlegs, self._width_bootlegs + self.GAP, justify=">")  # type: str
@@ -202,8 +216,7 @@ for file in files:
 tags = [list(filter(itemgetter_(0)(partial(contains, TAGS)), comment)) for comment in comments]
 tags = [sorted(item, key=itemgetter(0)) for item in tags]
 tags = [[tuple(compress(tag, [0, 1])) for tag in item] for item in tags]
-tags = [tuple(chain(*item)) for item in tags]
-tags = set(tags)
+tags = set(tuple(chain(*item)) for item in tags)
 tags = [tuple(compress(item, [1, 1, 0, 1, 1, 1])) for item in tags]
 tags = [Album(*item) for item in Formatter(*tags)]
 
@@ -212,7 +225,7 @@ collection = list(grouper(CHUNK + 3, *tags))  # type: List[List[Album]]
 page, pages = 0, len(collection)  # type: int, int
 for group in collection:
     run("CLS", shell=True)
-    for item in filter(None, group):
+    for item in filter(None, group):  # type: Album
         print(f"{item.artist}{item.year}{item.bootleg}{item.in_collection}{item.provider}")
     page += 1
     print(f"\n\nPage {page}/{pages}")

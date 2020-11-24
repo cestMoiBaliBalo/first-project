@@ -22,6 +22,7 @@ jobs:
 install:
   - pip install iso8601
   - pip install jinja2
+  - pip install mutagen
   - pip install python-dateutil
   - pip install pytz
   - pip install pyyaml

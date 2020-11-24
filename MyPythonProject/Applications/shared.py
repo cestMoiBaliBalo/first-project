@@ -196,7 +196,7 @@ class Files(Sequence):
     Undocumented.
     """
 
-    def __init__(self, path: Union[Path, str], *included: str):
+    def __init__(self, path, *included):
 
         if not Path(path).exists():
             raise FileNotFoundError(f"No such file or directory: '{path}'")
@@ -261,7 +261,7 @@ class VorbisComment(Mapping):
     Undocumented.
     """
 
-    def __init__(self, path: Union[Path, str]):
+    def __init__(self, path):
 
         # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
         try:
@@ -300,7 +300,7 @@ class VorbisComment(Mapping):
         return "%s(%r)" % (self.__class__.__name__, list(self))
 
     @classmethod
-    def fromdirectory(cls, path: Union[Path, str]):
+    def fromdirectory(cls, path):
         for file in Files(Path(path), "flac"):
             yield list(cls(file))
 

@@ -589,7 +589,7 @@ REM -------------------------------
 IF ERRORLEVEL 14 (
     CLS
     PUSHD Tasks
-    python bootlegalbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
+    python getBootlegAlbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
     POPD
     ECHO:
     ECHO:
