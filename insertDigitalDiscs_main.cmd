@@ -31,7 +31,7 @@ REM Main script.
 REM ============
 
 REM ----- Get albums path.
-SET /P _path="Please type the album path (you can press TAB for path expansion): "
+SET /P _path="Please type the album path (remember to press TAB for path completion): "
 FOR /F "usebackq delims=" %%A IN ('!_path!') DO SET _path="%%~A"
 CLS
 IF NOT EXIST %_path% (
