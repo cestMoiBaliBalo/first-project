@@ -7,7 +7,7 @@ import sqlite3
 from datetime import date
 from itertools import compress
 from pathlib import Path
-from typing import Any, Iterable, NamedTuple
+from typing import Any, List, NamedTuple
 
 from Applications.Tables.shared import DatabaseConnection, convert_tobooleanvalue
 from Applications.parsers import database_parser
@@ -35,6 +35,7 @@ MAPPING = {"bootleg": {"headers": ["Albumid",
                                    "Album",
                                    "Genre",
                                    "Bonus",
+                                   "Support",
                                    "Bootlegtrack_Year",
                                    "Bootlegtrack_Month",
                                    "Bootlegtrack_Day",
@@ -58,8 +59,10 @@ MAPPING = {"bootleg": {"headers": ["Albumid",
                                                       ("genre", str),
                                                       ("is_bootlegs", bool),
                                                       ("is_disc_live", bool),
+                                                      ("is_disc_bonus", bool),
                                                       ("is_track_live", bool),
                                                       ("is_track_bonus", bool),
+                                                      ("support", str),
                                                       ("bootlegtrack_year", int),
                                                       ("bootlegtrack_month", int),
                                                       ("bootlegtrack_day", int),
@@ -75,38 +78,35 @@ MAPPING = {"bootleg": {"headers": ["Albumid",
                                                       ("played_year", int),
                                                       ("played_month", int),
                                                       ("played", int),
-                                                      ("support", str),
                                                       ("bootlegalbum_countryid", int),
                                                       ("bootlegtrack_countryid", int),
                                                       ("repositoryid", int),
                                                       ("repository", str)]),
                        "file": "bootlegs.csv",
-                       "selectors": [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                       "statement": "SELECT * FROM bootlegalbums_vw ORDER BY albumid"}}
+                       "selectors": [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                       "statement": "SELECT * FROM bootlegalbums_vw"}}
 
 # ================
 # Parse arguments.
 # ================
 parser = argparse.ArgumentParser(parents=[database_parser])
-parser.add_argument("album", choices=["bootleg"], nargs="+")
+parser.add_argument("albums", choices=["bootleg"], nargs="+")
 arguments = parser.parse_args()
 
 # ============
 # Main script.
 # ============
-for album in arguments.album:
-    file = MAPPING[album]["file"]
-    headers = MAPPING[album]["headers"]
-    selectors = MAPPING[album]["selectors"]
-    statement = MAPPING[album]["statement"]
-    Track = MAPPING[album]["fields"]
-
+for albums in arguments.albums:
+    file = MAPPING[albums]["file"]  # type: str
+    headers = MAPPING[albums]["headers"]  # type: List[str]
+    selectors = MAPPING[albums]["selectors"]  # type: List[int]
+    statement = MAPPING[albums]["statement"]  # type: str
+    Row = MAPPING[albums]["fields"]
     with DatabaseConnection(db=arguments.db) as conn:
-        collection = [Track(*row) for row in conn.execute(statement)]  # type: Iterable[Any]
-
-    collection = [tuple(compress(item, selectors)) for item in collection]
-    collection = [dict(zip(headers, item)) for item in collection]
-    with open(TEMP / file, mode=WRITE, encoding=UTF8, newline="") as stream:
-        dict_writer = csv.DictWriter(stream, headers, dialect=CustomDialect())
-        dict_writer.writeheader()
-        dict_writer.writerows(collection)
+        collection = [Row(*row) for row in conn.execute(statement)]  # type: Any
+        collection = [tuple(compress(item, selectors)) for item in collection]
+        collection = [dict(zip(headers, item)) for item in collection]
+        with open(TEMP / file, mode=WRITE, encoding=UTF8, newline="") as stream:
+            dict_writer = csv.DictWriter(stream, headers, dialect=CustomDialect())
+            dict_writer.writeheader()
+            dict_writer.writerows(collection)
