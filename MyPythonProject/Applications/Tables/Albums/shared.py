@@ -86,34 +86,34 @@ REX = re.compile(r"^(\w+)(?: (ASC|DESC))?$", re.IGNORECASE)
 # ========================================
 # Main interfaces for working with tables.
 # ========================================
-def insert_albums(*iterables):
+def insert_discs(*iterables):
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from data sequences.
+    Insert digital discs into the local audio database.
+    Discs are taken from data sequences.
     This is only an entry function!
 
     :param iterables: data sequences where the albums are taken from.
     :return: database total changes.
     """
-    return _insert_albums(*iterables)
+    return _insert_discs(*iterables)
 
 
-def insert_albums_fromjson(*jsonfiles) -> int:
+def insert_discs_fromjson(*jsonfiles) -> int:
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from JSON file(s).
+    Insert digital discs into the local audio database.
+    Discs are taken from JSON file(s).
     This is only an entry function!
 
     :param jsonfiles: JSON file-object(s) where the albums are taken from.
     :return: database total changes.
     """
-    return _insert_albums(*chain.from_iterable(json.load(file) for file in jsonfiles))
+    return _insert_discs(*chain.from_iterable(json.load(file) for file in jsonfiles))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
+def insert_defaultdiscs_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from plain text file(s).
+    Insert digital discs into the local audio database.
+    Discs are taken from plain text file(s).
     This is only an entry function!
 
     :param txtfiles: plain text file(s) where the albums are taken from.
@@ -190,7 +190,7 @@ def insert_defaultalbums_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
                                row["is_incollection"],
                                row["applicationid"]))
 
-    return _insert_albums(*tracks)
+    return _insert_discs(*tracks)
 
 
 def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
@@ -785,7 +785,7 @@ def get_providers(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
 # =======================================================
 # These interfaces mustn't be used from external scripts.
 # =======================================================
-def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
+def _insert_discs(*iterables: Tuple[Any, ...]) -> int:
     """
     Main function for inserting digital album(s) into the digital audio base.
     Albums are taken from data sequences.
@@ -794,7 +794,7 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
     """
 
     # -----
-    logger = logging.getLogger("{0}.insert_album".format(__name__))
+    logger = logging.getLogger("{0}.insert_discs".format(__name__))
 
     # -----
     with open(_MYPARENT / "Resources" / "setup.yml", encoding=UTF8) as stream:

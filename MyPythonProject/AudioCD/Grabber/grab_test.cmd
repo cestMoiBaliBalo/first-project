@@ -80,10 +80,12 @@ ENDLOCAL
 FOR /L %%A IN (1, 1, 2) DO FOR %%A IN ("!_path!.") DO SET _path=%%~dpA
 PUSHD %_path:~0,-1%
 COPY /Y Applications\Unittests\Resources\sequences.json %TEMP% > NUL 2>&1
-@ECHO -----------------------------------------
-@ECHO Audio CDs ripping application unit tests.
-@ECHO -----------------------------------------
-@ECHO:
+@IF %_verbose% EQU 1 (
+    ECHO -----------------------------------------
+    ECHO Audio CDs ripping application unit tests.
+    ECHO -----------------------------------------
+    ECHO:
+)
 FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\audiotags.txt") DO (
     IF EXIST "%%~A" (
         SET /A "_index+=1"
@@ -98,13 +100,13 @@ FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\audi
 @ECHO:
 @ECHO:
 @IF EXIST %_jsontags% (
-    python AudioCD\insertAlbums.py %_jsontags%
+    python AudioCD\Grabber\insertDiscs.py %_jsontags%
     IF ERRORLEVEL 1 DEL %_jsontags% 2>NUL
 )
 SETLOCAL
 @IF DEFINED _action IF %_action% EQU 2 (
     PUSHD ..
-    CALL insertDigitalAlbums.cmd "F:\U\U2\1\2000 - All That You Can’t Leave Behind (20th Anniversary Edition)\CD1\1.Free Lossless Audio Codec" T
+    CALL insertDigitalDiscs.cmd "F:\U\U2\1\2000 - All That You Can’t Leave Behind (20th Anniversary Edition)\CD1\1.Free Lossless Audio Codec" T
     POPD
 )
 ENDLOCAL
@@ -118,10 +120,12 @@ REM Failure: abort unit tests.
 IF %_errorlevel% EQU 1 GOTO THE_END
 
 REM Success: run python unit tests.
-@ECHO --------------------------
-@ECHO Python scripts unit tests.
-@ECHO --------------------------
-@ECHO:
+@IF %_verbose% EQU 1 (
+    ECHO --------------------------
+    ECHO Python scripts unit tests.
+    ECHO --------------------------
+    ECHO:
+)
 PUSHD ..\..
 CALL python %%_runner_%_verbose%%%
 SET _errorlevel=%ERRORLEVEL%

@@ -54,7 +54,7 @@ REM D. Main logic.
 REM    ===========
 
 REM    Backup input tags.
-FOR /F "usebackq" %%A IN (`python GetTrack.py "%~1"`) DO (
+FOR /F "usebackq" %%A IN (`python getTrack.py "%~1"`) DO (
     IF %%A NEQ 0 (
         SET /A "_index+=1"
         IF !_index! EQU 1 (
@@ -77,7 +77,7 @@ IF [%~6] NEQ [] (
 )
 
 REM    Alter tags respective to the ripping profile.
-python GrabTrack.py "%~1" %~2 %~3 %_decorators%--tags_processing %~5
+python grabTrack.py "%~1" %~2 %~3 %_decorators%--tags_processing %~5
 SET _errorlevel=%ERRORLEVEL%
 
 REM    Backup output tags.

@@ -65,7 +65,7 @@ REM        ----------------------------
 REM  2 --> Prepare NAS Syncing. Step 1.
 REM        ----------------------------
 :STEP2
-python RippedTracks.py "%~1"
+python getRippedTrack.py "%~1"
 SHIFT /2
 GOTO MAIN
 

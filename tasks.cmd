@@ -69,15 +69,10 @@ IF ERRORLEVEL 36 (
 )
 
 
-REM -----------------------
-REM Audio tables interface.
-REM -----------------------
-IF ERRORLEVEL 35 (
-    PUSHD Interfaces\Sources\03
-    python main.py
-    POPD
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 35 GOTO MENU
 
 
 REM --------------------------

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from Applications.Tables.Albums.shared import insert_albums_fromjson
+from Applications.Tables.Albums.shared import insert_discs_fromjson
 from Applications.shared import UTF8
 
 __author__ = 'Xavier ROSSET'
@@ -42,7 +42,7 @@ arguments = parser.parse_args()
 # ========
 # Logging.
 # ========
-with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:
+with open(_MYPARENT.parents[1] / "Resources" / "logging.yml", encoding=UTF8) as stream:
     config = yaml.load(stream, Loader=yaml.FullLoader)
 for logger in LOGGERS:
     with suppress(KeyError):
@@ -52,4 +52,4 @@ logging.config.dictConfig(config)
 # ===============
 # Main algorithm.
 # ===============
-sys.exit(insert_albums_fromjson(arguments.file))
+sys.exit(insert_discs_fromjson(arguments.file))

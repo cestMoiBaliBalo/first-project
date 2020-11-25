@@ -19,7 +19,7 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
-_MYROOT = _MYPARENT.parents[2]
+_MYANCESTOR = _MYPARENT.parents[1]
 
 # ==========================
 # Define French environment.
@@ -44,4 +44,4 @@ series = {"Album ID": pandas.Series(albumid, index=index),
           "Application": pandas.Series(application, index=index)}
 dataframe = pandas.DataFrame(series)
 dataframe.index.name = "Record ID"
-dataframe.to_csv(_MYROOT / "rippeddiscs.csv", encoding=UTF8, sep="|")
+dataframe.to_csv(_MYANCESTOR / "rippeddiscs.csv", encoding=UTF8, sep="|")

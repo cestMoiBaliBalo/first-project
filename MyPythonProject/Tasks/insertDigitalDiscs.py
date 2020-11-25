@@ -9,7 +9,7 @@ from operator import contains, itemgetter
 from pathlib import Path
 from typing import Any, Iterator, List, Mapping, MutableMapping, NamedTuple, Tuple, Union
 
-from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_albums
+from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_discs
 from Applications.decorators import eq_, itemgetter_, none_
 from Applications.parsers import database_parser
 from Applications.shared import GetPath, VorbisComment, partitioner
@@ -415,4 +415,4 @@ if __name__ == "__main__":
     print(ENVIRONMENT.get_template("T02").render(collection=collection.exceptions))
 
     # ----- Insert tracks collection into database.
-    sys.exit(insert_albums(*collection))
+    sys.exit(insert_discs(*collection))

@@ -5,19 +5,22 @@ import locale
 import logging.config
 import os
 import sys
+from pathlib import Path
 
 import yaml
 
-from .shared import insert_defaultalbums_fromplaintext
+from .shared import insert_defaultdiscs_fromplaintext
 from ...parsers import database_parser
-from ...shared import get_dirname
+from ...shared import UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-_THATFILE = os.path.abspath(__file__)
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ==========================
 # Define French environment.
@@ -27,8 +30,8 @@ locale.setlocale(locale.LC_ALL, "")
 # ===========================
 # Load logging configuration.
 # ===========================
-with open(os.path.join(get_dirname(_THATFILE, level=4), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    logging.config.dictConfig(yaml.load(fp, Loader=yaml.FullLoader))
+with open(_MYPARENT.parents[2] / "Resources" / "logging.yml", encoding=UTF8) as stream:
+    logging.config.dictConfig(yaml.load(stream, Loader=yaml.FullLoader))
 
 # ==============
 # Get arguments.
@@ -45,9 +48,9 @@ arguments = parser.parse_args()
 # ================
 # Run main script.
 # ================
-sys.exit(insert_defaultalbums_fromplaintext(arguments.tags,
-                                            encoding=arguments.encoding,
-                                            delimiter=arguments.delimiter,
-                                            doublequote=arguments.doublequote,
-                                            escapechar=arguments.escapechar,
-                                            quoting=arguments.quoting))
+sys.exit(insert_defaultdiscs_fromplaintext(arguments.tags,
+                                           encoding=arguments.encoding,
+                                           delimiter=arguments.delimiter,
+                                           doublequote=arguments.doublequote,
+                                           escapechar=arguments.escapechar,
+                                           quoting=arguments.quoting))

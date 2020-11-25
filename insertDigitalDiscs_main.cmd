@@ -39,7 +39,7 @@ IF NOT EXIST %_path% (
     GOTO END
 )
 PUSHD %_myparent:~0,-1%
-CALL insertDigitalAlbums.cmd %_path%
+CALL insertDigitalDiscs.cmd %_path%
 SET _records=%ERRORLEVEL%
 @IF %_records% GEQ 0 (
     ECHO:

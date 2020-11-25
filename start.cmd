@@ -256,7 +256,10 @@ GOTO MAIN
 @REM 15. Ripped discs Excel dashboard.
 @REM     -----------------------------
 :STEP22
-python "%_myparent%MyPythonProject\AudioCD\Grabber\RippedDiscs.py"
+PUSHD %_myparent%MyPythonProject\Tasks
+python getBootlegAlbums.py
+python getRippedDiscs.py
+POPD
 SHIFT
 GOTO MAIN
 
