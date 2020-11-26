@@ -55,14 +55,14 @@ REM -----
 :LOOP
 (
     IF [%2] NEQ [] SET _arguments=!_arguments! "%~2"
-    IF [%2] EQU [] GOTO NEXT
+    IF [%2] EQU [] GOTO MAIN
 )
 SHIFT /2
 GOTO LOOP
 
 
 REM -----
-:NEXT
+:MAIN
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _caller=%~nx0
