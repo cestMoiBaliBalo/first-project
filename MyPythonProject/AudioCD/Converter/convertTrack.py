@@ -96,7 +96,7 @@ for profile in argument.profiles:
         tags = patterns.EncodedFromNugsDSDFile(tags)
 
 # Log output tags.
-pairs = sorted(tags.items(), key=itemgetter(0))
+pairs = sorted(tags, key=itemgetter(0))
 if pairs:
     logger.debug("===========")
     logger.debug("OUTPUT Tags")
@@ -106,5 +106,5 @@ if pairs:
 
 # Get back audio tags to dBpoweramp Batch Converter.
 with open(argument.tags, mode=WRITE, encoding=UTF16) as fw:
-    fw.write(_template.get_template("Tags").render(tags=dict(tags.items())))
+    fw.write(_template.get_template("Tags").render(tags=dict(iter(tags))))
 sys.exit(0)

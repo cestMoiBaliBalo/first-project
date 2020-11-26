@@ -37,7 +37,8 @@ REM    ==================
 REM    ==================
 REM C. Initializations 3.
 REM    ==================
-SET _index=0
+SET _ko=
+SET _index=
 SET _errorlevel=
 SET _runner_0=runner.py
 SET _runner_1=textrunner.py -vv
@@ -46,17 +47,26 @@ SET _runner_1=textrunner.py -vv
 REM    ===========
 REM D. Main logic.
 REM    ===========
+
+
+@REM /* MAIN CONTEXT BEGIN ---------- */
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _caller=%~nx0
     SET _path=%~dp0
-    SET _ko=0
-    SET _jsontags=%TEMP%\tags.json
 )
+@ECHO _path stores "%_path%".
+@ECHO:
+@ECHO:
+
+
+@REM -----
+@SET _index=0
+@SET _ko=0
+
 
 @REM -----
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-@SET _index=0
 @SET _path=%PATH%
 @ECHO --------------------
 @ECHO Runtime environment.
@@ -76,7 +86,10 @@ SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 @ECHO:
 ENDLOCAL
 
-@REM -----
+
+@REM /* CONTEXT 1 BEGIN ---------- */
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+SET _jsontags=%TEMP%\tags.json
 FOR /L %%A IN (1, 1, 2) DO FOR %%A IN ("!_path!.") DO SET _path=%%~dpA
 PUSHD %_path:~0,-1%
 COPY /Y Applications\Unittests\Resources\sequences.json %TEMP% > NUL 2>&1
@@ -111,13 +124,70 @@ SETLOCAL
 )
 ENDLOCAL
 POPD
+
+
+@REM /* CONTEXT 1 END ------------------------------------ */
+@REM /* Preserve _errorlevel value into the upper context. */
 (
     ENDLOCAL
     SET _errorlevel=%_ko%
 )
 
+
 REM Failure: abort unit tests.
 IF %_errorlevel% EQU 1 GOTO THE_END
+
+
+@REM /* CONTEXT 2 BEGIN ---------- */
+SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+@IF %_verbose% EQU 1 (
+    ECHO ---------------------------------------------------
+    ECHO Lossless digital audio files conversion unit tests.
+    ECHO ---------------------------------------------------
+    ECHO:
+)
+FOR /L %%A IN (1, 1, 2) DO FOR %%A IN ("!_path!.") DO SET _path=%%~dpA
+PUSHD %_path:~0,-1%
+FOR /F "usebackq eol=# tokens=1*" %%A IN ("Applications\Unittests\Resources\batchconverter.txt") DO (
+    IF EXIST "%%~A" (
+        SET /A "_index+=1"
+        COPY /Y "%%~A" %TEMP% > NUL 2>&1
+        CALL AudioCD\Converter\convert_track.cmd "%TEMP%\%%~nxA" %%B
+        SET _errorlevel=!ERRORLEVEL!
+        IF %_verbose% EQU 1 IF !_errorlevel! EQU 0 ECHO Test !_index! ... ok
+        IF %_verbose% EQU 1 IF !_errorlevel! NEQ 0 ECHO Test !_index! ... ko
+        IF !_errorlevel! NEQ 0 SET _ko=1
+    )
+)
+@ECHO:
+@ECHO:
+POPD
+
+
+@REM /* CONTEXT 2 END ------------------------------------ */
+@REM /* Preserve _errorlevel value into the upper context. */
+(
+    ENDLOCAL
+    SET _errorlevel=%_ko%
+)
+
+
+REM Failure: abort unit tests.
+IF %_errorlevel% EQU 1 GOTO THE_END
+
+
+@REM /* MAIN CONTEXT END --------------------------------- */
+@REM /* Preserve _errorlevel value into the upper context. */
+(
+    ECHO _path stores "%_path%".
+    ENDLOCAL
+    SET _errorlevel=%_errorlevel%
+)
+@ECHO _path stores "%_path%".
+@IF NOT DEFINED _path ECHO _path is now undefined.
+@ECHO:
+@ECHO:
+
 
 REM Success: run python unit tests.
 @IF %_verbose% EQU 1 (

@@ -388,6 +388,9 @@ class TestFiles(unittest.TestCase):
     def test_t01(self):
         files = Files(os.path.abspath("Resources"))
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
                                                              "default_idtags_01_FDK.txt",
                                                              "default_idtags_01_FLAC.txt",
                                                              "default_idtags_01_LAME.txt",
@@ -409,6 +412,9 @@ class TestFiles(unittest.TestCase):
     def test_t02(self):
         files = Files(os.path.abspath("Resources"), "txt")
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
                                                              "default_idtags_01_FDK.txt",
                                                              "default_idtags_01_FLAC.txt",
                                                              "default_idtags_01_LAME.txt",
@@ -432,6 +438,9 @@ class TestFiles(unittest.TestCase):
     def test_t04(self):
         files = Files(os.path.abspath("Resources"), "json", "txt")
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
                                                              "default_idtags_01_FDK.txt",
                                                              "default_idtags_01_FLAC.txt",
                                                              "default_idtags_01_LAME.txt",

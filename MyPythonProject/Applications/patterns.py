@@ -7,10 +7,9 @@ from datetime import datetime
 from functools import partial
 from itertools import filterfalse
 from operator import itemgetter
-from typing import Any, Iterator, MutableMapping, Tuple
+from typing import Any, Iterator, MutableMapping, Optional, Tuple
 
 from pytz import timezone
-from sortedcontainers import SortedDict  # type: ignore
 
 from Applications import callables, decorators
 from Applications.shared import DFTTIMEZONE, TEMPLATE3, UTF16, eq_string_, format_date, valid_albumsort
@@ -45,30 +44,29 @@ class AudioMetadata(MutableMapping):
     def __init__(self, **kwargs):
         self._tags = dict(kwargs)  # type: MutableMapping[str, str]
 
-    def __setitem__(self, key, value) -> None:
-        self._tags[key] = value
+    def __delitem__(self, key) -> None:
+        del self._tags[key]
 
     def __getitem__(self, item) -> str:
         return self._tags[item]
 
-    def __delitem__(self, key) -> None:
-        del self._tags[key]
-
-    def __len__(self) -> int:
-        return len(self._tags)
-
     def __iter__(self) -> Iterator[Tuple[str, str]]:
         for key, value in self._tags.items():
             yield key, value
+
+    def __len__(self) -> int:
+        return len(self._tags)
 
     def __repr__(self) -> str:
         if not self:
             return "%s()" % (self.__class__.__name__,)
         return "%s(%r)" % (self.__class__.__name__, sorted(self, key=itemgetter(0)))
 
-    def items(self):
-        for key, value in self._tags.items():
-            yield key, value
+    def __setitem__(self, key, value) -> None:
+        self._tags[key] = value
+
+    def get(self, key: str) -> Optional[str]:
+        return self._tags.get(key)
 
     @classmethod
     def fromfile(cls, fil: str, enc: str = UTF16):
@@ -85,8 +83,7 @@ class DataDecorator(AudioMetadata):
     """
 
     def __init__(self, metadata):
-        super(DataDecorator, self).__init__(**dict(metadata.items()))
-        self._tags = SortedDict(self._tags)
+        super(DataDecorator, self).__init__(**dict(iter(metadata)))
 
 
 class RemoveData(DataDecorator):
@@ -96,12 +93,12 @@ class RemoveData(DataDecorator):
 
     def __init__(self, metadata):
         super(RemoveData, self).__init__(metadata)
-        self._tags["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
-        self._tags["encodingyear"] = datetime.now(tz=timezone(DFTTIMEZONE)).strftime("%Y")
-        self._tags["taggingtime"] = format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3)
+        self["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
+        self["encodingyear"] = datetime.now(tz=timezone(DFTTIMEZONE)).strftime("%Y")
+        self["taggingtime"] = format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3)
         for tag in ["copyright", "description", "mediaprovider", "profile", "purchasedate"]:
             with suppress(KeyError):
-                del self._tags[tag]
+                del self[tag]
 
 
 class EncodedFromFLACFile(DataDecorator):
@@ -111,7 +108,7 @@ class EncodedFromFLACFile(DataDecorator):
 
     def __init__(self, metadata):
         super(EncodedFromFLACFile, self).__init__(metadata)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
+        self["encodedby"] = "dBpoweramp Batch Converter on {0} from original FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class EncodedFromHDtracksFLACFile(DataDecorator):
@@ -121,7 +118,7 @@ class EncodedFromHDtracksFLACFile(DataDecorator):
 
     def __init__(self, metadata):
         super(EncodedFromHDtracksFLACFile, self).__init__(metadata)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original HDtracks.com FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
+        self["encodedby"] = "dBpoweramp Batch Converter on {0} from original HDtracks.com FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class EncodedFromNugsFLACFile(DataDecorator):
@@ -131,7 +128,7 @@ class EncodedFromNugsFLACFile(DataDecorator):
 
     def __init__(self, metadata):
         super(EncodedFromNugsFLACFile, self).__init__(metadata)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
+        self["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class EncodedFromNugsDSDFile(DataDecorator):
@@ -141,7 +138,7 @@ class EncodedFromNugsDSDFile(DataDecorator):
 
     def __init__(self, metadata):
         super(EncodedFromNugsDSDFile, self).__init__(metadata)
-        self._tags["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
+        self["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
 class AlbumSort(DataDecorator):
@@ -152,11 +149,11 @@ class AlbumSort(DataDecorator):
 
     def __init__(self, metadata, codec):
         super(AlbumSort, self).__init__(metadata)
-        albumsort = self._tags.get("albumsort")
+        albumsort = self.get("albumsort")
         if albumsort:
             try:
                 albumsort = valid_albumsort(albumsort[:-3])
             except ValueError:
                 pass
             else:
-                self._tags["albumsort"] = "{0}.{1}".format(albumsort, self.CODECS[codec.upper()])
+                self["albumsort"] = "{0}.{1}".format(albumsort, self.CODECS[codec.upper()])

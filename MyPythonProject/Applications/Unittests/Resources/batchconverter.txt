@@ -1,0 +1,2 @@
+Applications\Unittests\Resources\converter_idtags_01.txt FDK AlbumSort EncodedFromHDtracksFLAC
+Applications\Unittests\Resources\converter_idtags_02.txt FDK AlbumSort EncodedFromHDtracksFLAC
