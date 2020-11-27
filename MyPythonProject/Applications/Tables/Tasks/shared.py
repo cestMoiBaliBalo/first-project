@@ -8,7 +8,7 @@ from functools import partial
 from operator import add, eq
 from typing import Iterable, Optional, Tuple
 
-import iso8601
+import iso8601  # type: ignore
 import yaml
 
 from ..shared import DatabaseConnection, close_database

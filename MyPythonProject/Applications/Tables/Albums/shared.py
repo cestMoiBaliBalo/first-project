@@ -6,7 +6,7 @@ import logging
 import os
 import re
 import sqlite3
-from collections import Counter, namedtuple
+from collections import Counter
 from contextlib import ExitStack, suppress
 from datetime import datetime
 from functools import partial
@@ -241,7 +241,7 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
 
     # -----
     for album in albums:
-        yield Album._make(album)
+        yield Album(*album)
 
 
 def get_albumdetail(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
@@ -412,7 +412,7 @@ def get_disc(db: str = DATABASE, albumid: Optional[str] = None, discid: Optional
         if orderby:
             statement = "{0}WHERE {1} ORDER BY {2}".format(sql, where[:-5], orderby)
     with DatabaseConnection(db) as conn:
-        for row in (Disc._make(row) for row in conn.execute(statement, args)):
+        for row in (Disc(*row) for row in conn.execute(statement, args)):
             yield row
 
 
@@ -918,35 +918,35 @@ def _get_albums(db: str, **kwargs):
     where, args = "", ()  # type: str, Tuple[Union[bool, int, str], ...]
 
     #  1. Initializations.
-    Track = namedtuple("Track",
-                       "album_rowid "
-                       "track_rowid "
-                       "albumid "
-                       "albumsort "
-                       "discs "
-                       "deluxe "
-                       "bootleg "
-                       "incollection "
-                       "language "
-                       "discid "
-                       "tracks "
-                       "live_disc "
-                       "trackid "
-                       "title "
-                       "live "
-                       "bonus "
-                       "artistsort "
-                       "artist "
-                       "origyear "
-                       "year "
-                       "album "
-                       "label "
-                       "genre "
-                       "upc "
-                       "utc_created "
-                       "utc_modified "
-                       "utc_played "
-                       "played")
+    Track = NamedTuple("Track",
+                       [("album_rowid", int),
+                        ("track_rowid", int),
+                        ("albumid", str),
+                        ("albumsort", str),
+                        ("discs", int),
+                        ("bootleg", bool),
+                        ("incollection", bool),
+                        ("language", str),
+                        ("discid", int),
+                        ("tracks", int),
+                        ("disc_live", bool),
+                        ("disc_bonus", bool),
+                        ("trackid", int),
+                        ("title", str),
+                        ("track_live", int),
+                        ("track_bonus", int),
+                        ("artistsort", str),
+                        ("artist", str),
+                        ("origyear", int),
+                        ("year", int),
+                        ("album", str),
+                        ("label", str),
+                        ("genre", str),
+                        ("upc", str),
+                        ("utc_created", datetime),
+                        ("utc_modified", datetime),
+                        ("utc_played", datetime),
+                        ("played", int)])
 
     #  2. SELECT clause.
     select = "SELECT album_rowid, " \
@@ -954,17 +954,17 @@ def _get_albums(db: str, **kwargs):
              "albumid, " \
              "albumsort, " \
              "discs, " \
-             "is_deluxe, " \
              "is_bootleg, " \
              "in_collection, " \
              "language, " \
              "discid, " \
              "tracks, " \
-             "is_live_disc, " \
+             "is_disc_live, " \
+             "is_disc_bonus, " \
              "trackid, " \
              "title, " \
-             "is_live_track, " \
-             "is_bonus, " \
+             "is_track_live, " \
+             "is_track_bonus, " \
              "artistsort, " \
              "artist, " \
              "origyear, " \
@@ -1047,14 +1047,7 @@ def _get_albums(db: str, **kwargs):
         where = "{0}is_bootleg=? AND ".format(where)
         args += (boolean_to_integer[bootleg],)
 
-    # 4. ORDER BY clause.
-    # logger.debug(kwargs.get("orderby"))
-    # orderby = "ORDER BY albumid, discid, trackid"  # type: str
-    # mylist = list(filter(None, map(REX.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
-    # if mylist:
-    #     orderby = "ORDER BY {0}".format(", ".join(mylist))
-
-    # 5. Build SQL statement.
+    # 4. Build SQL statement.
     sql = select  # type: str
     if where:
         sql = f"{select} WHERE {where[:-5]}"
@@ -1063,7 +1056,7 @@ def _get_albums(db: str, **kwargs):
 
     #  6. Run SQL statement.
     with DatabaseConnection(db) as conn:
-        for row in (Track._make(row) for row in conn.execute(sql, args)):
+        for row in (Track(*row) for row in conn.execute(sql, args)):
             yield row
 
 
