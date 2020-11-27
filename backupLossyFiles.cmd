@@ -43,7 +43,7 @@ CALL shared.cmd
 REM Get code page.
 SET _step=1
 CALL shared.cmd
-@IF DEFINED _chcp ECHO Le code page est %_chcp%.
+@IF DEFINED _chcp ECHO Le code page est établi à %_chcp%.
 
 REM Check characters encoding.
 @ECHO Les caractères accentués sont restitués proprement ^^!
@@ -64,7 +64,7 @@ IF %_ok% EQU 0 (
         CHCP %_mycp% > NUL
         ECHO:
         ECHO:
-        ECHO Le code page est maintenant %_mycp%.
+        ECHO Le code page est restauré à %_mycp%.
     )
     PAUSE
     POPD
@@ -159,7 +159,7 @@ REM -----
     CHCP %_mycp% > NUL
     ECHO:
     ECHO:
-    ECHO Le code page est maintenant %_mycp%.
+    ECHO Le code page est restauré à %_mycp%.
     ECHO:
     ECHO:
     PAUSE

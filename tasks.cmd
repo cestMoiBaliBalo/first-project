@@ -69,10 +69,19 @@ IF ERRORLEVEL 36 (
 )
 
 
-REM ----------
-REM Available.
-REM ----------
-IF ERRORLEVEL 35 GOTO MENU
+REM ---------------------------------------------
+REM Sync local audio database with digital discs.
+REM ---------------------------------------------
+REM HDtracks.com, nugs.net, etc.
+IF ERRORLEVEL 35 (
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    PUSHD ..
+    CALL insertDigitalDiscs_main.cmd
+    POPD
+    ENDLOCAL
+    GOTO MENU
+)
 
 
 REM --------------------------
@@ -143,21 +152,22 @@ IF ERRORLEVEL 32 (
 )
 
 
-REM ---------------------------------
-REM Insert audio discs into database.
-REM ---------------------------------
+REM ---------------------------------------------
+REM Dump ripped discs collection into a CSV file.
+REM ---------------------------------------------
+REM Data are taken from the local audio database.
 IF ERRORLEVEL 31 (
-    PUSHD %_COMPUTING%
-    REM IF EXIST trackslist.txt python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
-    C:\Windows\System32\cmd.exe /C insertDigitalAlbums_main.cmd
+    PUSHD Tasks
+    python getRippedDiscs.py
     POPD
     GOTO MENU
 )
 
 
-REM -------------------------------
-REM Update audio discs played date.
-REM -------------------------------
+REM -------------------------
+REM Update discs played date.
+REM -------------------------
+REM Manual update.
 IF ERRORLEVEL 30 (
     PUSHD Interfaces\Sources\06
     python main.py
@@ -166,10 +176,32 @@ IF ERRORLEVEL 30 (
 )
 
 
-REM ----------
-REM Available.
-REM ----------
-IF ERRORLEVEL 29 GOTO MENU
+REM -------------------------
+REM Update discs played date.
+REM -------------------------
+REM Batch update from iTunes music library.
+IF ERRORLEVEL 29 (
+    CLS
+    SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    SET _results=playeddiscs.txt 
+    python Tasks\updatePlayedDiscs.py
+    SET _errorlevel=!ERRORLEVEL!
+    IF !_errorlevel! GTR 0 (
+        PUSHD %TEMP%
+        IF EXIST !_results! (
+            ECHO:
+            TYPE !_results!
+            ECHO:
+            ECHO:
+            ECHO:
+            PAUSE
+        )
+        POPD
+    )
+    ENDLOCAL
+    GOTO MENU
+)
 
 
 REM ------------------------
@@ -202,9 +234,9 @@ IF ERRORLEVEL 28 (
 )
 
 
-REM ----------------------------------------
-REM Copy HDtracks.com files to backup drive.
-REM ----------------------------------------
+REM -------------------------------------------------------
+REM Copy HDtracks.com lossless audio files to backup drive.
+REM -------------------------------------------------------
 IF ERRORLEVEL 27 (
     CLS
     IF EXIST z: (
@@ -224,7 +256,7 @@ REM Both M4A and MP3 without lossless version (iTunes, amazon, etc).
 IF ERRORLEVEL 26 (
     CLS
     PUSHD ..
-    CALL backup_LossyFiles.cmd T
+    CALL backupLossyFiles.cmd T
     POPD
     GOTO MENU
 )
@@ -441,10 +473,16 @@ IF ERRORLEVEL 22 (
 )
 
 
-REM ----------
-REM Available.
-REM ----------
-IF ERRORLEVEL 21 GOTO MENU
+REM -----------------------------------------------
+REM Dump bootleg albums collection into a CSV file.
+REM -----------------------------------------------
+REM Data are taken from the local audio database.
+IF ERRORLEVEL 21 (
+    PUSHD Tasks
+    python getBootlegAlbums.py bootleg
+    POPD
+    GOTO MENU
+)
 
 
 REM ----------
@@ -578,19 +616,20 @@ IF ERRORLEVEL 15 (
 )
 
 
-REM -------------------------------
-REM Display digital audio bootlegs.
-REM -------------------------------
+REM ----------------------------------
+REM Display bootleg albums collection.
+REM ----------------------------------
+REM Data are taken from FLAC files Vorbis comments.
 IF ERRORLEVEL 14 (
-    CLS
-    PUSHD Tasks
-    python getBootlegAlbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
-    POPD
-    ECHO:
-    ECHO:
-    ECHO:
-    ECHO:
-    PAUSE
+    REM CLS
+    REM PUSHD Tasks
+    REM python getBootlegAlbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
+    REM POPD
+    REM ECHO:
+    REM ECHO:
+    REM ECHO:
+    REM ECHO:
+    REM PAUSE
     GOTO MENU
 )
 
@@ -609,9 +648,9 @@ IF ERRORLEVEL 13 (
 )
 
 
-REM ------------------------------------------------------
-REM Run python audio discs ripping application unit tests.
-REM ------------------------------------------------------
+REM ----------
+REM Available.
+REM ----------
 IF ERRORLEVEL 12 GOTO MENU
 
 

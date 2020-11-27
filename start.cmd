@@ -257,7 +257,7 @@ GOTO MAIN
 @REM     -----------------------------
 :STEP22
 PUSHD %_myparent%MyPythonProject\Tasks
-python getBootlegAlbums.py
+python getBootlegAlbums.py bootleg
 python getRippedDiscs.py
 POPD
 SHIFT

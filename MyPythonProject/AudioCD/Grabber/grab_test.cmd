@@ -179,12 +179,12 @@ IF %_errorlevel% EQU 1 GOTO THE_END
 @REM /* MAIN CONTEXT END --------------------------------- */
 @REM /* Preserve _errorlevel value into the upper context. */
 (
-    ECHO _path stores "%_path%".
+    IF %_verbose% EQU 1 ECHO _path stores "%_path%".
     ENDLOCAL
+    IF %_verbose% EQU 1 ECHO _path stores "!_path!".
     SET _errorlevel=%_errorlevel%
 )
-@ECHO _path stores "%_path%".
-@IF NOT DEFINED _path ECHO _path is now undefined.
+@IF %_verbose% EQU 1 IF NOT DEFINED _path ECHO _path is now undefined.
 @ECHO:
 @ECHO:
 
@@ -197,7 +197,7 @@ REM Success: run python unit tests.
     ECHO:
 )
 PUSHD ..\..
-CALL python %%_runner_%_verbose%%%
+python !_runner_%_verbose%!
 SET _errorlevel=%ERRORLEVEL%
 POPD
 IF %_errorlevel% EQU 1 GOTO THE_END
@@ -215,6 +215,10 @@ REM    ============
         ECHO:
     )
     ECHO Script exited with code %_errorlevel%.
+    IF %_verbose% EQU 1 IF %_errorlevel% EQU 0 (
+        ECHO:
+        ECHO ^^!^^!^^! Changes can be merged into the master branch ^^!^^!^^!
+    )
     ECHO:
     ECHO:
     EXIT /B %_errorlevel%

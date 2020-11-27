@@ -170,7 +170,12 @@ for albumid, played, _ in collektion:
 # 13. Update TASKS table.
 update_task(taskid, db=arguments.db)
 
-# 14. Dump collection into an external JSON file.
+# 14. Dump results into an external plain text file.
+with open(TEMP / "playeddiscs.txt", mode=WRITE, encoding="cp1252") as stream:
+    stream.write("{0:>5d} disc(s) inserted.\n".format(results["inserted"]))
+    stream.write("{0:>5d} disc(s) updated.\n".format(results["updated"]))
+
+# 15. Dump collection into an external JSON file.
 
 #       i. Sort collection by descending played date.
 collektion = sorted(collektion, key=itemgetter(1), reverse=True)
