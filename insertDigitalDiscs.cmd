@@ -4,9 +4,11 @@
 @REM __status__ = "Production"
 
 
-SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
+@SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 @IF NOT DEFINED _caller (
     ECHO off
+    CLS
+    CHCP 65001 > NUL
 )
 
 
@@ -61,5 +63,15 @@ REM ----- Exit script.
 POPD
 (
     ENDLOCAL
+    IF NOT DEFINED _caller (
+        ECHO:
+        ECHO:
+        IF %_errorlevel% GTR 0 ECHO Disc inserted into the local audio database.
+        IF %_errorlevel% EQU 0 ECHO Disc not inserted (is it already present into the local audio database?^).
+        ECHO:
+        ECHO:
+        PAUSE
+        CLS
+    )
     EXIT /B %_errorlevel%
 )

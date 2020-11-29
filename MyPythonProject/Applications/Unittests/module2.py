@@ -308,7 +308,7 @@ class Test05(unittest.TestCase):
 
     def test01(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/A"), excluded=filterfalse_(partial(filter_extension, extension="flac"))))
+        out_files = sorted(map(str, find_files(Path("F:/A"), excluded=filterfalse_(filter_extensions("flac")))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
@@ -336,7 +336,7 @@ class Test05(unittest.TestCase):
 
     def test06(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/F"), excluded=filterfalse_(filter_extensions("mp3", "m4a"))))
+        out_files = sorted(map(str, find_files(Path("F:/F"), excluded=filterfalse_(filter_extensions("mp3", "m4a")))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.m4a"),
                                          str(Path("G:/") / "file1.mp3"),
                                          str(Path("G:/") / "file2.m4a"),
@@ -347,12 +347,12 @@ class Test05(unittest.TestCase):
 
     def test07(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/G"), excluded=filterfalse_(filter_losslessaudiofiles)))
+        out_files = sorted(map(str, find_files(Path("F:/G"), excluded=filterfalse_(filter_losslessaudiofiles))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
     def test08(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/H"), excluded=filterfalse_(filter_audiofiles)))
+        out_files = sorted(map(str, find_files(Path("F:/H"), excluded=filterfalse_(filter_audiofiles))))
         self.assertListEqual(out_files, sorted(str(Path("G:/") / file) for file in self.files))
         mock_os_walk.assert_called_once()

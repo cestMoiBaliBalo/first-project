@@ -2,6 +2,7 @@
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import os
 import re
+from collections.abc import Sequence
 from contextlib import suppress
 from functools import partial
 from itertools import chain, islice, starmap
@@ -27,7 +28,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ========
 # Classes.
 # ========
-class Track(object):
+class Track(Sequence):
     TAGS = []  # type: List[str]
 
     def __init__(self, database: str, *paths: Path, **kwargs: Mapping[str, int]) -> None:
@@ -45,6 +46,24 @@ class Track(object):
         _collection = chain.from_iterable(_collection)  # [(tag1, value), (tag2, value), (tag3, value), ...]
         _collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in _collection]  # [(tag1, value), (tag2, value), (tag3, value), ...]
         self._collection = list(starmap(self.__update, _collection))  # type: List[Any]
+
+    def __contains__(self, item):
+        return item in self._collection
+
+    def __getitem__(self, item):
+        return self._collection[item]
+
+    def __iter__(self):
+        for item in self._collection:
+            yield item
+
+    def __len__(self):
+        return len(self._collection)
+
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, list(self))
 
     def __update(self, *items: Tuple[str, str]) -> List[Tuple[Union[int, str], ...]]:
         """
@@ -130,20 +149,20 @@ class BootlegTrack(Track):
         :param paths:
         :param kwargs:
         """
-        self._collection = []  # type: List[Any]
+        # self._collection = []  # type: List[Any]
         super(BootlegTrack, self).__init__(database, *paths, **kwargs)
         self._countries = kwargs.get("countries", {})  # type: Mapping[str, int]
-        tracks = list(starmap(self._update, self._collection))  # type: Any
+        tracks = starmap(self._update, self._collection)  # type: Any
 
         # -----
-        _true, self._false = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
+        _ok, self._ko = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
 
         # -----
-        tracks = sorted(set(_true), key=itemgetter(29))
+        tracks = sorted(set(_ok), key=itemgetter(29))
         tracks = sorted(tracks, key=itemgetter(17))
         tracks = sorted(tracks, key=itemgetter(2))
         tracks = [self.TRACKS(*track) for track in tracks]
-        self._tracks = iter(tracks)  # type: Iterator[Any]
+        self._collection = list(tracks)
 
     def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
         """
@@ -189,47 +208,41 @@ class BootlegTrack(Track):
         return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))  # (value1, value2, value3)
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            track = next(self._tracks)
-        except StopIteration:
-            raise
-        return ("bootlegalbums",
-                self._database,
-                track.albumid,
-                int(track.discnumber),
-                int(track.tracknumber),
-                int(track.totaldiscs),
-                int(track.totaltracks),
-                track.bonustrack,
-                track.livedisc,
-                track.livetrack,
-                track.bootlegdisc,
-                track.genre,
-                track.title,
-                track.titlelanguage,
-                track.bootlegalbum_day,
-                track.bootlegalbum_city,
-                track.bootlegalbum_country,
-                track.bootlegalbum_tour,
-                track.bootlegtrack_day,
-                track.bootlegtrack_city,
-                track.bootlegtrack_country,
-                track.bootlegtrack_tour,
-                track.artistsort,
-                track.artist,
-                track.incollection,
-                track.bootlegalbum_provider,
-                track.bootlegalbum_reference,
-                track.bootlegalbum_title,
-                None,
-                None)
+        for track in self._collection:
+            yield ("bootlegalbums",
+                   self._database,
+                   track.albumid,
+                   int(track.discnumber),
+                   int(track.tracknumber),
+                   int(track.totaldiscs),
+                   int(track.totaltracks),
+                   track.bonustrack,
+                   track.livedisc,
+                   track.livetrack,
+                   track.bootlegdisc,
+                   track.genre,
+                   track.title,
+                   track.titlelanguage,
+                   track.bootlegalbum_day,
+                   track.bootlegalbum_city,
+                   track.bootlegalbum_country,
+                   track.bootlegalbum_tour,
+                   track.bootlegtrack_day,
+                   track.bootlegtrack_city,
+                   track.bootlegtrack_country,
+                   track.bootlegtrack_tour,
+                   track.artistsort,
+                   track.artist,
+                   track.incollection,
+                   track.bootlegalbum_provider,
+                   track.bootlegalbum_reference,
+                   track.bootlegalbum_title,
+                   None,
+                   None)
 
     @property
     def exceptions(self) -> Iterator[Tuple[Any, ...]]:
-        return self._false
+        return self._ko
 
 
 class DefaultTrack(Track):
@@ -286,20 +299,20 @@ class DefaultTrack(Track):
         :param paths:
         :param kwargs:
         """
-        self._collection = []  # type: List[Any]
+        # self._collection = []  # type: List[Any]
         super(DefaultTrack, self).__init__(database, *paths, **kwargs)
-        tracks = list(starmap(self._update, self._collection))  # type: List[Any]
+        tracks = starmap(self._update, self._collection)  # type: Any
 
         # -----
-        _true, self._false = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
-        _, _true = partitioner(_true, predicate=none_()(itemgetter_(11)))
+        _ok, self._ko = partitioner(tracks, predicate=eq_(self.LENGTH)(len))  # type: Any, Any
+        _, _ok = partitioner(_ok, predicate=none_(itemgetter_(11)))
 
         # -----
-        tracks = sorted(set(_true), key=itemgetter(20))
+        tracks = sorted(set(_ok), key=itemgetter(20))
         tracks = sorted(tracks, key=itemgetter(9))
         tracks = sorted(tracks, key=itemgetter(2))
         tracks = [self.TRACKS(*track) for track in tracks]
-        self._tracks = iter(tracks)  # type: Iterator[Any]
+        self._collection = list(tracks)
 
     def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
         """
@@ -319,54 +332,47 @@ class DefaultTrack(Track):
         return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            track = next(self._tracks)
-        except StopIteration:
-            raise
-        return ("defaultalbums",
-                self._database,
-                track.albumid,
-                int(track.discnumber),
-                int(track.tracknumber),
-                int(track.totaldiscs),
-                int(track.totaltracks),
-                int(track.origyear),
-                int(track.year),
-                track.album,
-                track.genre,
-                track.label,
-                track.upc,
-                track.bonustrack,
-                track.livedisc,
-                track.livetrack,
-                track.bootlegdisc,
-                track.deluxe,
-                track.titlelanguage,
-                track.title,
-                track.artistsort,
-                track.artist,
-                track.incollection,
-                None,
-                None,
-                None,
-                None,
-                None,
-                track.mediaprovider,
-                None)
+        for track in self._collection:
+            yield ("defaultalbums",
+                   self._database,
+                   track.albumid,
+                   int(track.discnumber),
+                   int(track.tracknumber),
+                   int(track.totaldiscs),
+                   int(track.totaltracks),
+                   int(track.origyear),
+                   int(track.year),
+                   track.album,
+                   track.genre,
+                   track.label,
+                   track.upc,
+                   track.bonustrack,
+                   track.livedisc,
+                   track.livetrack,
+                   track.bootlegdisc,
+                   track.deluxe,
+                   track.titlelanguage,
+                   track.title,
+                   track.artistsort,
+                   track.artist,
+                   track.incollection,
+                   None,
+                   None,
+                   None,
+                   None,
+                   None,
+                   track.mediaprovider,
+                   None)
 
     @property
     def exceptions(self) -> Iterator[Tuple[Any, ...]]:
-        return self._false
+        return self._ko
 
 
 # ============
 # Main script.
 # ============
 if __name__ == "__main__":
-
     import argparse
     import logging.config
     import sys
@@ -374,6 +380,7 @@ if __name__ == "__main__":
     import yaml
 
     from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8
+
 
     # ----- Classes.
     class GetClass(argparse.Action):
@@ -385,6 +392,7 @@ if __name__ == "__main__":
         def __call__(self, parsobj, namespace, values, option_string=None):
             setattr(namespace, self.dest, values)
             setattr(namespace, "klass", self.MAPPING.get(values))
+
 
     # ----- Arguments parser.
     parser = argparse.ArgumentParser(parents=[database_parser])

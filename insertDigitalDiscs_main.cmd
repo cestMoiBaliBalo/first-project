@@ -41,16 +41,15 @@ IF NOT EXIST %_path% (
 PUSHD %_myparent:~0,-1%
 CALL insertDigitalDiscs.cmd %_path%
 SET _records=%ERRORLEVEL%
-@IF %_records% GEQ 0 (
-    ECHO:
-    ECHO:
-    ECHO %_records% record(s^) inserted into the local audio database.
-    ECHO:
-    ECHO:
-    ECHO:
-    PAUSE
-    CLS
-)
+ECHO:
+ECHO:
+@IF %_records% GTR 0 ECHO %_records% record(s) inserted into the local audio database.
+@IF %_records% EQU 0 ECHO %_records% record(s) inserted into the local audio database. Is disc already present into the local audio database?
+ECHO:
+ECHO:
+ECHO:
+PAUSE
+CLS
 POPD
 
 REM ----- Exit script.

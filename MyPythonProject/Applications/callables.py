@@ -3,7 +3,7 @@
 import fnmatch
 from functools import partial, wraps
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import Set
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -11,32 +11,10 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
-# ===========
-# Decorators.
-# ===========
-def filterfalse_(func):
-    @wraps(func)
-    def wrapper(cwdir, *names):
-        return set(str(Path(cwdir) / name) for name in names) - func(cwdir, *names)
-
-    return wrapper
-
-
 # =================
 # Global functions.
 # =================
-def filter_extensions(*extensions):
-    @wraps(filter_extension)
-    def wrapper(*args):
-        files = set()
-        for extension in extensions:
-            files = files | filter_extension(*args, extension=extension)
-        return files
-
-    return wrapper
-
-
-def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[str] = None) -> Set[str]:
+def filter_extension(cwdir, *names, extension=None):
     """
     :param cwdir:
     :param names:
@@ -46,7 +24,32 @@ def filter_extension(cwdir: Union[str, Path], *names: str, extension: Optional[s
     files = set(names)  # type: Set[str]
     if extension:
         files = set(fnmatch.filter(names, f"*.{extension}"))
-    return set(str(Path(cwdir) / file) for file in files)
+    return set(Path(cwdir) / file for file in files)
+
+
+# ==========
+# Callables.
+# ==========
+def filter_extensions(*extensions):
+    @wraps(filter_extension)
+    def wrapper(cwdir: Path, *names: str) -> Set[Path]:
+        files = set()  # type: Set[Path]
+        for extension in extensions:
+            files = files | filter_extension(cwdir, *names, extension=extension)
+        return files
+
+    return wrapper
+
+
+# ===========
+# Decorators.
+# ===========
+def filterfalse_(func):
+    @wraps(func)
+    def wrapper(cwdir: Path, *names: str) -> Set[Path]:
+        return set(Path(cwdir) / name for name in names) - func(cwdir, *names)
+
+    return wrapper
 
 
 def match_(func):

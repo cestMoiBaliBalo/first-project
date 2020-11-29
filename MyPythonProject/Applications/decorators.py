@@ -149,19 +149,16 @@ def map_(index: int):
     return outer_wrapper
 
 
-def none_():
+def none_(func):
     """
     Undocumented.
     """
 
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            return is_(None, func(arg))
+    @wraps(func)
+    def wrapper(arg):
+        return is_(None, func(arg))
 
-        return inner_wrapper
-
-    return outer_wrapper
+    return wrapper
 
 
 def lstrip_(func):

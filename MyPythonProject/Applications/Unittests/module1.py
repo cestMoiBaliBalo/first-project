@@ -13,6 +13,7 @@ from operator import contains, itemgetter
 from pathlib import Path
 from unittest.mock import patch
 
+from ..callables import filter_extensions, filterfalse_
 from ..decorators import itemgetter_, none_, split_
 from ..shared import Files, TitleCaseConverter, ToBoolean, UTF8, VorbisComment, booleanify, eq_string_, get_rippingapplication, now
 
@@ -242,10 +243,10 @@ class TestDecorator07(unittest.TestCase):
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
 
     def test_t01(self):
-        self.assertListEqual(list(filterfalse(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+        self.assertListEqual(list(filterfalse(none_(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
 
     def test_t02(self):
-        self.assertListEqual(list(filter(none_()(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])
+        self.assertListEqual(list(filter(none_(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])
 
 
 @patch("Applications.shared.datetime")
@@ -386,7 +387,7 @@ class TestFiles(unittest.TestCase):
         os.chdir(self._cwd)
 
     def test_t01(self):
-        files = Files(os.path.abspath("Resources"))
+        files = Files(Path(os.path.abspath("Resources")))
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
                                                              "batchconverter.txt",
                                                              "converter_idtags_01.txt",
@@ -410,7 +411,7 @@ class TestFiles(unittest.TestCase):
                                                              "titles.json"})
 
     def test_t02(self):
-        files = Files(os.path.abspath("Resources"), "txt")
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("txt")))
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
                                                              "batchconverter.txt",
                                                              "converter_idtags_01.txt",
@@ -432,11 +433,11 @@ class TestFiles(unittest.TestCase):
                                                              "sbootleg1_idtags_05_FLAC.txt"})
 
     def test_t03(self):
-        files = Files(os.path.abspath("Resources"), "json")
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("json")))
         self.assertSetEqual(set(map(self.get_name, files)), {"sequences.json", "titles.json"})
 
     def test_t04(self):
-        files = Files(os.path.abspath("Resources"), "json", "txt")
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("json", "txt")))
         self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
                                                              "batchconverter.txt",
                                                              "converter_idtags_01.txt",
@@ -460,7 +461,7 @@ class TestFiles(unittest.TestCase):
                                                              "titles.json"})
 
     def test_t05(self):
-        files = Files(os.path.abspath("Resources"), "yml")
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("yml")))
         self.assertSetEqual(set(map(self.get_name, files)), set())
 
 

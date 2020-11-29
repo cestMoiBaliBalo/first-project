@@ -3,7 +3,6 @@
 import argparse
 import calendar
 import csv
-import fnmatch
 import locale
 import logging.handlers
 import operator
@@ -28,6 +27,8 @@ from dateutil.parser import parserinfo
 from mutagen import MutagenError  # type: ignore
 from mutagen.flac import FLAC, FLACNoHeaderError  # type: ignore
 from pytz import timezone
+
+from .callables import filter_extensions, filterfalse_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -196,34 +197,29 @@ class Files(Sequence):
     Undocumented.
     """
 
-    def __init__(self, path, *included):
+    def __init__(self, path, *, excluded=None):
 
-        if not Path(path).exists():
+        if not path.exists():
             raise FileNotFoundError(f"No such file or directory: '{path}'")
-        if not Path(path).is_dir():
+        if not path.is_dir():
             raise NotADirectoryError(f"No such directory: '{path}'")
 
-        # [root1/file1.ext1, root1/file2.ext1], [root2/file1.ext2, root2/file2.ext2], ...
-        collection: Iterable[Any] = [[Path(root) / file for file in files] for root, _, files in os.walk(Path(path)) if files]
+        collection = []  # type: List[Any]
 
-        # ext1, ext2, ...
-        extensions: Tuple[str, ...] = tuple(included)
+        # [root1/file1.ext1, root1/file2.ext1, root1/file3.ext2], [root2/file1.ext1, root2/file2.ext1, root2/file3.ext2], ...
+        if not excluded:
+            collection = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]
 
-        # [root1/file1.ext1, root1/file2.ext1], ...
-        if len(extensions) == 1:
-            (extension,) = extensions
-            collection = [filter(None, fnmatch.filter(group, f"*.{extension}")) for group in collection]
+        # [root1/file1.ext1, root1/file2.ext1, root1/file3.ext2], [root2/file1.ext1, root2/file2.ext1, root2/file3.ext2], ...
+        if excluded:
+            for root, _, files in os.walk(path):
+                if files:
+                    files = set(Path(root) / file for file in files) - excluded(root, *set(files))
+                    if files:
+                        collection.append(list(files))
 
-        elif len(extensions) > 1:
-
-            # [[root1/file1.ext1, root1/file2.ext1], []], [[], [root2/file1.ext2, root2/file2.ext2]], ...
-            collection = [[fnmatch.filter(group, f"*.{extension}") for group in groups] for groups, extension in zip(repeat(collection, len(extensions)), extensions)]
-
-            # [root1/file1.ext1, root1/file2.ext1], [root2/file1.ext2, root2/file2.ext2], ...
-            collection = chain.from_iterable(collection)
-
-        # root1/file1.ext1, root1/file2.ext1, root2/file1.ext2, root2/file2.ext2, ...
-        self._collection: List[Path] = list(chain.from_iterable(collection))
+        # root1/file1.ext1, root1/file2.ext1, root1/file3.ext2, root2/file1.ext1, root2/file2.ext1, root2/file3.ext2, ...
+        self._collection = sorted(chain.from_iterable(collection))  # type: List[Path]
 
     def __contains__(self, item):
         return item in self._collection
@@ -265,7 +261,7 @@ class VorbisComment(Mapping):
 
         # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
         try:
-            comments = [[(key, value) for value in values] for key, values in FLAC(Path(path)).items()]  # type: Iterable[Any]
+            comments = [[(key, value) for value in values] for key, values in FLAC(path).items()]  # type: Iterable[Any]
         except (FLACNoHeaderError, MutagenError) as err:
             raise ValueError(err)
 
@@ -301,7 +297,7 @@ class VorbisComment(Mapping):
 
     @classmethod
     def fromdirectory(cls, path):
-        for file in Files(Path(path), "flac"):
+        for file in Files(path, excluded=filterfalse_(filter_extensions("flac"))):
             yield list(cls(file))
 
 
@@ -587,11 +583,11 @@ def valid_path(path: str) -> str:
     :return:
     """
     if not exists(path):
-        raise ValueError(f'"{path}" doesn\'t exist.')
+        raise FileNotFoundError(f"No such file or directory: '{path}'")
     if not isdir(path):
-        raise ValueError(f'"{path}" is not a directory.')
+        raise NotADirectoryError(f"No such directory: '{path}'")
     if not os.access(path, os.R_OK):
-        raise ValueError(f'"{path}" is not a readable directory.')
+        raise AttributeError(f"'{path}' is not readable")
     return path
 
 
@@ -1027,11 +1023,12 @@ def find_files(directory, *, excluded=None):
     """
     collection = []  # type: List[Any]
     if not excluded:
-        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files)
+        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(directory) if files)
+        collection = list(map(Path, collection))
     elif excluded:
-        for root, _, files in os.walk(str(directory)):
+        for root, _, files in os.walk(directory):
             if files:
-                files = set(os.path.join(root, file) for file in files) - excluded(root, *set(files))
+                files = set(Path(root) / file for file in files) - excluded(root, *set(files))
                 if files:
                     collection.extend(files)
     for file in sorted(collection):

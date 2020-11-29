@@ -38,23 +38,23 @@ CALL shared.cmd
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 
-:MENU
+:MAIN
 IF [%~1] EQU [1] GOTO STEP1
 IF [%~1] EQU [2] GOTO STEP2
-IF [%~1] EQU [] GOTO THE_END
+IF [%~1] EQU [] GOTO END
 SHIFT
-GOTO MENU
+GOTO MAIN
 
 :STEP1
 "%_areca%" backup -c -wdir %TEMP%\tmp-Xavier -config %_BACKUP%/workspace.documents/1832340664.bcfg
 SHIFT
-GOTO MENU
+GOTO MAIN
 
 :STEP2
 SHIFT
-GOTO MENU
+GOTO MAIN
 
-:THE_END
+:END
 @IF DEFINED _mycp CHCP %_mycp% > NUL
 POPD
 (
