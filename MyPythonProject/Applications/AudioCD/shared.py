@@ -460,7 +460,7 @@ class CommonTrackTags(TrackTags):
         self._otags["code"] = encoder_attributes["code"]
         self._otags["folder"] = encoder_attributes["folder"]
 
-        # ----- Set balbum total tracks.
+        # ----- Set album total tracks.
         self.__logger.debug("Set albumtotaltracks.")
         self._otags["albumtotaltracks"] = self._otags.get("totaltracks", "0")
 

@@ -32,7 +32,7 @@ locale.setlocale(locale.LC_ALL, "")
 # ==========
 # Constants.
 # ==========
-_MAPPING = {True: "debug", False: "info"}  # type: Mapping[bool, str]
+MAPPING = {True: "debug", False: "info"}  # type: Mapping[bool, str]
 
 # =================
 # Arguments parser.
@@ -50,14 +50,14 @@ argument = parser.parse_args()
 with open(_MYPARENT.parents[1] / "Resources" / "logging.yml", encoding=UTF8) as fp:
     log_config = yaml.load(fp, Loader=yaml.FullLoader)
 with suppress(KeyError):
-    log_config["loggers"]["MyPythonProject"]["level"] = _MAPPING[argument.debug].upper()
+    log_config["loggers"]["MyPythonProject"]["level"] = MAPPING[argument.debug].upper()
 logging.config.dictConfig(log_config)
 logger = logging.getLogger("MyPythonProject.AudioCD.Converter.{0}".format(_MYNAME))
 
 # =========
 # Template.
 # =========
-_template = TemplatingEnvironment(path=_MYPARENT.parent / "Templates")
+template = TemplatingEnvironment(path=_MYPARENT.parent / "Templates")
 
 # ============
 # Main script.
@@ -82,10 +82,14 @@ if pairs:
         logger.debug("%s: %s", key, value)
 
 # Process audio tags.
-tags = patterns.RemoveData(tags)
+tags = patterns.RemoveMetaData(tags)
 for profile in argument.profiles:
     if profile.lower() == "albumsort":
         tags = patterns.AlbumSort(tags, argument.encoder)
+    if profile.lower() == "discnumber":
+        tags = patterns.DiscNumber(tags, argument.encoder)
+    if profile.lower() == "tracknumber":
+        tags = patterns.TrackNumber(tags, argument.encoder)
     elif profile.lower() == "encodedfromflac":
         tags = patterns.EncodedFromFLACFile(tags)
     elif profile.lower() == "encodedfromhdtracksflac":
@@ -106,5 +110,5 @@ if pairs:
 
 # Get back audio tags to dBpoweramp Batch Converter.
 with open(argument.tags, mode=WRITE, encoding=UTF16) as fw:
-    fw.write(_template.get_template("Tags").render(tags=dict(iter(tags))))
+    fw.write(template.get_template("Tags").render(tags=dict(iter(tags))))
 sys.exit(0)

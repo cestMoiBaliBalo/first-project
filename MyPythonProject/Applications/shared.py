@@ -10,25 +10,20 @@ import os
 import re
 import sys
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import singledispatch
-from itertools import chain, compress, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
-from operator import itemgetter
+from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from pathlib import Path
 from string import Template
 from subprocess import PIPE, run
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
 import jinja2
 import yaml
 from dateutil.parser import parserinfo
-from mutagen import MutagenError  # type: ignore
-from mutagen.flac import FLAC, FLACNoHeaderError  # type: ignore
 from pytz import timezone
-
-from .callables import filter_extensions, filterfalse_
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -250,55 +245,6 @@ class GetPath(argparse.Action):
 
     def __call__(self, parsobj, namespace, values, option_string=None):
         setattr(namespace, self.dest, list(map(Path, values)))
-
-
-class VorbisComment(Mapping):
-    """
-    Undocumented.
-    """
-
-    def __init__(self, path):
-
-        # [(tag1, value1), (tag1, value2)], [(tag2, value)], [(tag3, value)], ...
-        try:
-            comments = [[(key, value) for value in values] for key, values in FLAC(path).items()]  # type: Iterable[Any]
-        except (FLACNoHeaderError, MutagenError) as err:
-            raise ValueError(err)
-
-        # [(tag1, value1), (tag2, value), (tag3, value), ...]
-        self._collection = dict(chain.from_iterable([compress(item, [1]) for item in comments]))  # type: Dict[str, str]
-
-    def get(self, key):
-        return self._collection.get(key)
-
-    def items(self):
-        return self._collection.items()
-
-    def keys(self):
-        return self._collection.keys()
-
-    def values(self):
-        return self._collection.values()
-
-    def __getitem__(self, item):
-        return self._collection[item]
-
-    def __iter__(self):
-        for key, value in sorted(self._collection.items(), key=itemgetter(0)):
-            yield key, value
-
-    def __len__(self):
-        return len(self._collection)
-
-    def __repr__(self):
-        if not self:
-            return "%s()" % (self.__class__.__name__,)
-        return "%s(%r)" % (self.__class__.__name__, list(self))
-
-    @classmethod
-    def fromdirectory(cls, path):
-        for file in Files(path, excluded=filterfalse_(filter_extensions("flac"))):
-            yield list(cls(file))
 
 
 class TitleCaseBaseConverter(ABC):

@@ -4,7 +4,7 @@ import operator
 from collections import deque
 from functools import wraps
 from itertools import chain, islice, tee
-from operator import eq, is_
+from operator import contains, eq, is_
 from typing import Any, Tuple
 
 __author__ = 'Xavier ROSSET'
@@ -26,6 +26,21 @@ def attrgetter_(attr: str):
         @wraps(func)
         def inner_wrapper(arg):
             return func(operator.attrgetter(attr)(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def contains_(*args):
+    """
+    Undocumented.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return contains(list(args), func(arg))
 
         return inner_wrapper
 
@@ -208,7 +223,7 @@ def split_(char: str):
     return outer_wrapper
 
 
-def substr_(stop: int, *, start: int = 0):
+def slice_(*args: int):
     """
     Undocumented.
     """
@@ -216,7 +231,7 @@ def substr_(stop: int, *, start: int = 0):
     def outer_wrapper(func):
         @wraps(func)
         def inner_wrapper(arg: str):
-            return func(arg)[start:stop]
+            return "".join(islice(func(arg), *args))
 
         return inner_wrapper
 

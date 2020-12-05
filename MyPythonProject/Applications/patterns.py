@@ -77,22 +77,22 @@ class AudioMetadata(MutableMapping):
             return cls(**dict(tags))
 
 
-class DataDecorator(AudioMetadata):
+class MetaDataDecorator(AudioMetadata):
     """
     Undocumented.
     """
 
     def __init__(self, metadata):
-        super(DataDecorator, self).__init__(**dict(iter(metadata)))
+        super(MetaDataDecorator, self).__init__(**dict(iter(metadata)))
 
 
-class RemoveData(DataDecorator):
+class RemoveMetaData(MetaDataDecorator):
     """
     Undocumented.
     """
 
     def __init__(self, metadata):
-        super(RemoveData, self).__init__(metadata)
+        super(RemoveMetaData, self).__init__(metadata)
         self["encodingtime"] = int(datetime.now(tz=timezone(DFTTIMEZONE)).timestamp())
         self["encodingyear"] = datetime.now(tz=timezone(DFTTIMEZONE)).strftime("%Y")
         self["taggingtime"] = format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3)
@@ -101,7 +101,7 @@ class RemoveData(DataDecorator):
                 del self[tag]
 
 
-class EncodedFromFLACFile(DataDecorator):
+class EncodedFromFLACFile(MetaDataDecorator):
     """
     Undocumented.
     """
@@ -111,7 +111,7 @@ class EncodedFromFLACFile(DataDecorator):
         self["encodedby"] = "dBpoweramp Batch Converter on {0} from original FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class EncodedFromHDtracksFLACFile(DataDecorator):
+class EncodedFromHDtracksFLACFile(MetaDataDecorator):
     """
     Undocumented.
     """
@@ -121,7 +121,7 @@ class EncodedFromHDtracksFLACFile(DataDecorator):
         self["encodedby"] = "dBpoweramp Batch Converter on {0} from original HDtracks.com FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class EncodedFromNugsFLACFile(DataDecorator):
+class EncodedFromNugsFLACFile(MetaDataDecorator):
     """
     Undocumented.
     """
@@ -131,7 +131,7 @@ class EncodedFromNugsFLACFile(DataDecorator):
         self["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net FLAC file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class EncodedFromNugsDSDFile(DataDecorator):
+class EncodedFromNugsDSDFile(MetaDataDecorator):
     """
     Undocumented.
     """
@@ -141,7 +141,7 @@ class EncodedFromNugsDSDFile(DataDecorator):
         self["encodedby"] = "dBpoweramp Batch Converter on {0} from original nugs.net DSD file".format(format_date(datetime.now(tz=timezone(DFTTIMEZONE)), template=TEMPLATE3))
 
 
-class AlbumSort(DataDecorator):
+class AlbumSort(MetaDataDecorator):
     """
     Undocumented.
     """
@@ -157,3 +157,37 @@ class AlbumSort(DataDecorator):
                 pass
             else:
                 self["albumsort"] = "{0}.{1}".format(albumsort, self.CODECS[codec.upper()])
+
+
+class TrackNumber(MetaDataDecorator):
+    """
+    Undocumented.
+    """
+    PATTERN = re.compile(r"^(\d{1,2})/(\d{1,2})$")
+    MAPPING = {"DFT": "tracktotal", "LAME": "totaltracks"}
+
+    def __init__(self, metadata, codec):
+        super(TrackNumber, self).__init__(metadata)
+        track = self.get("track")
+        if track:
+            match = self.PATTERN.match(track)
+            if match:
+                self["track"] = match.group(1)
+                self[self.MAPPING.get(codec.upper(), self.MAPPING["DFT"])] = match.group(2)
+
+
+class DiscNumber(MetaDataDecorator):
+    """
+    Undocumented.
+    """
+    PATTERN = re.compile(r"^(\d{1,2})/(\d{1,2})$")
+    MAPPING = {"DFT": "disctotal", "LAME": "totaldiscs"}
+
+    def __init__(self, metadata, codec):
+        super(DiscNumber, self).__init__(metadata)
+        disc = self.get("disc")
+        if disc:
+            match = self.PATTERN.match(disc)
+            if match:
+                self["disc"] = match.group(1)
+                self[self.MAPPING.get(codec.upper(), self.MAPPING["DFT"])] = match.group(2)

@@ -5,15 +5,16 @@ import re
 from collections.abc import Sequence
 from contextlib import suppress
 from functools import partial
-from itertools import chain, islice, starmap
-from operator import contains, itemgetter
+from itertools import chain, groupby, islice, starmap
+from operator import attrgetter, contains, itemgetter
 from pathlib import Path
 from typing import Any, Iterator, List, Mapping, MutableMapping, NamedTuple, Tuple, Union
 
 from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_discs
-from Applications.decorators import eq_, itemgetter_, none_
+from Applications.decorators import contains_, eq_, itemgetter_, lower_, none_
+from Applications.more_shared import APEv2Tag, VorbisComment
 from Applications.parsers import database_parser
-from Applications.shared import GetPath, VorbisComment, partitioner
+from Applications.shared import Files, GetPath, partitioner
 
 __author__ = "Xavier ROSSET"
 __maintainer__ = "Xavier ROSSET"
@@ -30,6 +31,7 @@ _MYPARENT = Path(os.path.abspath(__file__)).parent
 # ========
 class Track(Sequence):
     TAGS = []  # type: List[str]
+    MAPPING = {".ape": APEv2Tag, ".flac": VorbisComment, ".wv": APEv2Tag}
 
     def __init__(self, database: str, *paths: Path, **kwargs: Mapping[str, int]) -> None:
         """
@@ -38,14 +40,16 @@ class Track(Sequence):
         :param paths:
         :param kwargs:
         """
+        collection = []  # type: Any
         self._database = database  # type: str
         self._genres = kwargs.get("genres", {"Rock": 9})  # type: Mapping[str, int]
         self._languages = kwargs.get("languages", {"English", 1})  # type: Mapping[str, int]
         self._providers = kwargs.get("providers", {})  # type: Mapping[str, int]
-        _collection = [list(VorbisComment.fromdirectory(path)) for path in paths]  # [[(tag1, value), (tag2, value), (tag3, value), ...], ...]
-        _collection = chain.from_iterable(_collection)  # [(tag1, value), (tag2, value), (tag3, value), ...]
-        _collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in _collection]  # [(tag1, value), (tag2, value), (tag3, value), ...]
-        self._collection = list(starmap(self.__update, _collection))  # type: List[Any]
+        for extension, group in filter(contains_(".ape", ".flac", ".wv")(lower_(itemgetter(0))), groupby(self._get_files(*paths), key=attrgetter("suffix"))):
+            for file in group:
+                collection.append(iter(self.MAPPING[extension](file)))
+        collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in collection]  # [(tag1, value), (tag2, value), (tag3, value), ...]
+        self._collection = list(starmap(self.__update, collection))  # type: List[Any]
 
     def __contains__(self, item):
         return item in self._collection
@@ -82,6 +86,15 @@ class Track(Sequence):
         comments.update(tracknumber=int(comments.get("tracknumber", 0)))
         comments.update(tracktotal=int(comments.get("tracktotal", 0)))
         return list(comments.items())
+
+    @staticmethod
+    def _get_files(*paths: Path) -> Iterator[Path]:
+        files = chain.from_iterable(list(Files(path)) for path in paths)  # type: Any
+        files = sorted(files, key=attrgetter("suffix"))
+        files = sorted(files, key=attrgetter("stem"))
+        files = sorted(files, key=attrgetter("parent"))
+        for file in files:
+            yield file
 
 
 class BootlegTrack(Track):
@@ -374,13 +387,14 @@ class DefaultTrack(Track):
 # ============
 if __name__ == "__main__":
     import argparse
+    import datetime
     import logging.config
+    import pytz
     import sys
 
     import yaml
 
-    from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8
-
+    from Applications.shared import TemplatingEnvironment, rjustify, stringify, UTF8, WRITE, TEMP, DFTTIMEZONE
 
     # ----- Classes.
     class GetClass(argparse.Action):
@@ -395,9 +409,10 @@ if __name__ == "__main__":
 
 
     # ----- Arguments parser.
-    parser = argparse.ArgumentParser(parents=[database_parser])
+    parser = argparse.ArgumentParser(parents=[database_parser], conflict_handler="resolve")
     parser.add_argument("album", choices=["bootleg", "default"], action=GetClass)
     parser.add_argument("path", nargs="+", action=GetPath)
+    parser.add_argument("--test", action="store_true")
 
     # ----- Load logging configuration.
     with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:
@@ -417,10 +432,19 @@ if __name__ == "__main__":
                                          "stringify": stringify})
 
     # ----- Get tracks collection.
-    collection = arguments.klass(arguments.db, *arguments.path, countries=countries, genres=genres, languages=languages, providers=providers)
+    collection = arguments.klass(arguments.db, *arguments.path, countries=countries, genres=genres, languages=languages, providers=providers)  # type: Any
 
     # ----- Print raised exceptions.
     print(ENVIRONMENT.get_template("T02").render(collection=collection.exceptions))
 
+    # ----- Dump tracks collection.
+    collection = list(collection)
+    collektion = list(collection)
+    collektion.insert(0, pytz.timezone("UTC").localize(datetime.datetime.utcnow()).astimezone(pytz.timezone(DFTTIMEZONE)).isoformat())
+    with open(TEMP / "digitaldiscs.yml", mode=WRITE, encoding=UTF8) as stream:
+        yaml.dump(collektion, stream)
+
     # ----- Insert tracks collection into database.
+    if arguments.test:
+        sys.exit(0)
     sys.exit(insert_discs(*collection))

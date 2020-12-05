@@ -15,7 +15,8 @@ from unittest.mock import patch
 
 from ..callables import filter_extensions, filterfalse_
 from ..decorators import itemgetter_, none_, split_
-from ..shared import Files, TitleCaseConverter, ToBoolean, UTF8, VorbisComment, booleanify, eq_string_, get_rippingapplication, now
+from ..more_shared import VorbisComment
+from ..shared import Files, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -476,10 +477,10 @@ class TestVorbisComment(unittest.TestCase):
         os.chdir(self._cwd)
 
     def test_t01(self):
-        comments = VorbisComment(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
-                                                 / "CD1"
-                                                 / "1.Free Lossless Audio Codec"
-                                                 / "1.20000000.1.13.D1.T01.flac"))
+        comments = VorbisComment(Path(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                      / "CD1"
+                                                      / "1.Free Lossless Audio Codec"
+                                                      / "1.20000000.1.13.D1.T01.flac")))
         comments = sorted(filter(itemgetter_(0)(partial(contains, ["album", "artist", "artistsort", "label", "upc"])), comments), key=itemgetter(0))
         self.assertListEqual(comments, [("album", "All That You Can’t Leave Behind (20th Anniversary Edition)"),
                                         ("artist", "U2"),
@@ -488,10 +489,10 @@ class TestVorbisComment(unittest.TestCase):
                                         ("upc", "00602507404635")])
 
     def test_t02(self):
-        comments = VorbisComment(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
-                                                 / "CD1"
-                                                 / "1.Free Lossless Audio Codec"
-                                                 / "1.20000000.1.13.D1.T01.flac"))
+        comments = VorbisComment(Path(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                      / "CD1"
+                                                      / "1.Free Lossless Audio Codec"
+                                                      / "1.20000000.1.13.D1.T01.flac")))
         comments = sorted(filter(itemgetter_(0)(partial(contains, ["mediaprovider", "source", "title"])), comments), key=itemgetter(0))
         self.assertListEqual(comments, [("mediaprovider", "HDtracks.com"),
                                         ("source", "Online provider"),
