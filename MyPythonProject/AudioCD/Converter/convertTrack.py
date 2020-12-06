@@ -108,7 +108,7 @@ if pairs:
     for key, value in pprint_mapping(*pairs):
         logger.debug("%s: %s", key, value)
 
-# Get back audio tags to dBpoweramp Batch Converter.
+# Send back audio tags to dBpoweramp Batch Converter.
 with open(argument.tags, mode=WRITE, encoding=UTF16) as fw:
     fw.write(template.get_template("Tags").render(tags=dict(iter(tags))))
 sys.exit(0)

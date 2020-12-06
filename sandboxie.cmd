@@ -111,17 +111,22 @@ EXIT /B %ERRORLEVEL%
 @REM =================
 :CHECK_TASK
 SETLOCAL
-python -m Applications.Tables.Tasks.shared %_taskid% check --delta %_delta%
+SET _errorlevel=
+REM python -m Applications.Tables.Tasks.shared %_taskid% check --delta %_delta%
+REM SET _errolevel=%ERRORLEVEL%
+SET _errorlevel=1
 (
     ENDLOCAL
-    EXIT /B %ERRORLEVEL%
+    EXIT /B %_errorlevel%
 )
 
 
 :UPDATE_TASK
 SETLOCAL
+SET _errorlevel=
 python -m Applications.Tables.Tasks.shared %_taskid% update
+SET _errorlevel=%ERRORLEVEL%
 (
     ENDLOCAL
-    EXIT /B %ERRORLEVEL%
+    EXIT /B %_errorlevel%
 )

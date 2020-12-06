@@ -344,3 +344,17 @@ class TestGrabbedTrack11(unittest.TestCase):
         self.assertNotIn("database", self._tags)
         self.assertNotIn("lossless", self._tags)
         self.assertNotIn("offset", self._tags)
+
+
+class TestConvertedTrack01(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "converter_idtags_01.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.20200000.1.02")
+        self.assertEqual(self._tags["source"], "Perfect (Lossless) [flac]")

@@ -5,10 +5,10 @@ import re
 from collections.abc import Sequence
 from contextlib import suppress
 from functools import partial
-from itertools import chain, groupby, islice, starmap
+from itertools import chain, groupby, islice, starmap, tee
 from operator import attrgetter, contains, itemgetter
 from pathlib import Path
-from typing import Any, Iterator, List, Mapping, MutableMapping, NamedTuple, Tuple, Union
+from typing import Any, Dict, Iterator, List, Mapping, NamedTuple, Tuple, Union
 
 from Applications.Tables.Albums.shared import get_countries, get_genres, get_languages, get_providers, insert_discs
 from Applications.decorators import contains_, eq_, itemgetter_, lower_, none_
@@ -48,8 +48,8 @@ class Track(Sequence):
         for extension, group in filter(contains_(".ape", ".flac", ".wv")(lower_(itemgetter(0))), groupby(self._get_files(*paths), key=attrgetter("suffix"))):
             for file in group:
                 collection.append(iter(self.MAPPING[extension](file)))
-        collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in collection]  # [(tag1, value), (tag2, value), (tag3, value), ...]
-        self._collection = list(starmap(self.__update, collection))  # type: List[Any]
+        collection = [list(filter(itemgetter_(0)(partial(contains, self.TAGS)), item)) for item in collection]
+        self._collection = list(starmap(self.__update, collection))  # type: Any
 
     def __contains__(self, item):
         return item in self._collection
@@ -69,13 +69,13 @@ class Track(Sequence):
             return "%s()" % (self.__class__.__name__,)
         return "%s(%r)" % (self.__class__.__name__, list(self))
 
-    def __update(self, *items: Tuple[str, str]) -> List[Tuple[Union[int, str], ...]]:
+    def __update(self, *items: Tuple[str, str]) -> Iterator[Tuple[str, Union[int, str]]]:
         """
 
         :param items:
         :return:
         """
-        comments = dict(items)  # type: MutableMapping[str, Union[int, str]]
+        comments = dict(items)  # type: Dict[str, Union[int, str]]
         comments.update(albumid=f"{comments.get('artistsort', comments.get('artist'))[0]}.{comments.get('artistsort', comments.get('artist'))}.{comments.get('albumsort')[:-3]}")
         comments.update(bonus=comments.get("titlesort", "       N")[7])
         comments.update(discnumber=int(comments.get("discnumber", 0)))
@@ -85,14 +85,15 @@ class Track(Sequence):
         comments.update(titlelanguage=self._languages.get(comments.get("titlelanguage", "English")))
         comments.update(tracknumber=int(comments.get("tracknumber", 0)))
         comments.update(tracktotal=int(comments.get("tracktotal", 0)))
-        return list(comments.items())
+        for key, value in comments.items():
+            yield key, value
 
     @staticmethod
     def _get_files(*paths: Path) -> Iterator[Path]:
-        files = chain.from_iterable(list(Files(path)) for path in paths)  # type: Any
-        files = sorted(files, key=attrgetter("suffix"))
+        files = chain.from_iterable(iter(Files(path)) for path in paths)  # type: Any
         files = sorted(files, key=attrgetter("stem"))
         files = sorted(files, key=attrgetter("parent"))
+        files = sorted(files, key=attrgetter("suffix"))
         for file in files:
             yield file
 
@@ -162,7 +163,6 @@ class BootlegTrack(Track):
         :param paths:
         :param kwargs:
         """
-        # self._collection = []  # type: List[Any]
         super(BootlegTrack, self).__init__(database, *paths, **kwargs)
         self._countries = kwargs.get("countries", {})  # type: Mapping[str, int]
         tracks = starmap(self._update, self._collection)  # type: Any
@@ -177,13 +177,13 @@ class BootlegTrack(Track):
         tracks = [self.TRACKS(*track) for track in tracks]
         self._collection = list(tracks)
 
-    def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
+    def _update(self, *items: Tuple[str, Union[int, str]]) -> Tuple[Union[int, str], ...]:
         """
 
         :param items:
         :return:
         """
-        comments = dict(items)  # type: MutableMapping[str, Union[int, str]]
+        comments = dict(items)  # type: Dict[str, Union[int, str]]
 
         # ----- Update specific tags or create new ones.
         comments.update(bootlegdisc="Y")
@@ -218,7 +218,7 @@ class BootlegTrack(Track):
             comments.update(publisher=self._providers.get(comments.get("publisher")))
 
         # ----- Gather values together into a tuple then remove duplicates.
-        return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))  # (value1, value2, value3)
+        return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))
 
     def __iter__(self):
         for track in self._collection:
@@ -312,7 +312,6 @@ class DefaultTrack(Track):
         :param paths:
         :param kwargs:
         """
-        # self._collection = []  # type: List[Any]
         super(DefaultTrack, self).__init__(database, *paths, **kwargs)
         tracks = starmap(self._update, self._collection)  # type: Any
 
@@ -327,13 +326,13 @@ class DefaultTrack(Track):
         tracks = [self.TRACKS(*track) for track in tracks]
         self._collection = list(tracks)
 
-    def _update(self, *items: Tuple[str, str]) -> Tuple[Union[int, str], ...]:
+    def _update(self, *items: Tuple[str, Union[int, str]]) -> Tuple[Union[int, str], ...]:
         """
 
         :param items:
         :return:
         """
-        comments = dict(items)  # type: MutableMapping[str, Union[int, str]]
+        comments = dict(items)  # type: Dict[str, Union[int, str]]
         comments.update(bootlegdisc="N")
         comments.update(date=int(comments.get("date", 0)))
         comments.update(deluxe="N")
@@ -342,6 +341,8 @@ class DefaultTrack(Track):
         comments.update(mediaprovider=self._providers.get(comments.get("mediaprovider")))
         comments.update(origyear=int(comments.get("origyear", 0)))
         comments.update(upc=comments.get("upc", "999999999999"))
+
+        # ----- Gather values together into a tuple then remove duplicates.
         return tuple(chain(*islice(zip(*sorted(comments.items(), key=itemgetter(0))), 1, 2)))
 
     def __iter__(self):
@@ -409,10 +410,10 @@ if __name__ == "__main__":
 
 
     # ----- Arguments parser.
-    parser = argparse.ArgumentParser(parents=[database_parser], conflict_handler="resolve")
+    parser = argparse.ArgumentParser(parents=[database_parser])
     parser.add_argument("album", choices=["bootleg", "default"], action=GetClass)
     parser.add_argument("path", nargs="+", action=GetPath)
-    parser.add_argument("--test", action="store_true")
+    parser.add_argument("--skip", action="store_true")
 
     # ----- Load logging configuration.
     with open(_MYPARENT.parent / "Resources" / "logging.yml", encoding=UTF8) as stream:
@@ -438,13 +439,13 @@ if __name__ == "__main__":
     print(ENVIRONMENT.get_template("T02").render(collection=collection.exceptions))
 
     # ----- Dump tracks collection.
-    collection = list(collection)
-    collektion = list(collection)
-    collektion.insert(0, pytz.timezone("UTC").localize(datetime.datetime.utcnow()).astimezone(pytz.timezone(DFTTIMEZONE)).isoformat())
+    coll1, coll2 = tee(collection)
+    coll1 = list(coll1)
+    coll1.insert(0, pytz.timezone("UTC").localize(datetime.datetime.utcnow()).astimezone(pytz.timezone(DFTTIMEZONE)).isoformat())
     with open(TEMP / "digitaldiscs.yml", mode=WRITE, encoding=UTF8) as stream:
-        yaml.dump(collektion, stream)
+        yaml.dump(coll1, stream)
 
     # ----- Insert tracks collection into database.
-    if arguments.test:
+    if arguments.skip:
         sys.exit(0)
-    sys.exit(insert_discs(*collection))
+    sys.exit(insert_discs(*coll2))

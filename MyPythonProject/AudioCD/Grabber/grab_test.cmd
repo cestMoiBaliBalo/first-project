@@ -120,6 +120,12 @@ SETLOCAL
 @IF DEFINED _action IF %_action% EQU 2 (
     PUSHD ..
     CALL insertDigitalDiscs.cmd "F:\U\U2\1\2000 - All That You Can’t Leave Behind (20th Anniversary Edition)\CD1\1.Free Lossless Audio Codec" T
+    SET _errorlevel=!ERRORLEVEL!
+    IF %_verbose% EQU 1 (
+        ECHO !_errorlevel! record(s^) inserted into the audio database.
+        ECHO:
+        ECHO:
+    )
     POPD
 )
 ENDLOCAL

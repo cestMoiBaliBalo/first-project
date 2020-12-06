@@ -13,13 +13,14 @@ __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
 
+# =====================
+# Decorators factories.
+# =====================
 def attrgetter_(attr: str):
     """
-    That decorator allows to get an object attribute for being used as argument
-    by any decorated function.
-
-    :param attr: object attribute name.
-    :return: callable object.
+    Decorators factory.
+    Make a decorator that grabs, from any object argument, the attribute with the name `attr`.
+    The grabbed value is then used by the decorated function.
     """
 
     def outer_wrapper(func):
@@ -32,81 +33,11 @@ def attrgetter_(attr: str):
     return outer_wrapper
 
 
-def contains_(*args):
-    """
-    Undocumented.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            return contains(list(args), func(arg))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def eq_(value_first):
-    """
-    That decorator allows to set the second argument of the function operator.eq
-    with the value returned by any decorated function.
-
-    :param value_first: value used to freeze the first positional argument of operator.eq.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg):
-            return eq(value_first, func(arg))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def int_(base: int = 10):
-    """
-    That decorator allows to convert a characters string to an integer number
-    for being used as argument by any decorated function.
-
-    :param base. decimal base used to perform the conversion. Base 10 is the default value.
-    :return: callable object.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg: str):
-            return func(int(arg, base=base))
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
-def cvtint_(base: int = 10):
-    """
-    Undocumented.
-    """
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg: str):
-            return int(func(arg), base=base)
-
-        return inner_wrapper
-
-    return outer_wrapper
-
-
 def itemgetter_(index: int = 0):
     """
-    That decorator allows to get a sequence item for being used as argument
-    by any decorated function.
-
-    :param index: item index.
-    :return: callable object.
+    Decorators factory.
+    Make a decorator that gets, from any iterable argument, the item with the index `index`.
+    The grabbed value is then used by the decorated function.
     """
 
     def outer_wrapper(func):
@@ -119,27 +50,95 @@ def itemgetter_(index: int = 0):
     return outer_wrapper
 
 
-def lower_(func):
+def contains_(*args):
     """
-    That decorator allows to set to lowercase the result value of any decorated function.
-
-    :return: callable object.
+    Decorators factory.
+    Make a decorator that sets any function return value as the second argument
+    for the function `operator.contains`.
     """
 
-    @wraps(func)
-    def wrapper(arg):
-        return func(arg).lower()
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return contains(args, func(arg))
 
-    return wrapper
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def eq_(value_first):
+    """
+    Decorators factory.
+    Make a decorator that sets any function return value as the second argument
+    for the function `operator.eq`.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg):
+            return eq(value_first, func(arg))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def cvtint_(base: int = 10):
+    """
+    Decorators factory.
+    Make a decorator that sets any function return value as argument
+    for the builtin function `int`.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return int(func(arg), base=base)
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def int_(base: int = 10):
+    """
+    Decorators factory.
+    Make a decorator that maps any argument to an integer number.
+    The mapped value is then used by the decorated function.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return func(int(arg, base=base))
+
+        return inner_wrapper
+
+    return outer_wrapper
+
+
+def slice_(*args: int):
+    """
+    Decorators factory.
+    Make a decorator that sets any function return value as the first argument
+    for the function `itertools.islice`.
+    """
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(arg: str):
+            return "".join(islice(func(arg), *args))
+
+        return inner_wrapper
+
+    return outer_wrapper
 
 
 def map_(index: int):
     """
-    That decorator allows to map any decorated function with all sequences items
-    located at index `index`.
-
-    :param index: item index.
-    :return: callable object.
+    Decorators factory.
+    Make a decorator that maps with the decorated function any item from an iterable argument with the index `index`.
     """
 
     def outer_wrapper(func):
@@ -164,53 +163,11 @@ def map_(index: int):
     return outer_wrapper
 
 
-def none_(func):
-    """
-    Undocumented.
-    """
-
-    @wraps(func)
-    def wrapper(arg):
-        return is_(None, func(arg))
-
-    return wrapper
-
-
-def lstrip_(func):
-    """
-    That decorator allows to strip the left whitespaces from the result value of any decorated function.
-
-    :return: callable object.
-    """
-
-    @wraps(func)
-    def wrapper(arg):
-        return func(arg).lstrip()
-
-    return wrapper
-
-
-def rstrip_(func):
-    """
-    That decorator allows to strip the right whitespaces from the result value of any decorated function.
-
-    :return: callable object.
-    """
-
-    @wraps(func)
-    def wrapper(arg):
-        return func(arg).rstrip()
-
-    return wrapper
-
-
 def split_(char: str):
     """
-    That decorator allows to split a characters string for being used as argument
-    by any decorated function.
-
-    :param char: character used for processing the splitting.
-    :return: callable object.
+    Decorators factory.
+    Make a decorator that splits any string argument into a list.
+    The returned list is then used by the decorated function.
     """
 
     def outer_wrapper(func):
@@ -223,16 +180,54 @@ def split_(char: str):
     return outer_wrapper
 
 
-def slice_(*args: int):
+# ===========
+# Decorators.
+# ===========
+def none_(func):
     """
-    Undocumented.
+    Decorator that sets any function return value as the second argument
+    for the function `operator.is_`.
+    The first argument is frozen to `None`.
     """
 
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(arg: str):
-            return "".join(islice(func(arg), *args))
+    @wraps(func)
+    def wrapper(arg):
+        return is_(None, func(arg))
 
-        return inner_wrapper
+    return wrapper
 
-    return outer_wrapper
+
+def lower_(func):
+    """
+    Decorator that sets to lowercase any function return value.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).lower()
+
+    return wrapper
+
+
+def lstrip_(func):
+    """
+    Decorator that removes left spaces from any function return value.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).lstrip()
+
+    return wrapper
+
+
+def rstrip_(func):
+    """
+    Decorator that removes right spaces from any function return value.
+    """
+
+    @wraps(func)
+    def wrapper(arg):
+        return func(arg).rstrip()
+
+    return wrapper

@@ -34,7 +34,6 @@ class CustomDialect(csv.Dialect):
 # ===================
 # Pattern decorators.
 # ===================
-# Pattern used by `AudioCD/Converter/convertTrack.py` from dBpoweramp Batch Converter for transforming audio metadata.
 class AudioMetadata(MutableMapping):
     """
     Undocumented.

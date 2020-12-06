@@ -634,18 +634,10 @@ IF ERRORLEVEL 14 (
 )
 
 
-REM ------------------------------
-REM Sync local audio repositories.
-REM ------------------------------
-IF ERRORLEVEL 13 (
-    CLS
-    DEL %TEMP%\%_xxcopy% 2> NUL
-    PUSHD Interfaces\Sources\01
-    python main.py
-    IF NOT ERRORLEVEL 1 CALL :CONFIRM
-    POPD
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 13 GOTO MENU
 
 
 REM ----------
