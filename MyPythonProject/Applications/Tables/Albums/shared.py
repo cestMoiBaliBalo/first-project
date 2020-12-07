@@ -195,30 +195,29 @@ def insert_defaultdiscs_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
 
 def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
     """
-    Get album header matching the input primary key(s).
+    Get album(s) header(s) matching the keywords arguments.
 
-    :param db:
-    :param kwargs:
-    :return: Album detail gathered into a namedtuple.
+    :param db: Database where the headers are taken from. Defaults to production database.
+    :param kwargs: Facultative keywords arguments for filtering the extracted headers.
+    :return: Iterator that yields each extracted header as a named tuple.
     """
 
     # -----
-    Album = NamedTuple("Album",
-                       [("rowid", int),
-                        ("albumid", str),
-                        ("artistsort", str),
-                        ("albumsort", str),
-                        ("artist", str),
-                        ("discs", int),
-                        ("genre", str),
-                        ("bootleg", bool),
-                        ("incollection", bool),
-                        ("language", str),
-                        ("month_created", str),
-                        ("utc_created", datetime),
-                        ("utc_modified", datetime),
-                        ("album", str),
-                        ("cover", str)])
+    Header = NamedTuple("AlbumHeader", [("rowid", int),
+                                        ("albumid", str),
+                                        ("artistsort", str),
+                                        ("albumsort", str),
+                                        ("artist", str),
+                                        ("discs", int),
+                                        ("genre", str),
+                                        ("bootleg", bool),
+                                        ("incollection", bool),
+                                        ("language", str),
+                                        ("month_created", str),
+                                        ("utc_created", datetime),
+                                        ("utc_modified", datetime),
+                                        ("album", str),
+                                        ("cover", str)])
 
     # -----
     albums = ((row.album_rowid,
@@ -237,11 +236,10 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
                row.album,
                COVER.substitute(path=os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art"), letter=row.artistsort[0], artistsort=row.artistsort, albumsort=row.albumsort))
               for row in _get_albums(db, **kwargs))
-    albums = sorted(set(albums), key=itemgetter(1))  # type: ignore
 
     # -----
-    for album in albums:
-        yield Album(*album)
+    for album in sorted(set(albums), key=itemgetter(1)):
+        yield Header(*album)
 
 
 def get_albumdetail(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
@@ -908,45 +906,44 @@ def _insert_discs(*iterables: Tuple[Any, ...]) -> int:
 
 def _get_albums(db: str, **kwargs):
     """
-    Get digital audio albums detail.
+    Get digital audio albums details.
 
-    :param db: Database storing digital audio tables.
-    :return: Digital audio albums detail sorted by album ID, disc ID, track ID.
+    :param db: Database where the details are taken from.
+    :return: Iterator that yields each detail as a named tuple.
     """
     logger = logging.getLogger("{0}._get_albums".format(__name__))
     boolean_to_integer: Mapping[bool, int] = {False: 0, True: 1}
     where, args = "", ()  # type: str, Tuple[Union[bool, int, str], ...]
 
     #  1. Initializations.
-    Track = NamedTuple("Track",
-                       [("album_rowid", int),
-                        ("track_rowid", int),
-                        ("albumid", str),
-                        ("albumsort", str),
-                        ("discs", int),
-                        ("bootleg", bool),
-                        ("incollection", bool),
-                        ("language", str),
-                        ("discid", int),
-                        ("tracks", int),
-                        ("disc_live", bool),
-                        ("disc_bonus", bool),
-                        ("trackid", int),
-                        ("title", str),
-                        ("track_live", int),
-                        ("track_bonus", int),
-                        ("artistsort", str),
-                        ("artist", str),
-                        ("origyear", int),
-                        ("year", int),
-                        ("album", str),
-                        ("label", str),
-                        ("genre", str),
-                        ("upc", str),
-                        ("utc_created", datetime),
-                        ("utc_modified", datetime),
-                        ("utc_played", datetime),
-                        ("played", int)])
+    Detail = NamedTuple("AlbumDetail", [("album_rowid", int),
+                                        ("track_rowid", int),
+                                        ("albumid", str),
+                                        ("albumsort", str),
+                                        ("discs", int),
+                                        ("bootleg", bool),
+                                        ("incollection", bool),
+                                        ("language", str),
+                                        ("discid", int),
+                                        ("tracks", int),
+                                        ("disc_live", bool),
+                                        ("disc_bonus", bool),
+                                        ("trackid", int),
+                                        ("title", str),
+                                        ("track_live", int),
+                                        ("track_bonus", int),
+                                        ("artistsort", str),
+                                        ("artist", str),
+                                        ("origyear", int),
+                                        ("year", int),
+                                        ("album", str),
+                                        ("label", str),
+                                        ("genre", str),
+                                        ("upc", str),
+                                        ("utc_created", datetime),
+                                        ("utc_modified", datetime),
+                                        ("utc_played", datetime),
+                                        ("played", int)])
 
     #  2. SELECT clause.
     select = "SELECT album_rowid, " \
@@ -1056,7 +1053,7 @@ def _get_albums(db: str, **kwargs):
 
     #  6. Run SQL statement.
     with DatabaseConnection(db) as conn:
-        for row in (Track(*row) for row in conn.execute(sql, args)):
+        for row in (Detail(*row) for row in conn.execute(sql, args)):
             yield row
 
 

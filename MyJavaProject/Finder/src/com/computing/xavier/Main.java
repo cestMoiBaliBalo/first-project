@@ -6,7 +6,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -61,7 +61,8 @@ public class Main implements Callable<Integer> {
                     writeFile(Integer.toString(target), environment.toString(), output, collection.getFiles());
                 } catch (IOException exception) {
                     System.out.println(exception.getMessage());
-                } catch (NullPointerException ignore) {}
+                } catch (NullPointerException ignore) {
+                }
 
                 Map<String, Integer> directories = collection.getDirectories();
                 Map<String, Integer> sorted = new TreeMap<>(directories);
@@ -75,7 +76,7 @@ public class Main implements Callable<Integer> {
         return 0;
     }
 
-    private static void writeFile(String target, String environment, Path path, ArrayList<String[]> files) throws IOException {
+    private static void writeFile(String target, String environment, Path path, List<String[]> files) throws IOException {
         try (BufferedWriter outfile = Files.newBufferedWriter(path, StandardCharsets.ISO_8859_1, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
             for (String[] file : files) {
                 outfile.write(target + "|" + environment + "|" + file[0] + "|" + file[1] + "|" + file[2]);

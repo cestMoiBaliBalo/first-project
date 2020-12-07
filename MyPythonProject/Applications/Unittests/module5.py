@@ -358,3 +358,17 @@ class TestConvertedTrack01(unittest.TestCase):
     def test_t01(self):
         self.assertEqual(self._tags["albumsort"], "1.20200000.1.02")
         self.assertEqual(self._tags["source"], "Perfect (Lossless) [flac]")
+
+
+class TestConvertedTrack02(unittest.TestCase):
+
+    def setUp(self):
+        self._tags = {}
+        with open(TEMP / "converter_idtags_03.txt", encoding=UTF16) as stream:
+            tags = csv.reader(stream, dialect=CustomDialect())  # type: Any
+            tags = sorted(tags, key=operator.itemgetter(0))
+            self._tags = dict(tags)
+
+    def test_t01(self):
+        self.assertEqual(self._tags["albumsort"], "1.20200000.1.01")
+        self.assertEqual(self._tags["source"], "Perfect (Lossless) [flac]")

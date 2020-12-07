@@ -24,9 +24,12 @@ REM Initializations 2.
 REM ==================
 SET _album_0=
 SET _album_1=default
-SET _album_100=
 SET _album_2=bootleg
+SET _album_100=
 SET _album_200=
+SET _album_300=
+SET _album_400=
+SET _drive=%~d1
 
 
 REM ============
@@ -40,7 +43,7 @@ PUSHD MyJavaProject\Albums\out\production\Albums
 java com.computing.xavier.Main "%~1"
 SET _type=%ERRORLEVEL%
 IF NOT DEFINED _album_%_type% (
-    SET _errorlevel=-1
+    SET _errorlevel=9%_type%
     POPD
     GOTO END
 )
@@ -66,7 +69,11 @@ POPD
     IF NOT DEFINED _caller (
         ECHO:
         ECHO:
-        IF %_errorlevel% GTR 0 ECHO Disc inserted into the local audio database.
+        IF %_errorlevel% EQU 9100 ECHO Please provide an absolute path.
+        IF %_errorlevel% EQU 9200 ECHO Please provide an existing path.
+        IF %_errorlevel% EQU 9300 ECHO Please provide a coherent root drive. Should be F instead of %_drive:~0,-1%^!
+        IF %_errorlevel% EQU 9400 ECHO Please provide enough directories to guess the album type.
+        IF %_errorlevel% GTR 0 IF %_errorlevel% LSS 9100 ECHO Disc inserted into the local audio database.
         IF %_errorlevel% EQU 0 ECHO Disc not inserted (is it already present into the local audio database?^).
         ECHO:
         ECHO:

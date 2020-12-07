@@ -15,7 +15,7 @@ from Applications.shared import Files
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
-__status__ = "Development"
+__status__ = "Production"
 
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem

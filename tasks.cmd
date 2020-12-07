@@ -485,10 +485,21 @@ IF ERRORLEVEL 21 (
 )
 
 
-REM ----------
-REM Available.
-REM ----------
-IF ERRORLEVEL 20 GOTO MENU
+REM -------------------------
+REM Get SQLite tables schema.
+REM -------------------------
+IF ERRORLEVEL 20 (
+    CLS
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    python master.py
+    ECHO:
+    ECHO:
+    ECHO:
+    PAUSE
+    ENDLOCAL
+    GOTO MENU
+)
 
 
 REM ----------

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import os
 import sqlite3
 from datetime import date, datetime
@@ -19,26 +20,24 @@ __status__ = "Production"
 Album = NamedTuple("Album", [("rowid", int),
                              ("albumid", str),
                              ("played", datetime),
-                             ("played_year", int),
-                             ("played_month", int),
-                             ("played_year_month", int),
+                             ("year_played", int),
+                             ("month_played", int),
+                             ("year_month_played", int),
                              ("artistsort", str),
                              ("albumsort", str),
                              ("artist", str),
                              ("genre", str),
                              ("disc", int),
-                             ("discs", int),
-                             ("tracks", int),
                              ("bootleg", bool),
                              ("origyear", int),
                              ("year", int),
                              ("album", str),
                              ("label", str),
                              ("upc", str),
-                             ("bootleg_date", date),
-                             ("bootleg_city", str),
-                             ("bootleg_country", str),
-                             ("bootleg_tour", str),
+                             ("live_date", date),
+                             ("live_city", str),
+                             ("live_country", str),
+                             ("live_tour", str),
                              ("cover", str)])
 
 # ==========
@@ -78,27 +77,25 @@ def _get_playeddiscs(db: str, **kwargs):
     select: str = "SELECT " \
                   "rowid, " \
                   "albumid, " \
-                  "played_date, " \
-                  "played_year, " \
-                  "played_month, " \
-                  "played_year*100 + played_month AS played_year_month, " \
+                  "utc_played, " \
+                  "year_played, " \
+                  "month_played, " \
+                  "year_played*100 + month_played AS yymm_played, " \
                   "artistsort, " \
                   "albumsort, " \
                   "artist, " \
                   "genre, " \
                   "discid, " \
-                  "discs, " \
-                  "tracks, " \
                   "is_bootleg, " \
                   "origyear, " \
                   "year, " \
                   "album, " \
                   "label, " \
                   "upc, " \
-                  "bootleg_date, " \
-                  "bootleg_city, " \
-                  "bootleg_country, " \
-                  "bootleg_tour " \
+                  "live_date, " \
+                  "live_city, " \
+                  "live_country, " \
+                  "live_tour " \
                   "FROM playeddiscs_vw "
 
     #  3. WHERE clause.
@@ -157,15 +154,12 @@ def _get_playeddiscs(db: str, **kwargs):
             args += (item,)
         where = "{0}) AND ".format(where[:-4])
 
-    # 4. ORDER BY clause.
-    # orderby: str = "ORDER BY {0}".format(", ".join(kwargs.get("orderby", ["rowid"])))
-
-    #  5. Build SQL statement.
+    #  4. Build SQL statement.
     sql = select  # type: str
     if where:
         sql = f"{select} WHERE {where[:-5]}"
 
-    #  6. Run SQL statement.
+    #  5. Run SQL statement.
     #     Callers are in charge of filtering fields depending on the returned albums quality (default or bootleg).
     #     Shared function main role consists only in returning all fields without applying any segmentation.
     rows = []
@@ -174,27 +168,25 @@ def _get_playeddiscs(db: str, **kwargs):
             cover = COVER.substitute(path=os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art"), letter=row["artistsort"][0], artistsort=row["artistsort"], albumsort=row["albumsort"])
             rows.append(Album._make((row["rowid"],
                                      row["albumid"],
-                                     row["played_date"],
-                                     row["played_year"],
-                                     row["played_month"],
-                                     row["played_year_month"],
+                                     row["utc_played"],
+                                     row["year_played"],
+                                     row["month_played"],
+                                     row["yymm_played"],
                                      row["artistsort"],
                                      row["albumsort"],
                                      row["artist"],
                                      row["genre"],
                                      row["discid"],
-                                     row["discs"],
-                                     row["tracks"],
                                      row["is_bootleg"],
                                      row["origyear"],
                                      row["year"],
                                      row["album"],
                                      row["label"],
                                      row["upc"],
-                                     row["bootleg_date"],
-                                     row["bootleg_city"],
-                                     row["bootleg_country"],
-                                     row["bootleg_tour"],
+                                     row["live_date"],
+                                     row["live_city"],
+                                     row["live_country"],
+                                     row["live_tour"],
                                      cover)))
     for row in rows:
         yield row
