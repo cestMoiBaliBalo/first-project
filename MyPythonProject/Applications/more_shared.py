@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import os
+from contextlib import suppress
+from itertools import chain, islice
 from operator import itemgetter
 from pathlib import Path
 from typing import Any, Mapping
@@ -9,8 +11,9 @@ from mutagen import File  # type: ignore
 from mutagen.apev2 import APEv2  # type: ignore
 from mutagen.flac import VCommentDict  # type: ignore
 from mutagen.id3 import ID3  # type: ignore
+from mutagen.mp4 import MP4FreeForm, MP4Tags  # type: ignore
 
-from Applications.shared import Files
+from Applications.shared import Files, partitioner
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -20,6 +23,23 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
+
+
+# ===================
+# Decorators factory.
+# ===================
+def isinstance_(obj):
+    """
+    Undocumented.
+    """
+
+    def outer_wrapper(func):
+        def inner_wrapper(arg):
+            return isinstance(func(arg), obj)
+
+        return inner_wrapper
+
+    return outer_wrapper
 
 
 # ==============
@@ -89,50 +109,116 @@ class APEv2Tag(AudioMetaData):
     """
     Undocumented.
     """
+    MAPPING = {"mediatype": "source",
+               "publisher": "label",
+               "totaltracks": "tracktotal",
+               "totaldiscs": "disctotal",
+               "track": "tracknumber",
+               "year": "date"}
 
     def __init__(self, path):
         self._tag = None
         super(APEv2Tag, self).__init__(path)
         if isinstance(self._tag, APEv2):
-            self._collection = {key.lower(): value.value for key, value in self._tag.items()}
+            self._collection = {self.MAPPING.get(key.lower(), key.lower()): value.value for key, value in self._tag.items()}
 
 
 class ID3v2Tag(AudioMetaData):
     """
     Undocumented.
     """
+    MAPPING = {"albumartist": ("TPE2", None),
+               "albumartistsort": ("TSO2", None),
+               "artist": ("TPE1", None),
+               "artistsort": ("TSOP", None),
+               "albumsort": ("TSOA", None),
+               "titlesort": ("TSOT", None),
+               "album": ("TALB", None),
+               "genre": ("TCON", None),
+               "discnumber": ("TPOS", None),
+               "disctotal": ("TXXX:totaldiscs", "TXXX:TOTALDISCS"),
+               "tracknumber": ("TRCK", None),
+               "tracktotal": ("TXXX:totaltracks", "TXXX:TOTALTRACKS"),
+               "title": ("TIT2", None),
+               "titlelanguage": ("TXXX:titlelanguage", "TXXX:TITLELANGUAGE"),
+               "source": ("TMED", None),
+               "origyear": ("TDOR", None),
+               "date": ("TDRC", None),
+               "label": ("TPUB", None),
+               "upc": ("TXXX:upc", "TXXX:UPC"),
+               "incollection": ("TXXX:incollection", "TXXX:INCOLLECTION"),
+               "encodedby": ("TENC", None),
+               "encodingtime": ("TXXX:encodingtime", "TXXX:ENCODINGTIME"),
+               "encodingyear": ("TXXX:encodingyear", "TXXX:ENCODINGYEAR"),
+               "taggingtime": ("TXXX:taggingtime", "TXXX:TAGGINGTIME")}
 
     def __init__(self, path: Path):
         self._tag = None
         super(ID3v2Tag, self).__init__(path)
         if isinstance(self._tag, ID3):
-            self._collection["artistsort"] = self._get_frame("TSOP")  # artistsort.
-            self._collection["albumsort"] = self._get_frame("TSOA")  # albumsort.
-            self._collection["titlesort"] = self._get_frame("TSOT")  # titlesort.
-            self._collection["album"] = self._get_frame("TALB")  # album.
-            self._collection["genre"] = self._get_frame("TCON")  # genre.
-            self._collection["discnumber"] = self._get_frame("TPOS")  # disc number.
-            self._collection["disctotal"] = self._get_frame("TXXX:TOTALDISCS")  # total discs.
-            self._collection["tracknumber"] = self._get_frame("TRCK")  # track number.
-            self._collection["tracktotal"] = self._get_frame("TXXX:TOTALTRACKS")  # total tracks.
-            self._collection["title"] = self._get_frame("TIT2")  # track title.
-            self._collection["titlelanguage"] = self._get_frame("TXXX:TITLELANGUAGE")  # title language.
-            self._collection["source"] = self._get_frame("TMED")  # source.
-            self._collection["origyear"] = self._get_frame("TDOR")  # original release year.
-            self._collection["date"] = self._get_frame("TDRC")  # release year.
-            self._collection["label"] = self._get_frame("TPUB")  # label.
-            self._collection["upc"] = self._get_frame("TXXX:UPC")  # UPC.
-            self._collection["incollection"] = self._get_frame("TXXX:INCOLLECTION")  # in collection.
-            self._collection["encodedby"] = self._get_frame("TENC")  # encoded by.
-            self._collection["encodingtime"] = self._get_frame("TXXX:encodingtime")  # encoding time.
-            self._collection["encodingyear"] = self._get_frame("TXXX:encodingyear")  # encoding year.
-            self._collection["taggingtime"] = self._get_frame("TXXX:taggingtime")  # tagging time.
+            for dst, src in self.MAPPING.items():
+                self._collection[dst] = self._get_frame(*src)
 
-    def _get_frame(self, frame_id):
+    def _get_frame(self, *frames):
+        frame_id, fallback_id = frames
         (frame,) = self._tag.getall(frame_id) or [None]  # type: Any
+        if frame is None and fallback_id is not None:
+            (frame,) = self._tag.getall(fallback_id) or [None]  # type: Any
         if frame is not None:
-            return frame.text[0]
+            if frame.text:
+                text = frame.text[0]
+                if not isinstance(text, str):
+                    text = text.text
+                return text
         return None
+
+
+class MP4Tag(AudioMetaData):
+    """
+    Undocumented.
+    """
+    MAPPING = {"\u00A9alb": "album",
+               "\u00A9day": "date",
+               "\u00A9gen": "genre",
+               "\u00A9nam": "title",
+               "\u00A9ART": "artist",
+               "aArt": "albumartist",
+               "disk": "discnumber",
+               "soaa": "albumartistsort",
+               "soar": "artistsort",
+               "soal": "albumsort",
+               "sonm": "titlesort",
+               "trkn": "tracknumber",
+               "----:com.apple.iTunes:INCOLLECTION": "incollection",
+               "----:com.apple.iTunes:LABEL": "label",
+               "----:com.apple.iTunes:ORIGYEAR": "origyear",
+               "----:com.apple.iTunes:SOURCE": "source",
+               "----:com.apple.iTunes:TITLELANGUAGE": "titlelanguage"}
+
+    def __init__(self, path: Path):
+        self._tag = None
+        super(MP4Tag, self).__init__(path)
+        if isinstance(self._tag, MP4Tags):
+            tag = list(self._tag.items())  # type: Any
+
+            # Split between list objects and boolean objects.
+            list_, bool_ = partitioner(tag, predicate=isinstance_(list)(itemgetter(1)))  # type: Any, Any
+            list_ = iter((k, *islice(chain(v), 1)) for k, v in list_)
+
+            # Split between MP4FreeForm objects and string objects.
+            freeform_, str_ = partitioner(list_, predicate=isinstance_(MP4FreeForm)(itemgetter(1)))  # type: Any, Any
+            freeform_ = iter((k, v.decode("UTF_8")) for k, v in freeform_)
+
+            # Gather metadata.
+            collection = dict(chain(bool_, freeform_, str_))  # type: Mapping[str, Any]
+
+            # Map metadata.
+            for src, dst in self.MAPPING.items():
+                self._collection[dst] = collection.get(src)
+            with suppress(TypeError):
+                self._collection["discnumber"], self._collection["disctotal"] = map(str, self._collection["discnumber"])
+            with suppress(TypeError):
+                self._collection["tracknumber"], self._collection["tracktotal"] = map(str, self._collection["tracknumber"])
 
 
 class VorbisComment(AudioMetaData):

@@ -36,7 +36,7 @@ def attrgetter_(attr: str):
 def itemgetter_(index: int = 0):
     """
     Decorators factory.
-    Make a decorator that gets, from any iterable argument, the item with the index `index`.
+    Make a decorator that grabs, from any iterable argument, the item with the index `index`.
     The grabbed value is then used by the decorated function.
     """
 
@@ -118,7 +118,7 @@ def int_(base: int = 10):
     return outer_wrapper
 
 
-def slice_(*args: int):
+def slice_(*args):
     """
     Decorators factory.
     Make a decorator that sets any function return value as the first argument

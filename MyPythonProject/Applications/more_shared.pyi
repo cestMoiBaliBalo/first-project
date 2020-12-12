@@ -27,13 +27,20 @@ class AudioMetaData(Mapping):
 
 
 class APEv2Tag(AudioMetaData):
+    MAPPING = Mapping[str, Tuple[str, str]]
     def __init__(self, path: Path) -> None: ...
 
 
 class ID3v2Tag(AudioMetaData):
+    MAPPING = Mapping[str, Tuple[str, Optional[str]]]
     def __init__(self, path: Path) -> None: ...
     @staticmethod
-    def _get_frame(frame_id: str) -> Optional[str]: ...
+    def _get_frame(*frames: str) -> Optional[str]: ...
+
+
+class MP4Tag(AudioMetaData):
+    MAPPING = Mapping[str, str]
+    def __init__(self, path: Path) -> None: ...
 
 
 class VorbisComment(AudioMetaData):

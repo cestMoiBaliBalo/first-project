@@ -85,5 +85,8 @@ suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
 suite.addTests(loader.loadTestsFromModule(module4))
 suite.addTests(loader.loadTestsFromModule(module5))
+if Path("F:/").exists():
+    from Applications.Unittests import module6
+    suite.addTests(loader.loadTestsFromModule(module6))
 result = runner.run(suite)
 sys.exit(EXIT[result.wasSuccessful()])
