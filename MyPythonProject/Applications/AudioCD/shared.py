@@ -171,11 +171,11 @@ class TrackTags(MutableMapping):
 
     @property
     def bootlegalbum_provider(self):
-        return self._otags.get("bootlegalbumprovider")
+        return self._otags.get("bootlegdiscpublisher")
 
     @property
     def bootlegalbum_title(self):
-        return self._otags.get("bootlegalbumtitle")
+        return self._otags.get("bootlegtitle")
 
     @property
     def bootlegalbum_tour(self):
@@ -266,8 +266,8 @@ class TrackTags(MutableMapping):
         return self._otags.get("livetrack", "N")
 
     @property
-    def mediaprovider(self):
-        return self._otags.get("mediaprovider")
+    def mediapublisher(self):
+        return self._otags.get("mediapublisher")
 
     @property
     def origtrack(self):
@@ -676,8 +676,8 @@ class LiveBootlegTrackTags(CommonTrackTags):
               "bootlegalbumcity": True,
               "bootlegalbumtour": True,
               "bootlegalbumyear": True,
-              "bootlegalbumprovider": False,
-              "bootlegalbumtitle": False,
+              "bootlegdiscpublisher": False,
+              "bootlegtitle": False,
               "bootlegdiscreference": False,
               "albumsortcount": True,
               "bonustrack": True}
@@ -786,8 +786,8 @@ class ChangeEncodedBy(TagsModifier):
 class ChangeMediaProvider(TagsModifier):
     def __init__(self, obj):
         super(ChangeMediaProvider, self).__init__(obj)
-        if self._otags.get("bootlegalbumprovider"):
-            self._otags["mediaprovider"] = self._otags["bootlegalbumprovider"]
+        if self._otags.get("bootlegdiscpublisher"):
+            self._otags["mediapublisher"] = self._otags["bootlegdiscpublisher"]
 
 
 class ChangeMediaReference(TagsModifier):
@@ -800,8 +800,8 @@ class ChangeMediaReference(TagsModifier):
 class ChangeMediaTitle(TagsModifier):
     def __init__(self, obj):
         super(ChangeMediaTitle, self).__init__(obj)
-        if self._otags.get("bootlegalbumtitle"):
-            self._otags["mediatitle"] = self._otags["bootlegalbumtitle"]
+        if self._otags.get("bootlegtitle"):
+            self._otags["mediatitle"] = self._otags["bootlegtitle"]
 
 
 class ChangeTotalTracks(TagsModifier):
@@ -924,8 +924,8 @@ class RippedTrack(ContextDecorator):
                 audiotrack = changealbum(audiotrack, "Live: $dashed_bootlegalbum_date - $bootlegalbumcity")
             elif profile.lower() == "alt_bootleg_album":
                 audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dotted_bootlegalbum_date - [$bootlegalbumcity]")
-            elif profile.lower() == "mediaprovider":
-                audiotrack = changemediaprovider(audiotrack)
+            elif profile.lower() == "mediapublisher":
+                audiotrack = changemediapublisher(audiotrack)
             elif profile.lower() == "mediareference":
                 audiotrack = changemediareference(audiotrack)
             elif profile.lower() == "mediatitle":
@@ -942,9 +942,9 @@ class RippedTrack(ContextDecorator):
             # Changes requested by `nugs` decorating profile.
             elif profile.lower() == "nugs":
                 if audiotrack.artist.lower() == "pearl jam":
-                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
+                    audiotrack = changemediapublisher(changeencodedby(audiotrack))
                 elif audiotrack.artist.lower() == "bruce springsteen":
-                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
+                    audiotrack = changemediapublisher(changeencodedby(audiotrack))
 
         return audiotrack
 
@@ -1154,7 +1154,7 @@ def changeencodedby(obj, *, provider="nugs.net"):
     return ChangeEncodedBy(obj, provider)
 
 
-def changemediaprovider(obj):
+def changemediapublisher(obj):
     return ChangeMediaProvider(obj)
 
 
@@ -1501,8 +1501,8 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "bootleg",
                                 "bootlegalbumcity",
                                 "bootlegalbumcountry",
-                                "bootlegalbumprovider",
-                                "bootlegalbumtitle",
+                                "bootlegdiscpublisher",
+                                "bootlegtitle",
                                 "bootlegalbumtour",
                                 "bootlegalbumyear",
                                 "bootlegdiscreference",

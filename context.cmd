@@ -33,15 +33,18 @@ PUSHD %_myparent%Resources
 REM Set code page.
 SET _step=1
 CALL shared.cmd
-@IF DEFINED _chcp (
+IF DEFINED _chcp (
     SET _mycp=%_chcp%
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 
 REM Get code page.
-SET _step=1
-CALL shared.cmd
-@IF DEFINED _chcp ECHO Code page is %_chcp%.
+IF %_chcp% NEQ %_cp% (
+    SET _step=1
+    CALL shared.cmd
+    IF DEFINED _chcp ECHO Code page was %_chcp%.
+    IF DEFINED _chcp ECHO Code page set to %_cp%.
+)
 
 
 :MAIN
@@ -66,8 +69,10 @@ GOTO MAIN
 
 
 :STEP3
-PUSHD ..\MyPythonProject
-python walk.py "%~2"
+PUSHD ..\MyPythonProject\Tasks
+@ECHO:
+@ECHO:
+python walkFileTree.py "%~2"
 POPD
 ECHO:
 ECHO:

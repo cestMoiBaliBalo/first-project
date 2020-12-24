@@ -42,6 +42,6 @@ series = {"Album ID": pandas.Series(albumid, index=index),
           "Ripped Month": pandas.Series(map(partial(get_readabledate, template="$month"), map(localize_date, ripped_date)), index=index),
           "Genre": pandas.Series(genre, index=index),
           "Application": pandas.Series(application, index=index)}
-dataframe = pandas.DataFrame(series)
-dataframe.index.name = "Record ID"
-dataframe.to_csv(_MYANCESTOR / "rippeddiscs.csv", encoding=UTF8, sep="|")
+df = pandas.DataFrame(series)
+df.index.name = "Record ID"
+df.to_csv(_MYANCESTOR / "rippeddiscs.csv", encoding=UTF8, sep="|")

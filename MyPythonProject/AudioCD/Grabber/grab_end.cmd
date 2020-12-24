@@ -81,7 +81,9 @@ REM        ------------------------------
 REM  3 --> Update ripped discs dashboard.
 REM        ------------------------------
 :STEP3
-python RippedDiscs.py
+PUSHD ..\..\Tasks
+python getRippedDiscs.py
+POPD
 SHIFT
 GOTO MAIN
 

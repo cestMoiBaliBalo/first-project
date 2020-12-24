@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=empty-docstring, invalid-name, line-too-long
 import argparse
-import csv
 import os
 import sqlite3
 from datetime import date
@@ -9,9 +8,11 @@ from itertools import compress
 from pathlib import Path
 from typing import Any, List, NamedTuple
 
+import pandas  # type: ignore
+
 from Applications.Tables.shared import DatabaseConnection, convert_tobooleanvalue
 from Applications.parsers import database_parser
-from Applications.shared import CustomDialect, UTF8, WRITE
+from Applications.shared import UTF8
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -105,9 +106,8 @@ for albums in arguments.albums:
     Row = MAPPING[albums]["fields"]
     with DatabaseConnection(db=arguments.db) as conn:
         collection = [Row(*row) for row in conn.execute(statement)]  # type: Any
-        collection = [tuple(compress(item, selectors)) for item in collection]
-        collection = [dict(zip(headers, item)) for item in collection]
-        with open(_MYANCESTOR / file, mode=WRITE, encoding=UTF8, newline="") as stream:
-            dict_writer = csv.DictWriter(stream, headers, dialect=CustomDialect())
-            dict_writer.writeheader()
-            dict_writer.writerows(collection)
+    collection = [tuple(compress(item, selectors)) for item in collection]
+    collection = dict(zip(compress(Row._fields, selectors), zip(*collection)))
+    df = pandas.DataFrame(collection)
+    df.index.name = "Record ID"
+    df.to_csv(_MYANCESTOR / file, encoding=UTF8, sep="|")
