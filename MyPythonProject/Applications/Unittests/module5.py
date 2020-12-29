@@ -135,11 +135,11 @@ class TestGrabbedTrack05(unittest.TestCase):
             self._tags = dict(tags)
 
     def test_t01(self):
-        self.assertEqual(self._tags["album"], "1977.2 - Alive II")
+        self.assertEqual(self._tags["album"], "Alive II")
         self.assertEqual(self._tags["albumsort"], "1.19770000.2.02")
         self.assertEqual(self._tags["disc"], "2")
-        self.assertEqual(self._tags["track"], "11")
-        self.assertEqual(self._tags["totaltracks"], "20")
+        self.assertEqual(self._tags["track"], "1")
+        self.assertEqual(self._tags["totaltracks"], "10")
 
     def test_t02(self):
         self.assertNotIn("albumsortcount", self._tags)
@@ -161,8 +161,8 @@ class TestGrabbedTrack06(unittest.TestCase):
         self.assertEqual(self._tags["album"], "1977.2 - Alive II")
         self.assertEqual(self._tags["albumsort"], "1.19770000.2.13")
         self.assertEqual(self._tags["disc"], "2")
-        self.assertEqual(self._tags["track"], "11")
-        self.assertEqual(self._tags["totaltracks"], "20")
+        self.assertEqual(self._tags["track"], "1")
+        self.assertEqual(self._tags["totaltracks"], "10")
 
     def test_t02(self):
         self.assertNotIn("albumsortcount", self._tags)
@@ -193,7 +193,7 @@ class TestGrabbedTrack07(unittest.TestCase):
         self.assertEqual(self._tags["bootlegtrackcountry"], "United States")
         self.assertEqual(self._tags["bootlegtracktour"], "The River Tour")
         self.assertEqual(self._tags["bootlegtrackyear"], "1981-08-20")
-        self.assertEqual(self._tags["mediaprovider"], "The Godfatherecords")
+        self.assertEqual(self._tags["mediapublisher"], "The Godfatherecords")
         self.assertEqual(self._tags["mediareference"], "G.R. 256")
         self.assertEqual(self._tags["mediatitle"], "A Night for the Vietnam Veterans")
 
@@ -228,7 +228,7 @@ class TestGrabbedTrack08(unittest.TestCase):
         self.assertEqual(self._tags["bootlegtrackcountry"], "United States")
         self.assertEqual(self._tags["bootlegtracktour"], "The River Tour")
         self.assertEqual(self._tags["bootlegtrackyear"], "1981-08-20")
-        self.assertEqual(self._tags["mediaprovider"], "The Godfatherecords")
+        self.assertEqual(self._tags["mediapublisher"], "The Godfatherecords")
         self.assertEqual(self._tags["mediareference"], "G.R. 256")
         self.assertEqual(self._tags["mediatitle"], "A Night for the Vietnam Veterans")
 
@@ -263,7 +263,7 @@ class TestGrabbedTrack09(unittest.TestCase):
         self.assertEqual(self._tags["bootlegtrackcountry"], "United States")
         self.assertEqual(self._tags["bootlegtracktour"], "The River Tour")
         self.assertEqual(self._tags["bootlegtrackyear"], "1981-08-20")
-        self.assertEqual(self._tags["mediaprovider"], "The Godfatherecords")
+        self.assertEqual(self._tags["mediapublisher"], "The Godfatherecords")
         self.assertEqual(self._tags["mediareference"], "G.R. 256")
         self.assertEqual(self._tags["mediatitle"], "A Night for the Vietnam Veterans")
 
@@ -298,7 +298,7 @@ class TestGrabbedTrack10(unittest.TestCase):
         self.assertEqual(self._tags["bootlegtrackcountry"], "United States")
         self.assertEqual(self._tags["bootlegtracktour"], "The River Tour")
         self.assertEqual(self._tags["bootlegtrackyear"], "1981-08-20")
-        self.assertEqual(self._tags["mediaprovider"], "The Godfatherecords")
+        self.assertEqual(self._tags["mediapublisher"], "The Godfatherecords")
         self.assertEqual(self._tags["mediareference"], "G.R. 256")
         self.assertEqual(self._tags["mediatitle"], "A Night for the Vietnam Veterans")
 
@@ -333,7 +333,7 @@ class TestGrabbedTrack11(unittest.TestCase):
         self.assertEqual(self._tags["bootlegtrackcountry"], "United States")
         self.assertEqual(self._tags["bootlegtracktour"], "The River Tour")
         self.assertEqual(self._tags["bootlegtrackyear"], "1981-08-20")
-        self.assertEqual(self._tags["mediaprovider"], "The Godfatherecords")
+        self.assertEqual(self._tags["mediapublisher"], "The Godfatherecords")
         self.assertEqual(self._tags["mediareference"], "G.R. 256")
         self.assertEqual(self._tags["mediatitle"], "A Night for the Vietnam Veterans")
 

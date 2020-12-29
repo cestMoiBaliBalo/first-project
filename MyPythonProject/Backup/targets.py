@@ -62,7 +62,7 @@ environment = TemplatingEnvironment(_MYPARENT)
 # Get targets collection.
 with ExitStack() as stack1:
     json_file = stack1.enter_context(open(_MYPARENT / "backup.json", mode=WRITE, encoding=UTF8))
-    txt_file = stack1.enter_context(open(_MYPARENT.parents[1] / "MyJavaProject" / "targets.txt", mode=WRITE, encoding="ISO-8859-1"))
+    txt_file = stack1.enter_context(open(_MYPARENT.parents[1] / "MyJavaProject" / "Finder" / "targets.txt", mode=WRITE, encoding="ISO-8859-1"))
     collection = []  # type: List[Tuple[Any, ...]]
     for argument in arguments.path:
         workspace = str(argument).split(".")[-1]

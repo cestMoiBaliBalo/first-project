@@ -100,6 +100,11 @@ class TrackTags(MutableMapping):
         for key, value in self._otags.items():
             yield key, value
 
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, sorted(self, key=itemgetter(0)))
+
     def __str__(self):
         return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - track {self._otags["track"]}'
 
@@ -170,8 +175,8 @@ class TrackTags(MutableMapping):
         return month
 
     @property
-    def bootlegalbum_provider(self):
-        return self._otags.get("bootlegdiscpublisher")
+    def bootlegalbum_publisher(self):
+        return self._otags.get("bootlegpublisher")
 
     @property
     def bootlegalbum_title(self):
@@ -266,8 +271,8 @@ class TrackTags(MutableMapping):
         return self._otags.get("livetrack", "N")
 
     @property
-    def mediapublisher(self):
-        return self._otags.get("mediapublisher")
+    def bootlegalbum_provider(self):
+        return self._otags.get("mediaprovider")
 
     @property
     def origtrack(self):
@@ -612,6 +617,9 @@ class DefaultTrackTags(CommonTrackTags):
         self.__logger.debug("\ttitlesort: %s".expandtabs(4), self._otags["titlesort"])
         self.__logger.debug("\torigyear : %s".expandtabs(4), self._otags["origyear"])
 
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
+
 
 class LiveTrackTags(DefaultTrackTags):
     """
@@ -661,6 +669,9 @@ class LiveTrackTags(DefaultTrackTags):
                                                                                               livetrack=self._otags["livetrack"],
                                                                                               bootleg=self._otags["bootleg"])
 
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
+
 
 class LiveBootlegTrackTags(CommonTrackTags):
     """
@@ -676,9 +687,10 @@ class LiveBootlegTrackTags(CommonTrackTags):
               "bootlegalbumcity": True,
               "bootlegalbumtour": True,
               "bootlegalbumyear": True,
-              "bootlegdiscpublisher": False,
-              "bootlegtitle": False,
               "bootlegdiscreference": False,
+              "bootlegprovider": False,
+              "bootlegpublisher": False,
+              "bootlegtitle": False,
               "albumsortcount": True,
               "bonustrack": True}
 
@@ -724,6 +736,15 @@ class LiveBootlegTrackTags(CommonTrackTags):
                                                                                               bonustrack=self._otags["bonustrack"],
                                                                                               livetrack=self._otags["livetrack"],
                                                                                               bootleg=self._otags["bootleg"])
+
+        # ----- Set extra tags.
+        self._otags["mediareference"] = self._otags.get("bootlegdiscreference")
+        self._otags["mediaprovider"] = self._otags.get("bootlegprovider")
+        self._otags["mediapublisher"] = self._otags.get("bootlegpublisher")
+        self._otags["mediatitle"] = self._otags.get("bootlegtitle")
+
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
 
 
 class AudioGenres(object):
@@ -786,22 +807,22 @@ class ChangeEncodedBy(TagsModifier):
 class ChangeMediaProvider(TagsModifier):
     def __init__(self, obj):
         super(ChangeMediaProvider, self).__init__(obj)
-        if self._otags.get("bootlegdiscpublisher"):
-            self._otags["mediapublisher"] = self._otags["bootlegdiscpublisher"]
+        if self._otags.get("bootlegprovider"):
+            self._otags["mediaprovider"] = self._otags["bootlegprovider"]
 
 
-class ChangeMediaReference(TagsModifier):
-    def __init__(self, obj):
-        super(ChangeMediaReference, self).__init__(obj)
-        if self._otags.get("bootlegdiscreference"):
-            self._otags["mediareference"] = self._otags["bootlegdiscreference"]
+# class ChangeMediaTitle(TagsModifier):
+#     def __init__(self, obj):
+#         super(ChangeMediaTitle, self).__init__(obj)
+#         if self._otags.get("bootlegtitle"):
+#             self._otags["mediatitle"] = self._otags["bootlegtitle"]
 
 
-class ChangeMediaTitle(TagsModifier):
-    def __init__(self, obj):
-        super(ChangeMediaTitle, self).__init__(obj)
-        if self._otags.get("bootlegtitle"):
-            self._otags["mediatitle"] = self._otags["bootlegtitle"]
+# class ChangeMediaReference(TagsModifier):
+#     def __init__(self, obj):
+#         super(ChangeMediaReference, self).__init__(obj)
+#         if self._otags.get("bootlegdiscreference"):
+#             self._otags["mediareference"] = self._otags["bootlegdiscreference"]
 
 
 class ChangeTotalTracks(TagsModifier):
@@ -924,12 +945,6 @@ class RippedTrack(ContextDecorator):
                 audiotrack = changealbum(audiotrack, "Live: $dashed_bootlegalbum_date - $bootlegalbumcity")
             elif profile.lower() == "alt_bootleg_album":
                 audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dotted_bootlegalbum_date - [$bootlegalbumcity]")
-            elif profile.lower() == "mediapublisher":
-                audiotrack = changemediapublisher(audiotrack)
-            elif profile.lower() == "mediareference":
-                audiotrack = changemediareference(audiotrack)
-            elif profile.lower() == "mediatitle":
-                audiotrack = changemediatitle(audiotrack)
 
             # Change `tracknumber` if an offset is provided by the ripping application.
             elif profile.lower() == "offset_track":
@@ -942,9 +957,9 @@ class RippedTrack(ContextDecorator):
             # Changes requested by `nugs` decorating profile.
             elif profile.lower() == "nugs":
                 if audiotrack.artist.lower() == "pearl jam":
-                    audiotrack = changemediapublisher(changeencodedby(audiotrack))
+                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
                 elif audiotrack.artist.lower() == "bruce springsteen":
-                    audiotrack = changemediapublisher(changeencodedby(audiotrack))
+                    audiotrack = changemediaprovider(changeencodedby(audiotrack))
 
         return audiotrack
 
@@ -968,9 +983,6 @@ class RippedTrack(ContextDecorator):
         self._logger.debug("Input tags.")
         for key, value in shared.pprint_mapping(*sorted(self._intags, key=itemgetter(0))):
             self._logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
-        # offset = int(offset)
-        # self._logger.debug("Offset is      : %s.", offset)
-        # self._logger.debug("Total tracks is: %s.", totaltracks)
 
         # --> 5. Create TrackTags subclass object.
         #        l'attribut "_audiotracktags" est une instance d'une sous-classe de TrackTags.
@@ -1005,8 +1017,8 @@ class RippedTrack(ContextDecorator):
             exclusions.append("folder")
             exclusions.append("lossless")
             exclusions.append("origtrack")
-        filter_ = decorators.itemgetter_(0)(partial(contains, exclusions))
-        outtags = dict(filterfalse(filter_, sorted(self._audiotracktags, key=itemgetter(0))))
+        outtags = filterfalse(decorators.itemgetter_(0)(partial(contains, exclusions)), sorted(self._audiotracktags, key=itemgetter(0)))  # type: Any
+        outtags = dict(outtags)
 
         # --> 2. Log output tags.
         self._logger.debug(f'Processed track is: \"{self._audiotracktags}\"')
@@ -1154,16 +1166,16 @@ def changeencodedby(obj, *, provider="nugs.net"):
     return ChangeEncodedBy(obj, provider)
 
 
-def changemediapublisher(obj):
+def changemediaprovider(obj):
     return ChangeMediaProvider(obj)
 
 
-def changemediareference(obj):
-    return ChangeMediaReference(obj)
+# def changemediareference(obj):
+#     return ChangeMediaReference(obj)
 
 
-def changemediatitle(obj):
-    return ChangeMediaTitle(obj)
+# def changemediatitle(obj):
+#     return ChangeMediaTitle(obj)
 
 
 def changetotaltracks(obj):
@@ -1293,7 +1305,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
             "bootlegtrack_city",
             "bootlegtrack_country",
             "bootlegtrack_tour",
-            "bootlegalbum_provider",
+            "bootlegalbum_publisher",
             "bootlegalbum_title",
             "bootlegdisc_reference",
             "repository"]
@@ -1318,7 +1330,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
               track.bootlegtrack_city,
               countries[track.bootlegtrack_country],
               track.bootlegalbum_tour,
-              providers[track.bootlegalbum_provider],
+              providers[track.bootlegalbum_publisher or track.bootlegalbum_provider],
               track.bootlegalbum_title,
               track.bootlegdisc_reference,
               track.repository]
@@ -1359,7 +1371,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     providers[track.bootlegalbum_provider],
+                     providers[track.bootlegalbum_publisher or track.bootlegalbum_provider],
                      track.bootlegdisc_reference,
                      track.bootlegalbum_title,
                      shared.get_rippingapplication()[1],
@@ -1501,11 +1513,12 @@ PROFILES = {"default": Profile(["albumsortyear",
                                 "bootleg",
                                 "bootlegalbumcity",
                                 "bootlegalbumcountry",
-                                "bootlegdiscpublisher",
-                                "bootlegtitle",
                                 "bootlegalbumtour",
                                 "bootlegalbumyear",
                                 "bootlegdiscreference",
+                                "bootlegprovider",
+                                "bootlegpublisher",
+                                "bootlegtitle",
                                 "dashed_bootlegalbum_date",
                                 "database",
                                 "deluxe",

@@ -51,9 +51,9 @@ REM    ----------
 REM A. Java step.
 REM    ----------
 REM    Enumerate files.
-PUSHD %_COMPUTING%\MyJavaProject\Finder
+PUSHD %_myancestor%MyJavaProject\Finder
 IF NOT EXIST "targets.txt" (
-    ECHO Targets repository ("%_myancestor%MyJavaProject\targets.txt"^) can't be found. Please check^^!
+    ECHO Targets repository ("%_myancestor%MyJavaProject\Finder\targets.txt"^) can't be found. Please check^^!
     POPD
     GOTO STEP4
 )

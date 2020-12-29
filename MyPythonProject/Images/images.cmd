@@ -53,34 +53,34 @@ REM Main script.
 REM ============
 :MAIN
 CLS
-IF [%_action%] EQU [DISPLAY] (
+IF [%_action%] EQU [AFFICHER] (
     CALL :PARSE_PATH
     CALL :GET_LENGTH
     IF !_length! EQU 0 GOTO THE_END
     IF !_length! GTR 4 SET _path=!_path:~0,4!
-    GOTO DISPLAY
+    GOTO AFFICHER
 )
-IF [%_action%] EQU [RENAME] (
+IF [%_action%] EQU [RENOMMER] (
     CALL :PARSE_PATH
     CALL :GET_LENGTH
     IF !_length! EQU 0 GOTO THE_END
     IF !_length! GTR 4 SET _path=!_path:~0,4!
-    GOTO RENAME
+    GOTO RENOMMER
 )
-IF [%_action%] EQU [INSERT] GOTO INSERT
+IF [%_action%] EQU [INSERER] GOTO INSERER
 
 
 REM        ---------------------------------
 REM --> A. Display images original datetime.
 REM        ---------------------------------
-:DISPLAY
+:AFFICHER
 PUSHD %TEMP%
 DEL %_images% 2> NUL
 POPD
 perl images.pl %_root%\%_path%
 IF NOT ERRORLEVEL 1 (
     CLS
-    python display.py %TEMP%\%_images%
+    python AFFICHER.py %TEMP%\%_images%
     ECHO:
     ECHO:
     PAUSE
@@ -91,7 +91,7 @@ GOTO THE_END
 REM        ---------------------------------------------
 REM --> B. Rename images according to original datetime.
 REM        ---------------------------------------------
-:RENAME
+:RENOMMER
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 SET _year_2011=2011
 SET _year_2012=2012
@@ -138,7 +138,7 @@ perl "C:\ExifTool\exiftool"%_recursive% -ext jpg -FileOrder DateTimeOriginal -Fi
 
 @REM -----
 @CLS
-@ECHO Rename files according to the original datetime.
+@ECHO RENOMMER files according to the original datetime.
 @ECHO:
 @PAUSE
 perl "C:\ExifTool\exiftool"%_recursive% -ext jpg -FileOrder DateTimeOriginal "-FileName<DateTimeOriginal" -d %_pattern%_%%%%.5nC%%%%lE "%_root%\!_year_%_path%!"
@@ -154,7 +154,7 @@ GOTO THE_END
 REM        -------------------------------------------------
 REM --> C. Insert new images according to original datetime.
 REM        -------------------------------------------------
-:INSERT
+:INSERER
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 ECHO: perl "C:\ExifTool\exiftool" -ext jpg -FileOrder DateTimeOriginal "-Directory<DateTimeOriginal" -d H:\%%Y%%m "%_path%"
 ECHO:

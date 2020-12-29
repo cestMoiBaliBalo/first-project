@@ -70,7 +70,7 @@ def format_(*iterables: List[str]) -> Iterator[Tuple[str, int]]:
     files = filter(itemgetter_(0)(match_(arguments.pattern.search)), files)
 
     # 3. Convert last change UTC date into timestamp.
-    files = zip(*map_(1)(get_timestamp)(*files))
+    files = map_(1)(get_timestamp)(*files)
 
     # 4. Remove duplicate files. Keep only the most recent last change UTC date for every file.
     files = {key: list(group) for key, group in groupby(files, key=itemgetter(0))}

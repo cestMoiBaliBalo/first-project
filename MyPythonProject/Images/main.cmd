@@ -15,9 +15,9 @@ IF NOT EXIST "%~1" (
     EXIT /B 100
 )
 SET _ok=0
-IF [%~2] EQU [DISPLAY] SET _ok=1
-IF [%~2] EQU [INSERT] SET _ok=1
-IF [%~2] EQU [RENAME] SET _ok=1
+IF [%~2] EQU [AFFICHER] SET _ok=1
+IF [%~2] EQU [INSERER] SET _ok=1
+IF [%~2] EQU [RENOMMER] SET _ok=1
 IF %_ok% EQU 0 (
     ENDLOCAL
     EXIT /B 100
