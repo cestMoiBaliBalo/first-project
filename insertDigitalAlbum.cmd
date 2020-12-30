@@ -56,7 +56,7 @@ REM ----- Python step for importing tags into the local audio batabase.
     IF [%~2] EQU [T] SET _argument= --test
 )
 PUSHD MyPythonProject\Tasks
-python InsertDigitalDiscs.py !_album_%_type%! "%~1"%_argument%
+python InsertDigitalAlbum.py !_album_%_type%! "%~1"%_argument%
 SET _errorlevel=%ERRORLEVEL%
 POPD
 GOTO END
