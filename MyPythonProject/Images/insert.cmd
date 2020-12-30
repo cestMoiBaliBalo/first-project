@@ -28,7 +28,7 @@ FOR /F "usebackq" %%A IN ('%_myparent%.') DO SET _myancestor=%%~dpA
 REM ==================
 REM Initializations 2.
 REM ==================
-SET _action=INSERT
+SET _action=INSERER
 SET _errorlevel=0
 SET _path="%~1"
 
