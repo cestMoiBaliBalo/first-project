@@ -1,10 +1,10 @@
 @ECHO off
 
 
-@REM __author__ = 'Xavier ROSSET'
-@REM __maintainer__ = 'Xavier ROSSET'
-@REM __email__ = 'xavier.python.computing@protonmail.com'
-@REM __status__ = "Production"
+@REM __author__ = Xavier ROSSET
+@REM __maintainer__ = Xavier ROSSET
+@REM __email__ = xavier.python.computing@protonmail.com
+@REM __status__ = Production
 
 
 @CLS
@@ -24,10 +24,13 @@ REM ==================
 SET _ok=0
 SET _mycp=
 SET _date=
-SET _cp=1252
+SET _cp=65001
 SET _errorlevel=0
 
 
+REM ==================
+REM Initializations 3.
+REM ==================
 SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
 PUSHD %_myparent:~0,-1%
 
@@ -36,6 +39,8 @@ REM ============
 REM Main script.
 REM ============
 PUSHD Resources
+
+REM -----
 SET _step=1
 CALL shared.cmd
 @IF DEFINED _chcp (
@@ -43,10 +48,13 @@ CALL shared.cmd
     IF [%_chcp%] NEQ [%_cp%] CHCP %_cp% > NUL
 )
 POPD
+
+REM -----
 IF [%~1] EQU [I] SET _ok=1
 IF [%~1] EQU [B] SET _ok=1
 IF %_ok% EQU 0 GOTO END1
 
+REM -----
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
 PUSHD Resources
 SET _taskid=123456802
@@ -65,6 +73,7 @@ IF DEFINED _errorlevel IF %_errorlevel% EQU 1 (
     IF DEFINED _date (
         "%PROGRAMFILES%/Areca/areca_cl.exe" merge -k -c -wdir %TEMP%\tmp-Xavier -config %_BACKUP%/workspace.documents/1832340664.bcfg -date !_date!
         IF ERRORLEVEL 1 (
+            POPD
             ENDLOCAL
             GOTO END2
         )

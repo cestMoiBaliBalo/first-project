@@ -21,6 +21,7 @@ FOR /L %%A IN (1, 1, 2) DO (
     FOR /F "usebackq delims=" %%B IN ('!_ancestor!.') DO SET _myancestor=%%~dpB
     SET _ancestor=!_myancestor!
 )
+SET _ancestor=
 
 
 REM    ==================
@@ -54,18 +55,18 @@ REM -----
 :LOOP
 (
     IF [%2] NEQ [] SET _arguments=!_arguments! "%~2"
-    IF [%2] EQU [] GOTO NEXT
+    IF [%2] EQU [] GOTO MAIN
 )
 SHIFT /2
 GOTO LOOP
 
 
 REM -----
-:NEXT
-ECHO: %_arguments%
+:MAIN
 (
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
     SET _caller=%~nx0
+    SET _action=%~1
 )
 (
 
@@ -79,16 +80,39 @@ ECHO: %_arguments%
     REM Local Windows environment unit tests.
     IF %~1 EQU 2 (
         SET PATH=%_myancestor%VirtualEnv\venv38\Scripts;!PATH!
+        PUSHD %TEMP%
+        python -m Applications.Tables.tables database.db 
+        POPD
         SET _verbose=1
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
+        PUSHD %TEMP%
+        DEL database.db > NUL 2>&1
+        DEL default_*.txt > NUL 2>&1
+        DEL sbootleg1_*.txt > NUL 2>&1
+        DEL sequences.json > NUL 2>&1
+        POPD
     )
 
     REM Travis-CI Windows environment unit tests.
+    REM Create at first the logging directory to allow Travis-CI to run logging.
+    REM Create then the local audio database into the appropriate directory.
     IF %~1 EQU 3 (
+        PUSHD ..\..\..
+        MKDIR Log
+        POPD
+        PUSHD %TEMP%
+        python -m Applications.Tables.tables database.db 
+        POPD
         SET _verbose=0
         CALL grab_test.cmd%_arguments%
         SET _errorlevel=!ERRORLEVEL!
+        PUSHD %TEMP%
+        DEL database.db > NUL 2>&1
+        DEL default_*.txt > NUL 2>&1
+        DEL sbootleg1_*.txt > NUL 2>&1
+        DEL sequences.json > NUL 2>&1
+        POPD
     )
 )
 (

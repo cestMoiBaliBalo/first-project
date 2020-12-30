@@ -1,14 +1,13 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+REM __author__ = Xavier ROSSET
+REM __maintainer__ = Xavier ROSSET
+REM __email__ = xavier.python.computing@protonmail.com
+REM __status__ = Production
 
 
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-PUSHD %_PYTHONPROJECT%
 
 
 REM ==================
@@ -22,12 +21,13 @@ REM ==================
 REM Initializations 2.
 REM ==================
 SET _xxcopy=xxcopy.cmd
-SET _cp=1252
+SET _cp=65001
 
 
 REM ============
 REM Main script.
 REM ============
+PUSHD %_myparent%MyPythonProject
 
 
 REM ----------------------
@@ -62,19 +62,24 @@ REM -----------------------------------------
 IF ERRORLEVEL 36 (
     CLS
     PUSHD ..
-    CALL start.cmd 9
+    C:\Windows\System32\cmd.exe /C start.cmd 9
     POPD
+    PAUSE
     GOTO MENU
 )
 
 
-REM -----------------------
-REM Audio tables interface.
-REM -----------------------
+REM ---------------------------------------------
+REM Sync local audio database with digital discs.
+REM ---------------------------------------------
+REM HDtracks.com, nugs.net, etc.
 IF ERRORLEVEL 35 (
-    PUSHD Interfaces\Sources\03
-    python main.py
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    PUSHD ..
+    CALL insertDigitalDiscs_main.cmd
     POPD
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -84,7 +89,7 @@ REM Sync targets repositories.
 REM --------------------------
 IF ERRORLEVEL 34 (
     SETLOCAL ENABLEDELAYEDEXPANSION
-    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD Backup
     python targets.py %_BACKUP%\workspace.music
     POPD
@@ -96,7 +101,7 @@ IF ERRORLEVEL 34 (
 IF ERRORLEVEL 33 (
 :LOOP33
     CLS
-    TYPE %_RESOURCES%\digital_bootlegs_audiotags_bs.txt
+    TYPE %_myparent%Resources\digital_bootlegs_audiotags_bs.txt
     ECHO:
     ECHO:
     ECHO:
@@ -147,20 +152,22 @@ IF ERRORLEVEL 32 (
 )
 
 
-REM ---------------------------------
-REM Insert audio discs into database.
-REM ---------------------------------
+REM ---------------------------------------------
+REM Dump ripped discs collection into a CSV file.
+REM ---------------------------------------------
+REM Data are taken from the local audio database.
 IF ERRORLEVEL 31 (
-    PUSHD %TEMP%
-    IF EXIST trackslist.txt python -m Applications.Tables.Albums.main trackslist.txt --encoding UTF_16
+    PUSHD Tasks
+    python getRippedDiscs.py
     POPD
     GOTO MENU
 )
 
 
-REM -------------------------------
-REM Update audio discs played date.
-REM -------------------------------
+REM -------------------------
+REM Update discs played date.
+REM -------------------------
+REM Manual update.
 IF ERRORLEVEL 30 (
     PUSHD Interfaces\Sources\06
     python main.py
@@ -169,16 +176,30 @@ IF ERRORLEVEL 30 (
 )
 
 
-REM ------------------------------------
-REM Python arguments parsers unit tests.
-REM ------------------------------------
+REM -------------------------
+REM Update discs played date.
+REM -------------------------
+REM Batch update from iTunes music library.
 IF ERRORLEVEL 29 (
     CLS
-    ECHO:
-    python -m unittest -v Applications.Unittests.module2
-    ECHO:
-    ECHO:
-    PAUSE
+    SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    SET _results=playeddiscs.txt 
+    python Tasks\updatePlayedDiscs.py
+    SET _errorlevel=!ERRORLEVEL!
+    IF !_errorlevel! GTR 0 (
+        PUSHD %TEMP%
+        IF EXIST !_results! (
+            ECHO:
+            TYPE !_results!
+            ECHO:
+            ECHO:
+            ECHO:
+            PAUSE
+        )
+        POPD
+    )
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -191,7 +212,7 @@ IF ERRORLEVEL 28 (
 
 :LOOP28
     SETLOCAL ENABLEDELAYEDEXPANSION
-    SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;!PATH!
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
     PUSHD ..\MyPythonProject\Tasks\Manager
     python music.py
     IF ERRORLEVEL 100 (
@@ -213,9 +234,9 @@ IF ERRORLEVEL 28 (
 )
 
 
-REM ----------------------------------------
-REM Copy HDtracks.com files to backup drive.
-REM ----------------------------------------
+REM -------------------------------------------------------
+REM Copy HDtracks.com lossless audio files to backup drive.
+REM -------------------------------------------------------
 IF ERRORLEVEL 27 (
     CLS
     IF EXIST z: (
@@ -235,7 +256,7 @@ REM Both M4A and MP3 without lossless version (iTunes, amazon, etc).
 IF ERRORLEVEL 26 (
     CLS
     PUSHD ..
-    CALL lossy.cmd T
+    CALL backupLossyFiles.cmd T
     POPD
     GOTO MENU
 )
@@ -295,9 +316,9 @@ IF ERRORLEVEL 25 (
 )
 
 
-REM ---------------------------------------------------------------
-REM Clone Samsung S5 images local collection to distant collection.
-REM ---------------------------------------------------------------
+REM ------------------------------------------------------
+REM Clone MyCloud Samsung S5 images from local collection.
+REM ------------------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 24 (
 
@@ -318,13 +339,13 @@ IF ERRORLEVEL 24 (
         GOTO END24
     )
 
-    REM 2. Clone collection to distant drive. Delete extra files!
+    REM 2. Clone MyCloud. Delete extra files!
     CLS
     CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will clone images to distant drive with extra files removal."
     IF NOT DEFINED _answer GOTO END24
     IF [!_answer!] EQU [N] GOTO END24
     CLS
-    XXCOPY /EC "!_local_collection!\" "!_cloud_collection!\" /CLONE /PZ0 /oA:%_XXCOPYLOG%
+    XXCOPY /EC "!_local_collection!\" "!_cloud_collection!\" /ZS /CLONE /PZ0 /oA:%_XXCOPYLOG%
     ECHO:
     ECHO:
     PAUSE
@@ -336,12 +357,11 @@ IF ERRORLEVEL 24 (
 )
 
 
-REM -----------------------------------------------
-REM Clone distant images collection to local drive.
-REM -----------------------------------------------
-REM Distant collection MUST be the master collection!
+REM -------------------------------------------
+REM Clone MyCloud images from local collection.
+REM -------------------------------------------
+REM Local collection MUST be the master collection!
 REM It is a two ways syncing! Extra files are deleted.
-REM xxcopy /EC H:\ \\DISKSTATION\backup\Images\Collection\ /L /CLONE /Z0 /X*recycle*\ /X*volume*\
 IF ERRORLEVEL 23 (
 
     CLS
@@ -360,62 +380,73 @@ IF ERRORLEVEL 23 (
         PAUSE
         GOTO END23
     )
+    DEL %TEMP%\NewFiles.txt 2> NUL
+    DEL %TEMP%\SyncedFiles.txt 2> NUL
 
-    REM 1. Check at first if new images have been inserted into the local drive since the previous sync.
-    CLS
-    ECHO Check if new images have been inserted into the local drive since the previous sync...
+    REM 1. Check at first if new images have been inserted into MyCloud since the previous task.
+    ECHO Check if brand new images have been inserted into MyCloud since the previous task...
     ECHO:
     ECHO:
-    XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /L /BB /ZS /Q3 /Fo%TEMP%\FileList /oA:%_XXCOPYLOG%
+    XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /L /BB /ZS /Q3 /Fo%TEMP%\NewFiles.txt /oA:%_XXCOPYLOG%
+    IF ERRORLEVEL 1 (
+        CLS
+        ECHO No brand new images found into MyCloud.
+        ECHO:
+        ECHO:
+        PAUSE
+    )
     IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
         CLS
-        ECHO New images have been inserted into the local drive since the previous sync. Please check %TEMP%\FileList.
+        ECHO Some brand new images have been found into MyCloud. Please check %TEMP%\NewFiles.txt.
         ECHO:
         ECHO:
         PAUSE
         CLS
-        CALL :QUESTION "YN" "20" "N" "Would you like to copy new local images to the distant collection?"
-        IF DEFINED _answer IF [!_answer!] EQU [Y] (
+        CHOICE /C YNA /N /CS /T 20 /D A /M "Would you like to copy new distant images to the local collection? Press [Y] for Yes, [N] for No or [A] for Aborting copy."
+        IF ERRORLEVEL 3 GOTO END23
+        IF NOT ERRORLEVEL 2 IF ERRORLEVEL 1 (
             CLS
+            XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /BB /ZS /oA:%_XXCOPYLOG%
             ECHO:
             ECHO:
-            XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /S /BB /ZS /Q3 /oF0 /oA:%_XXCOPYLOG%
-            IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 DEL %TEMP%\FileList 2> NUL
+            PAUSE
         )
     )
 
-    REM 2. Check if new images have been inserted since the previous sync.
+    REM 2. Check if syncing is required.
     CLS
-    ECHO Check if new images have been inserted since the previous sync...
-    XXCOPY "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /L /ZS /Q3 /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO Check now if syncing is required...
+    ECHO:
+    ECHO:
+    XXCOPY "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /L /ZS /Q3 /CLONE /PZ0 /Fo%TEMP%\SyncedFiles.txt /oA:%_XXCOPYLOG% /X:$RECYCLE.BIN\
     IF ERRORLEVEL 1 (
+        CLS
         ECHO Syncing is not required. Task is going to be aborted^^!
         ECHO:
         ECHO:
         PAUSE
         GOTO END23
     )
+    IF NOT ERRORLEVEL 1 IF ERRORLEVEL 0 (
+        CLS
+        ECHO Syncing is required^^!
+        ECHO:
+        ECHO:
+        PAUSE
+    )
 
-    REM 3. Clone collection to local drive. Don't delete extra files and directories!
+    REM 3. Clone MyCloud from local collection.
     CLS
-    CALL :QUESTION "YN" "20" "N" "Please confirm as XXCOPY application will copy images from MyCloud to local drive !_drive:~0,-1! with extra files removal."
-    IF NOT DEFINED _answer GOTO END23
-    IF [!_answer!] EQU [N] GOTO END23
-    CLS
-    XXCOPY /EC "!_cloud_collection!\*\?*\*.jpg" "!_drive!\" /CLONE /Z0 /oA:%_XXCOPYLOG%
+    ECHO Clone now MyCloud from local collection...
     ECHO:
     ECHO:
     PAUSE
-
-    REM 4. Reverse both source and destination. Then remove brand new files in order to preserve specific folders content.
-    REM    Exclude the following directories:
-    REM       - "RECYCLER".
-    REM       - "$RECYCLE.BIN".
-    REM       - "SYSTEM VOLUME INFORMATION".
-    REM       - "IPHONE".
-    REM       - "RECOVER".
     CLS
-    XXCOPY /CE "!_drive!\" "\!_cloud_collection!\" /X:*recycle*\ /X:*volume*\ /X:iphone\ /X:recover\ /RS /S /BB /PD0 /Y /oA:%_XXCOPYLOG%
+    CALL :QUESTION "YN" "20" "N" "Please confirm your choice as XXCOPY application will copy images from local drive !_drive:~0,-1! to MyCloud with extra files removal."
+    IF NOT DEFINED _answer GOTO END23
+    IF [!_answer!] EQU [N] GOTO END23
+    CLS
+    XXCOPY /EC "!_drive!\*\?*\*.jpg" "!_cloud_collection!\" /ZS /CLONE /PZ0 /Fo%TEMP%\SyncedFiles.txt /oA:%_XXCOPYLOG% /X:$RECYCLE.BIN\
     ECHO:
     ECHO:
     PAUSE
@@ -428,16 +459,45 @@ IF ERRORLEVEL 23 (
 )
 
 
-REM --------------------------
-REM Run all python unit tests.
-REM --------------------------
+REM ---------------------------
+REM Run continuous integration.
+REM ---------------------------
 IF ERRORLEVEL 22 (
     CLS
     ECHO:
-    python textrunner.py
+    C:\Windows\System32\cmd.exe /C G:\Computing\MyPythonProject\AudioCD\Grabber\grab_main.cmd 2
     ECHO:
     ECHO:
     PAUSE
+    GOTO MENU
+)
+
+
+REM -----------------------------------------------
+REM Dump bootleg albums collection into a CSV file.
+REM -----------------------------------------------
+REM Data are taken from the local audio database.
+IF ERRORLEVEL 21 (
+    PUSHD Tasks
+    python getBootlegAlbums.py bootleg
+    POPD
+    GOTO MENU
+)
+
+
+REM -------------------------
+REM Get SQLite tables schema.
+REM -------------------------
+IF ERRORLEVEL 20 (
+    CLS
+    SETLOCAL ENABLEDELAYEDEXPANSION
+    SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
+    python master.py
+    ECHO:
+    ECHO:
+    ECHO:
+    PAUSE
+    ENDLOCAL
     GOTO MENU
 )
 
@@ -445,47 +505,7 @@ IF ERRORLEVEL 22 (
 REM ----------
 REM Available.
 REM ----------
-IF ERRORLEVEL 21 GOTO MENU
-
-
-REM ------------------------------------------
-REM Run python regular expressions unit tests.
-REM ------------------------------------------
-IF ERRORLEVEL 20 (
-    SETLOCAL ENABLEDELAYEDEXPANSION
-    PUSHD ..\Resources
-    SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("unittests2.txt") DO SET _command=!_command! %%A
-    CLS
-    ECHO:
-    !_command!
-    ECHO:
-    ECHO:
-    PAUSE
-    POPD
-    ENDLOCAL
-    GOTO MENU
-)
-
-
-REM ------------------------------------------------
-REM Run python data validation functions unit tests.
-REM ------------------------------------------------
-IF ERRORLEVEL 19 (
-    SETLOCAL ENABLEDELAYEDEXPANSION
-    PUSHD ..\Resources
-    SET _command=python -m unittest -v
-    FOR /F "usebackq" %%A IN ("unittests1.txt") DO SET _command=!_command! %%A
-    CLS
-    ECHO:
-    !_command!
-    ECHO:
-    ECHO:
-    PAUSE
-    POPD
-    ENDLOCAL
-    GOTO MENU
-)
+IF ERRORLEVEL 19 GOTO MENU
 
 
 REM -----------------------------------------------
@@ -495,7 +515,7 @@ REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 18 (
 
     SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vid�os
+    SET _cloud_avchd=\\DISKSTATION\backup\AVCHD Vidéos
     SET _local_avchd=G:\Videos\AVCHD Videos
 
     REM 1. Check if new videos have been inserted since the previous sync.
@@ -567,9 +587,9 @@ IF ERRORLEVEL 16 (
 )
 
 
-REM -----------------------------------------------------------------
-REM Clone Samsung S5 images local collection from distant collection.
-REM -----------------------------------------------------------------
+REM -----------------------------------------------
+REM Clone local Samsung S5 collection from MyCloud.
+REM -----------------------------------------------
 REM It is a two ways syncing! Extra files are deleted.
 IF ERRORLEVEL 15 (
 
@@ -607,49 +627,35 @@ IF ERRORLEVEL 15 (
 )
 
 
-REM -------------------------------
-REM Display digital audio bootlegs.
-REM -------------------------------
+REM ----------------------------------
+REM Display bootleg albums collection.
+REM ----------------------------------
+REM Data are taken from FLAC files Vorbis comments.
 IF ERRORLEVEL 14 (
-    CLS
-    PUSHD Tasks
-    python bootlegalbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
-    POPD
-    ECHO:
-    ECHO:
-    ECHO:
-    ECHO:
-    PAUSE
+    REM CLS
+    REM PUSHD Tasks
+    REM python getBootlegAlbums.py "F:\M\Metallica\2" "F:\P\Pearl Jam\2" "F:\S\Springsteen, Bruce\2"
+    REM POPD
+    REM ECHO:
+    REM ECHO:
+    REM ECHO:
+    REM ECHO:
+    REM PAUSE
     GOTO MENU
 )
 
 
-REM ------------------------------
-REM Sync local audio repositories.
-REM ------------------------------
-IF ERRORLEVEL 13 (
-    CLS
-    DEL %TEMP%\%_xxcopy% 2> NUL
-    PUSHD Interfaces\Sources\01
-    python main.py
-    IF NOT ERRORLEVEL 1 CALL :CONFIRM
-    POPD
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 13 GOTO MENU
 
 
-REM ------------------------------------------------------
-REM Run python audio discs ripping application unit tests.
-REM ------------------------------------------------------
-IF ERRORLEVEL 12 (
-    CLS
-    ECHO:
-    python -m unittest -v Applications.Unittests.module4
-    ECHO:
-    ECHO:
-    PAUSE
-    GOTO MENU
-)
+REM ----------
+REM Available.
+REM ----------
+IF ERRORLEVEL 12 GOTO MENU
+
 
 REM -------------------------------
 REM List python installed packages.
@@ -740,9 +746,9 @@ IF ERRORLEVEL 8 (
     CALL :GET_VIRTUALENV 1
     IF ERRORLEVEL 100 GOTO STEP8B
     CLS
-    CALL "%_COMPUTING%\environment.cmd" A !_name!
+    CALL "%_myparent%environment.cmd" A !_name!
     CMD /K PROMPT [!_name! environment]$G
-    CALL "%_COMPUTING%\environment.cmd" D
+    CALL "%_myparent%environment.cmd" D
     GOTO STEP8A
 
 :STEP8B
@@ -942,7 +948,7 @@ REM Get virtual environment respective directory.
 :R01_STEP4
 SET _name=!_dir%_answer%!
 IF %_answer% LEQ 9 SET _name=!_dir0%_answer%!
-SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
+SET _venv=%_myparent%MyPythonProject\VirtualEnv\%_name%\Scripts
 
 :R01_STEP5
 (
@@ -954,7 +960,7 @@ SET _venv=%_PYTHONPROJECT%\VirtualEnv\%_name%\Scripts
 )
 
 
-REM python %_PYTHONPROJECT%\AudioCD\DigitalAudioFiles`View.py
+REM python %_myparent%MyPythonProject\AudioCD\DigitalAudioFiles`View.py
 REM IF NOT ERRORLEVEL 1 (
     REM IF EXIST "%_xmldigitalaudiobase%" (
         REM java -cp "%_SAXON%" net.sf.saxon.Transform -s:"%_xmldigitalaudiobase%" -xsl:"%_digitalaudiobase%.xsl" -o:"%_digitalaudiobase%.html"

@@ -10,7 +10,7 @@
 
 
         ******************                                      **********************                                  *************
-        * TABLES EDITING *                                      * TABLES MAINTENANCE *                                  * COMPUTING *
+        * AUDIO DATABASE *                                      * TABLES MAINTENANCE *                                  * COMPUTING *
         ******************                                      **********************                                  *************
 {% for item in collection[7:11] %}
         {{ item }}

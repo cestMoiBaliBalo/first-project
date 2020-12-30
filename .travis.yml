@@ -22,8 +22,10 @@ jobs:
 install:
   - pip install iso8601
   - pip install jinja2
+  - pip install mutagen
   - pip install python-dateutil
   - pip install pytz
   - pip install pyyaml
+  - pip install sortedcontainers
 script:
   - ./MyPythonProject/AudioCD/Grabber/grab_main.cmd 3 

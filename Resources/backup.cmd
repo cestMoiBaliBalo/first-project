@@ -1,16 +1,14 @@
 @ECHO off
 
 
-REM __author__ = 'Xavier ROSSET'
-REM __maintainer__ = 'Xavier ROSSET'
-REM __email__ = 'xavier.python.computing@protonmail.com'
-REM __status__ = "Production"
+@REM __author__ = 'Xavier ROSSET'
+@REM __maintainer__ = 'Xavier ROSSET'
+@REM __email__ = 'xavier.python.computing@protonmail.com'
+@REM __status__ = "Production"
 
 
-CLS
+@CLS
 SETLOCAL ENABLEDELAYEDEXPANSION ENABLEEXTENSIONS
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-
 
 
 REM ==================
@@ -18,13 +16,14 @@ REM Initializations 1.
 REM ==================
 SET _me=%~n0
 SET _myparent=%~dp0
+FOR /F "usebackq delims=" %%A IN ('%_myparent%.') DO SET _myancestor=%%~dpA
 
 
 REM ==================
 REM Initializations 2.
 REM ==================
 SET _arguments=
-SET _cp=1252
+SET _cp=65001
 SET _first=1
 SET _output=%TEMP%\backup.txt
 
@@ -32,6 +31,7 @@ SET _output=%TEMP%\backup.txt
 REM ============
 REM Main script.
 REM ============
+SET PATH=%_myancestor%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
 
 REM -----
 PUSHD %_RESOURCES%
@@ -51,9 +51,9 @@ REM    ----------
 REM A. Java step.
 REM    ----------
 REM    Enumerate files.
-PUSHD %_COMPUTING%\MyJavaProject\Finder
+PUSHD %_myancestor%MyJavaProject\Finder
 IF NOT EXIST "targets.txt" (
-    ECHO Targets repository ("%_COMPUTING%\MyJavaProject\targets.txt"^) can't be found. Please check^^!
+    ECHO Targets repository ("%_myancestor%MyJavaProject\Finder\targets.txt"^) can't be found. Please check^^!
     POPD
     GOTO STEP4
 )
@@ -64,7 +64,7 @@ IF [%~2] EQU [] (
 )
 SET _arguments=%_arguments% %~2
 SET _first=0
-FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
+@FOR /F "usebackq eol=# tokens=1-4 delims=`" %%A IN ("targets.txt") DO (
     IF [%%~A] EQU [%~2] (
         SET _target=%%~A
         SET _environment=%%~B

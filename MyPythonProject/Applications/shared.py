@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
+import argparse
 import calendar
 import csv
 import locale
@@ -9,10 +10,11 @@ import os
 import re
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from contextlib import ContextDecorator, ExitStack, suppress
 from datetime import date, datetime, time, timedelta
 from functools import singledispatch
-from itertools import dropwhile, filterfalse, groupby, repeat, tee, zip_longest
+from itertools import chain, dropwhile, filterfalse, groupby, repeat, tee, zip_longest
 from pathlib import Path
 from string import Template
 from subprocess import PIPE, run
@@ -54,7 +56,7 @@ WRITE = "w"
 # Resources.
 ARECA = str(Path("C:/") / "Program Files" / "Areca" / "areca_cl.exe")
 DATABASE = str(_MYPARENT.parent / "Resources" / "database.db")
-TESTDATABASE = str(_MYPARENT / "Unittests" / "Resources" / "database.db")
+TESTDATABASE = str(Path(os.path.expandvars("%TEMP%")) / "database.db")
 
 # Regular expressions.
 DFTDAYREGEX = r"0[1-9]|[12]\d|3[01]"
@@ -185,9 +187,69 @@ class AlternativeChangeRemoteCurrentDirectory(ContextDecorator):
         self._ftpobj.chdir(self._cwd)
 
 
+class Files(Sequence):
+    """
+    Undocumented.
+    """
+
+    def __init__(self, path, *, excluded=None):
+
+        if not path.exists():
+            raise FileNotFoundError(f"No such file or directory: '{path}'")
+        if not path.is_dir():
+            raise NotADirectoryError(f"No such directory: '{path}'")
+
+        collection = []  # type: List[Any]
+
+        # [root1/file1.ext1, root1/file2.ext1, root1/file3.ext2], [root2/file1.ext1, root2/file2.ext1, root2/file3.ext2], ...
+        if not excluded:
+            collection = [[Path(root) / file for file in files] for root, _, files in os.walk(path) if files]
+
+        # [root1/file1.ext1, root1/file2.ext1, root1/file3.ext2], [root2/file1.ext1, root2/file2.ext1, root2/file3.ext2], ...
+        if excluded:
+            for root, _, files in os.walk(path):
+                if files:
+                    files = set(Path(root) / file for file in files) - excluded(root, *set(files))
+                    if files:
+                        collection.append(list(files))
+
+        # root1/file1.ext1, root1/file2.ext1, root1/file3.ext2, root2/file1.ext1, root2/file2.ext1, root2/file3.ext2, ...
+        self._collection = sorted(chain.from_iterable(collection))  # type: List[Path]
+
+    def __contains__(self, item):
+        return item in self._collection
+
+    def __getitem__(self, item):
+        return self._collection[item]
+
+    def __iter__(self):
+        for item in self._collection:
+            yield item
+
+    def __len__(self):
+        return len(self._collection)
+
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, list(self))
+
+
+class GetPath(argparse.Action):
+    """
+    Undocumented.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(GetPath, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parsobj, namespace, values, option_string=None):
+        setattr(namespace, self.dest, list(map(Path, values)))
+
+
 class TitleCaseBaseConverter(ABC):
     """
-    
+    Undocumented.
     """
 
     # Define class-level configuration.
@@ -211,6 +273,9 @@ class TitleCaseBaseConverter(ABC):
     roman_numbers_regex3 = re.compile(r"(?i)\bC{,3}X[CL](?:V?I{,3}|I[VX])\b")
 
     def __init__(self):
+        """
+        Undocumented.
+        """
 
         # Initializations.
         self.alw_lowercase, self.alw_uppercase, self.alw_capital, self.capitalize_firstword, self.capitalize_lastword = None, None, None, None, None
@@ -235,27 +300,27 @@ class TitleCaseBaseConverter(ABC):
     @abstractmethod
     def convert(self, title):
         """
+        Undocumented.
 
-        :param title:
-        :return:
         """
         pass
 
 
 class TitleCaseConverter(TitleCaseBaseConverter):
     """
-
+    Undocumented.
     """
     _logger = logging.getLogger("{0}.TitleCaseConverter".format(__name__))
 
     def __init__(self):
+        """
+        Undocumented.
+        """
         super(TitleCaseConverter, self).__init__()
 
     def convert(self, title):
         """
-        
-        :param title: 
-        :return: 
+        Undocumented.
         """
         self._logger.debug(title)
 
@@ -464,11 +529,11 @@ def valid_path(path: str) -> str:
     :return:
     """
     if not exists(path):
-        raise ValueError(f'"{path}" doesn\'t exist.')
+        raise FileNotFoundError(f"No such file or directory: '{path}'")
     if not isdir(path):
-        raise ValueError(f'"{path}" is not a directory.')
+        raise NotADirectoryError(f"No such directory: '{path}'")
     if not os.access(path, os.R_OK):
-        raise ValueError(f'"{path}" is not a readable directory.')
+        raise AttributeError(f"'{path}' is not readable")
     return path
 
 
@@ -904,11 +969,12 @@ def find_files(directory, *, excluded=None):
     """
     collection = []  # type: List[Any]
     if not excluded:
-        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(str(directory)) if files)
+        collection.extend(map(os.path.join, repeat(root), files) for root, _, files in os.walk(directory) if files)
+        collection = list(map(Path, collection))
     elif excluded:
-        for root, _, files in os.walk(str(directory)):
+        for root, _, files in os.walk(directory):
             if files:
-                files = set(os.path.join(root, file) for file in files) - excluded(root, *set(files))
+                files = set(Path(root) / file for file in files) - excluded(root, *set(files))
                 if files:
                     collection.extend(files)
     for file in sorted(collection):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-# import logging.config
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import os
+from pathlib import Path
 
 import cherrypy
 
@@ -11,31 +12,31 @@ __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
 
-if __name__ == '__main__':
-    # with open(os.path.join(os.path.expandvars("%_COMPUTING%"), "Resources", "logging.yml"), encoding="UTF_8") as fp:
-    #     logging.config.dictConfig(yaml.load(fp))
-    # logger = logging.getLogger("Applications.Tables.RippedDiscs")
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
+if __name__ == '__main__':
     conf = {
         '/frameworks': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Resources", "Frameworks")
+            'tools.staticdir.dir': str(_MYPARENT.parents[1] / "Resources" / "Frameworks")
         },
         '/scripts': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Resources", "AudioCollection", "Scripts")
+            'tools.staticdir.dir': str(_MYPARENT.parents[1] / "Resources" / "AudioCollection" / "Scripts")
         },
         '/stylesheets': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Resources", "AudioCollection", "Stylesheets")
+            'tools.staticdir.dir': str(_MYPARENT.parents[1] / "Resources" / "AudioCollection" / "Stylesheets")
         },
         '/images': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.expandvars("%_PYTHONPROJECT%"), "Resources", "Images")
+            'tools.staticdir.dir': str(_MYPARENT.parents[1] / "Resources" / "Images")
         },
         '/computing': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.expandvars("%_COMPUTING%")
+            'tools.staticdir.dir': str(_MYPARENT.parents[2])
         },
         '/albumart': {
             'tools.staticdir.on': True,

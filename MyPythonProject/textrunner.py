@@ -13,7 +13,7 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 
 import yaml
 
-from Applications.Unittests import module1, module2, module3, module5
+from Applications.Unittests import module1, module2, module3, module4, module5
 from Applications.decorators import attrgetter_
 from Applications.shared import customfilter as cf
 
@@ -83,6 +83,10 @@ suite, loader, runner = TestSuite(), TestLoader(), TextTestRunner(verbosity=verb
 suite.addTests(loader.loadTestsFromModule(module1))
 suite.addTests(loader.loadTestsFromModule(module2))
 suite.addTests(loader.loadTestsFromModule(module3))
+suite.addTests(loader.loadTestsFromModule(module4))
 suite.addTests(loader.loadTestsFromModule(module5))
+if Path("F:/").exists():
+    from Applications.Unittests import module6
+    suite.addTests(loader.loadTestsFromModule(module6))
 result = runner.run(suite)
 sys.exit(EXIT[result.wasSuccessful()])

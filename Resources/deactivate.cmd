@@ -11,7 +11,7 @@ IF DEFINED _OLD_VIRTUAL_PATH (
     SET "PATH=%_OLD_VIRTUAL_PATH%"
     SET _OLD_VIRTUAL_PATH=
 )
-IF DEFINED _mycp CHCP %_mycp% > NUL
+@IF DEFINED _mycp CHCP %_mycp% > NUL
 PROMPT %_prompt%
 SET _cp=
 SET _chcp=

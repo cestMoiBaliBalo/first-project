@@ -7,6 +7,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -14,8 +15,8 @@ public class FilesCollection extends SimpleFileVisitor<Path> {
     private int count;
     private int total;
     private Pattern pattern;
-    private ArrayList<String[]> files = new ArrayList<>();
-    private Map<String, Integer> directories = new HashMap<>();
+    private final List<String[]> files = new ArrayList<>();
+    private final Map<String, Integer> directories = new HashMap<>();
 
     public FilesCollection() {
         this.count = 0;
@@ -32,7 +33,7 @@ public class FilesCollection extends SimpleFileVisitor<Path> {
         return total;
     }
 
-    public ArrayList<String[]> getFiles() {
+    public List<String[]> getFiles() {
         return files;
     }
 

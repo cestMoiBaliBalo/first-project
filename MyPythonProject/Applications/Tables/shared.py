@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
@@ -36,7 +37,7 @@ class DatabaseConnection(ContextDecorator):
 # ==================
 # Private functions.
 # ==================
-def _contains(a, b):
+def contains_(a, b):
     return operator.contains(b, a)
 
 
@@ -174,7 +175,7 @@ def _set_whereclause_disc(*keys: str) -> Tuple[Optional[str], Any]:
     :return:
     """
     clause, argw = None, None  # type: Optional[str], Any
-    _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(_contains, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
+    _keys = list(compress(map(_split_discid, keys), map(operator.not_, map(partial(contains_, None), map(_split_discid, keys)))))  # [("1.20180000.1", 1), ("1.20180000.1", 2)]  type: List[Tuple[str, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=?)"] * len(_keys))
@@ -191,7 +192,7 @@ def _set_whereclause_track(*keys: str) -> Tuple[Optional[str], Any]:
     clause, argw = None, None  # type: Optional[str], Any
     _keys = list(
             compress(map(_split_trackid, keys),
-                     map(operator.not_, map(partial(_contains, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
+                     map(operator.not_, map(partial(contains_, None), map(_split_trackid, keys)))))  # [("1.20180000.1", 1, 1), ("1.20180000.1", 1, 2)]  type: List[Tuple[str, int, int]]
     if _keys:
         argw = ()
         clause = " OR ".join(["(albumid=? AND discid=? AND trackid=?)"] * len(_keys))

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=no-member
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import datetime
 import os
 from collections import OrderedDict
 from functools import partial
 from itertools import groupby, islice
 from operator import attrgetter, eq, itemgetter
-from pathlib import PurePath
+from pathlib import Path
 from string import Template
 from typing import Any, Iterable, Mapping, Optional, Sequence, Set, Tuple
 
@@ -25,6 +25,10 @@ __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 
 # =====================
@@ -113,7 +117,7 @@ class DigitalAudioCollection(object):
                  "rippeddiscsviewbymonth": "T02",
                  "rippeddiscsviewbyyear": "T02",
                  "getdigitalalbums": "T03"}
-    TEMPLATE = TemplatingEnvironment(PurePath(os.path.expandvars("%_PYTHONPROJECT%")) / "AudioCD" / "AudioCollection")
+    TEMPLATE = TemplatingEnvironment(_MYPARENT.parent / "AudioCD" / "AudioCollection")
     TEMPLATE.set_environment(globalvars={"local": LOCAL,
                                          "utc": UTC,
                                          "utcnow": datetime.datetime.utcnow()},

@@ -42,7 +42,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = str(self.prod_db)
         arguments = database_parser.parse_args(["--database", str(self.prod_db)])
         self.assertEqual(arguments.db, str(self.prod_db))
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with(str(self.prod_db))
 
@@ -50,7 +50,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = str(self.prod_db)
         arguments = database_parser.parse_args([])
         self.assertEqual(arguments.db, str(self.prod_db))
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with(str(self.prod_db))
 
@@ -58,7 +58,7 @@ class Test02a(unittest.TestCase):
         mock_function.return_value = "some_database"
         arguments = database_parser.parse_args(["--database", "some_database"])
         self.assertEqual(arguments.db, "some_database")
-        self.assertFalse(arguments.test)
+        self.assertIsNone(arguments.test)
         mock_function.assert_called_once()
         mock_function.assert_called_once_with("some_database")
 
@@ -73,6 +73,7 @@ class Test02b(unittest.TestCase):
         mock_database.TESTDATABASE = "some_test_database"
         arguments = database_parser.parse_args(["--test"])
         self.assertEqual(arguments.db, "some_test_database")
+        self.assertIsNotNone(arguments.test)
         self.assertTrue(arguments.test)
 
 
@@ -83,7 +84,8 @@ class Test02c(unittest.TestCase):
 
     def test_t01(self):
         arguments = database_parser.parse_args(["--test"])
-        self.assertEqual(arguments.db, str(_MYPARENT / "Resources" / "database.db"))
+        self.assertEqual(arguments.db, str(Path(os.path.expandvars("%TEMP%")) / "database.db"))
+        self.assertIsNotNone(arguments.test)
         self.assertTrue(arguments.test)
 
 
@@ -273,7 +275,7 @@ class Test04b(unittest.TestCase):
 
     def setUp(self):
         self.prod_db = _MYPARENT.parents[1] / "Resources" / "database.db"
-        self.test_db = _MYPARENT / "Resources" / "database.db"
+        self.test_db = str(Path(os.path.expandvars("%TEMP%")) / "database.db")
 
     def test_t01(self, mock_function):
         arguments = vars(database_parser.parse_args([]))
@@ -306,7 +308,7 @@ class Test05(unittest.TestCase):
 
     def test01(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/A"), excluded=filterfalse_(partial(filter_extension, extension="flac"))))
+        out_files = sorted(map(str, find_files(Path("F:/A"), excluded=filterfalse_(filter_extensions("flac")))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
@@ -334,7 +336,7 @@ class Test05(unittest.TestCase):
 
     def test06(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/F"), excluded=filterfalse_(filter_extensions("mp3", "m4a"))))
+        out_files = sorted(map(str, find_files(Path("F:/F"), excluded=filterfalse_(filter_extensions("mp3", "m4a")))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.m4a"),
                                          str(Path("G:/") / "file1.mp3"),
                                          str(Path("G:/") / "file2.m4a"),
@@ -345,12 +347,12 @@ class Test05(unittest.TestCase):
 
     def test07(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/G"), excluded=filterfalse_(filter_losslessaudiofiles)))
+        out_files = sorted(map(str, find_files(Path("F:/G"), excluded=filterfalse_(filter_losslessaudiofiles))))
         self.assertListEqual(out_files, [str(Path("G:/") / "file1.flac"), str(Path("G:/") / "file2.flac"), str(Path("G:/") / "file3.flac")])
         mock_os_walk.assert_called_once()
 
     def test08(self, mock_os_walk):
         mock_os_walk.side_effect = self.side_effect
-        out_files = sorted(find_files(Path("F:/H"), excluded=filterfalse_(filter_audiofiles)))
+        out_files = sorted(map(str, find_files(Path("F:/H"), excluded=filterfalse_(filter_audiofiles))))
         self.assertListEqual(out_files, sorted(str(Path("G:/") / file) for file in self.files))
         mock_os_walk.assert_called_once()

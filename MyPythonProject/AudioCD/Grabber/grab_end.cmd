@@ -19,7 +19,7 @@ SET _myparent=%~dp0
 
 
 REM    ==================
-REM B. Initializations 1.
+REM B. Initializations 2.
 REM    ==================
 SET _mycp=
 SET _cp=1252
@@ -59,13 +59,11 @@ REM  1 --> Append ripped tracks to digital audio database.
 REM        -----------------------------------------------
 :STEP1
 IF EXIST "%_jsontags%" (
-    PUSHD ..
     SETLOCAL ENABLEDELAYEDEXPANSION
     SET PATH=%_myparent%\MyPythonProject\VirtualEnv\venv38\Scripts;!PATH!
-    python InsertAlbums.py "%_jsontags%"
+    python insertDiscs.py "%_jsontags%"
     IF ERRORLEVEL 1 DEL "%_jsontags%" 2>NUL
     ENDLOCAL
-    POPD
 )
 SHIFT
 GOTO MAIN
@@ -83,7 +81,9 @@ REM        ------------------------------
 REM  3 --> Update ripped discs dashboard.
 REM        ------------------------------
 :STEP3
-python RippedDiscs.py
+PUSHD ..\..\Tasks
+python getRippedDiscs.py
+POPD
 SHIFT
 GOTO MAIN
 

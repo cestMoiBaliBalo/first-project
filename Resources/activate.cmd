@@ -1,14 +1,14 @@
 @ECHO off
-SET _cp=1252
-SET _mycp=
-CLS
+@CLS
+@SET _cp=1252
+@SET _mycp=
 
 @REM L'argument reçu est le nom de l'environnement virtuel à mettre en place.
 IF NOT EXIST "%_PYTHONPROJECT%\VirtualEnv\%~1" EXIT /B 0
 
 @REM Permettre à la console de restituer les caractères accentué.
-FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO @SET _chcp=%%J
-IF DEFINED _chcp (
+@FOR /F "usebackq tokens=2 delims=:" %%I IN (`CHCP`) DO FOR /F "usebackq" %%J IN ('%%I') DO SET _chcp=%%J
+@IF DEFINED _chcp (
     @SET _mycp=%_chcp%
     IF NOT [%_chcp%]==[%_cp%] CHCP %_cp% > NUL
 )

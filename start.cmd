@@ -21,12 +21,10 @@ SET _myparent=%~dp0
 @REM Initializations 2.
 @REM ==================
 SET _mycp=
-SET _flag=0
 SET _cp=1252
-SET _areca=%PROGRAMFILES%/Areca/areca_cl.exe
-SET _dailybkp=%_COMPUTING%\Resources\daily_backup.txt
-SET _exclusions2=%_COMPUTING%\Resources\exclusions2.txt
-SET _exclusions3=%_COMPUTING%\Resources\exclusions3.txt
+SET _areca=%PROGRAMFILES%\Areca\areca_cl.exe
+SET _dailybkp=%_myparent%Resources\daily_backup.txt
+SET _exclusions=%_myparent%Resources\exclusions.txt
 SET _videos=%USERPROFILE%\videos
 SET _xxcopy=xxcopy.cmd
 
@@ -39,7 +37,7 @@ SET _xxcopy=xxcopy.cmd
 @REM     -----------------------------------------------------
 @REM  1. Allow interface to decode Latin-1 encoded characters.
 @REM     -----------------------------------------------------
-PUSHD %_RESOURCES%
+PUSHD %_myparent%Resources
 
 @REM     Set code page.
 SET _chcp=
@@ -54,11 +52,12 @@ IF DEFINED _chcp (
 SET _chcp=
 SET _step=1
 CALL shared.cmd
-IF DEFINED _chcp ECHO Code page is %_chcp%.
+IF DEFINED _mycp ECHO Code page is currently %_mycp%.
+IF DEFINED _chcp ECHO Code page set to %_chcp%.
 
 @REM     Check characters encoding.
 ECHO Les caractères accentués sont restitués proprement ^^!
-FOR /F "usebackq tokens=*" %%A IN ("%_RESOURCES%\accentuated.txt") DO ECHO %%A
+FOR /F "usebackq tokens=*" %%A IN ("accentuated.txt") DO ECHO %%A
 
 POPD
 
@@ -77,12 +76,8 @@ IF "%~1" EQU "6" GOTO STEP6
 IF "%~1" EQU "9" GOTO STEP9
 IF "%~1" EQU "10" GOTO STEP10
 IF "%~1" EQU "11" GOTO STEP11
-IF "%~1" EQU "13" GOTO STEP13
-IF "%~1" EQU "18" GOTO STEP18
 IF "%~1" EQU "22" GOTO STEP22
 IF "%~1" EQU "23" GOTO STEP23
-IF "%~1" EQU "25" GOTO STEP25
-IF "%~1" EQU "26" GOTO STEP26
 SHIFT
 GOTO MAIN
 
@@ -110,8 +105,8 @@ XXCOPY /EC %TEMP%\ /RS /S /DB#1 /R /H /Y /PD0 /ED1 /Xareca_config_backup\ /Xtmp1
 @REM  3b. Then set up a new temporary environment.
 @REM      ----------------------------------------
 SETLOCAL
-SET PATH=%_PYTHONPROJECT%\VirtualEnv\venv38\Scripts;%PATH%
-PUSHD %_PYTHONPROJECT%
+SET PATH=%_myparent%MyPythonProject\VirtualEnv\venv38\Scripts;%PATH%
+PUSHD %_myparent%MyPythonProject
 python temporaryenv.py dir --glob > NUL
 POPD
 ENDLOCAL
@@ -196,13 +191,13 @@ IF EXIST y: (
     SET _suffix=
 
 :STEP6C
-    XXCOPY /EC %_COMPUTING%\ y:\Computing\/$ymmdd$!_suffix!\ /S /EX:"%_exclusions2%" /IA /KS /oA:%_XXCOPYLOG%
+    XXCOPY /EC %_myparent% y:\Computing\/$ymmdd$!_suffix!\ /S /EX:"%__exclusions%" /IA /KS /oA:%_XXCOPYLOG%
     IF ERRORLEVEL 47 (
         SHIFT
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_RESOURCES%
+        PUSHD %_myparent%Resources
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP6C
@@ -257,41 +252,14 @@ SHIFT
 GOTO MAIN
 
 
-@REM     -------------------------------
-@REM 13. Delete GNUCash sandbox content.
-@REM     -------------------------------
-:STEP13
-SETLOCAL
-SET _taskid=123456798
-SET _delta=8
-CALL :CHECK_TASK
-IF ERRORLEVEL 1 (
-    @ECHO:
-    @ECHO:
-    @ECHO ===============================
-    @ECHO Delete GNUCash sandbox content.
-    @ECHO ===============================
-    "%PROGRAMFILES%\Sandboxie\Start.exe" /box:GNUCash delete_sandbox_silent && @ECHO GNUCash sandbox content successfully removed.
-    CALL :UPDATE_TASK
-)
-ENDLOCAL
-SHIFT
-GOTO MAIN
-
-
-@REM     ----------
-@REM 14. Available.
-@REM     ----------
-:STEP18
-SHIFT
-GOTO MAIN
-
-
 @REM     -----------------------------
 @REM 15. Ripped discs Excel dashboard.
 @REM     -----------------------------
 :STEP22
-python "%_PYTHONPROJECT%\AudioCD\Grabber\RippedDiscs.py"
+PUSHD %_myparent%MyPythonProject\Tasks
+python getBootlegAlbums.py bootleg
+python getRippedDiscs.py
+POPD
 SHIFT
 GOTO MAIN
 
@@ -323,28 +291,12 @@ IF EXIST y:\Documents (
         GOTO MAIN
     )
     IF ERRORLEVEL 46 (
-        PUSHD %_RESOURCES%
+        PUSHD %_myparent%Resources
         CALL shared.cmd
         POPD
         IF DEFINED _suffix GOTO STEP23C
     )
 )
-SHIFT
-GOTO MAIN
-
-
-@REM     ----------
-@REM 17. Available.
-@REM     ----------
-:STEP25
-SHIFT
-GOTO MAIN
-
-
-@REM     ----------
-@REM 18. Available.
-@REM     ----------
-:STEP26
 SHIFT
 GOTO MAIN
 
@@ -357,30 +309,9 @@ ECHO:
 ECHO:
 IF DEFINED _mycp (
     CHCP %_mycp% > NUL
-    ECHO Code page is now %_mycp%.
+    ECHO Code page restored to %_mycp%.
 )
 ENDLOCAL
-PAUSE
-CLS
+REM PAUSE
+REM CLS
 EXIT /B %ERRORLEVEL%
-
-
-@REM =================
-@REM Shared functions.
-@REM =================
-:CHECK_TASK
-SETLOCAL
-python -m Applications.Tables.Tasks.shared %_taskid% check --delta %_delta%
-(
-    ENDLOCAL
-    EXIT /B %ERRORLEVEL%
-)
-
-
-:UPDATE_TASK
-SETLOCAL
-python -m Applications.Tables.Tasks.shared %_taskid% update
-(
-    ENDLOCAL
-    EXIT /B %ERRORLEVEL%
-)

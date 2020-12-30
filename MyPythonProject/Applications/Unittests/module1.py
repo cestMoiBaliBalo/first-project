@@ -7,17 +7,16 @@ import shutil
 import tempfile
 import unittest
 from datetime import datetime
-from functools import partial, wraps
+from functools import partial
 from itertools import filterfalse
 from operator import contains, itemgetter
-from pathlib import Path, PurePath
-from typing import Union
+from pathlib import Path
 from unittest.mock import patch
 
-import yaml
-
-from ..decorators import itemgetter_, split_
-from ..shared import TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, groupby_, nested_groupby_, now
+from ..callables import filter_extensions, filterfalse_
+from ..decorators import itemgetter_, none_, split_
+from ..more_shared import VorbisComment
+from ..shared import Files, TitleCaseConverter, ToBoolean, UTF8, booleanify, eq_string_, get_rippingapplication, now
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
@@ -27,41 +26,6 @@ __status__ = "Production"
 _ME = Path(os.path.abspath(__file__))
 _MYNAME = Path(os.path.abspath(__file__)).stem
 _MYPARENT = Path(os.path.abspath(__file__)).parent
-
-
-# ===============
-# Global classes.
-# ===============
-class SetUp(object):
-
-    def _decorate_callable(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            with open(self._path, encoding=self._encoding) as stream:
-                collection = yaml.load(stream, Loader=yaml.FullLoader)
-            args += (collection,)
-            func(*args, **kwargs)
-
-        return wrapper
-
-    def _decorate_class(self, klass):
-        for attr in dir(klass):
-            if not attr.startswith("test"):
-                continue
-            attr_value = getattr(klass, attr)
-            if not hasattr(attr_value, "__call__"):
-                continue
-            setattr(klass, attr, self(attr_value))
-        return klass
-
-    def __init__(self, path: Union[PurePath, str], *, encoding: str = "UTF_8") -> None:
-        self._path = path
-        self._encoding = encoding
-
-    def __call__(self, arg):
-        if isinstance(arg, type):
-            return self._decorate_class(arg)
-        return self._decorate_callable(arg)
 
 
 # ==========
@@ -266,11 +230,24 @@ class TestDecorator06(unittest.TestCase):
         self.assertEqual(max(map(split_("_")(itemgetter_(1)(int)), self.iterable)), 456)
 
     def test_t02(self):
-        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
+        self.assertListEqual(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))),
+                             ["2016_00001", "2016_00002", "2016_00003", "2016_00101", "2015_00456"])
 
     def test_t03(self):
         self.assertListEqual(sorted(sorted(self.iterable, key=split_("_")(itemgetter_(1)(int))), key=split_("_")(itemgetter_(0)(int))),
                              ["2015_00456", "2016_00001", "2016_00002", "2016_00003", "2016_00101"])
+
+
+class TestDecorator07(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
+
+    def test_t01(self):
+        self.assertListEqual(list(filterfalse(none_(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+    def test_t02(self):
+        self.assertListEqual(list(filter(none_(itemgetter(7)), self.iterable)), [("defaultalbums", "Artist, The", "1", "1", True, False, "A", None)])
 
 
 @patch("Applications.shared.datetime")
@@ -283,7 +260,7 @@ class TestMock01(unittest.TestCase):
         self.datetime = datetime(2019, 9, 13, 3, 1)
         self.now = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
 
-    def test01(self, mock_datetime):
+    def test_t01(self, mock_datetime):
         mock_datetime.utcnow.return_value = self.datetime
         self.assertEqual(now(), self.now)
         mock_datetime.utcnow.assert_called()
@@ -302,7 +279,7 @@ class TestMock02(unittest.TestCase):
         self.now1 = "Vendredi 13 Septembre 2019 05:01:00 CEST (UTC+0200)"
         self.now2 = "Vendredi 13 Septembre 2019 05:02:00 CEST (UTC+0200)"
 
-    def test01(self, mock_datetime):
+    def test_t01(self, mock_datetime):
         mock_datetime.utcnow.side_effect = self.datetime
         self.assertEqual(now(), self.now1)
         self.assertEqual(now(), self.now2)
@@ -322,22 +299,22 @@ class TestMock03(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.tempdir)
 
-    def test01(self, mock_ospath_expandvars):
+    def test_t01(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.expandvars("%TEMP%"), self.tempdir)
         mock_ospath_expandvars.assert_called_once()
 
-    def test02(self, mock_ospath_expandvars):
+    def test_t02(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.join(os.path.expandvars("%TEMP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
         mock_ospath_expandvars.assert_called_once()
 
-    def test03(self, mock_ospath_expandvars):
+    def test_t03(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = self.tempdir
         self.assertEqual(os.path.join(os.path.expandvars("%BACKUP%"), "toto.txt"), os.path.join(self.tempdir, "toto.txt"))
         mock_ospath_expandvars.assert_called_once()
 
-    def test04(self, mock_ospath_expandvars):
+    def test_t04(self, mock_ospath_expandvars):
         mock_ospath_expandvars.return_value = "some_folder"
         self.assertEqual(os.path.expandvars("%SOME_FOLDER%"), "some_folder")
         mock_ospath_expandvars.assert_called_once()
@@ -357,46 +334,7 @@ class Test01(unittest.TestCase):
         self.assertFalse(ToBoolean("toto").boolean_value)
 
 
-@SetUp(_MYPARENT / "Resources" / "resource1.yml")
 class Test02(unittest.TestCase):
-
-    def setUp(self) -> None:
-        self.collection = [("artist1", "album1", 1, 1, "X"),
-                           ("artist1", "album1", 1, 2, "X"),
-                           ("artist1", "album1", 2, 1, "X"),
-                           ("artist1", "album1", 1, 3, "X"),
-                           ("artist2", "album1", 1, 1, "X"),
-                           ("artist1", "album2", 1, 1, "X"),
-                           ("artist1", "album2", 1, 2, "X"),
-                           ("artist1", "album1", 2, 2, "X"),
-                           ("artist1", "album1", 2, 3, "X"),
-                           ("artist2", "album1", 2, 3, "X"),
-                           ("artist2", "album2", 2, 2, "X"),
-                           ("artist2", "album2", 2, 1, "X"),
-                           ("artist2", "album2", 2, 3, "X")]
-
-    def test_t01(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t01"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 4, 0, 1, 2)), out_collection)
-
-    def test_t02(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t02"]
-        self.assertListEqual(list(groupby_(in_collection, 4)), out_collection)
-
-    def test_t03(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t03"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 4)), out_collection)
-
-    def test_t04(self, collection):
-        in_collection = sorted(sorted(sorted(sorted(sorted(self.collection, key=itemgetter(3)), key=itemgetter(2)), key=itemgetter(1)), key=itemgetter(0)), key=itemgetter(4))
-        out_collection = collection["test_t04"]
-        self.assertListEqual(list(nested_groupby_(in_collection, 0, 1)), out_collection)
-
-
-class Test03(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "Y", "N", "N", "Y"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -406,7 +344,7 @@ class Test03(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", True, False, False, True), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test04(unittest.TestCase):
+class Test03(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "O", "N", "N", "O"), ("defaultalbums", "Artist, The", "1", "2", "Y", "N", "N", "Y")]
@@ -416,7 +354,7 @@ class Test04(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "O", False, False, "O"), ("defaultalbums", "Artist, The", "1", "2", True, False, False, True)])
 
 
-class Test05(unittest.TestCase):
+class Test04(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
@@ -426,7 +364,7 @@ class Test05(unittest.TestCase):
                              [("defaultalbums", "Artist, The", "1", "1", "A", "B", "C", "D"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
 
 
-class Test06(unittest.TestCase):
+class Test05(unittest.TestCase):
 
     def setUp(self) -> None:
         self.iterable = [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")]
@@ -434,3 +372,143 @@ class Test06(unittest.TestCase):
     def test_t01(self):
         self.assertListEqual(list(itertools.starmap(booleanify_, self.iterable)),
                              [("defaultalbums", "Artist, The", "1", "1", True, False, "A", "B"), ("defaultalbums", "Artist, The", "1", "2", "A", "B", "C", "D")])
+
+
+class TestFiles(unittest.TestCase):
+
+    @staticmethod
+    def get_name(file: Path) -> str:
+        return file.name
+
+    def setUp(self) -> None:
+        self._cwd = os.getcwd()
+        os.chdir(_MYPARENT)
+
+    def tearDown(self) -> None:
+        os.chdir(self._cwd)
+
+    def test_t01(self):
+        files = Files(Path(os.path.abspath("Resources")))
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
+                                                             "converter_idtags_03.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg_idtags_01_FLAC.txt",
+                                                             "sbootleg_idtags_02_FLAC.txt",
+                                                             "sbootleg_idtags_03_FDK.txt",
+                                                             "sbootleg_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt",
+                                                             "sequences.json",
+                                                             "titles.json"})
+
+    def test_t02(self):
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("txt")))
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
+                                                             "converter_idtags_03.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg_idtags_01_FLAC.txt",
+                                                             "sbootleg_idtags_02_FLAC.txt",
+                                                             "sbootleg_idtags_03_FDK.txt",
+                                                             "sbootleg_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt"})
+
+    def test_t03(self):
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("json")))
+        self.assertSetEqual(set(map(self.get_name, files)), {"sequences.json", "titles.json"})
+
+    def test_t04(self):
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("json", "txt")))
+        self.assertSetEqual(set(map(self.get_name, files)), {"audiotags.txt",
+                                                             "batchconverter.txt",
+                                                             "converter_idtags_01.txt",
+                                                             "converter_idtags_02.txt",
+                                                             "converter_idtags_03.txt",
+                                                             "default_idtags_01_FDK.txt",
+                                                             "default_idtags_01_FLAC.txt",
+                                                             "default_idtags_01_LAME.txt",
+                                                             "default_idtags_01_Monkeys.txt",
+                                                             "default_idtags_02_FLAC.txt",
+                                                             "default_idtags_03_FLAC.txt",
+                                                             "default_idtags_04_FDK.txt",
+                                                             "default_idtags_04_FLAC.txt",
+                                                             "sbootleg_idtags_01_FLAC.txt",
+                                                             "sbootleg_idtags_02_FLAC.txt",
+                                                             "sbootleg_idtags_03_FDK.txt",
+                                                             "sbootleg_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_01_FDK.txt",
+                                                             "sbootleg1_idtags_01_FLAC.txt",
+                                                             "sbootleg1_idtags_02_FDK.txt",
+                                                             "sbootleg1_idtags_02_FLAC.txt",
+                                                             "sbootleg1_idtags_03_FLAC.txt",
+                                                             "sbootleg1_idtags_04_FLAC.txt",
+                                                             "sbootleg1_idtags_05_FLAC.txt",
+                                                             "sequences.json",
+                                                             "titles.json"})
+
+    def test_t05(self):
+        files = Files(Path(os.path.abspath("Resources")), excluded=filterfalse_(filter_extensions("yml")))
+        self.assertSetEqual(set(map(self.get_name, files)), set())
+
+
+@unittest.skipIf(not Path("F:/").exists(), "Unit test run on local platform only!")
+class TestVorbisComment(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._cwd = os.getcwd()
+        os.chdir(Path("F:/") / "U" / "U2" / "1")
+
+    def tearDown(self) -> None:
+        os.chdir(self._cwd)
+
+    def test_t01(self):
+        comments = VorbisComment(Path(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                      / "CD1"
+                                                      / "1.Free Lossless Audio Codec"
+                                                      / "1.20000000.1.13.D1.T01.flac")))
+        comments = sorted(filter(itemgetter_(0)(partial(contains, ["album", "artist", "artistsort", "label", "upc"])), comments), key=itemgetter(0))
+        self.assertListEqual(comments, [("album", "All That You Can’t Leave Behind (20th Anniversary Edition)"),
+                                        ("artist", "U2"),
+                                        ("artistsort", "U2"),
+                                        ("label", "Island Records"),
+                                        ("upc", "00602507404635")])
+
+    def test_t02(self):
+        comments = VorbisComment(Path(os.path.abspath(Path("2000 - All That You Can’t Leave Behind (20th Anniversary Edition)")
+                                                      / "CD1"
+                                                      / "1.Free Lossless Audio Codec"
+                                                      / "1.20000000.1.13.D1.T01.flac")))
+        comments = sorted(filter(itemgetter_(0)(partial(contains, ["mediaprovider", "source", "title"])), comments), key=itemgetter(0))
+        self.assertListEqual(comments, [("mediaprovider", "HDtracks.com"),
+                                        ("source", "Online provider"),
+                                        ("title", "Beautiful Day")])

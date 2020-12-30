@@ -1,31 +1,36 @@
 # -*- coding: ISO-8859-1 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import csv
 import json
 import logging
 import os
 import re
 import sqlite3
-from collections import Counter, namedtuple
+from collections import Counter
 from contextlib import ExitStack, suppress
 from datetime import datetime
 from functools import partial
 from itertools import chain, compress, groupby, product, starmap
 from operator import contains, eq, is_not, itemgetter, lt
+from pathlib import Path
 from string import Template
 from typing import Any, Dict, Iterator, List, Mapping, MutableMapping, NamedTuple, Optional, Tuple, Union
-from dateutil.parser import parse
 
 import yaml
+from dateutil.parser import parse
 
 from ..shared import DatabaseConnection, adapt_booleanvalue, close_database, convert_tobooleanvalue, run_statement, set_setclause, set_whereclause_album, set_whereclause_disc, set_whereclause_track
 from ...decorators import attrgetter_, itemgetter_
-from ...shared import DATABASE, LOCAL, ToBoolean, UTC, booleanify, eq_string_, format_date, get_dirname, pprint_sequence, valid_datetime
+from ...shared import DATABASE, LOCAL, ToBoolean, UTC, UTF8, booleanify, eq_string_, format_date, pprint_sequence, valid_datetime
 
 __author__ = 'Xavier ROSSET'
 __maintainer__ = 'Xavier ROSSET'
 __email__ = 'xavier.python.computing@protonmail.com'
 __status__ = "Production"
+
+_ME = Path(os.path.abspath(__file__))
+_MYNAME = Path(os.path.abspath(__file__)).stem
+_MYPARENT = Path(os.path.abspath(__file__)).parent
 
 # ================
 # SQLite3 adapter.
@@ -81,34 +86,34 @@ REX = re.compile(r"^(\w+)(?: (ASC|DESC))?$", re.IGNORECASE)
 # ========================================
 # Main interfaces for working with tables.
 # ========================================
-def insert_albums(*iterables):
+def insert_discs(*iterables):
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from data sequences.
+    Insert digital discs into the local audio database.
+    Discs are taken from data sequences.
     This is only an entry function!
 
     :param iterables: data sequences where the albums are taken from.
     :return: database total changes.
     """
-    return _insert_albums(*iterables)
+    return _insert_discs(*iterables)
 
 
-def insert_albums_fromjson(*jsonfiles) -> int:
+def insert_discs_fromjson(*jsonfiles) -> int:
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from JSON file(s).
+    Insert digital discs into the local audio database.
+    Discs are taken from JSON file(s).
     This is only an entry function!
 
     :param jsonfiles: JSON file-object(s) where the albums are taken from.
     :return: database total changes.
     """
-    return _insert_albums(*chain.from_iterable(json.load(file) for file in jsonfiles))
+    return _insert_discs(*chain.from_iterable(json.load(file) for file in jsonfiles))
 
 
-def insert_defaultalbums_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
+def insert_defaultdiscs_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
     """
-    Insert digital albums into the local audio database.
-    Albums are taken from plain text file(s).
+    Insert digital discs into the local audio database.
+    Discs are taken from plain text file(s).
     This is only an entry function!
 
     :param txtfiles: plain text file(s) where the albums are taken from.
@@ -185,35 +190,34 @@ def insert_defaultalbums_fromplaintext(*txtfiles, encoding="UTF_8", **kwargs):
                                row["is_incollection"],
                                row["applicationid"]))
 
-    return _insert_albums(*tracks)
+    return _insert_discs(*tracks)
 
 
 def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
     """
-    Get album header matching the input primary key(s).
+    Get album(s) header(s) matching the keywords arguments.
 
-    :param db:
-    :param kwargs:
-    :return: Album detail gathered into a namedtuple.
+    :param db: Database where the headers are taken from. Defaults to production database.
+    :param kwargs: Facultative keywords arguments for filtering the extracted headers.
+    :return: Iterator that yields each extracted header as a named tuple.
     """
 
     # -----
-    Album = NamedTuple("Album",
-                       [("rowid", int),
-                        ("albumid", str),
-                        ("artistsort", str),
-                        ("albumsort", str),
-                        ("artist", str),
-                        ("discs", int),
-                        ("genre", str),
-                        ("bootleg", bool),
-                        ("incollection", bool),
-                        ("language", str),
-                        ("month_created", str),
-                        ("utc_created", datetime),
-                        ("utc_modified", datetime),
-                        ("album", str),
-                        ("cover", str)])
+    Header = NamedTuple("AlbumHeader", [("rowid", int),
+                                        ("albumid", str),
+                                        ("artistsort", str),
+                                        ("albumsort", str),
+                                        ("artist", str),
+                                        ("discs", int),
+                                        ("genre", str),
+                                        ("bootleg", bool),
+                                        ("incollection", bool),
+                                        ("language", str),
+                                        ("month_created", str),
+                                        ("utc_created", datetime),
+                                        ("utc_modified", datetime),
+                                        ("album", str),
+                                        ("cover", str)])
 
     # -----
     albums = ((row.album_rowid,
@@ -232,11 +236,10 @@ def get_albumheader(db: str = DATABASE, **kwargs: Union[bool, List[str], List[in
                row.album,
                COVER.substitute(path=os.path.join(os.path.expandvars("%_MYDOCUMENTS%"), "Album Art"), letter=row.artistsort[0], artistsort=row.artistsort, albumsort=row.albumsort))
               for row in _get_albums(db, **kwargs))
-    albums = sorted(set(albums), key=itemgetter(1))  # type: ignore
 
     # -----
-    for album in albums:
-        yield Album._make(album)
+    for album in sorted(set(albums), key=itemgetter(1)):
+        yield Header(*album)
 
 
 def get_albumdetail(db: str = DATABASE, **kwargs: Union[bool, List[str], List[int]]):
@@ -407,7 +410,7 @@ def get_disc(db: str = DATABASE, albumid: Optional[str] = None, discid: Optional
         if orderby:
             statement = "{0}WHERE {1} ORDER BY {2}".format(sql, where[:-5], orderby)
     with DatabaseConnection(db) as conn:
-        for row in (Disc._make(row) for row in conn.execute(statement, args)):
+        for row in (Disc(*row) for row in conn.execute(statement, args)):
             yield row
 
 
@@ -780,7 +783,7 @@ def get_providers(db: str = DATABASE) -> Iterator[Tuple[str, int]]:
 # =======================================================
 # These interfaces mustn't be used from external scripts.
 # =======================================================
-def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
+def _insert_discs(*iterables: Tuple[Any, ...]) -> int:
     """
     Main function for inserting digital album(s) into the digital audio base.
     Albums are taken from data sequences.
@@ -789,10 +792,10 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
     """
 
     # -----
-    logger = logging.getLogger("{0}.insert_album".format(__name__))
+    logger = logging.getLogger("{0}.insert_discs".format(__name__))
 
     # -----
-    with open(os.path.join(get_dirname(os.path.abspath(__file__)), "Resources", "setup.yml"), encoding="UTF_8") as stream:
+    with open(_MYPARENT / "Resources" / "setup.yml", encoding=UTF8) as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader)
     statements = config["statements"]  # type: Mapping[str, Mapping[str, str]]
     selectors = config["selectors"]  # type: Mapping[str, Mapping[str, List[int]]]
@@ -831,16 +834,9 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
                     table = track[0]  # type: str
                     logger.debug("Table is     : %s", table)
                     logger.debug("Statements is: %s", _statements[table])
-                    if table.lower() != "tracks":
-                        with suppress(sqlite3.IntegrityError):
-                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
-                            logger.debug(conn.total_changes)
-                    if table.lower() == "tracks":
-                        try:
-                            conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
-                        except sqlite3.IntegrityError:
-                            albumid, discid, trackid, title = tuple(compress(compress(track, selectors[profile][table]), [1, 1, 1, 0, 0, 1]))
-                            conn.execute("UPDATE tracks set title=?, utc_modified=? WHERE albumid=? AND discid=? AND trackid=?", (title, datetime.utcnow(), albumid, discid, trackid))
+                    with suppress(sqlite3.IntegrityError):
+                        conn.execute(_statements[table], tuple(compress(track, selectors[profile][table])))
+                        logger.debug(conn.total_changes)
 
                 # "livealbums" table.
                 table = "livealbums"
@@ -910,45 +906,44 @@ def _insert_albums(*iterables: Tuple[Any, ...]) -> int:
 
 def _get_albums(db: str, **kwargs):
     """
-    Get digital audio albums detail.
+    Get digital audio albums details.
 
-    :param db: Database storing digital audio tables.
-    :return: Digital audio albums detail sorted by album ID, disc ID, track ID.
+    :param db: Database where the details are taken from.
+    :return: Iterator that yields each detail as a named tuple.
     """
     logger = logging.getLogger("{0}._get_albums".format(__name__))
     boolean_to_integer: Mapping[bool, int] = {False: 0, True: 1}
     where, args = "", ()  # type: str, Tuple[Union[bool, int, str], ...]
 
     #  1. Initializations.
-    Track = namedtuple("Track",
-                       "album_rowid "
-                       "track_rowid "
-                       "albumid "
-                       "albumsort "
-                       "discs "
-                       "deluxe "
-                       "bootleg "
-                       "incollection "
-                       "language "
-                       "discid "
-                       "tracks "
-                       "live_disc "
-                       "trackid "
-                       "title "
-                       "live "
-                       "bonus "
-                       "artistsort "
-                       "artist "
-                       "origyear "
-                       "year "
-                       "album "
-                       "label "
-                       "genre "
-                       "upc "
-                       "utc_created "
-                       "utc_modified "
-                       "utc_played "
-                       "played")
+    Detail = NamedTuple("AlbumDetail", [("album_rowid", int),
+                                        ("track_rowid", int),
+                                        ("albumid", str),
+                                        ("albumsort", str),
+                                        ("discs", int),
+                                        ("bootleg", bool),
+                                        ("incollection", bool),
+                                        ("language", str),
+                                        ("discid", int),
+                                        ("tracks", int),
+                                        ("disc_live", bool),
+                                        ("disc_bonus", bool),
+                                        ("trackid", int),
+                                        ("title", str),
+                                        ("track_live", int),
+                                        ("track_bonus", int),
+                                        ("artistsort", str),
+                                        ("artist", str),
+                                        ("origyear", int),
+                                        ("year", int),
+                                        ("album", str),
+                                        ("label", str),
+                                        ("genre", str),
+                                        ("upc", str),
+                                        ("utc_created", datetime),
+                                        ("utc_modified", datetime),
+                                        ("utc_played", datetime),
+                                        ("played", int)])
 
     #  2. SELECT clause.
     select = "SELECT album_rowid, " \
@@ -956,17 +951,17 @@ def _get_albums(db: str, **kwargs):
              "albumid, " \
              "albumsort, " \
              "discs, " \
-             "is_deluxe, " \
              "is_bootleg, " \
              "in_collection, " \
              "language, " \
              "discid, " \
              "tracks, " \
-             "is_live_disc, " \
+             "is_disc_live, " \
+             "is_disc_bonus, " \
              "trackid, " \
              "title, " \
-             "is_live_track, " \
-             "is_bonus, " \
+             "is_track_live, " \
+             "is_track_bonus, " \
              "artistsort, " \
              "artist, " \
              "origyear, " \
@@ -1049,14 +1044,7 @@ def _get_albums(db: str, **kwargs):
         where = "{0}is_bootleg=? AND ".format(where)
         args += (boolean_to_integer[bootleg],)
 
-    # 4. ORDER BY clause.
-    # logger.debug(kwargs.get("orderby"))
-    # orderby = "ORDER BY albumid, discid, trackid"  # type: str
-    # mylist = list(filter(None, map(REX.sub, repeat(translate_orderfield), kwargs.get("orderby", ["albumid", "discid", "trackid"]))))
-    # if mylist:
-    #     orderby = "ORDER BY {0}".format(", ".join(mylist))
-
-    # 5. Build SQL statement.
+    # 4. Build SQL statement.
     sql = select  # type: str
     if where:
         sql = f"{select} WHERE {where[:-5]}"
@@ -1065,7 +1053,7 @@ def _get_albums(db: str, **kwargs):
 
     #  6. Run SQL statement.
     with DatabaseConnection(db) as conn:
-        for row in (Track._make(row) for row in conn.execute(sql, args)):
+        for row in (Detail(*row) for row in conn.execute(sql, args)):
             yield row
 
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import argparse
 import json
 import os

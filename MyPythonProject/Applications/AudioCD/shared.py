@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=empty-docstring, invalid-name, line-too-long
 import csv
 import json
 import logging
@@ -49,26 +49,40 @@ class CustomDialect(csv.Dialect):
     lineterminator = "\r\n"
 
 
-class AudioCDTags(MutableMapping):
+class TrackTags(MutableMapping):
     """
     Master class dealing with the audio tags produced by the ripping application.
     Must not be instantiated directly!
     Used to define the interfaces required to interact with audio tags.
     """
-    Encoder = NamedTuple("Encoder", [("name", str),
-                                     ("code", str),
-                                     ("folder", str),
-                                     ("extension", str)])
-    track_pattern = re.compile(r"^(\d{1,2})/(\d{1,2})")
-    __logger = logging.getLogger("{0}.AudioCDTags".format(__name__))
+    __logger = logging.getLogger("{0}.TrackTags".format(__name__))
+    _track_pattern = re.compile(r"^(\d{1,2})/(\d{1,2})")
+    _Encoder = NamedTuple("Encoder", [("name", str),
+                                      ("code", str),
+                                      ("folder", str),
+                                      ("extension", str)])
 
     def __init__(self):
+        self._bootlegalbum_date = None
+        self._bootlegalbum_isodate = None
         self._encoder = None
-        self._otags = dict()
+        self._otags = {}
         self._sequence = None
         self._step = 0
         self._totaltracks_key = None
         self._totaldiscs_key = None
+
+    def get(self, key):
+        return self._otags.get(key)
+
+    def items(self):
+        return self._otags.items()
+
+    def keys(self):
+        return self._otags.keys()
+
+    def values(self):
+        return self._otags.values()
 
     def __getitem__(self, item):
         return self._otags[item]
@@ -83,7 +97,13 @@ class AudioCDTags(MutableMapping):
         return len(self._otags)
 
     def __iter__(self):
-        return iter(self._otags.items())
+        for key, value in self._otags.items():
+            yield key, value
+
+    def __repr__(self):
+        if not self:
+            return "%s()" % (self.__class__.__name__,)
+        return "%s(%r)" % (self.__class__.__name__, sorted(self, key=itemgetter(0)))
 
     def __str__(self):
         return f'{self._otags["artistsort"][0]}.{self._otags["artistsort"]}.{self._otags["albumsort"]}.{self._otags["titlesort"]} - {self._otags["album"]} - track {self._otags["track"]}'
@@ -138,29 +158,29 @@ class AudioCDTags(MutableMapping):
 
     @property
     def bootlegalbum_date(self):
-        return self._otags.get("bootlegalbumday")
+        return self._bootlegalbum_isodate
 
     @property
     def bootlegalbum_day(self):
         day = None
         with suppress(TypeError):
-            day = self._otags.get("bootlegalbumday")[-2:]
+            day = self._bootlegalbum_isodate[-2:]
         return day
 
     @property
     def bootlegalbum_month(self):
         month = None
         with suppress(TypeError):
-            month = self._otags.get("bootlegalbumday")[5:-3]
+            month = self._bootlegalbum_isodate[5:-3]
         return month
 
     @property
-    def bootlegalbum_provider(self):
-        return self._otags.get("bootlegalbumprovider")
+    def bootlegalbum_publisher(self):
+        return self._otags.get("bootlegpublisher")
 
     @property
     def bootlegalbum_title(self):
-        return self._otags.get("bootlegalbumtitle")
+        return self._otags.get("bootlegtitle")
 
     @property
     def bootlegalbum_tour(self):
@@ -170,7 +190,7 @@ class AudioCDTags(MutableMapping):
     def bootlegalbum_year(self):
         year = None
         with suppress(TypeError):
-            year = self._otags.get("bootlegalbumday")[:4]
+            year = self._bootlegalbum_isodate[:4]
         return year
 
     @property
@@ -187,32 +207,32 @@ class AudioCDTags(MutableMapping):
 
     @property
     def bootlegtrack_date(self):
-        return self._otags.get("bootlegtrackday")
+        return self._otags.get("bootlegtrackyear")
 
     @property
     def bootlegtrack_day(self):
-        bootlegtrackday = self._otags.get("bootlegtrackday")
-        if bootlegtrackday is not None:
-            return bootlegtrackday[-2:]
+        trackdate = self._otags.get("bootlegtrackyear")
+        if trackdate is not None:
+            return trackdate[-2:]
         return None
 
     @property
     def bootlegtrack_month(self):
-        bootlegtrackday = self._otags.get("bootlegtrackday")
-        if bootlegtrackday is not None:
-            return bootlegtrackday[5:-3]
-        return None
-
-    @property
-    def bootlegtrack_year(self):
-        bootlegtrackday = self._otags.get("bootlegtrackday")
-        if bootlegtrackday is not None:
-            return bootlegtrackday[:4]
+        trackdate = self._otags.get("bootlegtrackyear")
+        if trackdate is not None:
+            return trackdate[5:-3]
         return None
 
     @property
     def bootlegtrack_tour(self):
         return self._otags.get("bootlegtracktour")
+
+    @property
+    def bootlegtrack_year(self):
+        trackdate = self._otags.get("bootlegtrackyear")
+        if trackdate is not None:
+            return trackdate[:4]
+        return None
 
     @property
     def database(self):
@@ -251,7 +271,7 @@ class AudioCDTags(MutableMapping):
         return self._otags.get("livetrack", "N")
 
     @property
-    def mediaprovider(self):
+    def bootlegalbum_provider(self):
         return self._otags.get("mediaprovider")
 
     @property
@@ -334,13 +354,13 @@ class AudioCDTags(MutableMapping):
             yield item
 
 
-class CommonAudioCDTags(AudioCDTags):
+class CommonTrackTags(TrackTags):
     """
     Main class dealing with the audio tags produced by the ripping application.
     Must not be instantiated directly!
     Used to introduced the tags shared by every ripped audio CD.
     """
-    __logger = logging.getLogger("{0}.CommonAudioCDTags".format(__name__))
+    __logger = logging.getLogger("{0}.CommonTrackTags".format(__name__))
     __tags = {"albumartist": False,
               "albumartistsort": False,
               "artist": True,
@@ -355,18 +375,20 @@ class CommonAudioCDTags(AudioCDTags):
               "livedisc": True,
               "livetrack": True,
               "lossless": False,
+              "offset": False,
               "profile": False,
               "rating": False,
               "sample": False,
               "source": False,
               "style": False,
               "title": False,
-              "tracklanguage": False,
+              "totaltracks": False,
               "track": True,
+              "tracklanguage": False,
               "_albumart_1_front album cover": False}
 
     def __init__(self, sequence, **kwargs):
-        super(CommonAudioCDTags, self).__init__()
+        super(CommonTrackTags, self).__init__()
         genres = kwargs.get("genres")
         languages = kwargs.get("languages")
         self._encoders = kwargs.get("encoders")
@@ -384,7 +406,7 @@ class CommonAudioCDTags(AudioCDTags):
         if not checked:
             raise ValueError(exception)
 
-        # ----- Encoder dependent attributes.
+        # ----- _Encoder dependent attributes.
         self._totaltracks_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaltracks"]
         self._totaldiscs_key = MAPPING.get(kwargs["encoder"], MAPPING["default"])["totaldiscs"]
 
@@ -433,7 +455,7 @@ class CommonAudioCDTags(AudioCDTags):
         # ----- Set encoder attributes.
         self.__logger.debug("Set encoder attributes.")
         encoder_attributes = self._encoders.get_encoder(kwargs["encoder"])
-        self._encoder = self.Encoder(kwargs["encoder"], encoder_attributes["code"], encoder_attributes["folder"], encoder_attributes["extension"])
+        self._encoder = self._Encoder(kwargs["encoder"], encoder_attributes["code"], encoder_attributes["folder"], encoder_attributes["extension"])
         self.__logger.debug("Used encoder.")
         self.__logger.debug("Name\t\t: %s".expandtabs(3), kwargs["encoder"])
         self.__logger.debug("Code\t\t: %s".expandtabs(3), self._encoder.code)
@@ -443,16 +465,18 @@ class CommonAudioCDTags(AudioCDTags):
         self._otags["code"] = encoder_attributes["code"]
         self._otags["folder"] = encoder_attributes["folder"]
 
-        # ----- Both update track and set total tracks.
+        # ----- Set album total tracks.
+        self.__logger.debug("Set albumtotaltracks.")
+        self._otags["albumtotaltracks"] = self._otags.get("totaltracks", "0")
+
+        # ----- Set both track and disc total tracks.
         self.__logger.debug("Set track.")
-        self._otags["track"], self._otags[self._totaltracks_key] = split_(1, 2)(self.track_pattern.match)(kwargs["track"])
+        self._otags["track"], self._otags[self._totaltracks_key] = split_(1, 2)(self._track_pattern.match)(kwargs["track"])
+        self._otags["origtrack"], _ = split_(1, 2)(self._track_pattern.match)(kwargs["track"])
 
-        # ----- Backup track number.
-        self._otags["origtrack"] = self._otags["track"]
-
-        # ----- Both update disc and set total discs.
+        # ----- Set both disc and album total discs.
         self.__logger.debug("Set disc.")
-        self._otags["disc"], self._otags[self._totaldiscs_key] = split_(1, 2)(self.track_pattern.match)(kwargs["disc"])
+        self._otags["disc"], self._otags[self._totaldiscs_key] = split_(1, 2)(self._track_pattern.match)(kwargs["disc"])
 
         # ----- Update genre.
         if genres is not None:
@@ -469,13 +493,60 @@ class CommonAudioCDTags(AudioCDTags):
         self._otags["title"] = shared.TitleCaseConverter().convert(self._otags["title"])
 
     def __validatetags(self, **kwargs):
-        if not self.track_pattern.match(kwargs["track"]):
+        if not self._track_pattern.match(kwargs["track"]):
             return False, "track doesn\'t respect the expected pattern."
-        if not self.track_pattern.match(kwargs["disc"]):
+        if not self._track_pattern.match(kwargs["disc"]):
             return False, "disc doesn\'t respect the expected pattern."
         if kwargs["encoder"] not in self._encoders.get_encoders():
             return False, f'\"{kwargs["encoder"]}\" as encoder isn\'t recognized.'
         return True, None
+
+    def _setbootlegtags(self, logger):
+
+        # -----
+        REX1 = re.compile(r"\W+")
+        REX2 = re.compile(r", ([A-Z][a-z]+)$")
+        DFTCOUNTRY = "United States"
+
+        # ----- Set bootlegalbum ISO date.
+        bootleg_date = parser.parse(REX1.sub("-", self._otags["bootlegalbumyear"]), default=datetime.utcnow())
+        self._bootlegalbum_isodate = bootleg_date.date().isoformat()
+        self._bootlegalbum_date = bootleg_date.date().isoformat().replace("-", "")
+        self._otags["dashed_bootlegalbum_date"] = bootleg_date.date().isoformat()
+        self._otags["dotted_bootlegalbum_date"] = bootleg_date.date().isoformat().replace("-", ".")
+
+        # ----- Set bootlegalbumcountry.
+        logger.debug("Set bootlegalbumcountry.")
+        self._otags["bootlegalbumcountry"] = DFTCOUNTRY
+        match = REX2.search(self._otags["bootlegalbumcity"])
+        if match:
+            self._otags["bootlegalbumcountry"] = match.group(1)
+        logger.debug(self._otags["bootlegalbumcountry"])
+
+        # ----- Set bootlegtrackyear.
+        logger.debug("Set bootlegtrackyear.")
+        bootleg_date = parser.parse(REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"])), default=datetime.utcnow())
+        self._otags["bootlegtrackyear"] = bootleg_date.date().isoformat()
+        logger.debug(self._otags["bootlegtrackyear"])
+
+        # ----- Set bootlegtrackcity.
+        logger.debug("Set bootlegtrackcity.")
+        bootlegtrackcity = self._otags.get("bootlegtrackcity", self._otags["bootlegalbumcity"])
+        self._otags["bootlegtrackcity"] = bootlegtrackcity
+        logger.debug(self._otags["bootlegtrackcity"])
+
+        # ----- Set bootlegtrackcountry.
+        logger.debug("Set bootlegtrackcountry.")
+        self._otags["bootlegtrackcountry"] = DFTCOUNTRY
+        match = REX2.search(bootlegtrackcity)
+        if match:
+            self._otags["bootlegtrackcountry"] = match.group(1)
+        logger.debug(self._otags["bootlegtrackcountry"])
+
+        # ----- Set bootlegtracktour.
+        logger.debug("Set bootlegtracktour.")
+        self._otags["bootlegtracktour"] = self._otags.get("bootlegtracktour", self._otags["bootlegalbumtour"])
+        logger.debug(self._otags["bootlegtracktour"])
 
     @classmethod
     def fromfile(cls, fil, sequence, genres, languages, encoders):
@@ -485,12 +556,12 @@ class CommonAudioCDTags(AudioCDTags):
         return cls(sequence, genres=genres, languages=languages, encoders=encoders, **dict(sorted(tags, key=itemgetter(0))))
 
 
-class DefaultAudioCDTags(CommonAudioCDTags):
+class DefaultTrackTags(CommonTrackTags):
     """
     Main class dealing with the audio tags set from a default audio CD.
     Is assumed as a default audio CD any official release (studio or live) enumerated into an artist's discography.
     """
-    __logger = logging.getLogger("{0}.DefaultAudioCDTags".format(__name__))
+    __logger = logging.getLogger("{0}.DefaultTrackTags".format(__name__))
     __tags = {"album": True,
               "albumsortcount": True,
               "foldersortcount": False,
@@ -502,7 +573,7 @@ class DefaultAudioCDTags(CommonAudioCDTags):
               "year": True}
 
     def __init__(self, sequence, **kwargs):
-        super(DefaultAudioCDTags, self).__init__(sequence, **kwargs)
+        super(DefaultTrackTags, self).__init__(sequence, **kwargs)
         kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
@@ -546,8 +617,11 @@ class DefaultAudioCDTags(CommonAudioCDTags):
         self.__logger.debug("\ttitlesort: %s".expandtabs(4), self._otags["titlesort"])
         self.__logger.debug("\torigyear : %s".expandtabs(4), self._otags["origyear"])
 
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
 
-class LiveAudioCDTags(DefaultAudioCDTags):
+
+class LiveTrackTags(DefaultTrackTags):
     """
     Main class dealing with the audio tags set from a default live audio CD.
     Is assumed as a default live audio CD any official live release enumerated into an artist's discography.
@@ -555,16 +629,13 @@ class LiveAudioCDTags(DefaultAudioCDTags):
     Pearl Jam 2000 bootleg series audio CDs are targeted by this class as releases were legally available
     through both records shops and e-shops.
     """
-    __logger = logging.getLogger("{0}.LiveAudioCDTags".format(__name__))
-    REX1 = re.compile(r"\W+")
-    REX2 = re.compile(r", ([A-Z][a-z]+)$")
-    DFTCOUNTRY = "United States"
-    __tags = {"bootlegalbumtour": True,
-              "bootlegalbumyear": True,
-              "bootlegalbumcity": True}
+    __logger = logging.getLogger("{0}.LiveTrackTags".format(__name__))
+    __tags = {"bootlegalbumcity": True,
+              "bootlegalbumtour": True,
+              "bootlegalbumyear": True}
 
     def __init__(self, sequence, **kwargs):
-        super(LiveAudioCDTags, self).__init__(sequence, **kwargs)
+        super(LiveTrackTags, self).__init__(sequence, **kwargs)
         kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
@@ -580,52 +651,12 @@ class LiveAudioCDTags(DefaultAudioCDTags):
         filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
-        # ----- Set bootleg date.
-        self._otags["dottedbootlegalbumyear"] = self.REX1.sub(".", self._otags["bootlegalbumyear"])
-        self._otags["dashedbootlegalbumyear"] = self.REX1.sub("-", self._otags["bootlegalbumyear"])
-
-        # ----- Set bootlegalbumday.
-        day = parser.parse(self.REX1.sub("-", self._otags["bootlegalbumyear"]), default=datetime.utcnow())
-        self._otags["bootlegalbumday"] = day.date().isoformat()
-
-        # ----- Set bootlegtrackday.
-        day = parser.parse(self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"])), default=datetime.utcnow())
-        self._otags["bootlegtrackday"] = day.date().isoformat()
-
-        # ----- Set bootlegtrackyear.
-        self.__logger.debug("Update bootlegtrackyear.")
-        self._otags["bootlegtrackyear"] = self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"]))
-        self.__logger.debug(self._otags["bootlegtrackyear"])
-
-        # ----- Set bootlegtrackcity.
-        bootlegtrackcity = self._otags.get("bootlegtrackcity", self._otags["bootlegalbumcity"])
-        self._otags["bootlegtrackcity"] = bootlegtrackcity
-        self.__logger.debug(self._otags["bootlegtrackcity"])
-
-        # ----- Set bootlegtrackcountry.
-        self.__logger.debug("Set bootlegtrackcountry.")
-        self._otags["bootlegtrackcountry"] = self.DFTCOUNTRY
-        match = self.REX2.search(bootlegtrackcity)
-        if match:
-            self._otags["bootlegtrackcountry"] = match.group(1)
-        self.__logger.debug(self._otags["bootlegtrackcountry"])
-
-        # ----- Set bootlegalbumcountry.
-        self.__logger.debug("Set bootlegalbumcountry.")
-        self._otags["bootlegalbumcountry"] = self.DFTCOUNTRY
-        match = self.REX2.search(self._otags["bootlegalbumcity"])
-        if match:
-            self._otags["bootlegalbumcountry"] = match.group(1)
-        self.__logger.debug(self._otags["bootlegalbumcountry"])
-
-        # ----- Set bootlegtracktour.
-        self.__logger.debug("Set bootlegtracktour.")
-        self._otags["bootlegtracktour"] = self._otags.get("bootlegtracktour", self._otags["bootlegalbumtour"])
-        self.__logger.debug(self._otags["bootlegtracktour"])
+        # ----- Set additional bootleg tags.
+        self._setbootlegtags(self.__logger)
 
         # ----- Set albumsort.
         self.__logger.debug("Set albumsort.")
-        self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self.REX1.sub("", self._otags["bootlegalbumyear"]),
+        self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self._bootlegalbum_date,
                                                                  uid=self._otags["albumsortcount"],
                                                                  enc=self._encoder.code)
         self.__logger.debug(self._otags["albumsort"])
@@ -638,32 +669,33 @@ class LiveAudioCDTags(DefaultAudioCDTags):
                                                                                               livetrack=self._otags["livetrack"],
                                                                                               bootleg=self._otags["bootleg"])
 
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
 
-class BootlegAudioCDTags(CommonAudioCDTags):
+
+class LiveBootlegTrackTags(CommonTrackTags):
     """
     Main class dealing with the audio tags set from a bootleg audio CD.
     Is assumed as a bootleg audio CD any unofficial live release not being part of an artist's discography.
-    A release can be provided by a legal provider (such as nugs.net) or by an illegal provider (such as The Godfatherecords).
-    Allow to set up specific tags about live performance: tour, date, and city.
+    A release can be provided by a legal provider (such as nugs.net) or by an non-legal provider (such as The Godfatherecords).
+    Allow to set up specific tags about live performance: tour, date and city.
     """
-    __logger = logging.getLogger("{0}.BootlegAudioCDTags".format(__name__))
-    REX1 = re.compile(r"\W+")
-    REX2 = re.compile(r", ([A-Z][a-z]+)$")
-    DFTCOUNTRY = "United States"
-    __tags = {"bootlegtracktour": False,
+    __logger = logging.getLogger("{0}.LiveBootlegTrackTags".format(__name__))
+    __tags = {"bootlegtrackcity": False,
+              "bootlegtracktour": False,
               "bootlegtrackyear": False,
-              "bootlegtrackcity": False,
+              "bootlegalbumcity": True,
               "bootlegalbumtour": True,
               "bootlegalbumyear": True,
-              "bootlegalbumcity": True,
-              "albumsortcount": True,
-              "bootlegalbumprovider": False,
-              "bootlegalbumtitle": False,
               "bootlegdiscreference": False,
+              "bootlegprovider": False,
+              "bootlegpublisher": False,
+              "bootlegtitle": False,
+              "albumsortcount": True,
               "bonustrack": True}
 
     def __init__(self, sequence, **kwargs):
-        super(BootlegAudioCDTags, self).__init__(sequence, **kwargs)
+        super(LiveBootlegTrackTags, self).__init__(sequence, **kwargs)
         kwargs = dict(filterfalse(decorators.itemgetter_(0)(partial(contains, ["encoders", "genres", "languages"])), kwargs.items()))
 
         # ----- Check mandatory input tags.
@@ -679,48 +711,8 @@ class BootlegAudioCDTags(CommonAudioCDTags):
         filter_keys = decorators.itemgetter_(0)(partial(contains, sorted(self.__tags)))
         self._otags.update(dict(filter(filter_keys, sorted(kwargs.items()))))
 
-        # ----- Set bootleg date.
-        self._otags["dottedbootlegalbumyear"] = self.REX1.sub(".", self._otags["bootlegalbumyear"])
-        self._otags["dashedbootlegalbumyear"] = self.REX1.sub("-", self._otags["bootlegalbumyear"])
-
-        # ----- Set bootlegalbumday.
-        day = parser.parse(self.REX1.sub("-", self._otags["bootlegalbumyear"]), default=datetime.utcnow())
-        self._otags["bootlegalbumday"] = day.date().isoformat()
-
-        # ----- Set bootlegtrackday.
-        day = parser.parse(self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"])), default=datetime.utcnow())
-        self._otags["bootlegtrackday"] = day.date().isoformat()
-
-        # ----- Set bootlegtrackyear.
-        self.__logger.debug("Update bootlegtrackyear.")
-        self._otags["bootlegtrackyear"] = self.REX1.sub("-", self._otags.get("bootlegtrackyear", self._otags["bootlegalbumyear"]))
-        self.__logger.debug(self._otags["bootlegtrackyear"])
-
-        # ----- Set bootlegtrackcity.
-        bootlegtrackcity = self._otags.get("bootlegtrackcity", self._otags["bootlegalbumcity"])
-        self._otags["bootlegtrackcity"] = bootlegtrackcity
-        self.__logger.debug(self._otags["bootlegtrackcity"])
-
-        # ----- Set bootlegtrackcountry.
-        self.__logger.debug("Set bootlegtrackcountry.")
-        self._otags["bootlegtrackcountry"] = self.DFTCOUNTRY
-        match = self.REX2.search(bootlegtrackcity)
-        if match:
-            self._otags["bootlegtrackcountry"] = match.group(1)
-        self.__logger.debug(self._otags["bootlegtrackcountry"])
-
-        # ----- Set bootlegalbumcountry.
-        self.__logger.debug("Set bootlegalbumcountry.")
-        self._otags["bootlegalbumcountry"] = self.DFTCOUNTRY
-        match = self.REX2.search(self._otags["bootlegalbumcity"])
-        if match:
-            self._otags["bootlegalbumcountry"] = match.group(1)
-        self.__logger.debug(self._otags["bootlegalbumcountry"])
-
-        # ----- Set bootlegtracktour.
-        self.__logger.debug("Set bootlegtracktour.")
-        self._otags["bootlegtracktour"] = self._otags.get("bootlegtracktour", self._otags["bootlegalbumtour"])
-        self.__logger.debug(self._otags["bootlegtracktour"])
+        # ----- Set additional bootleg tags.
+        self._setbootlegtags(self.__logger)
 
         # ----- Set year.
         self.__logger.debug("Set year.")
@@ -728,11 +720,11 @@ class BootlegAudioCDTags(CommonAudioCDTags):
 
         # ----- Set origyear.
         self.__logger.debug("Set origyear.")
-        self._otags["origyear"] = self._otags["year"]
+        self._otags["origyear"] = self._otags["bootlegalbumyear"][:4]
 
         # ----- Set albumsort.
         self.__logger.debug("Set albumsort.")
-        self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self.REX1.sub("", self._otags["bootlegalbumyear"]),
+        self._otags["albumsort"] = "2.{date}.{uid}.{enc}".format(date=self._bootlegalbum_date,
                                                                  uid=self._otags["albumsortcount"],
                                                                  enc=self._encoder.code)
         self.__logger.debug(self._otags["albumsort"])
@@ -744,6 +736,15 @@ class BootlegAudioCDTags(CommonAudioCDTags):
                                                                                               bonustrack=self._otags["bonustrack"],
                                                                                               livetrack=self._otags["livetrack"],
                                                                                               bootleg=self._otags["bootleg"])
+
+        # ----- Set extra tags.
+        self._otags["mediareference"] = self._otags.get("bootlegdiscreference")
+        self._otags["mediaprovider"] = self._otags.get("bootlegprovider")
+        self._otags["mediapublisher"] = self._otags.get("bootlegpublisher")
+        self._otags["mediatitle"] = self._otags.get("bootlegtitle")
+
+        # ----- Filter tags without any value.
+        self._otags = dict(filterfalse(decorators.none_(itemgetter(1)), self._otags.items()))
 
 
 class AudioGenres(object):
@@ -760,7 +761,7 @@ class AudioLanguages(object):
         return self._languages.get(artistsort, fallback)
 
 
-class AudioEncoders(object):
+class Audio_Encoders(object):
     _encoders = {"FDK v2.0.0": {"code": "02", "extension": "m4a", "folder": "0.MPEG-4 AAC"},
                  "FLAC 1.3.3 beta": {"code": "13", "extension": "flac", "folder": "1.Free Lossless Audio Codec"},
                  "Lame 3.100.0": {"code": "01", "extension": "mp3", "folder": "0.MPEG 1 Layer III"},
@@ -776,7 +777,7 @@ class AudioEncoders(object):
         return sorted(self._encoders)
 
 
-class TagsModifier(AudioCDTags):
+class TagsModifier(TrackTags):
     __logger = logging.getLogger("{0}.TagsModifier".format(__name__))
 
     def __init__(self, obj):
@@ -804,21 +805,36 @@ class ChangeEncodedBy(TagsModifier):
 
 
 class ChangeMediaProvider(TagsModifier):
-    def __init__(self, obj, provider):
+    def __init__(self, obj):
         super(ChangeMediaProvider, self).__init__(obj)
-        self._otags["mediaprovider"] = self._otags.get("bootlegalbumprovider", provider)
+        if self._otags.get("bootlegprovider"):
+            self._otags["mediaprovider"] = self._otags["bootlegprovider"]
+
+
+# class ChangeMediaTitle(TagsModifier):
+#     def __init__(self, obj):
+#         super(ChangeMediaTitle, self).__init__(obj)
+#         if self._otags.get("bootlegtitle"):
+#             self._otags["mediatitle"] = self._otags["bootlegtitle"]
+
+
+# class ChangeMediaReference(TagsModifier):
+#     def __init__(self, obj):
+#         super(ChangeMediaReference, self).__init__(obj)
+#         if self._otags.get("bootlegdiscreference"):
+#             self._otags["mediareference"] = self._otags["bootlegdiscreference"]
 
 
 class ChangeTotalTracks(TagsModifier):
-    def __init__(self, obj, totaltracks):
+    def __init__(self, obj):
         super(ChangeTotalTracks, self).__init__(obj)
-        self._otags[self._totaltracks_key] = totaltracks
+        self._otags[self._totaltracks_key] = self._otags["albumtotaltracks"]
 
 
-class ChangeTrack(TagsModifier):
-    def __init__(self, obj, offset):
-        super(ChangeTrack, self).__init__(obj)
-        self._otags["track"] = str(int(self.tracknumber) + offset)
+class ChangeTrackNumber(TagsModifier):
+    def __init__(self, obj):
+        super(ChangeTrackNumber, self).__init__(obj)
+        self._otags["track"] = str(int(self._otags["track"]) + int(self._otags.get("offset", "0")))
 
 
 class RippedTrack(ContextDecorator):
@@ -844,17 +860,32 @@ class RippedTrack(ContextDecorator):
         self._audiotracktags = None
         self._decorators = None
         self._sequence = None
-        self._encoder = None
         self._profile = None
         self._intags = None
         self._tags = None
+        self._encoders = kwargs.get("encoders", Audio_Encoders())
+        self._genres = kwargs.get("genres", AudioGenres())
+        self._languages = kwargs.get("languages", AudioLanguages())
         self.decorators = decoratingprofiles
         self.sequence = sequence
         self.profile = rippingprofile
         self.tags = file
-        self._encoders = kwargs.get("encoders", AudioEncoders())
-        self._genres = kwargs.get("genres", AudioGenres())
-        self._languages = kwargs.get("languages", AudioLanguages())
+
+    @property
+    def audiotrack(self):
+        return self._audiotracktags
+
+    @property
+    def intags(self):
+        return self._intags
+
+    @property
+    def decorators(self):
+        return self._decorators
+
+    @decorators.setter
+    def decorators(self, value):
+        self._decorators = tuple(value)
 
     @property
     def profile(self):
@@ -868,12 +899,12 @@ class RippedTrack(ContextDecorator):
         self._profile = value
 
     @property
-    def decorators(self):
-        return self._decorators
+    def sequence(self):
+        return self._sequence
 
-    @decorators.setter
-    def decorators(self, value):
-        self._decorators = tuple(value)
+    @sequence.setter
+    def sequence(self, value):
+        self._sequence = value
 
     @property
     def tags(self):
@@ -883,48 +914,27 @@ class RippedTrack(ContextDecorator):
     def tags(self, value):
         self._tags = value
 
-    @property
-    def sequence(self):
-        return self._sequence
-
-    @sequence.setter
-    def sequence(self, value):
-        self._sequence = value
-
-    @property
-    def intags(self):
-        return self._intags
-
-    @property
-    def audiotrack(self):
-        return self._audiotracktags
-
     @staticmethod
     def get_tags(fil):
         """
 
-        :param fil: audio tags text file. Made by the ripping application.
-        :return: 3-item tuple composed of:
-                        1) audio tags list (tuple of key:value pair).
-                        2) tracks offset.
-                        3) total tracks number.
+        :param fil: plain text file depicting the audio tags. Made by the ripping application.
+        :return: audio tags list where each item is a tuple composed of a key:value pair.
         """
         tags = csv.reader(fil, dialect=CustomDialect())  # type: Any
         tags = filterfalse(decorators.itemgetter_(0)(partial(shared.eq_string_, "encoder+")), tags)
         tags = {decorators.rstrip_(decorators.lower_(callables.group_(1)(REGEX.match)))(key): value for key, value in tags}
-        return sorted(tags.items(), key=itemgetter(0)), tags.get("offset", "0"), tags.get("totaltracks", "0")
+        return sorted(tags.items())
 
     @staticmethod
-    def alter_tags(audiotrack, *profiles, **kwargs):
+    def alter_tags(audiotrack, *profiles):
         """
 
-        :param audiotrack: AudioCDTags subclass object.
+        :param audiotrack: TrackTags subclass object.
         :param profiles: audio tags altering profile.
-        :param kwargs: extra keyword arguments.
-        :return: 
+        :return:
         """
-        logger = logging.getLogger(f"{__name__}.RippedDisc.alter_tags")
-        offset, totaltracks = kwargs.get("offset", 0), kwargs.get("totaltracks", "0")
+        logger = logging.getLogger(f"{__name__}.RippedTrack.alter_tags")
         for profile in profiles:
             logger.debug('Tags altered according to decorating profile "%s".', profile)
 
@@ -932,19 +942,17 @@ class RippedTrack(ContextDecorator):
             if profile.lower() == "default_album":
                 audiotrack = changealbum(audiotrack, "$albumsortyear.$albumsortcount - $album")
             elif profile.lower() == "dft_bootleg_album":
-                audiotrack = changealbum(audiotrack, "Live: $dashedbootlegalbumyear - $bootlegalbumcity")
+                audiotrack = changealbum(audiotrack, "Live: $dashed_bootlegalbum_date - $bootlegalbumcity")
             elif profile.lower() == "alt_bootleg_album":
-                audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dottedbootlegalbumyear - [$bootlegalbumcity]")
-            # elif profile.lower() == "altupdalbum":
-            #     audiotrack = changealbum(audiotrack, "$albumsortyear (Self Titled)")
+                audiotrack = changealbum(audiotrack, "$bootlegalbumtour - $dotted_bootlegalbum_date - [$bootlegalbumcity]")
 
-            # Change `tracknumber`.
-            elif profile.lower() == "offset_track" and offset:
-                audiotrack = changetrack(audiotrack, offset)
+            # Change `tracknumber` if an offset is provided by the ripping application.
+            elif profile.lower() == "offset_track":
+                audiotrack = changetracknumber(audiotrack)
 
             # Change `totaltracks`.
-            elif profile.lower() == "change_totaltracks" and int(totaltracks):
-                audiotrack = changetotaltracks(audiotrack, totaltracks)
+            elif profile.lower() == "change_totaltracks":
+                audiotrack = changetotaltracks(audiotrack)
 
             # Changes requested by `nugs` decorating profile.
             elif profile.lower() == "nugs":
@@ -971,16 +979,13 @@ class RippedTrack(ContextDecorator):
 
         # --> 4. Log input tags.
         self._tags.seek(0)
-        self._intags, offset, totaltracks = self.get_tags(self._tags)
+        self._intags = self.get_tags(self._tags)
         self._logger.debug("Input tags.")
         for key, value in shared.pprint_mapping(*sorted(self._intags, key=itemgetter(0))):
             self._logger.debug("\t%s: %s".expandtabs(self._tabs), key, value)
-        offset = int(offset)
-        self._logger.debug("Offset is      : %s.", offset)
-        self._logger.debug("Total tracks is: %s.", totaltracks)
 
-        # --> 5. Create AudioCDTags subclass object.
-        #        l'attribut "_audiotracktags" est une instance d'une sous-classe de AudioCDTags.
+        # --> 5. Create TrackTags subclass object.
+        #        l'attribut "_audiotracktags" est une instance d'une sous-classe de TrackTags.
         self._tags.seek(0)
         self._audiotracktags = PROFILES[self._profile].isinstancedfrom(self._tags,
                                                                        self._sequence,
@@ -989,16 +994,16 @@ class RippedTrack(ContextDecorator):
                                                                        self._encoders)
 
         # --> 6. Log instance attributes.
-        self._logger.debug("Here are the key/value pairs stored by the `AudioCDTags` instance.")
+        self._logger.debug("Here are the key/value pairs stored by the `TrackTags` instance.")
         for key, value in shared.pprint_mapping(*sorted(self._audiotracktags, key=itemgetter(0))):
             self._logger.debug("\t%s: %s".expandtabs(5), key, value)
 
         # --> 7. Alter instance attributes.
-        self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators, offset=offset, totaltracks=totaltracks)
+        self._audiotracktags = self.alter_tags(self._audiotracktags, *self._decorators)
         if self._audiotracktags.origtrack == self._audiotracktags.tracknumber:
             del self._audiotracktags.origtrack
 
-        # --> 8. Return RippedDisc instance.
+        # --> 8. Return RippedTrack instance.
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -1010,10 +1015,10 @@ class RippedTrack(ContextDecorator):
             exclusions.append("foldersortcount")
             exclusions.append("code")
             exclusions.append("folder")
-            exclusions.append("origtrack")
             exclusions.append("lossless")
-        filter_ = decorators.itemgetter_(0)(partial(contains, exclusions))
-        outtags = dict(filterfalse(filter_, sorted(self._audiotracktags, key=itemgetter(0))))
+            exclusions.append("origtrack")
+        outtags = filterfalse(decorators.itemgetter_(0)(partial(contains, exclusions)), sorted(self._audiotracktags, key=itemgetter(0)))  # type: Any
+        outtags = dict(outtags)
 
         # --> 2. Log output tags.
         self._logger.debug(f'Processed track is: \"{self._audiotracktags}\"')
@@ -1051,7 +1056,7 @@ def upsert_audiotags(rippingprofile, file, sequence, *decoratingprofiles, **kwar
     :param kwargs: extra keyword arguments.
     :return: 2-item tuple composed of:
                     1) a return code. 0 for success. 100 for failure.
-                    2) an optional AudioCDTags subclass object in case of success.
+                    2) an optional TrackTags subclass object in case of success.
     """
     in_logger = logging.getLogger("{0}.upsert_audiotags".format(__name__))
     in_mapping = {"albums": albums, "bootlegs": bootlegs}
@@ -1067,15 +1072,19 @@ def upsert_audiotags(rippingprofile, file, sequence, *decoratingprofiles, **kwar
     else:
         with stack:
 
+            # Log input extra keyword arguments.
             for key, value in shared.pprint_mapping(*sorted(kwargs.items(), key=itemgetter(0))):  # type: ignore
                 in_logger.debug("%s: %s", key, value)
-            if track.audiotrack.database:
-                for key, value in in_mapping.items():
-                    if kwargs.get(key, False):
-                        database = Path(kwargs.get("database", shared.DATABASE))
-                        if database.exists():
+
+            # Insert tags into the local audio database.
+            if track.audiotrack.database and kwargs.get("database"):
+                database = Path(kwargs["database"])
+                if database.exists():
+                    for key, value in in_mapping.items():
+                        if kwargs.get(key, False):
                             dump_audiotags_tojson(track.audiotrack, value, database=str(database), jsonfile=kwargs.get("jsonfile"), encoding=kwargs.get("encoding", shared.UTF8))
 
+            # Serialize tags into plain files.
             if kwargs.get("save", False):
                 root = Path(kwargs.get("root"))
                 if root.exists():
@@ -1157,16 +1166,24 @@ def changeencodedby(obj, *, provider="nugs.net"):
     return ChangeEncodedBy(obj, provider)
 
 
-def changemediaprovider(obj, *, provider="nugs.net"):
-    return ChangeMediaProvider(obj, provider)
+def changemediaprovider(obj):
+    return ChangeMediaProvider(obj)
 
 
-def changetotaltracks(obj, totaltracks):
-    return ChangeTotalTracks(obj, totaltracks)
+# def changemediareference(obj):
+#     return ChangeMediaReference(obj)
 
 
-def changetrack(obj, offset):
-    return ChangeTrack(obj, offset)
+# def changemediatitle(obj):
+#     return ChangeMediaTitle(obj)
+
+
+def changetotaltracks(obj):
+    return ChangeTotalTracks(obj)
+
+
+def changetracknumber(obj):
+    return ChangeTrackNumber(obj)
 
 
 def albums(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
@@ -1175,7 +1192,7 @@ def albums(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
     Tags are appended to the collection retrieved from a JSON file.
     Duplicates are removed.
 
-    :param track: DefaultAudioCDTags object.
+    :param track: DefaultTrackTags object.
     :param fil: JSON file full path.
     :param encoding: JSON file characters encoding.
     :param db: local database full path.
@@ -1197,7 +1214,7 @@ def albums(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
         with open(_fil, encoding=encoding) as fr:
             iterable = json.load(fr)
 
-    # Convert list(s) to tuple(s) for using `set` container.
+    # Convert list(s) to tuple(s) for using set container.
     iterable = list(map(tuple, iterable))
 
     # Remove duplicate sequences.
@@ -1242,7 +1259,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
     Tags are appended to the collection retrieved from a JSON file.
     Duplicates are removed.
 
-    :param track: BootlegAudioCDTags object.
+    :param track: LiveBootlegTrackTags object.
     :param fil: JSON file full path.
     :param encoding: JSON file characters encoding.
     :param db: local database full path.
@@ -1261,12 +1278,12 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
         _fil = Path(fil)
 
     # Log `track` privates attributes.
-    logger.debug('Here are the private key/value pairs stored into the `BootlegAudioCDTags` instance.')
+    logger.debug('Here are the private key/value pairs stored into the `LiveBootlegTrackTags` instance.')
     for key, value in shared.pprint_mapping(*sorted(track, key=itemgetter(0))):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
 
     # Log `track` public attributes.
-    logger.debug("Here are the public attributes stored into the `BootlegAudioCDTags` instance.")
+    logger.debug("Here are the public attributes stored into the `LiveBootlegTrackTags` instance.")
     keys = ["albumid",
             "artistsort",
             "artist",
@@ -1280,17 +1297,17 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
             "totaldiscs",
             "totaltracks",
             "title",
-            "bootlegalbum_day",
+            "bootlegalbum_date",
             "bootlegalbum_city",
             "bootlegalbum_country",
             "bootlegalbum_tour",
-            "bootlegtrack_day",
+            "bootlegtrack_date",
             "bootlegtrack_city",
             "bootlegtrack_country",
             "bootlegtrack_tour",
-            "bootlegalbum_provider",
-            "bootlegdisc_reference",
+            "bootlegalbum_publisher",
             "bootlegalbum_title",
+            "bootlegdisc_reference",
             "repository"]
     values = [track.albumid,
               track.artistsort,
@@ -1313,9 +1330,9 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
               track.bootlegtrack_city,
               countries[track.bootlegtrack_country],
               track.bootlegalbum_tour,
-              providers[track.bootlegalbum_provider],
-              track.bootlegdisc_reference,
+              providers[track.bootlegalbum_publisher or track.bootlegalbum_provider],
               track.bootlegalbum_title,
+              track.bootlegdisc_reference,
               track.repository]
     for key, value in shared.pprint_mapping(*zip(keys, values)):
         logger.debug("\t%s: %s".expandtabs(5), key, value)
@@ -1325,7 +1342,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
         with open(_fil, encoding=encoding) as fr:
             iterable = json.load(fr)
 
-    # Convert list(s) to tuple(s) for using `set` container.
+    # Convert list(s) to tuple(s) for using set container.
     iterable = list(map(tuple, iterable))
 
     # Remove duplicate sequences.
@@ -1354,7 +1371,7 @@ def bootlegs(track, *, fil=None, encoding=shared.UTF8, db=shared.DATABASE):
                      track.artistsort,
                      track.artist,
                      track.incollection,
-                     providers[track.bootlegalbum_provider],
+                     providers[track.bootlegalbum_publisher or track.bootlegalbum_provider],
                      track.bootlegdisc_reference,
                      track.bootlegalbum_title,
                      shared.get_rippingapplication()[1],
@@ -1368,7 +1385,7 @@ def dump_audiotags_tojson(track, kallable, *, database=shared.DATABASE, jsonfile
     """
     Dump audio tags into a JSON file for further storage into the local audio database.
 
-    :param track: AudioCDTags subclass object.
+    :param track: TrackTags subclass object.
     :param kallable: callable object providing the tags collection.
     :param database: local database full path.
     :param jsonfile: JSON file full path.
@@ -1481,48 +1498,53 @@ Profile = NamedTuple("Profile", [("exclusions", List[str]),
 # Constants.
 # ==========
 PROFILES = {"default": Profile(["albumsortyear",
+                                "albumtotaltracks",
                                 "bonustrack",
                                 "bootleg",
                                 "database",
                                 "deluxe",
                                 "livedisc",
                                 "livetrack",
+                                "offset",
                                 "sample",
-                                "tracklanguage"], DefaultAudioCDTags.fromfile),
-            "bootleg": Profile(["bonustrack",
+                                "tracklanguage"], DefaultTrackTags.fromfile),
+            "bootleg": Profile(["albumtotaltracks",
+                                "bonustrack",
                                 "bootleg",
                                 "bootlegalbumcity",
                                 "bootlegalbumcountry",
-                                "bootlegalbumday",
-                                "bootlegalbumprovider",
                                 "bootlegalbumtour",
                                 "bootlegalbumyear",
-                                "bootlegtrackday",
+                                "bootlegdiscreference",
+                                "bootlegprovider",
+                                "bootlegpublisher",
+                                "bootlegtitle",
+                                "dashed_bootlegalbum_date",
                                 "database",
                                 "deluxe",
-                                "dashedbootlegalbumyear",
-                                "dottedbootlegalbumyear",
+                                "dotted_bootlegalbum_date",
                                 "livedisc",
                                 "livetrack",
+                                "offset",
                                 "sample",
-                                "tracklanguage"], BootlegAudioCDTags.fromfile),
+                                "tracklanguage"], LiveBootlegTrackTags.fromfile),
             "live": Profile(["albumsortyear",
+                             "albumtotaltracks",
                              "bonustrack",
                              "bootleg",
                              "bootlegalbumcity",
                              "bootlegalbumcountry",
-                             "bootlegalbumday",
                              "bootlegalbumtour",
                              "bootlegalbumyear",
-                             "bootlegtrackday",
+                             "dashed_bootlegalbum_date",
                              "database",
                              "deluxe",
-                             "dashedbootlegalbumyear",
-                             "dottedbootlegalbumyear",
+                             "dotted_bootlegalbum_date",
                              "livedisc",
                              "livetrack",
+                             "offset",
                              "sample",
-                             "tracklanguage"], LiveAudioCDTags.fromfile)
+                             "tracklanguage"], LiveTrackTags.fromfile)
             }
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Resources", "Mapping.json"), encoding="UTF_8") as fp:
     MAPPING = json.load(fp)
